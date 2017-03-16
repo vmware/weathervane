@@ -8,7 +8,13 @@ questions about the CLA process, please refer to our [FAQ](https://cla.vmware.co
 
 ## Community
 
+The Weathervane project team is available in the [Weathervane room](https://gitter.im/vmware/weathervane) on [Gitter](https://gitter.im). You should join this community if you are interested in contributing to Weathervane.
+
+If you have an idea or plan for a specific contribution to the Weathervane project, it would be best if you start by opening an issue on the Weathervane project, and label it with the kind/contribution label.  The Weathervane code base consists of many components that are interrelated in complex ways, and we would be happy to work with potential contributors to ensure that you have all of the information necessary to succeed.
+
 ## Getting Started
+
+## Contribution Requirements
 
 ## Contribution Flow
 

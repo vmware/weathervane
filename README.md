@@ -16,11 +16,11 @@ In addition, the setup procedure for Weathervane may open ports or present other
 
 Weathervane runs on one or more hosts or virtual machines (VMs) running the Centos 7 operating system.  It includes a script to automate the initial configuration of the VM, including the installation of all necessary services.  Simple runs of the benchmark can be performed on a single VM, but the application and workload driver can be scaled out to perform benchmark runs involving dozens of VMs.
 
-The process of setting up and running Weathervane is covered in detail in the [Weathervane User's Guide](weathervane_users_guide.pdf).  
+The process of setting up and running Weathervane is covered in detail in the [Weathervane User's Guide](weathervane_users_guide.docx).  
 
 ## Documentation
 
-The [Weathervane User's Guide](weathervane_users_guide.pdf) covers all aspects of installing, deploying, and running the Weathervane benchmark. 
+The [Weathervane User's Guide](weathervane_users_guide.docx) covers all aspects of installing, deploying, and running the Weathervane benchmark. 
 
 ## Communicating about Weathervane
 

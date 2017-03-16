@@ -26,11 +26,11 @@ The [Weathervane User's Guide](weathervane_users_guide.docx) covers all aspects 
 
 The Weathervane project team is available in the [Weathervane room](https://gitter.im/vmware/weathervane) on [Gitter](https://gitter.im).  Feel free to contact us there with questions or comments.  Please use this method to contact us for questions specific to your use of Weathervane.
 
-We also encourage the use of Issues in the GitHub repository for any questions or suggestions that may be of general interest.  We may move discussion of questions or issues from Gitter to a GitHub Issue if we feel that the question or answer may be of more general interest.  Before creating an Issue, please read (ISSUES.md)[ISSUES.md].
+We also encourage the use of Issues in the GitHub repository for any questions or suggestions that may be of general interest.  We may move discussion of questions or issues from Gitter to a GitHub Issue if we feel that the question or answer may be of more general interest.  Before creating an Issue, please read [ISSUES.md](ISSUES.md).
 
 ## Issues
 
-The Weathervane project encourages liberal use of Issues for bugs, feature requests, documentation shortcoming, or general questions.  Please read the issue guideline in (ISSUES.md)[ISSUES.md] before filing an Issue.  Be sure to follow the guidelines regarding issue labels to ensure a prompt response.
+The Weathervane project encourages liberal use of Issues for bugs, feature requests, documentation shortcoming, or general questions.  Please read the issue guideline in [ISSUES.md](ISSUES.md) before filing an Issue.  Be sure to follow the guidelines regarding issue labels to ensure a prompt response.
 
 ## Releases & Major Branches
 

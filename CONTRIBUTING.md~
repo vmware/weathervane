@@ -37,10 +37,6 @@ As you can see from the above lists, we will be accepting only performance-neutr
 
 We will accept changes to support the addition of new service implementations, such as new database servers, that may give better performance than those currently supported. The goal of performance neutral is to ensure that users can rerun identical configurations with any release from the 1.x branch and still get the same results.  Note that this does mean that once a new service implementation is incorporated into Weathervane we will not accept changes that affect the performance of that service using the default settings.  We will allow the addition of new tuning parameters for any service as long as the default is the same as for the initial release on which that service was introduced.
 
-## Developer Documentation
-
-Documentation for developers interested in working on Weathervane can be found in the [docs](docs) directory.  These docs are thin on content at this time.  If there is something you need to know that is not covered, please open an issue, using the conventions in [ISSUES.md](ISSUES.md).
-
 ## Contribution Flow
 
 This is a rough outline of what a contributor's workflow looks like:
@@ -97,6 +93,8 @@ git push --force-with-lease origin my-new-feature
 Be sure to add a comment to the PR indicating your new changes are ready to review, as GitHub does not generate a
 notification when you git push.
 
+### Code Style
+
 ### Formatting Commit Messages
 
 We follow the conventions on [How to Write a Git Commit Message](http://chris.beams.io/posts/git-commit/).
@@ -107,5 +105,6 @@ and commits.
 
 ## Reporting Bugs and Creating Issues
 
-When opening a new issue, try to roughly follow the commit message format conventions above.  Please read [ISSUES.md](ISSUES.md) for full details on the Weathervane conventions and procedures for issues.
+When opening a new issue, try to roughly follow the commit message format conventions above.
 
+## Repository Structure

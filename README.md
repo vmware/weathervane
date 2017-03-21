@@ -22,13 +22,19 @@ The process of setting up and running Weathervane is covered in detail in the [W
 
 ## Documentation
 
-The [Weathervane User's Guide](weathervane_users_guide.pdf) covers all aspects of installing, deploying, and running the Weathervane benchmark. 
+The [Weathervane User's Guide](weathervane_users_guide.pdf) covers all aspects of installing, deploying, and running the Weathervane benchmark.
 
 ## Communicating about Weathervane
 
-The Weathervane project team is available in the [Weathervane room](https://gitter.im/vmware/weathervane) on [Gitter](https://gitter.im).  Feel free to contact us there with questions or comments.  Please use this method to contact us for questions specific to your use of Weathervane.
+The Weathervane project team can be contacted in the following ways:
 
-We also encourage the use of Issues in the GitHub repository for any questions or suggestions that may be of general interest.  We may move discussion of questions or issues from Gitter to a GitHub Issue if we feel that the question or answer may be of more general interest.  Before creating an Issue, please read [ISSUES.md](ISSUES.md).
+- [Slack](https://vmwarecode.slack.com/messages/weathervane): This is the primary community channel. If you don't have an @vmware.com or @emc.com email, please sign up at https://code.vmware.com/web/code/join to get a Slack invite.
+
+- [Gitter](https://gitter.im/vmware/weathervane): Gitter is monitored but go to slack if you need a response quickly.
+
+Feel free to contact us with questions or comments.  Please use these method to contact us for questions specific to your use of Weathervane.
+
+We also encourage the use of Issues in the GitHub repository for any questions or suggestions that may be of general interest.  We may move discussion of questions or issues from Slack to a GitHub Issue if we feel that the question or answer may be of more general interest.  Before creating an Issue, please read [ISSUES.md](ISSUES.md).
 
 ## Issues
 

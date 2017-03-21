@@ -10,7 +10,7 @@ Contributors and users are encouraged to collaborate using the following resourc
 
 - [Slack](https://vmwarecode.slack.com/messages/weathervane): This is the primary community channel. If you don't have an @vmware.com or @emc.com email, please sign up at https://code.vmware.com/web/code/join to get a Slack invite.
 
-- [Gitter](https://gitter.im/vmware/vic): Gitter is monitored but go to slack if you need a response quickly.
+- [Gitter](https://gitter.im/vmware/weathervane): Gitter is monitored but go to slack if you need a response quickly.
 
 If you have an idea or plan for a specific contribution to the Weathervane project, it would be best if you start by opening an issue on the Weathervane project, and label it with the kind/contribution label.  The Weathervane code base consists of many components that are interrelated in complex ways, and we would be happy to work with potential contributors to ensure that you have all of the information necessary to succeed.
 

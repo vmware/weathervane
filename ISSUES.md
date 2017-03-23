@@ -4,6 +4,8 @@
 
 The Weathervane project encourages the use of issues for bug reports, features requests, general user issues, and questions that may have applicability to more than one user.  If you are unsure whether you should open an issue, contact us in the Weathervane room [Slack](https://vmwarecode.slack.com/messages/weathervane). This is the primary community channel. If you don't have an @vmware.com or @emc.com email, please sign up at https://code.vmware.com/web/code/join to get a Slack invite.  
 
+If you are filing a bug report, expect us to ask you for the output directory created from a run on which you experienced the bug.  The output must be captured at logLevel 3 in order to provide us with sufficient information to diagnose the bug.  Due the complex nature of a Weathervane deployment, we may ask you to perform additional runs, and provide their associated output, as we may not be able to replicate your deployment configuration in our environment.
+
 ## Issue Labels
 
 The Weathervane project uses a hierarchical approach to issue labels.  The top-level label categories are:

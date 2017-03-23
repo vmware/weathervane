@@ -20,7 +20,7 @@ The Weathervane project welcomes contributions from anyone who would like to con
 
 ### Acceptable changes:
 
-* Bug fixes 
+* Bug fixes
 * Addition of new implementations for the various services, for example support for additional application servers, database servers, etc.
 * New data management or analysis features which do not affect data currently collected
 * New features which do not affect the performance of existing configurations.  For example, support for new a caching mechanism would be acceptable as long as the benchmark can still be run without the new mechanisms so the existing configurations are not affected.
@@ -44,6 +44,12 @@ We will accept changes to support the addition of new service implementations, s
 ## Developer Documentation
 
 Documentation for developers interested in working on Weathervane can be found in the [docs](docs) directory.  These docs are thin on content at this time.  If there is something you need to know that is not covered, please open an issue, using the conventions in [ISSUES.md](ISSUES.md).
+
+## Contribution Testing
+
+Weathervane is a complex project with a large number of interacting components.  While we encourage the addition of unit tests, a complete regression test requires that changes be tested with complete runs of the benchmark in multiple configurations.  As a result, we require that contributors provide the output from one or more runs that demonstrate the contribution in action.  This output must be from runs performed at logLevel 3 in order to contain sufficient information.  We will work with contributors to determine what types of runs are needed.  We will review this information, as well as reviewing the code, as the first step in deciding whether to accept a pull request.
+
+In addition to contributor-provided output, the project team has created a set of regression tests that we will use to test for both bugs and performance changes before any contribution is merged into the master branch.  Depending on the scope of the change, we will select the appropriate subset of these tests to run against a submitted pull request.  We will run these tests after reviewing the code and contributor-provided output.  In some cases a contribution may work only in an environment or with a piece of software that is unavailable to the project team. In that case we may request output from additional runs to ensure quality before accepting the change.
 
 ## Contribution Flow
 
@@ -77,7 +83,7 @@ git push --force-with-lease origin my-new-feature
 
 ### Updating pull requests
 
-If your PR fails to pass CI or needs changes based on code review, you'll most likely want to squash these changes into
+If your PR needs changes based on code review or testing, you'll most likely want to squash these changes into
 existing commits.
 
 If your pull request contains a single commit or your changes are related to the most recent commit, you can simply
@@ -112,4 +118,3 @@ and commits.
 ## Reporting Bugs and Creating Issues
 
 When opening a new issue, try to roughly follow the commit message format conventions above.  Please read [ISSUES.md](ISSUES.md) for full details on the Weathervane conventions and procedures for issues.
-

@@ -8,14 +8,7 @@ Weathervane is an application-level performance benchmark designed to allow the 
 
 ![A Weathervane Deployment](doc/images/wvDeployment1.png)
 
-Weathervane has many of the features of a typical industry-standard application-level benchmark.  
-
-- It includes an application which is representative of a certain class of application that is common in production deployments.
--	It defines a specific workload made up of operations performed by simulated users interacting with the application.
--	It defines quality-of-service (QoS) and other measures that are used to determine whether a given run can be counted as an acceptable (passing) run.
--	It collects and reports application-level performance metrics that can be used to compare multiple runs.  
-
-However, unlike most industry-standard benchmarks, Weathervane does not include strict run and reporting rules that control the configurations that can be used and the tuning that can be performed when running the benchmark.  This gives users great flexibility in selecting the Weathervane configuration that is appropriate for their specific needs. It also means that Weathervane results collected by different users can almost never be compared against each other in any meaningful way. 
+The figure above shows the logical layout of a Weathervane deployment. The Weathervane application is a web-application for hosting real-time auctions. This Auction application uses a scalable architecture that allows deployments to be easily sized for a large range of user loads. A deployment of the application involves a wide variety of support services, such as caching, messaging, NoSQL data-store, and relational database tiers. These services can be deployed in VMs or in Docker containers.  The number of instances of some of the services can be scaled elastically at run time in response to a preset schedule or to monitored performance metrics. In addition, Weathervane supports deploying and driving loads against multiple instances of the Auction application in a single run, thus enabling performance investigations of resource constraints or other aspects of multi-tenancy.  The Weathervane run-harness manages the complexity of configuring, deploying, and tuning the application, automating most of the tasks involved in configuring the application services and running the benchmark.
 
 ## Warning
 

@@ -1,0 +1,3 @@
+rootProject.name = 'weathervane'
+
+include 'auctionConfigManager', 'auctionApp', 'auctionWeb', 'dbLoader', 'workloadDriver'

@@ -1,0 +1,85 @@
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    # to have these messages end up in /var/log/haproxy.log you will
+    # need to:
+    #
+    # 1) configure syslog to accept network log events.  This is done
+    #    by adding the '-r' option to the SYSLOGD_OPTIONS in
+    #    /etc/sysconfig/syslog
+    #
+    # 2) configure local2 events to go to the /var/log/haproxy.log
+    #   file. A line like the following can be added to
+    #   /etc/sysconfig/syslog
+    #
+    #    local2.*                       /var/log/haproxy.log
+    #
+    log         127.0.0.1 local2 notice
+    stats socket /var/run/haproxy.sock mode 600 level admin
+    stats timeout 2m
+
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn	1000
+    user        haproxy
+    group       haproxy
+    nbproc 1
+    daemon
+
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    log                     global
+    option                  dontlognull
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          2m
+    timeout client-fin      10s
+    timeout server          2m
+    timeout http-keep-alive 30s
+    timeout check           10s
+    timeout tunnel 			15m
+    maxconn	1000
+
+#---------------------------------------------------------------------
+# listen for stats traffic
+#---------------------------------------------------------------------
+listen stats 
+	   bind *:10080
+       balance
+       mode http
+       stats enable
+       stats refresh 10s
+       stats uri /stats
+       stats auth admin:admin
+       stats admin if TRUE
+
+frontend http_frontend
+       bind *:80
+       mode http
+       reqadd X-Forwarded-Proto:\ http
+       default_backend http_web_server
+
+
+frontend https_frontend
+       bind *:443 ssl crt /etc/pki/tls/private/weathervane.pem
+       mode http
+       reqadd X-Forwarded-Proto:\ http
+       default_backend http_web_server
+
+backend http_web_server
+	mode http
+	balance leastconn
+
+    server web1 192.168.1.43:80 check
+    server web2 192.168.1.44:80 check
+

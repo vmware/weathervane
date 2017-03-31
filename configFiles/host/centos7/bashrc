@@ -1,0 +1,21 @@
+# .bashrc
+
+# User specific aliases and functions
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0
+export CATALINA_HOME=/opt/apache-tomcat
+export CATALINA_BASE=/opt/apache-tomcat-auction1
+export HTTPD_HOME=/usr/local/apache2
+export GOPATH=/root/src/go
+
+PATH="${JAVA_HOME}/bin:${HTTPD_HOME}/bin:$HOME/bin:$GOPATH/bin:/usr/local/go/bin:${PATH}"
+export PATH
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi

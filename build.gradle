@@ -180,7 +180,7 @@ project(':auctionApp') {
 			into file("$rootDir/dist/")
 			rename ('auctionApp-.*war', 'auction.war')
 		}
-			
+	}			
 }
 
 project(':auctionConfigManager') {

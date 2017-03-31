@@ -180,16 +180,7 @@ project(':auctionApp') {
 			into file("$rootDir/dist/")
 			rename ('auctionApp-.*war', 'auction.war')
 		}
-		
-		def hashStdOut = new ByteArrayOutputStream()
-    	exec {
-        	commandLine "git", "rev-parse", "HEAD"
-        	standardOutput = hashStdOut
-    	}
-		def shaFile = new File("$rootDir/dist/build-commit-sha.txt");
-		shaFile.write(hashStdOut.toString().trim());
-	}
-	
+			
 }
 
 project(':auctionConfigManager') {

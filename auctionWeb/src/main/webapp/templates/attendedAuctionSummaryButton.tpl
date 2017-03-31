@@ -1,0 +1,1 @@
+<button id="attendedAuctionSummaryPush"><%= translate("backToBidding") %></button>

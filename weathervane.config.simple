@@ -1,0 +1,44 @@
+
+{
+#"users" : 300,
+#"maxUsers" : 300,
+
+"description" : "Simple Weathervane Config.",
+"runLength" : "medium",
+
+"numWorkloads" : 1,
+"numAppInstances" : 1,
+"numDrivers" : 1,
+"numConfigurationManagers" : 1,
+#"numElasticityServices" : 0,
+"numCoordinationServers" : 1,
+#"numLbServers" : 0,
+"numWebServers" : 1,
+"numAppServers" : 1,
+"numMsgServers" : 1,
+#"numFileServers" : 0,
+"numNosqlServers" : 1,
+#"nosqlSharded" : false,
+#"nosqlReplicated" : false,
+"numDbServers" : 1,
+
+#"logLevel" : 0,
+#"runStrategy" : "single",
+#"powerOnVms" : false,
+#"powerOffVms" : false,
+
+#"numViHosts" : 0,
+
+# "useDocker" : false,
+# "dockerHostPin" : false,
+# "dockerHostPinMode" : "all",
+
+# "dockerCpuShares" : n/a,
+# "dockerCpuSetCpus" : n/a,
+# "dockerCpuSetMems" : n/a,
+# "dockerMemory" : n/a,
+# "dockerMemorySwap" : n/a,
+# "dockerNet" : "bridge",
+# "dockerRegistryName" : "vmc-perf-h11",
+
+}

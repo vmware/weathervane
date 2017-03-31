@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+	
+	 <context:property-placeholder location="classpath*:META-INF/spring/*.properties" />
+
+
+	<beans profile="mysql">
+		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"    
+    		p:driverClassName="com.mysql.jdbc.Driver"
+	    	p:url="jdbc:mysql://${DBHOSTNAME:AuctionDb1}:${DBPORT:3306}/auction"
+	    	p:username="auction"
+		    p:password="auction"   
+    		p:initialSize="10"
+   			p:minIdle="10"
+    		p:maxIdle="500"
+    		p:maxActive="2000"
+    		p:maxWait="6000"
+    		p:testOnBorrow="false"
+    		p:testOnReturn="false"
+    		p:testWhileIdle="false"   
+			p:validationQuery="select 1"
+    		p:timeBetweenEvictionRunsMillis="30000"
+    		p:minEvictableIdleTimeMillis="30000"
+		/>
+	</beans>
+
+	<beans profile="postgresql">
+		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"    
+    		p:driverClassName="org.postgresql.Driver"
+	    	p:url="jdbc:postgresql://${DBHOSTNAME:AuctionDb1}:${DBPORT:5432}/auction"
+	    	p:username="auction"
+		    p:password="auction"   
+    		p:initialSize="10"
+   			p:minIdle="10"
+    		p:maxIdle="500"
+    		p:maxActive="2000"
+    		p:maxWait="6000"
+    		p:testOnBorrow="false"
+    		p:testOnReturn="false"
+    		p:testWhileIdle="false"   
+			p:validationQuery="select 1"
+    		p:timeBetweenEvictionRunsMillis="30000"
+    		p:minEvictableIdleTimeMillis="30000"
+		/>
+	</beans>
+
+
+	
+</beans>

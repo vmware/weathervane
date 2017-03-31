@@ -1,0 +1,49 @@
+
+{
+#"users" : 300,
+#"maxUsers" : 300,
+
+"description" : "Hierarchical Weathervane Config.",
+"runLength" : "medium",
+
+"workloads" : [
+  {
+  	"drivers" : [ {}, ],
+  	"appInstances" : [
+  	  {
+  	  	"dataManagerInstance" : {},
+  	  	"configurationManagers" : [ {} ],
+  	  	"elasticityServices" : [],
+  	  	"coordinationServers" : [ {} ],
+  	  	"lbServers" : [],
+  	  	"webServers" : [ {} ],
+  	  	"appServers" : [ {} ],
+  	  	"msgServers" : [ {} ],
+  	  	"fileServers" : [],
+  	  	"nosqlServers" : [ {} ],
+  	  	"dbServers" : [ {} ],
+  	  },
+  	],
+  },
+],
+
+#"logLevel" : 0,
+#"runStrategy" : "single",
+#"powerOnVms" : false,
+#"powerOffVms" : false,
+
+#"numViHosts" : 0,
+
+# "useDocker" : false,
+# "dockerHostPin" : false,
+# "dockerHostPinMode" : "all",
+
+# "dockerCpuShares" : n/a,
+# "dockerCpuSetCpus" : n/a,
+# "dockerCpuSetMems" : n/a,
+# "dockerMemory" : n/a,
+# "dockerMemorySwap" : n/a,
+# "dockerNet" : "bridge",
+# "dockerRegistryName" : "vmc-perf-h11",
+
+}

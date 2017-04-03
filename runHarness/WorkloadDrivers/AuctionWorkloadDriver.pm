@@ -726,10 +726,8 @@ override 'redeploy' => sub {
 		if ( $localVersion ne $version ) {
 			# Copy the entire weathervane directory to every host that has a different version number
 			$logger->debug("Redeploying to $hostname");
-`$scpConnectString -r $weathervaneHome/auctionConfigManager/* root\@$scpHostString:$weathervaneHome/auctionConfigManager/.`;
-			`$scpConnectString -r $weathervaneHome/auctionCore/* root\@$scpHostString:$weathervaneHome/auctionCore/.`;
-			`$scpConnectString -r $weathervaneHome/auctionData/* root\@$scpHostString:$weathervaneHome/auctionData/.`;
-			`$scpConnectString -r $weathervaneHome/auctionRest/* root\@$scpHostString:$weathervaneHome/auctionRest/.`;
+			`$scpConnectString -r $weathervaneHome/auctionConfigManager/* root\@$scpHostString:$weathervaneHome/auctionConfigManager/.`;
+			`$scpConnectString -r $weathervaneHome/auctionApp/* root\@$scpHostString:$weathervaneHome/auctionApp/.`;
 			`$scpConnectString -r $weathervaneHome/auctionWeb/* root\@$scpHostString:$weathervaneHome/auctionWeb/.`;
 			`$scpConnectString -r $weathervaneHome/autoSetup.pl root\@$scpHostString:$weathervaneHome/.`;
 			`$scpConnectString -r $weathervaneHome/buildDockerImages.pl root\@$scpHostString:$weathervaneHome/.`;

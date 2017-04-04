@@ -18,8 +18,6 @@ package com.vmware.weathervane.auction.controller;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
-import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
@@ -35,12 +33,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.vmware.weathervane.auction.model.configuration.AppServer;
 import com.vmware.weathervane.auction.model.configuration.NosqlServer;
 import com.vmware.weathervane.auction.model.defaults.NosqlServerDefaults;
 import com.vmware.weathervane.auction.representation.configuration.AddServiceResponse;
-import com.vmware.weathervane.auction.representation.configuration.ModifyServiceResponse;
 import com.vmware.weathervane.auction.representation.configuration.GetServiceResponse;
+import com.vmware.weathervane.auction.representation.configuration.ModifyServiceResponse;
 import com.vmware.weathervane.auction.representation.configuration.SetDefaultsResponse;
 import com.vmware.weathervane.auction.service.configuration.DefaultsService;
 import com.vmware.weathervane.auction.service.configuration.NosqlServerService;

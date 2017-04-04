@@ -26,7 +26,10 @@ public class LbServerDefaults extends Defaults {
     private String haproxyServerRoot;
 
     private String haproxyCfgFile;
+    private String haproxyTerminateTLSCfgFile;
     private String haproxyDockerCfgFile;
+    
+    private Boolean haproxyTerminateTLS;
     
 	public String getLbServerImpl() {
 		return lbServerImpl;
@@ -66,5 +69,21 @@ public class LbServerDefaults extends Defaults {
 
 	public void setHaproxyDockerCfgFile(String haproxyDockerCfgFile) {
 		this.haproxyDockerCfgFile = haproxyDockerCfgFile;
+	}
+
+	public Boolean getHaproxyTerminateTLS() {
+		return haproxyTerminateTLS;
+	}
+
+	public void setHaproxyTerminateTLS(Boolean haproxyTerminateTLS) {
+		this.haproxyTerminateTLS = haproxyTerminateTLS;
+	}
+
+	public String getHaproxyTerminateTLSCfgFile() {
+		return haproxyTerminateTLSCfgFile;
+	}
+
+	public void setHaproxyTerminateTLSCfgFile(String haproxyTerminateTLSCfgFile) {
+		this.haproxyTerminateTLSCfgFile = haproxyTerminateTLSCfgFile;
 	}
 }

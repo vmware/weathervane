@@ -214,6 +214,13 @@ sub configureAfterIsUp {
 						close FILE;
 						$paramHash{"haproxyDockerCfgFile"} = $fileString;
 
+						open FILE, "$configDir/haproxy/haproxy.cfg.terminateTLS.template"
+						  or die "Couldn't open file: $!";
+						binmode FILE;
+						my $fileString = <FILE>;
+						close FILE;
+						$paramHash{"haproxyTerminateTLSCfgFile"} = $fileString;
+
 					}
 				}
 			}

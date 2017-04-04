@@ -47,6 +47,9 @@ public class LbServer extends Service {
 	private Integer httpsPort;
 	private Integer httpInternalPort;
 	private Integer httpsInternalPort;
+	private Boolean haproxyTerminateTLS;
+
+	
 	private Integer _pid;
 
 	public String getLbServerImpl() {
@@ -229,9 +232,16 @@ public class LbServer extends Service {
 			}
 		}
 
-		String newHaproxyCfgFile = String.format(defaults.getHaproxyCfgFile(), maxConn, maxConn, getStatsInternalPort(), getHttpInternalPort(),
+		String newHaproxyCfgFile = null;
+		if (haproxyTerminateTLS) {
+			newHaproxyCfgFile = String.format(defaults.getHaproxyCfgFile(), maxConn, "1", maxConn, 
+					getStatsInternalPort(), getHttpInternalPort(),
 				getHttpsInternalPort(), backendHttpServerString, backendHttpsServerString);
-
+		} else {
+			newHaproxyCfgFile = String.format(defaults.getHaproxyTerminateTLSCfgFile(), maxConn, this.getHostCpus(), 
+					maxConn, getStatsInternalPort(), getHttpInternalPort(),
+					getHttpsInternalPort(), backendHttpServerString);			
+		}
 		SshUtils.ScpStringTo(newHaproxyCfgFile, hostname, getHaproxyServerRoot() + "/haproxy.cfg");
 		return this;
 	}
@@ -307,6 +317,7 @@ public class LbServer extends Service {
 	public LbServer mergeDefaults(final LbServerDefaults defaults) {
 		LbServer mergedLbServer = (LbServer) super.mergeDefaults(this, defaults);
 		mergedLbServer.setLbServerImpl(lbServerImpl != null ? lbServerImpl : defaults.getLbServerImpl());
+		mergedLbServer.setHaproxyTerminateTLS(haproxyTerminateTLS != null ? haproxyTerminateTLS : defaults.getHaproxyTerminateTLS());
 
 		return mergedLbServer;
 	}
@@ -325,5 +336,13 @@ public class LbServer extends Service {
 		} else {
 			return false;
 		}
+	}
+
+	public Boolean getHaproxyTerminateTLS() {
+		return haproxyTerminateTLS;
+	}
+
+	public void setHaproxyTerminateTLS(Boolean haproxyTerminateTLS) {
+		this.haproxyTerminateTLS = haproxyTerminateTLS;
 	}
 }

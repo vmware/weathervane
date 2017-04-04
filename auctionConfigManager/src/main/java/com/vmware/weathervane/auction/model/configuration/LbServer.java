@@ -233,7 +233,7 @@ public class LbServer extends Service {
 		}
 
 		String newHaproxyCfgFile = null;
-		if (haproxyTerminateTLS) {
+		if (!haproxyTerminateTLS) {
 			newHaproxyCfgFile = String.format(defaults.getHaproxyCfgFile(), maxConn, "1", maxConn, 
 					getStatsInternalPort(), getHttpInternalPort(),
 				getHttpsInternalPort(), backendHttpServerString, backendHttpsServerString);

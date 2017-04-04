@@ -301,10 +301,26 @@ sub mergeParameters {
 		}
 
 		if ( !$parent ) {
-			$parameterHash{$parameterKey} = $value;
+			if ($type eq "!") {
+				if ($value) {
+					$parameterHash{$parameterKey} = JSON::true;
+				} else {
+					$parameterHash{$parameterKey} = JSON::false;					
+				}
+			} else {
+				$parameterHash{$parameterKey} = $value;
+			}
 		}
 		else {
-			$defaultsHashRefHash{$parent}->{$parameterKey} = $value;
+			if ($type eq "!") {
+				if ($value) {
+					$defaultsHashRefHash{$parent}->{$parameterKey} = JSON::true;
+				} else {
+					$defaultsHashRefHash{$parent}->{$parameterKey} = JSON::false;					
+				}
+			} else {
+				$defaultsHashRefHash{$parent}->{$parameterKey} = $value;
+			}
 		}
 	}
 
@@ -319,12 +335,27 @@ sub mergeParameters {
 			if ( $type eq "hash" ) {
 				next;
 			}
-
 			if ( !$parent ) {
-				$parameterHash{$key} = $value;
+				if ($type eq "!") {
+					if ($value) {
+						$parameterHash{$key} = JSON::true;
+					} else {
+						$parameterHash{$key} = JSON::false;					
+					}
+				} else {
+					$parameterHash{$key} = $value;
+				}
 			}
 			else {
-				$defaultsHashRefHash{$parent}->{$key} = $value;
+				if ($type eq "!") {
+					if ($value) {
+						$defaultsHashRefHash{$parent}->{$key} = JSON::true;
+					} else {
+						$defaultsHashRefHash{$parent}->{$key} = JSON::false;					
+					}
+				} else {
+					$defaultsHashRefHash{$parent}->{$key} = $value;
+				}
 			}
 		}
 
@@ -341,10 +372,26 @@ sub mergeParameters {
 		}
 
 		if ( !$parent ) {
-			$parameterHash{$key} = $value;
+			if ($type eq "!") {
+				if ($value) {
+					$parameterHash{$key} = JSON::true;
+				} else {
+					$parameterHash{$key} = JSON::false;					
+				}
+			} else {
+				$parameterHash{$key} = $value;
+			}
 		}
 		else {
-			$defaultsHashRefHash{$parent}->{$key} = $value;
+			if ($type eq "!") {
+				if ($value) {
+					$defaultsHashRefHash{$parent}->{$key} = JSON::true;
+				} else {
+					$defaultsHashRefHash{$parent}->{$key} = JSON::false;					
+				}
+			} else {
+				$defaultsHashRefHash{$parent}->{$key} = $value;
+			}
 		}
 	}
 

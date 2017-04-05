@@ -349,7 +349,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 					if (webServersToAdd.contains(webServer)) {
 						continue;
 					}
-					logger.debug("Reloading lbServer on " + webServer.getHostHostName());
+					logger.debug("Reloading webServer on " + webServer.getHostHostName());
 					actionReturns.add(executor.submit(new WebServerReloader(webServer)));
 				}
 				actionSucceeded = true;
@@ -405,7 +405,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 					if (webServersToAdd.contains(webServer)) {
 						continue;
 					}
-					logger.debug("Waiting for reload complete for lbServer on " + webServer.getHostHostName());
+					logger.debug("Waiting for reload complete for webServer on " + webServer.getHostHostName());
 					actionReturns.add(executor.submit(new WebServerReloadWaiter(webServer)));
 				}
 				actionSucceeded = true;
@@ -562,7 +562,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 				}));
 			}
 			for (WebServer webServer : webServersToRemove) {
-				logger.debug("Stopping lbServer " + webServer.getId() + " on host " + webServer.getHostHostName());
+				logger.debug("Stopping webServer " + webServer.getId() + " on host " + webServer.getHostHostName());
 				futureReturnList.add(executor.submit(new Callable<Boolean>() {
 
 					@Override
@@ -585,7 +585,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			for (WebServer webServer : webServersToRemove) {
 				List<Integer> workerPids = webServer.getWorkerPids();
 				if (workerPids != null) {
-					logger.debug("Deleting lbServer " + webServer.getId() + " with " + workerPids.size() + " workerPids");
+					logger.debug("Deleting webServer " + webServer.getId() + " with " + workerPids.size() + " workerPids");
 				}
 				webServerRepository.delete(webServer.getId());
 			}

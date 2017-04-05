@@ -224,12 +224,12 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			 * will always happen
 			 */
 			if ((numWebServersToAdd + numWebServersToRemove + numAppServersToAdd + numAppServersToRemove) > 0) {
-				reloadWebServers(webServersToRemove, webServersToAdd, appServersToAdd);
-				reloadWebServers(webServers, webServersToAdd, appServersToAdd);
+				reloadWebServers(webServersToRemove, null);
+				reloadWebServers(webServers, webServersToAdd);
 			}
 			
 			/*
-			 * Tell of the the app servers being removed to prepare for a shutdown.
+			 * Tell all of the the app servers being removed to prepare for a shutdown.
 			 */
 			for (AppServer appServer: appServersToRemove) {
 				logger.debug("Telling app server with id  " + appServer.getId() 
@@ -243,6 +243,9 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			 */
 			if ((numWebServersToAdd + numWebServersToRemove + numAppServersToAdd + numAppServersToRemove) > 0) {
 				for (AppServer appServer : appServers) {
+					if (appServersToRemove.contains(appServer)) {
+						continue;
+					}
 					logger.debug("Telling app server with id  " + appServer.getId() + " to release connections ");
 					appServer.releaseAsyncRequests();
 				}
@@ -471,55 +474,19 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 	}
 	
-	private void reloadWebServers(List<WebServer> webServersToReload, List<WebServer> webServersToIgnore,
-			List<AppServer> appServersToAdd) throws InterruptedException, IOException, AddFailedException {
+	private void reloadWebServers(List<WebServer> webServersToReload, List<WebServer> webServersToIgnore) throws InterruptedException, IOException, AddFailedException {
 		
 		if ((webServersToReload == null) || webServersToReload.isEmpty()) {
 			return;
 		}
 		
-		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
 		for (WebServer webServer : webServersToReload) {
 			if ((webServersToIgnore != null) && (webServersToIgnore.contains(webServer))) {
 				continue;
 			}
 			logger.debug("Reloading webServer on " + webServer.getHostHostName());
-			actionReturns.add(executor.submit(new WebServerReloader(webServer)));
+			webServer.reload();
 		}
-		boolean actionSucceeded = true;
-		for (Future<Boolean> actionSuceededFuture : actionReturns) {
-			try {
-				Boolean retVal = actionSuceededFuture.get();
-				actionSucceeded &= retVal;
-			} catch (ExecutionException e) {
-				Throwable e1 = e.getCause();
-				if (e1 != null) {
-					logger.warn("Getting reload web server future returned an exception.  original: " + e.getCause().getMessage());
-				} else {
-					logger.warn("Getting reload web server future returned an exception: " + e.getMessage());						
-				}
-				actionSucceeded = false;
-			}
-		}
-		if (!actionSucceeded) {
-			logger.warn("Could not reload all current web servers");
-			/*
-			 * If any of the reloads failed, then need to stop all of
-			 * the appServers and webServers and throw an exception
-			 */
-			for (AppServer appServer : appServersToAdd) {
-				appServerRepository.delete(appServer);
-				appServer.stop();
-			}
-			if (webServersToIgnore != null) {
-				for (WebServer webServer : webServersToIgnore) {
-					webServerRepository.delete(webServer);
-					webServer.stop();
-				}
-			}
-			throw new AddFailedException("Could not reload all current webServers");
-		}
-
 	}
 	
 	private void waitForWebServerReload(List<WebServer> webServers, List<WebServer> webServersToAdd, 
@@ -634,7 +601,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			/*
 			 * If any of the reloads failed, then need to throw an exception
 			 */
-			throw new AddFailedException("Error waiting for web server reload to complete");
+			throw new AddFailedException("Error waiting for lb server reload to complete");
 		}
 
 	}
@@ -704,7 +671,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerStarter.  Starting lbServer " + webServer.getId());
+			logger.debug("WebServerStarter.  Starting webServer " + webServer.getId());
 			try {
 				return webServer.start(defaultsService.getWebServerDefaults());
 			} catch (InterruptedException e) {
@@ -723,7 +690,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerReloader.  Reloading lbServer " + webServer.getId());
+			logger.debug("WebServerReloader.  Reloading webServer " + webServer.getId());
 			try {
 				return webServer.reload();
 			} catch (InterruptedException e) {
@@ -744,7 +711,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerReloadWaiter.  Reloading lbServer " + webServer.getId());
+			logger.debug("WebServerReloadWaiter.  Reloading webServer " + webServer.getId());
 			try {
 				return webServer.waitForReloadComplete();
 			} catch (InterruptedException e) {

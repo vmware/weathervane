@@ -1,0 +1,350 @@
+# Weathervane Regression Test Case 18
+# This is a test case with two workloads, each with two appInstances.
+# Each appInstance uses a different combination of services.
+# W1I1: nginx/postgres/filesystem
+# W1I2: httpd/postgres/mongodb
+# W2I1: nginx/mysql/filesystem
+# W2I2: nginx/postgres/mongodb/docker
+#
+# All storage on vsanDatastore
+{
+"hostnamePrefix" : "Test18",
+#"loggers" : { "Weathervane::Workload::Workload": "DEBUG",},
+
+"users" : 300,
+"userLoadPath" : [],
+"repeatUserLoadPath" : false,
+
+"maxUsers" : 300,
+"maxDuration" : 7200,
+
+"description" : "Test Config 18: 2Workload/2AppInstPer",
+"runLength" : "medium",
+
+"runStrategy" : "single", 
+"initialRateStep" : 2000,
+"minRateStep" : 250,
+"repeatsAtMax" : 0,
+"targetUtilization" : 70,
+"targetUtilizationServiceType" : "appServer",
+
+"runProcedure" : "full",
+
+"dockerNamespace" : "hrosenbe",
+
+"workloads" : [
+  {
+	# W1
+
+	"drivers" : [ 
+	  { "hostName" : "AuctionDriver1" },
+	  { "hostName" : "AuctionDriver2" },
+	  { "hostName" : "AuctionDriver3" },
+	  { "hostName" : "AuctionDriver4" },
+	  { "hostName" : "AuctionDriver5" },
+	  { "hostName" : "AuctionDriver6" },
+	  { "hostName" : "AuctionDriver7" },
+	  { "hostName" : "AuctionDriver8" },
+	],
+	"driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+
+	"dbLoaderThreads" : 6,
+	"dbLoaderHeap" : "4G",
+
+  	"appInstances" : [
+  	  {
+		# W1I1
+		"users" : 6000,
+		"useDocker" : false,
+
+		"useVirtualIp" : false,
+
+		"webServerImpl" : "nginx",
+		"dbServerImpl" : "postgresql",
+		"imageStoreType" : "filesystem",
+
+  	  	"dataManagerInstance" : { },
+
+		# 1vCPU, 4GB
+  	  	"configurationManagers" : [ {} ],
+		
+		# Runs on Run Harness Host
+  	  	"elasticityServices" : [],
+
+		# 1vCPU, 4GB
+  	  	"coordinationServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"lbServers" : [ {}, ],
+
+		# 2vCPU, 16GB
+  	  	"webServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"appServers" : [ {}, {}, ],
+
+		# 2vCPU, 4GB
+  	  	"msgServers" : [ {} ],
+
+		# 2vCPU, 32GB
+  	  	"fileServers" : [ {}, ],
+
+		# 2vCPU, 32GB, 20GB data disk on vsanDatastore
+  	  	"nosqlServers" : [ {}, ],
+		"nosqlReplicated" : false,
+		"nosqlSharded" : false,
+
+		# 6vCPU, 32GB
+  	  	"dbServers" : [ {} ],
+
+		"configPath" : [],
+		"repeatConfigPath" : false,
+		
+		"appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
+		"appServerThreads" : 50,
+		"appServerJdbcConnections" : 51,
+		"numAuctioneerThreads" : 2,
+		"numClientUpdateThreads" : 2,
+
+		"configurationManagerJvmOpts" : "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
+
+		"nfsProcessCount" : 32,
+
+  	  },
+  	  {
+		# W1I2
+		"users" : 3000,
+		"useDocker" : false,
+
+		"useVirtualIp" : false,
+
+		"webServerImpl" : "httpd",
+		"dbServerImpl" : "postgresql",
+		"imageStoreType" : "mongodb",
+
+  	  	"dataManagerInstance" : { },
+
+		# 1vCPU, 4GB
+  	  	"configurationManagers" : [ {} ],
+		
+		# Runs on Run Harness Host
+  	  	"elasticityServices" : [],
+
+		# 1vCPU, 4GB
+  	  	"coordinationServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"lbServers" : [  ],
+
+		# 2vCPU, 16GB
+  	  	"webServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"appServers" : [ {}, ],
+
+		# 2vCPU, 4GB
+  	  	"msgServers" : [ {} ],
+
+		# 2vCPU, 32GB
+  	  	"fileServers" : [ ],
+
+		# 2vCPU, 32GB, 40GB data disk on vsanDatastore
+  	  	"nosqlServers" : [ {}, ],
+		"nosqlReplicated" : false,
+		"nosqlSharded" : false,
+
+		# 6vCPU, 32GB
+  	  	"dbServers" : [ {} ],
+
+		"configPath" : [],
+		"repeatConfigPath" : false,
+		
+		"appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
+		"appServerThreads" : 50,
+		"appServerJdbcConnections" : 51,
+		"numAuctioneerThreads" : 2,
+		"numRabbitmqThreads" : 2,
+		"numClientUpdateThreads" : 2,
+
+		"configurationManagerJvmOpts" : "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
+
+		"nfsProcessCount" : 32,
+
+  	  },
+  	],
+  },
+  {
+	# W2
+	"drivers" : [ 
+	  { "hostName" : "AuctionDriver9" },
+	  { "hostName" : "AuctionDriver10" },
+	  { "hostName" : "AuctionDriver11" },
+	  { "hostName" : "AuctionDriver12" },
+	  { "hostName" : "AuctionDriver13" },
+	  { "hostName" : "AuctionDriver14" },
+	  { "hostName" : "AuctionDriver15" },
+	  { "hostName" : "AuctionDriver16" },
+	],
+	"driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+
+	"dbLoaderThreads" : 6,
+	"dbLoaderHeap" : "4G",
+
+  	"appInstances" : [
+  	  {
+		# W2I1
+		"users" : 5000,
+		"useDocker" : false,
+
+		"useVirtualIp" : false,
+
+		"webServerImpl" : "nginx",
+		"dbServerImpl" : "mysql",
+		"imageStoreType" : "filesystem",
+
+  	  	"dataManagerInstance" : { },
+
+		# 1vCPU, 4GB
+  	  	"configurationManagers" : [ {} ],
+		
+		# Runs on Run Harness Host
+  	  	"elasticityServices" : [],
+
+		# 1vCPU, 4GB
+  	  	"coordinationServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"lbServers" : [ {}, ],
+
+		# 2vCPU, 16GB
+  	  	"webServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"appServers" : [ {}, {}, ],
+
+		# 2vCPU, 4GB
+  	  	"msgServers" : [ {} ],
+
+		# 2vCPU, 32GB
+  	  	"fileServers" : [ {}, ],
+
+		# 2vCPU, 32GB, 20GB data disk on vsanDatastore
+  	  	"nosqlServers" : [ {}, ],
+		"nosqlReplicated" : false,
+		"nosqlSharded" : false,
+
+		# 6vCPU, 32GB
+  	  	"dbServers" : [ {} ],
+
+		"configPath" : [],
+		"repeatConfigPath" : false,
+		
+		"appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
+		"appServerThreads" : 50,
+		"appServerJdbcConnections" : 51,
+		"numAuctioneerThreads" : 2,
+		"numRabbitmqThreads" : 2,
+		"numClientUpdateThreads" : 2,
+
+		"configurationManagerJvmOpts" : "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
+
+		"nfsProcessCount" : 32,
+
+  	  },
+  	  {
+		# W2I2
+		"users" : 5000,
+		"useDocker" : true,
+
+		"useVirtualIp" : false,
+
+		"webServerImpl" : "nginx",
+		"dbServerImpl" : "postgresql",
+		"imageStoreType" : "mongodb",
+
+  	  	"dataManagerInstance" : { },
+
+		# 1vCPU, 4GB
+  	  	"configurationManagers" : [ {} ],
+		
+		# Runs on Run Harness Host
+  	  	"elasticityServices" : [],
+
+		# 1vCPU, 4GB
+  	  	"coordinationServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"lbServers" : [  ],
+
+		# 2vCPU, 16GB
+  	  	"webServers" : [ {} ],
+
+		# 2vCPU, 8GB
+  	  	"appServers" : [ {}, ],
+
+		# 2vCPU, 4GB
+  	  	"msgServers" : [ {} ],
+
+		# 2vCPU, 32GB
+  	  	"fileServers" : [ ],
+
+		# 2vCPU, 32GB, 40GB data disk on vsanDatastore
+  	  	"nosqlServers" : [ {}, ],
+		"nosqlReplicated" : false,
+		"nosqlSharded" : false,
+
+		# 6vCPU, 32GB
+  	  	"dbServers" : [ {} ],
+
+		"configPath" : [],
+		"repeatConfigPath" : false,
+		
+		"appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
+		"appServerThreads" : 50,
+		"appServerJdbcConnections" : 51,
+		"numAuctioneerThreads" : 2,
+		"numRabbitmqThreads" : 2,
+		"numClientUpdateThreads" : 2,
+
+		"configurationManagerJvmOpts" : "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
+
+		"nfsProcessCount" : 32,
+
+  	  },
+  	],
+  },
+],
+
+"virtualInfrastructureInstance" : {
+  "virtualInfrastructureType" : "vsphere",
+  "viHosts" : [
+    { "hostName" : "auctionesx1", },
+    { "hostName" : "auctionesx2", },
+    { "hostName" : "auctionesx3", },
+    { "hostName" : "auctionesx4", },
+    { "hostName" : "auctionesx5", },
+  ],
+},
+
+"hosts" : [
+#  {
+#    "hostName" : "auctionDocker1",
+#    "dockerHostPin" : false,
+#    "dockerHostPinMode" : "all", 
+#  },
+],
+
+"logLevel" : 4,
+"redeploy" : true,
+
+"backup" : false,
+"rebackup" : false,
+"reloadDb" : false,
+ 
+"powerOnVms" : true,
+"powerOffAllVms" : true,
+
+"restartNtp" : true,
+"harnessHostNtpServer" : true,
+
+}

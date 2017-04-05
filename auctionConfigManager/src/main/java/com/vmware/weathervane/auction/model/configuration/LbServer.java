@@ -142,7 +142,10 @@ public class LbServer extends Service {
 //		output = SshUtils.SshExec(hostname, "iptables -I INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");
 //		Thread.sleep(100);
 		String pid = SshUtils.SshExec(hostname, "cat /run/haproxy.pid");
-		pid = pid.replaceAll("\\r|\\n", "");
+		pid = pid.replaceAll("\\r|\\n", ",");
+		if (pid.endsWith(",")) {
+			pid = pid.substring(0, pid.length() - 1);
+		}
 		_pid = Integer.decode(pid);
 		output = SshUtils.SshExec(hostname, "/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -sf " + _pid.toString());
 		logger.debug("Result of reload of load balancer on " + hostname + " is: " + output);

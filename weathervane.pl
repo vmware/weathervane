@@ -207,7 +207,7 @@ my $logger = get_logger("Weathervane");
 
 # Force acceptance of the license if not using the accept parameter
 sub forceLicenseAccept {
-	open( my $fileout, "$weathervaneHome/COPYRIGHT.txt" ) or die "Can't open file $weathervaneHome/COPYRIGHT.txt: $!\n";
+	open( my $fileout, "$weathervaneHome/Notice.txt" ) or die "Can't open file $weathervaneHome/Notice.txt: $!\n";
 	while ( my $inline = <$fileout> ) {
 		print $inline;
 	}

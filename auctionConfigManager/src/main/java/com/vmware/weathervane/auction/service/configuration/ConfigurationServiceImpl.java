@@ -122,29 +122,14 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			long numAppServersToAdd = appServersToAdd.size();
 			long numWebServersToAdd = webServersToAdd.size();
 
-			long numCurrentAppServers = appServerRepository.count();
 			long numCurrentWebServers = webServerRepository.count();
-			long numCurrentLbServers = lbServerRepository.count();
 
-			if (numAppServersToRemove >= numCurrentAppServers) {
-				logger.warn("Attempt to remove all running app servers.  numAppServersToRemove = " + numAppServersToRemove +
-							", numCurrentAppServers = " + numCurrentAppServers 
-							+ ", received request: " + mergedRequest);
-				throw new IllegalConfigurationException("Can't remove all running app servers.");
+			boolean validConfig = validateConfigurationRequest(numAppServersToRemove, numWebServersToRemove, 
+					numAppServersToAdd, numWebServersToAdd);
+			if (!validConfig) {
+				throw new IllegalConfigurationException();
 			}
-			if (numWebServersToRemove >= numCurrentWebServers) {
-				logger.warn("Attempt to remove all running web servers: " + mergedRequest);
-				throw new IllegalConfigurationException("Can't remove all running web servers.");
-			}
-			if ((numAppServersToAdd > 0) && (numCurrentWebServers <= 0) && (numCurrentLbServers <= 0)) {
-				logger.warn("Must be at least one web server or load-balancer to add an app server: " + mergedRequest);
-				throw new IllegalConfigurationException("Must be at least one web server or load-balancer to add an app server.");
-			}
-			if ((numWebServersToAdd > 0) && (numCurrentLbServers <= 0)) {
-				logger.warn("Must be at least one load-balancer to add a web server: " + mergedRequest);
-				throw new IllegalConfigurationException("Must be at least one load-balancer to add a web server.");
-			}
-
+			
 			List<Long> addedAppServerIds = new ArrayList<Long>();;
 			List<Long> addedWebServerIds = new ArrayList<Long>();;
 
@@ -188,94 +173,25 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			List<WebServer> webServers = webServerRepository.findAll();
 			List<LbServer> lbServers = lbServerRepository.findAll();
 			List<AppServer> appServers = appServerRepository.findAll();
-			List<AppServer> appServersToRemove = new ArrayList<AppServer>();
-			List<WebServer> webServersToRemove = new ArrayList<WebServer>();
 
 			/*
 			 * Need to choose which app and web servers to remove
 			 */
-			long numRemovesRemaining = numAppServersToRemove;
-			int index = 0;
-			while (numRemovesRemaining > 0) {
-				AppServer appServer = appServers.get(index);
-				if (appServer.isMaster()) {
-					logger.debug("App server on " + appServer.getHostHostName() + " is master.  Not removing.");
-					index++;
-					continue;
-				}
-				
-				logger.debug("Found app server to remove with id  " + appServer.getId() 
-					+ ", it is on host " + appServer.getHostHostName());
-				appServersToRemove.add(appServer);
-				index++;
-				numRemovesRemaining--;
-			}
+			List<AppServer> appServersToRemove = chooseAppServersToRemove(numAppServersToRemove, appServers);
 			for (AppServer appServer: appServersToRemove) {
 				appServers.remove(appServer);				
 			}
 			
-			index = 0;
-			numRemovesRemaining = numWebServersToRemove;
-			while (numRemovesRemaining > 0) {
-				WebServer webServer = webServers.get(index);
-				logger.debug("Found web server to remove with id  " + webServer.getId()
-					+ ", it is on host " + webServer.getHostHostName());
-				webServersToRemove.add(webServer);
-				numRemovesRemaining--;
-				index++;
-			}
+			List<WebServer> webServersToRemove = chooseWebServersToRemove(numWebServersToRemove, webServers);
 			for (WebServer webServer : webServersToRemove) {
 				webServers.remove(webServer);				
 			}
 
 			/*
-			 * Now start and warm all of the new app servers
+			 * Now configure, start, and warm all of the new app servers
 			 */
-			List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
-			for (AppServer appServer : appServersToAdd) {
-				logger.debug("Configuring appServer on " + appServer.getHostHostName());
-				appServer.configure(defaultsService.getAppServerDefaults(), appInstance, appServers, webServers, dbServerRepository.findAll(),
-						nosqlServerRepository.findAll(), msgServerRepository.findAll(), coordinationServerRepository.findAll());
-
-				actionReturns.add(executor.submit(new AppServerStarter(appServer)));
-			}
-
-			Boolean actionSucceeded = true;
-			for (Future<Boolean> actionSucceededFuture : actionReturns) {
-				try {
-					Boolean retVal = actionSucceededFuture.get();
-					actionSucceeded &= retVal;
-				} catch (ExecutionException e) {
-					Throwable e1 = e.getCause();
-					if (e1 != null) {
-						logger.warn("Getting start app server future returned an exception.  original: " + e.getCause().getMessage());
-					} else {
-						logger.warn("Getting start app server future returned an exception: " + e.getMessage());						
-					}
-					actionSucceeded = false;
-				}
-			}
-			if (!actionSucceeded) {
-				/*
-				 * If any of the adds failed, then need to stop all of the
-				 * appServers and throw an exception
-				 */
-				for (AppServer appServer : appServersToAdd) {
-					appServerRepository.delete(appServer);
-					appServer.stop();
-				}
-				throw new AddFailedException("Could not start all appServers");
-			}
-			
-			List<Long> appServerToWarmIds = new ArrayList<Long>();;
-			for (AppServer appServer : appServersToAdd) {
-				if (appServer.getPrewarmAppServers()) {
-					appServerToWarmIds.add(appServer.getId());
-				}
-			}
-			if ((appServerToWarmIds != null) && (appServerToWarmIds.size() > 0)) {
-				appServerService.warmAppServers(appServerToWarmIds);
-			}
+			configureAndStartAppServers(appServersToAdd, appInstance, appServers, webServers);
+			warmAppServers(appServersToAdd);
 			
 			/*
 			 * App Servers are up and warm. Configure all of the web servers that will be up.
@@ -284,301 +200,78 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			if ((numCurrentWebServers > 0) && ((numAppServersToAdd > 0) || (numAppServersToRemove > 0))) {
 				configureExistingWeb = true;
 			}
-
-			for (WebServer webServer : webServersToAdd) {
-				logger.debug("Configuring webServer on " + webServer.getHostHostName());
-				webServer.configure(defaultsService.getWebServerDefaults(), appInstance, webServerRepository.count(), appServers);				
-			}
-			if (configureExistingWeb) {
-				for (WebServer webServer : webServers) {
-					if (webServersToAdd.contains(webServer)) {
-						continue;
-					}
-					logger.debug("Configuring webServer on " + webServer.getHostHostName());
-					webServer.configure(defaultsService.getWebServerDefaults(), appInstance, webServerRepository.count(), appServers);
-				}
-			}
+			configureWebServers(webServersToAdd, webServers, configureExistingWeb, appServers, appInstance);
 
 			/*
 			 * Start all of the added web servers
 			 */
-			actionReturns.clear();
-			for (WebServer webServer : webServersToAdd) {
-				logger.debug("Starting webServer on " + webServer.getHostHostName());
-				actionReturns.add(executor.submit(new WebServerStarter(webServer)));
-			}
-			actionSucceeded = true;
-			for (Future<Boolean> actionSucceededFuture : actionReturns) {
-				try {
-					Boolean retVal = actionSucceededFuture.get();
-					actionSucceeded &= retVal;
-				} catch (ExecutionException e) {
-					Throwable e1 = e.getCause();
-					if (e1 != null) {
-						logger.warn("Getting start web server future returned an exception.  original: " + e.getCause().getMessage());
-					} else {
-						logger.warn("Getting start web server future returned an exception: " + e.getMessage());						
-					}
-					actionSucceeded = false;
-				}
-			}
-			if (!actionSucceeded) {
-				logger.warn("Could not start all web servers to be added: " + mergedRequest);
-				/*
-				 * If any of the adds failed, then need to stop all of the
-				 * appServers and webServers and throw an exception
-				 */
-				for (AppServer appServer : appServersToAdd) {
-					appServerRepository.delete(appServer);
-					appServer.stop();
-				}
-				for (WebServer webServer : webServersToAdd) {
-					webServerRepository.delete(webServer);
-					webServer.stop();
-				}
-				throw new AddFailedException("Could not start all webServers");
-			}
+			startWebServers(webServersToAdd, appServersToAdd);
 
-			if (configureExistingWeb) {
-				/*
-				 * Reload all of the active web servers, but not the ones that
-				 * were just added since they have the correct configuration
-				 */
-				actionReturns.clear();
-				for (WebServer webServer : webServers) {
-					if (webServersToAdd.contains(webServer)) {
-						continue;
-					}
-					logger.debug("Reloading webServer on " + webServer.getHostHostName());
-					actionReturns.add(executor.submit(new WebServerReloader(webServer)));
-				}
-				actionSucceeded = true;
-				for (Future<Boolean> actionSuceededFuture : actionReturns) {
-					try {
-						Boolean retVal = actionSuceededFuture.get();
-						actionSucceeded &= retVal;
-					} catch (ExecutionException e) {
-						Throwable e1 = e.getCause();
-						if (e1 != null) {
-							logger.warn("Getting reload web server future returned an exception.  original: " + e.getCause().getMessage());
-						} else {
-							logger.warn("Getting reload web server future returned an exception: " + e.getMessage());						
-						}
-						actionSucceeded = false;
-					}
-				}
-				if (!actionSucceeded) {
-					logger.warn("Could not reload all current web servers: " + mergedRequest);
-					/*
-					 * If any of the reloads failed, then need to stop all of
-					 * the appServers and webServers and throw an exception
-					 */
-					for (AppServer appServer : appServersToAdd) {
-						appServerRepository.delete(appServer);
-						appServer.stop();
-					}
-					for (WebServer webServer : webServersToAdd) {
-						webServerRepository.delete(webServer);
-						webServer.stop();
-					}
-					throw new AddFailedException("Could not reload all current webServers");
+			/*
+			 * Reconfigure and reload the load balancers if the tier below the load balancers is changing
+			 */
+			if (((numCurrentWebServers > 0) && ((numWebServersToAdd > 0) || (numWebServersToRemove > 0)))
+					|| ((numCurrentWebServers == 0) && ((numAppServersToAdd > 0) || (numAppServersToRemove > 0)))) {
+
+				configureAndReloadLbServers(lbServers, webServers, appServers, webServersToAdd, appServersToAdd);
+			}
+			
+			/*
+			 * Reload all of the web servers, but not the ones that were just added,
+			 * so that they get any updated config and drop connections so that the 
+			 * load-balancer can finish its reload.
+			 * Since we currently only change the number of web and app servers this
+			 * will always happen
+			 */
+			if ((numWebServersToAdd + numWebServersToRemove + numAppServersToAdd + numAppServersToRemove) > 0) {
+				reloadWebServers(webServersToRemove, webServersToAdd, appServersToAdd);
+				reloadWebServers(webServers, webServersToAdd, appServersToAdd);
+			}
+			
+			/*
+			 * Tell of the the app servers being removed to prepare for a shutdown.
+			 */
+			for (AppServer appServer: appServersToRemove) {
+				logger.debug("Telling app server with id  " + appServer.getId() 
+				+ " to prepareToShutdown ");
+				appServer.prepareToShutdown();				
+			}
+			
+			/*
+			 * Tell of the the app servers to release any outstanding async
+			 * requests so that the web servers can give up the connections.
+			 */
+			if ((numWebServersToAdd + numWebServersToRemove + numAppServersToAdd + numAppServersToRemove) > 0) {
+				for (AppServer appServer : appServers) {
+					logger.debug("Telling app server with id  " + appServer.getId() + " to release connections ");
+					appServer.releaseAsyncRequests();
 				}
 			}
 
 			/*
 			 * If we are removing any app servers we need to wait until the reload
 			 * is complete on the web servers so that we are sure that the app servers
-			 * are no longer handing any requests.
+			 * are no longer handling any requests.
 			 */
 			if (numAppServersToRemove > 0) {
-				/*
-				 * Tell of the the app servers being removed to prepare for a shutdown.
-				 */
-				for (AppServer appServer: appServersToRemove) {
-					logger.debug("Telling app server with id  " + appServer.getId() 
-					+ " to prepareToShutdown ");
-					appServer.prepareToShutdown();				
-				}
-				
-				actionReturns.clear();
-				for (WebServer webServer : webServers) {
-					if (webServersToAdd.contains(webServer)) {
-						continue;
-					}
-					logger.debug("Waiting for reload complete for webServer on " + webServer.getHostHostName());
-					actionReturns.add(executor.submit(new WebServerReloadWaiter(webServer)));
-				}
-				actionSucceeded = true;
-				for (Future<Boolean> actionSuceededFuture : actionReturns) {
-					try {
-						Boolean retVal = actionSuceededFuture.get();
-						actionSucceeded &= retVal;
-					} catch (ExecutionException e) {
-						Throwable e1 = e.getCause();
-						if (e1 != null) {
-							logger.warn("Getting wait for reload web server future returned an exception.  original: " + e.getCause().getMessage());
-						} else {
-							logger.warn("Getting wait for reload web server future returned an exception: " + e.getMessage());						
-						}
-						actionSucceeded = false;
-					}
-				}
-				if (!actionSucceeded) {
-					/*
-					 * If any of the reloads failed, then need to stop all of
-					 * the appServers and webServers and throw an exception
-					 */
-					for (AppServer appServer : appServersToAdd) {
-						appServerRepository.delete(appServer);
-						appServer.stop();
-					}
-					for (WebServer webServer : webServersToAdd) {
-						webServerRepository.delete(webServer);
-						webServer.stop();
-					}
-					throw new AddFailedException("Error waiting for web server reload to complete");
-				}
+				waitForWebServerReload(webServers, webServersToAdd, appServersToAdd);
 			}
 						
-
 			/*
-			 * Reconfigure and reload the load balancers if the tier below the load balancers has changed
+			 * If we are removing any web servers we need to wait until the
+			 * reload is complete on the lb servers so that we are sure that the
+			 * web servers are no longer handing any requests.
 			 */
-			if (((numCurrentWebServers > 0) && ((numWebServersToAdd > 0) || (numWebServersToRemove > 0)))
-					|| ((numCurrentWebServers == 0) && ((numAppServersToAdd > 0) || (numAppServersToRemove > 0)))) {
-
-				actionReturns.clear();
-				for (LbServer lbServer : lbServers) {
-					logger.debug("Configuring lbServer on " + lbServer.getHostHostName());
-					lbServer.configure(defaultsService.getLbServerDefaults(), lbServers.size(), appServers, webServers);
-					logger.debug("Reloading lbServer on " + lbServer.getHostHostName());
-					actionReturns.add(executor.submit(new LbServerReloader(lbServer)));
-				}
-				actionSucceeded = true;
-				for (Future<Boolean> actionSuceededFuture : actionReturns) {
-					try {
-						Boolean retVal = actionSuceededFuture.get();
-						actionSucceeded &= retVal;
-					} catch (ExecutionException e) {
-						Throwable e1 = e.getCause();
-						if (e1 != null) {
-							logger.warn("Getting reload lb server future returned an exception.  original: " + e.getCause().getMessage());
-						} else {
-							logger.warn("Getting reload lb server future returned an exception: " + e.getMessage());						
-						}
-						actionSucceeded = false;
-					}
-				}
-				if (!actionSucceeded) {
-					logger.warn("Could not reload all current load balancers: " + mergedRequest);
-					/*
-					 * If any of the reloads failed, then need to stop all of
-					 * the appServers and webServers and throw an exception
-					 */
-					for (AppServer appServer : appServersToAdd) {
-						appServerRepository.delete(appServer);
-						appServer.stop();
-					}
-					for (WebServer webServer : webServersToAdd) {
-						webServerRepository.delete(webServer);
-						webServer.stop();
-					}
-					throw new AddFailedException("Could not reload all LbServers");
-				}
-				
-				/*
-				 * If we are removing any web servers we need to wait until the reload
-				 * is complete on the lb servers so that we are sure that the web servers
-				 * are no longer handing any requests.
-				 */
-				if (numWebServersToRemove > 0) {
-					/*
-					 * To get the web servers to drop their connections, reload
-					 */
-					for (WebServer webServer : webServersToRemove) {
-						webServer.reload();
-					}
-					for (WebServer webServer : webServers) {
-						if (webServersToAdd.contains(webServer)) {
-							continue;
-						}
-						webServer.reload();
-					}
-					
-					/*
-					 * Tell of the the app servers to release any outstanding async requests
-					 * so that the web servers can give up the connections.
-					 */
-					for (AppServer appServer: appServers) {
-						logger.debug("Telling app server with id  " + appServer.getId() 
-						+ " to release connections ");
-						appServer.releaseAsyncRequests();				
-					}
-					
-					actionReturns.clear();
-					for (LbServer lbServer : lbServers) {
-						logger.debug("Waiting for reload complete for lbServer on " + lbServer.getHostHostName());
-						actionReturns.add(executor.submit(new LbServerReloadWaiter(lbServer)));
-					}
-					actionSucceeded = true;
-					for (Future<Boolean> actionSuceededFuture : actionReturns) {
-						try {
-							Boolean retVal = actionSuceededFuture.get();
-							actionSucceeded &= retVal;
-						} catch (ExecutionException e) {
-							Throwable e1 = e.getCause();
-							if (e1 != null) {
-								logger.warn("Getting wait for reload lb server future returned an exception.  original: " + e.getCause().getMessage());
-							} else {
-								logger.warn("Getting wait for reload lb server future returned an exception: " + e.getMessage());						
-							}
-							actionSucceeded = false;
-						}
-					}
-					if (!actionSucceeded) {
-						/*
-						 * If any of the reloads failed, then need to throw an exception
-						 */
-						throw new AddFailedException("Error waiting for web server reload to complete");
-					}
-				}							
-
+			if (numWebServersToRemove > 0) {
+				waitForLbServerReload(lbServers);
 			}
 			
 			/*
 			 * Stop all of the web servers and app servers to be removed and
 			 * delete them from the repository
 			 */
-			List<Future<Boolean>>  futureReturnList = new ArrayList<Future<Boolean>>();
-			for (AppServer appServer : appServersToRemove) {
-				logger.debug("Stopping appServer " + appServer.getId() + " on host " + appServer.getHostHostName());
-				futureReturnList.add(executor.submit(new Callable<Boolean>() {
+			stopWebAndAppServers(webServersToRemove, appServersToRemove);
 
-					@Override
-					public Boolean call() throws Exception {
-						appServer.stop();
-						return true;
-					}
-				}));
-			}
-			for (WebServer webServer : webServersToRemove) {
-				logger.debug("Stopping webServer " + webServer.getId() + " on host " + webServer.getHostHostName());
-				futureReturnList.add(executor.submit(new Callable<Boolean>() {
-
-					@Override
-					public Boolean call() throws Exception {
-						webServer.stop();
-						return true;
-					}
-				}));
-			}
-			for (Future<Boolean> future: futureReturnList) {
-				try {
-					future.get();
-				} catch (ExecutionException e) {
-					logger.warn("Exception during stop execution: " + e.getMessage() );
-				}
-			}
 			for (AppServer appServer : appServersToRemove) {
 				appServerRepository.delete(appServer.getId());
 			}
@@ -600,7 +293,387 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			configurationChangeLock.unlock();
 		}
 	}
+	
+	private boolean validateConfigurationRequest(long numAppServersToRemove, long numWebServersToRemove, 
+			long numAppServersToAdd, long numWebServersToAdd) throws IllegalConfigurationException {
+		long numCurrentAppServers = appServerRepository.count();
+		long numCurrentWebServers = webServerRepository.count();
+		long numCurrentLbServers = lbServerRepository.count();
+		
+		if (numAppServersToRemove >= numCurrentAppServers) {
+			logger.warn("Attempt to remove all running app servers.  numAppServersToRemove = " + numAppServersToRemove +
+						", numCurrentAppServers = " + numCurrentAppServers);
+			throw new IllegalConfigurationException("Can't remove all running app servers.");
+		}
+		if (numWebServersToRemove >= numCurrentWebServers) {
+			logger.warn("Attempt to remove all running web servers ");
+			throw new IllegalConfigurationException("Can't remove all running web servers.");
+		}
+		if ((numAppServersToAdd > 0) && (numCurrentWebServers <= 0) && (numCurrentLbServers <= 0)) {
+			logger.warn("Must be at least one web server or load-balancer to add an app server");
+			throw new IllegalConfigurationException("Must be at least one web server or load-balancer to add an app server.");
+		}
+		if ((numWebServersToAdd > 0) && (numCurrentLbServers <= 0)) {
+			logger.warn("Must be at least one load-balancer to add a web server");
+			throw new IllegalConfigurationException("Must be at least one load-balancer to add a web server.");
+		}
+		
+		return true;
+	}
 
+	private List<AppServer> chooseAppServersToRemove(long numAppServersToRemove, List<AppServer> appServers) {
+		List<AppServer> appServersToRemove = new ArrayList<AppServer>();
+		int index = 0;
+		while (numAppServersToRemove > 0) {
+			AppServer appServer = appServers.get(index);
+			if (appServer.isMaster()) {
+				logger.debug("chooseAppServersToRemove: App server on " + appServer.getHostHostName() + " is master.  Not removing.");
+				index++;
+				continue;
+			}
+			
+			logger.debug("chooseAppServersToRemove: Found app server to remove with id  " + appServer.getId() 
+				+ ", it is on host " + appServer.getHostHostName());
+			appServersToRemove.add(appServer);
+			index++;
+			numAppServersToRemove--;
+		}
+		return appServersToRemove;
+	}
+	
+	private List<WebServer> chooseWebServersToRemove(long numWebServersToRemove, List<WebServer> webServers) {
+		List<WebServer> webServersToRemove = new ArrayList<WebServer>();
+		int index = 0;
+		while (numWebServersToRemove > 0) {
+			WebServer webServer = webServers.get(index);
+			logger.debug("Found web server to remove with id  " + webServer.getId()
+				+ ", it is on host " + webServer.getHostHostName());
+			webServersToRemove.add(webServer);
+			numWebServersToRemove--;
+			index++;
+		}
+		
+		return webServersToRemove;
+
+	}
+	
+	private void configureAndStartAppServers(List<AppServer> appServersToAdd, AppInstance appInstance, List<AppServer> appServers, List<WebServer> webServers) throws ServiceNotFoundException, IOException, InterruptedException {
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (AppServer appServer : appServersToAdd) {
+			logger.debug("Configuring appServer on " + appServer.getHostHostName());
+			appServer.configure(defaultsService.getAppServerDefaults(), appInstance, appServers, webServers, dbServerRepository.findAll(),
+					nosqlServerRepository.findAll(), msgServerRepository.findAll(), coordinationServerRepository.findAll());
+
+			actionReturns.add(executor.submit(new AppServerStarter(appServer)));
+		}
+
+		Boolean actionSucceeded = true;
+		for (Future<Boolean> actionSucceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSucceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting start app server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting start app server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			/*
+			 * If any of the adds failed, then need to stop all of the
+			 * appServers and throw an exception
+			 */
+			for (AppServer appServer : appServersToAdd) {
+				appServerRepository.delete(appServer);
+				appServer.stop();
+			}
+			try {
+				throw new AddFailedException("Could not start all appServers");
+			} catch (AddFailedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+	}
+	
+	private void warmAppServers(List<AppServer> appServersToAdd) throws ServiceNotFoundException {
+		List<Long> appServerToWarmIds = new ArrayList<Long>();;
+		for (AppServer appServer : appServersToAdd) {
+			if (appServer.getPrewarmAppServers()) {
+				appServerToWarmIds.add(appServer.getId());
+			}
+		}
+		if ((appServerToWarmIds != null) && (appServerToWarmIds.size() > 0)) {
+			appServerService.warmAppServers(appServerToWarmIds);
+		}
+	}
+	
+	private void configureWebServers(List<WebServer> webServersToAdd, List<WebServer> webServers, boolean configureExistingWeb,
+			List<AppServer> appServers, AppInstance appInstance) throws IOException, InterruptedException {
+		for (WebServer webServer : webServersToAdd) {
+			logger.debug("Configuring webServer on " + webServer.getHostHostName());
+			webServer.configure(defaultsService.getWebServerDefaults(), appInstance, webServerRepository.count(), appServers);				
+		}
+		if (configureExistingWeb) {
+			for (WebServer webServer : webServers) {
+				if (webServersToAdd.contains(webServer)) {
+					continue;
+				}
+				logger.debug("Configuring webServer on " + webServer.getHostHostName());
+				webServer.configure(defaultsService.getWebServerDefaults(), appInstance, webServerRepository.count(), appServers);
+			}
+		}
+
+	}
+	
+	private void startWebServers(List<WebServer> webServersToAdd, List<AppServer> appServersToAdd) throws InterruptedException, IOException, AddFailedException {
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (WebServer webServer : webServersToAdd) {
+			logger.debug("Starting webServer on " + webServer.getHostHostName());
+			actionReturns.add(executor.submit(new WebServerStarter(webServer)));
+		}
+		Boolean actionSucceeded = true;
+		for (Future<Boolean> actionSucceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSucceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting start web server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting start web server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			logger.warn("Could not start all web servers to be added ");
+			/*
+			 * If any of the adds failed, then need to stop all of the
+			 * appServers and webServers and throw an exception
+			 */
+			for (AppServer appServer : appServersToAdd) {
+				appServerRepository.delete(appServer);
+				appServer.stop();
+			}
+			for (WebServer webServer : webServersToAdd) {
+				webServerRepository.delete(webServer);
+				webServer.stop();
+			}
+			throw new AddFailedException("Could not start all webServers");
+		}
+
+	}
+	
+	private void reloadWebServers(List<WebServer> webServersToReload, List<WebServer> webServersToIgnore,
+			List<AppServer> appServersToAdd) throws InterruptedException, IOException, AddFailedException {
+		
+		if ((webServersToReload == null) || webServersToReload.isEmpty()) {
+			return;
+		}
+		
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (WebServer webServer : webServersToReload) {
+			if ((webServersToIgnore != null) && (webServersToIgnore.contains(webServer))) {
+				continue;
+			}
+			logger.debug("Reloading webServer on " + webServer.getHostHostName());
+			actionReturns.add(executor.submit(new WebServerReloader(webServer)));
+		}
+		boolean actionSucceeded = true;
+		for (Future<Boolean> actionSuceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSuceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting reload web server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting reload web server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			logger.warn("Could not reload all current web servers");
+			/*
+			 * If any of the reloads failed, then need to stop all of
+			 * the appServers and webServers and throw an exception
+			 */
+			for (AppServer appServer : appServersToAdd) {
+				appServerRepository.delete(appServer);
+				appServer.stop();
+			}
+			if (webServersToIgnore != null) {
+				for (WebServer webServer : webServersToIgnore) {
+					webServerRepository.delete(webServer);
+					webServer.stop();
+				}
+			}
+			throw new AddFailedException("Could not reload all current webServers");
+		}
+
+	}
+	
+	private void waitForWebServerReload(List<WebServer> webServers, List<WebServer> webServersToAdd, 
+			List<AppServer> appServersToAdd) throws InterruptedException, IOException, AddFailedException {
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (WebServer webServer : webServers) {
+			if (webServersToAdd.contains(webServer)) {
+				continue;
+			}
+			logger.debug("Waiting for reload complete for webServer on " + webServer.getHostHostName());
+			actionReturns.add(executor.submit(new WebServerReloadWaiter(webServer)));
+		}
+		boolean actionSucceeded = true;
+		for (Future<Boolean> actionSuceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSuceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting wait for reload web server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting wait for reload web server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			/*
+			 * If any of the reloads failed, then need to stop all of
+			 * the appServers and webServers and throw an exception
+			 */
+			for (AppServer appServer : appServersToAdd) {
+				appServerRepository.delete(appServer);
+				appServer.stop();
+			}
+			for (WebServer webServer : webServersToAdd) {
+				webServerRepository.delete(webServer);
+				webServer.stop();
+			}
+			throw new AddFailedException("Error waiting for web server reload to complete");
+		}
+
+	}
+	
+	private void configureAndReloadLbServers(List<LbServer> lbServers, List<WebServer> webServers,
+			List<AppServer> appServers, List<WebServer> webServersToAdd, 
+			List<AppServer> appServersToAdd) throws IOException, InterruptedException, AddFailedException {
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (LbServer lbServer : lbServers) {
+			logger.debug("Configuring lbServer on " + lbServer.getHostHostName());
+			lbServer.configure(defaultsService.getLbServerDefaults(), lbServers.size(), appServers, webServers);
+			logger.debug("Reloading lbServer on " + lbServer.getHostHostName());
+			actionReturns.add(executor.submit(new LbServerReloader(lbServer)));
+		}
+		boolean actionSucceeded = true;
+		for (Future<Boolean> actionSuceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSuceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting reload lb server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting reload lb server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			logger.warn("Could not reload all current load balancers");
+			/*
+			 * If any of the reloads failed, then need to stop all of
+			 * the appServers and webServers and throw an exception
+			 */
+			for (AppServer appServer : appServersToAdd) {
+				appServerRepository.delete(appServer);
+				appServer.stop();
+			}
+			for (WebServer webServer : webServersToAdd) {
+				webServerRepository.delete(webServer);
+				webServer.stop();
+			}
+			throw new AddFailedException("Could not reload all LbServers");
+		}
+
+	}
+	
+	private void waitForLbServerReload(List<LbServer> lbServers) throws InterruptedException, AddFailedException {
+		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+		for (LbServer lbServer : lbServers) {
+			logger.debug("Waiting for reload complete for lbServer on " + lbServer.getHostHostName());
+			actionReturns.add(executor.submit(new LbServerReloadWaiter(lbServer)));
+		}
+		boolean actionSucceeded = true;
+		for (Future<Boolean> actionSuceededFuture : actionReturns) {
+			try {
+				Boolean retVal = actionSuceededFuture.get();
+				actionSucceeded &= retVal;
+			} catch (ExecutionException e) {
+				Throwable e1 = e.getCause();
+				if (e1 != null) {
+					logger.warn("Getting wait for reload lb server future returned an exception.  original: " + e.getCause().getMessage());
+				} else {
+					logger.warn("Getting wait for reload lb server future returned an exception: " + e.getMessage());						
+				}
+				actionSucceeded = false;
+			}
+		}
+		if (!actionSucceeded) {
+			/*
+			 * If any of the reloads failed, then need to throw an exception
+			 */
+			throw new AddFailedException("Error waiting for web server reload to complete");
+		}
+
+	}
+	
+	private void stopWebAndAppServers(List<WebServer> webServersToRemove, List<AppServer> appServersToRemove) throws InterruptedException {
+		List<Future<Boolean>>  futureReturnList = new ArrayList<Future<Boolean>>();
+		for (AppServer appServer : appServersToRemove) {
+			logger.debug("Stopping appServer " + appServer.getId() + " on host " + appServer.getHostHostName());
+			futureReturnList.add(executor.submit(new Callable<Boolean>() {
+
+				@Override
+				public Boolean call() throws Exception {
+					appServer.stop();
+					return true;
+				}
+			}));
+		}
+		for (WebServer webServer : webServersToRemove) {
+			logger.debug("Stopping webServer " + webServer.getId() + " on host " + webServer.getHostHostName());
+			futureReturnList.add(executor.submit(new Callable<Boolean>() {
+
+				@Override
+				public Boolean call() throws Exception {
+					webServer.stop();
+					return true;
+				}
+			}));
+		}
+		for (Future<Boolean> future: futureReturnList) {
+			try {
+				future.get();
+			} catch (ExecutionException e) {
+				logger.warn("Exception during stop execution: " + e.getMessage() );
+			}
+		}
+
+		
+	}
+	
 	private class AppServerStarter implements Callable<Boolean> {
 		private AppServer appServer;
 

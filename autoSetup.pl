@@ -64,7 +64,7 @@ sub setServiceManager {
 }
 
 sub forceLicenseAccept {
-	open( my $fileout, "/root/weathervane/COPYRIGHT.txt" ) or die "Can't open file /root/weathervane/COPYRIGHT.txt: $!\n";
+	open( my $fileout, "/root/weathervane/Notice.txt" ) or die "Can't open file /root/weathervane/Notice.txt: $!\n";
 	while (my $inline = <$fileout>) {
 		print $inline;
 	}

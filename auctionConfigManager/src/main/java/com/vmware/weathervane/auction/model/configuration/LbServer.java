@@ -143,7 +143,7 @@ public class LbServer extends Service {
 //		output = SshUtils.SshExec(hostname, "iptables -I INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");
 //		Thread.sleep(100);
 		
-		StringBuilder cmdStringBuilder = new StringBuilder("/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -D -p /run/haproxy.pid");
+		StringBuilder cmdStringBuilder = new StringBuilder("/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -D -p /run/haproxy.pid -sf");
 		
 		String pid = SshUtils.SshExec(hostname, "cat /run/haproxy.pid");
 		logger.debug("reload: pid from ssh = " + pid);
@@ -152,7 +152,7 @@ public class LbServer extends Service {
 		for (int i = 0; i < pids.length; i++) {
 			Integer intPid = Integer.decode(pids[i]);
 			_pids.add(intPid);
-			cmdStringBuilder.append(" -sf " + intPid.toString());
+			cmdStringBuilder.append(" " + intPid.toString());
 		}
 		
 		logger.debug("reload LB on host " + hostname + " command: " + cmdStringBuilder.toString());
@@ -197,9 +197,9 @@ public class LbServer extends Service {
 
 		String psList = SshUtils.SshExec(hostname, "ps ax | grep \"/usr/sbin/haproxy\"  | grep -v grep");
 
-		logger.debug("retrieveRunningPids for lb server on  " + hostname + " returned: " + psList);
+		logger.debug("retrieveRunningPids for lb server on  " + hostname + " returned: \n" + psList);
 
-		Pattern pidPattern = Pattern.compile("(\\d+)\\s+.*:.*/usr/sbin/haproxy");
+		Pattern pidPattern = Pattern.compile("^\\s*(\\d+)\\s+.*:.*/usr/sbin/haproxy.*$", Pattern.MULTILINE);
 
 		Matcher pidMatcher = pidPattern.matcher(psList);
 

@@ -229,7 +229,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			}
 			
 			/*
-			 * Tell of the the app servers being removed to prepare for a shutdown.
+			 * Tell all of the the app servers being removed to prepare for a shutdown.
 			 */
 			for (AppServer appServer: appServersToRemove) {
 				logger.debug("Telling app server with id  " + appServer.getId() 
@@ -704,7 +704,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerStarter.  Starting lbServer " + webServer.getId());
+			logger.debug("WebServerStarter.  Starting webServer " + webServer.getId());
 			try {
 				return webServer.start(defaultsService.getWebServerDefaults());
 			} catch (InterruptedException e) {
@@ -723,7 +723,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerReloader.  Reloading lbServer " + webServer.getId());
+			logger.debug("WebServerReloader.  Reloading webServer " + webServer.getId());
 			try {
 				return webServer.reload();
 			} catch (InterruptedException e) {
@@ -744,7 +744,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 		@Override
 		public Boolean call() {
-			logger.debug("WebServerReloadWaiter.  Reloading lbServer " + webServer.getId());
+			logger.debug("WebServerReloadWaiter.  Reloading webServer " + webServer.getId());
 			try {
 				return webServer.waitForReloadComplete();
 			} catch (InterruptedException e) {

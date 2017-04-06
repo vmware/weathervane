@@ -256,7 +256,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 				logger.info("Joining distributed group " + auctionManagementGroupName);
 				groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
 			}
-		}, 60, TimeUnit.SECONDS);
+		}, 240, TimeUnit.SECONDS);
 		
 		/*
 		 * Register a callback for when this node is made leader

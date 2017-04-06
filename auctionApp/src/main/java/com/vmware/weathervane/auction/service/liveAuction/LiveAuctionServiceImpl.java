@@ -226,45 +226,55 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		_clientUpdateExecutorService.setRemoveOnCancelPolicy(true);
 
 		/*
-		 * Create a node to hold the auction assignment for this node
-		 */
-		try {
-			logger.info("Creating node in auctionAssignmentMap");
-			groupMembershipService.createNode(auctionAssignmentMapName, nodeNumber, "");
-		} catch (Exception e1) {
-			logger.error("Couldn't create a node " + nodeNumber + " in node " + auctionAssignmentMapName
-					+ ": " + e1.getMessage());
-			//System.exit(1);
-		}
-		
-		/*
-		 * Register a callback to listen for changes in the auctions assigned to
-		 * this node sent to the group. When the auction assignment changes,
-		 * update the auctioneers running on this node
-		 */
-		logger.info("Registering change callback for assigned auctions");
-		groupMembershipService.registerContentsChangedCallback(auctionAssignmentMapName, nodeNumber, new AuctionAssignmentChangedHandler());
-		_currentAuctionAssignment = new LinkedList<Long>();
-		
-		/*
 		 * Schedule a task to join the auction management distributed group.
 		 * Don't join immediately so we are sure that the node is fully started.
 		 */
 		_groupMembershipExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
-				logger.info("Joining distributed group " + auctionManagementGroupName);
-				groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
+
+				try {
+					/*
+					 * Create a node to hold the auction assignment for this
+					 * node
+					 */
+					logger.info("Creating node in auctionAssignmentMap");
+					groupMembershipService.createNode(auctionAssignmentMapName, nodeNumber, "");
+
+					/*
+					 * Register a callback to listen for changes in the auctions
+					 * assigned to this node sent to the group. When the auction
+					 * assignment changes, update the auctioneers running on
+					 * this node
+					 */
+					logger.info("Registering change callback for assigned auctions");
+					groupMembershipService.registerContentsChangedCallback(auctionAssignmentMapName, nodeNumber,
+							new AuctionAssignmentChangedHandler());
+					_currentAuctionAssignment = new LinkedList<Long>();
+
+					logger.info("Joining distributed group " + auctionManagementGroupName);
+					groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
+
+					/*
+					 * Register a callback for when this node is made leader
+					 */
+					logger.info("Registering callback for taking leadership of group " + auctionManagementGroupName);
+					_takeLeadershipHandler = new TakeLeadershipHandler();
+					groupMembershipService.registerTakeLeadershipCallback(auctionManagementGroupName,
+							_takeLeadershipHandler);
+					
+				} catch (Exception e1) {
+					logger.error("Couldn't set up group membership.  Not handling auctions: " + e1.getMessage());
+					/*
+					 * leave all groups
+					 */
+					groupMembershipService.cleanUp();
+				}
+
 			}
+
 		}, 240, TimeUnit.SECONDS);
 		
-		/*
-		 * Register a callback for when this node is made leader
-		 */
-		logger.info("Registering callback for taking leadership of group " + auctionManagementGroupName);
-		_takeLeadershipHandler = new TakeLeadershipHandler();
-		groupMembershipService.registerTakeLeadershipCallback(auctionManagementGroupName, _takeLeadershipHandler);	
-
 		// Create ClientBidUpdaters for auctions that are already running
 		logger.info("Create ClientBidUpdaters for auctions that are already running");
 		List<HighBid> highBids = _highBidDao.getActiveHighBids();

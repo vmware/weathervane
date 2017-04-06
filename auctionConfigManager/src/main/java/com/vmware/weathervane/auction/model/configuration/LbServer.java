@@ -142,21 +142,21 @@ public class LbServer extends Service {
 // 		output = SshUtils.SshExec(hostname, "iptables -I INPUT -p tcp --dport " + getHttpPort() + " --syn -j DROP"); 
 //		output = SshUtils.SshExec(hostname, "iptables -I INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");
 //		Thread.sleep(100);
+		
+		StringBuilder cmdStringBuilder = new StringBuilder("/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -D -p /run/haproxy.pid");
+		
 		String pid = SshUtils.SshExec(hostname, "cat /run/haproxy.pid");
 		logger.debug("reload: pid from ssh = " + pid);
 		String[] pids = pid.split("\\r|\\n");
 		_pids.clear();
-		pid = "";
 		for (int i = 0; i < pids.length; i++) {
 			Integer intPid = Integer.decode(pids[i]);
 			_pids.add(intPid);
-			pid =  pid + intPid.toString();
-			if (i < (pids.length - 1)) {
-				pid = pid + ",";
-			}
+			cmdStringBuilder.append(" -sf " + intPid.toString());
 		}
 		
-		output = SshUtils.SshExec(hostname, "/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -sf " + pid);
+		logger.debug("reload LB on host " + hostname + " command: " + cmdStringBuilder.toString());
+		output = SshUtils.SshExec(hostname, cmdStringBuilder.toString());
 		logger.debug("Result of reload of load balancer on " + hostname + " is: " + output);
 //		output = SshUtils.SshExec(hostname, "iptables -D INPUT -p tcp --dport " + getHttpPort() + " --syn -j DROP");
 //		output = SshUtils.SshExec(hostname, "iptables -D INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");

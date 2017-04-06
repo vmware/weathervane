@@ -247,10 +247,16 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		_currentAuctionAssignment = new LinkedList<Long>();
 		
 		/*
-		 * Join the auction management distributed group
+		 * Schedule a task to join the auction management distributed group.
+		 * Don't join immediately so we are sure that the node is fully started.
 		 */
-		logger.info("Joining distributed group " + auctionManagementGroupName);
-		groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
+		_groupMembershipExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				logger.info("Joining distributed group " + auctionManagementGroupName);
+				groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
+			}
+		}, 240, TimeUnit.SECONDS);
 		
 		/*
 		 * Register a callback for when this node is made leader

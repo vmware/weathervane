@@ -134,8 +134,8 @@ public class ClientBidUpdater {
 			_currentItemId = itemId;
 		}
 
-		Queue<NextBidQueueEntry> _itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-		if ((_itemNextBidRequestQueue == null) || (_itemNextBidRequestQueue.peek() == null)) {
+		Queue<NextBidQueueEntry> itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
+		if ((itemNextBidRequestQueue == null) || (itemNextBidRequestQueue.peek() == null)) {
 			/*
 			 * No client is waiting for an update for this item
 			 */
@@ -175,7 +175,7 @@ public class ClientBidUpdater {
 		if (((highBidRepresentation != null)
 				&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue()) || highBidRepresentation
 						.getBiddingState().equals(BiddingState.SOLD)))
-				|| _shuttingDown) {
+				|| _shuttingDown || _release) {
 		
 			/*
 			 * If there is a more recent high bid, or if the bidding is complete

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class LbServer extends Service {
 	private Integer httpsInternalPort;
 	private Boolean haproxyTerminateTLS;
 
-	
+	@ElementCollection
 	private List<Integer> _pids = new ArrayList<Integer>();
 
 	public String getLbServerImpl() {

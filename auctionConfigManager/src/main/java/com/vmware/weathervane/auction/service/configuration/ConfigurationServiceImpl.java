@@ -213,7 +213,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			if (((numCurrentWebServers > 0) && ((numWebServersToAdd > 0) || (numWebServersToRemove > 0)))
 					|| ((numCurrentWebServers == 0) && ((numAppServersToAdd > 0) || (numAppServersToRemove > 0)))) {
 
-				configureAndReloadLbServers(lbServers, webServers, appServers, webServersToAdd, appServersToAdd);
+				configureAndReloadLbServers(lbServers, webServers, appServers);
 			}
 			
 			/*
@@ -533,47 +533,14 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 	}
 	
 	private void configureAndReloadLbServers(List<LbServer> lbServers, List<WebServer> webServers,
-			List<AppServer> appServers, List<WebServer> webServersToAdd, 
-			List<AppServer> appServersToAdd) throws IOException, InterruptedException, AddFailedException {
-		List<Future<Boolean>> actionReturns = new ArrayList<Future<Boolean>>();
+			List<AppServer> appServers) throws IOException, InterruptedException, AddFailedException {
+		
 		for (LbServer lbServer : lbServers) {
 			logger.debug("Configuring lbServer on " + lbServer.getHostHostName());
 			lbServer.configure(defaultsService.getLbServerDefaults(), lbServers.size(), appServers, webServers);
 			logger.debug("Reloading lbServer on " + lbServer.getHostHostName());
-			actionReturns.add(executor.submit(new LbServerReloader(lbServer)));
+			lbServer.reload();
 		}
-		boolean actionSucceeded = true;
-		for (Future<Boolean> actionSuceededFuture : actionReturns) {
-			try {
-				Boolean retVal = actionSuceededFuture.get();
-				actionSucceeded &= retVal;
-			} catch (ExecutionException e) {
-				Throwable e1 = e.getCause();
-				if (e1 != null) {
-					logger.warn("Getting reload lb server future returned an exception.  original: " + e.getCause().getMessage());
-				} else {
-					logger.warn("Getting reload lb server future returned an exception: " + e.getMessage());						
-				}
-				actionSucceeded = false;
-			}
-		}
-		if (!actionSucceeded) {
-			logger.warn("Could not reload all current load balancers");
-			/*
-			 * If any of the reloads failed, then need to stop all of
-			 * the appServers and webServers and throw an exception
-			 */
-			for (AppServer appServer : appServersToAdd) {
-				appServerRepository.delete(appServer);
-				appServer.stop();
-			}
-			for (WebServer webServer : webServersToAdd) {
-				webServerRepository.delete(webServer);
-				webServer.stop();
-			}
-			throw new AddFailedException("Could not reload all LbServers");
-		}
-
 	}
 	
 	private void waitForLbServerReload(List<LbServer> lbServers) throws InterruptedException, AddFailedException {
@@ -681,27 +648,6 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
 	}
 
-	private class WebServerReloader implements Callable<Boolean> {
-		private WebServer webServer;
-
-		protected WebServerReloader(WebServer webServer) {
-			this.webServer = webServer;
-		}
-
-		@Override
-		public Boolean call() {
-			logger.debug("WebServerReloader.  Reloading webServer " + webServer.getId());
-			try {
-				return webServer.reload();
-			} catch (InterruptedException e) {
-				return false;
-			} catch (IOException e) {
-				return false;
-			}
-		}
-
-	}
-
 	private class WebServerReloadWaiter implements Callable<Boolean> {
 		private WebServer webServer;
 
@@ -714,27 +660,6 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			logger.debug("WebServerReloadWaiter.  Reloading webServer " + webServer.getId());
 			try {
 				return webServer.waitForReloadComplete();
-			} catch (InterruptedException e) {
-				return false;
-			} catch (IOException e) {
-				return false;
-			}
-		}
-
-	}
-
-	private class LbServerReloader implements Callable<Boolean> {
-		private LbServer lbServer;
-
-		protected LbServerReloader(LbServer lbServer) {
-			this.lbServer = lbServer;
-		}
-
-		@Override
-		public Boolean call() {
-			logger.debug("LbServerReloader.  Reloading lbServer " + lbServer.getId());
-			try {
-				return lbServer.reload();
 			} catch (InterruptedException e) {
 				return false;
 			} catch (IOException e) {

@@ -48,6 +48,7 @@ defaults
     timeout http-keep-alive 30s
     timeout check           10s
     timeout tunnel 			15m
+    tune.ssl.default-dh-param 1024
     maxconn	%s
 
 #---------------------------------------------------------------------

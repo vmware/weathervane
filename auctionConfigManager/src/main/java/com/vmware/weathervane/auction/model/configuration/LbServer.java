@@ -50,7 +50,7 @@ public class LbServer extends Service {
 	private Boolean haproxyTerminateTLS;
 
 	
-	private Integer _pid;
+	private List<Integer> _pids = new ArrayList<Integer>();
 
 	public String getLbServerImpl() {
 		return lbServerImpl;
@@ -142,12 +142,20 @@ public class LbServer extends Service {
 //		output = SshUtils.SshExec(hostname, "iptables -I INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");
 //		Thread.sleep(100);
 		String pid = SshUtils.SshExec(hostname, "cat /run/haproxy.pid");
-		pid = pid.replaceAll("\\r|\\n", ",");
-		if (pid.endsWith(",")) {
-			pid = pid.substring(0, pid.length() - 1);
+		logger.debug("reload: pid from ssh = " + pid);
+		String[] pids = pid.split("\\r|\\n");
+		_pids.clear();
+		pid = "";
+		for (int i = 0; i < pids.length; i++) {
+			Integer intPid = Integer.decode(pids[i]);
+			_pids.add(intPid);
+			pid =  pid + intPid.toString();
+			if (i < (pids.length - 1)) {
+				pid = pid + ",";
+			}
 		}
-		_pid = Integer.decode(pid);
-		output = SshUtils.SshExec(hostname, "/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -sf " + _pid.toString());
+		
+		output = SshUtils.SshExec(hostname, "/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -sf " + pid);
 		logger.debug("Result of reload of load balancer on " + hostname + " is: " + output);
 //		output = SshUtils.SshExec(hostname, "iptables -D INPUT -p tcp --dport " + getHttpPort() + " --syn -j DROP");
 //		output = SshUtils.SshExec(hostname, "iptables -D INPUT -p tcp --dport " + getHttpsPort() + " --syn -j DROP");
@@ -157,7 +165,7 @@ public class LbServer extends Service {
 
 	public Boolean waitForReloadComplete() throws InterruptedException {
 		String hostname = getHostHostName();
-		logger.debug("Wait for reload of lb server on " + hostname + ", old pid = " + _pid);
+		logger.debug("Wait for reload of lb server on " + hostname);
 
 		/*
 		 * Wait until previous haproxy process has finished before
@@ -167,9 +175,12 @@ public class LbServer extends Service {
 		do {
 			List<Integer> runningPids = retrieveRunningPids();
 			reloadFinished = true;
-			if (runningPids.contains(_pid)) {
-				logger.debug("For reload of lb server on " + hostname + ", old processes still up.");
-				reloadFinished = false;
+			for (Integer pid : _pids) {
+				if (runningPids.contains(pid)) {
+					logger.debug("For reload of lb server on " + hostname + ", old processes still up.");
+					reloadFinished = false;
+					break;
+				}
 			}
 			if (!reloadFinished) {
 				Thread.sleep(15000);

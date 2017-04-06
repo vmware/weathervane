@@ -199,7 +199,7 @@ public class LbServer extends Service {
 
 		logger.debug("retrieveRunningPids for lb server on  " + hostname + " returned: \n" + psList);
 
-		Pattern pidPattern = Pattern.compile("^\\s*(\\d+)\\s+.*:.*/usr/sbin/haproxy$", Pattern.MULTILINE);
+		Pattern pidPattern = Pattern.compile("^\\s*(\\d+)\\s+.*:.*/usr/sbin/haproxy.*$", Pattern.MULTILINE);
 
 		Matcher pidMatcher = pidPattern.matcher(psList);
 

@@ -24,6 +24,7 @@ global
     maxconn	%s
     user        haproxy
     group       haproxy
+    tune.ssl.default-dh-param 1024
     nbproc %s
     daemon
 

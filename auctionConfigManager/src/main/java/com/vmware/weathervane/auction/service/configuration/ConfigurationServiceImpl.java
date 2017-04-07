@@ -257,7 +257,17 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			 * are no longer handling any requests.
 			 */
 			if (numAppServersToRemove > 0) {
+				/*
+				 * Want the leaving app servers to have at least 30 seconds to 
+				 * prepareToShutdown before actually shutting them down.
+				 */
+				long delayMillis = System.currentTimeMillis();
 				waitForWebServerReload(webServers, webServersToAdd, appServersToAdd);
+				delayMillis = System.currentTimeMillis() - delayMillis;
+				if (delayMillis < 30000) {
+					Thread.sleep(30000 - delayMillis);
+				}
+				
 			}
 						
 			/*

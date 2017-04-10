@@ -82,7 +82,7 @@ sub prepareData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $reloadDb       = $self->reloadDb;
+	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 

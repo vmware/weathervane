@@ -25,8 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -36,8 +34,8 @@ import com.vmware.weathervane.auction.data.dao.AuctionDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Bid;
-import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Bid.BidState;
+import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.data.repository.BidRepository;
 import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
@@ -55,12 +53,6 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 	private static final String highBidRoutingKey = "highBid.";
 	private static final String auctionEndedRoutingKey = "auctionEnded.";
 
-	/*
-	 * The longest that an auction can go (in seconds) without a bid before the
-	 * state of the current item is changed to either LASTCALL or SOLD
-	 */
-	private int auctionMaxIdleTime = 30;
-
 	private Long _auctionId;
 
 	private ScheduledExecutorService _scheduledExecutorService = null;
@@ -76,10 +68,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 	private BidRepository _bidRepository;
 	private AuctionDao _auctionDao;
 	private RabbitTemplate _liveAuctionRabbitTemplate;
-
+	
+	private long _auctionMaxIdleTime;
+	private boolean _shuttingDown;
+	
 	public AuctioneerImpl(Long auctionId, ScheduledExecutorService scheduledExecutorService,
 			AuctioneerTx auctioneerTx, HighBidDao highBidDao, BidRepository bidRepository,
-			AuctionDao auctionDao, RabbitTemplate rabbitTemplate) {
+			AuctionDao auctionDao, RabbitTemplate rabbitTemplate, long auctionMaxIdleTime) {
 		logger.info("Starting auction with auctionId " + auctionId);
 		_auctionId = auctionId;
 		_scheduledExecutorService = scheduledExecutorService;
@@ -88,6 +83,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 		_bidRepository = bidRepository;
 		_auctionDao = auctionDao;
 		_liveAuctionRabbitTemplate = rabbitTemplate;
+		_auctionMaxIdleTime = auctionMaxIdleTime;
 
 		// Get the latest info about the auction
 		Auction theAuction = _auctionDao.get(_auctionId);
@@ -129,18 +125,85 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			 * handle bids
 			 */
 			_highBid = _highBidDao.getActiveHighBid(_auctionId);
+						
+			/*
+			 * We don't know how long it took to switch ownership of this auction, so
+			 * resend the current high bid, with an updated nextBidCount, in order to be sure that
+			 * there are no timeouts waiting for a next bid
+			 */
+			Bid newBid = new Bid();
+			newBid.setAmount(_highBid.getAmount());
+			newBid.setAuctionId(_highBid.getAuctionId());
+			newBid.setBidderId(_highBid.getBidderId());
+			newBid.setItemId(_highBid.getItemId());
+			newBid.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
+			newBid.setReceivingNode(nodeNumber);
+			newBid.setState(BidState.PROVISIONALLYHIGH);
+			logger.debug("newBidMessageQueue saving provisionallyHigh bid in bid repository: "
+					+ newBid);
+			newBid = _bidRepository.save(newBid);
 
-			// Schedule a watchdog task
-			_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(new WatchdogTask(),
-					auctionMaxIdleTime, TimeUnit.SECONDS);
-
+			try {
+				_highBid = _auctioneerTx.postNewHighBidTx(newBid);
+				logger.debug("Saved new highBid: " + _highBid.toString());
+			} catch (InvalidStateException e) {
+				/*
+				 * Get this if the user doesn't exist. Shouldn't get
+				 * here because the user's authentication is checked
+				 * in the controller
+				 */
+				logger.debug("Got InvalidStateException when saving updated high-bid: " + e.getMessage());
+				newBid.setState(BidState.NOSUCHUSER);
+				_bidRepository.save(newBid);
+			} catch (Exception e) {
+				logger.debug("Caught exception " + e.getCause() + " from postNewHighBid: " + e.getMessage());
+			}
+			
+			propagateNewHighBid(_highBid);
+			
+			boolean auctionCompleted = false;
+			long watchdogStartDelay = _auctionMaxIdleTime * 1000; 
+			if (_highBid.getState() == HighBidState.SOLD) {
+				/*
+				 * The last thing that the previous manager did was mark the item
+				 * as sold.  Need to start the next item
+				 */
+				auctionCompleted = startNextItem(_highBid);
+			} else if (_highBid.getState() == HighBidState.LASTCALL) {
+				/*
+				 * Only want to have waited auctionMaxIdleTime from lastcall start
+				 */
+				long lastBidTimeMillis = _highBid.getCurrentBidTime().getTime();
+				long now = System.currentTimeMillis();
+				long delay = now - lastBidTimeMillis;
+				if (delay > watchdogStartDelay) {
+					watchdogStartDelay = 0;
+				} else {
+					watchdogStartDelay -= delay;					
+				}
+			}
+			
+			if (!auctionCompleted) {
+				// Schedule a watchdog task
+				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(new WatchdogTask(),
+						watchdogStartDelay, TimeUnit.MILLISECONDS);
+			}
 		}
 	}
 
 	@Override
+	public void shutdown() {
+		logger.debug("shutdown for auctioneer for auctionId " + _auctionId);
+		
+		this._shuttingDown = true;	
+		this.cleanup();
+	}
+	
+	@Override
 	public void cleanup() {
 		
 		if (_watchdogTaskScheduledFuture != null) {
+			logger.debug("Cleanup cancelling watchdogTask for auctionId " + _auctionId);
 			_watchdogTaskScheduledFuture.cancel(true);
 		}
 	}
@@ -148,7 +211,19 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 	@Override
 	public void handleNewBidMessage(BidRepresentation theBid) {
 		logger.debug("handleNewBidMessage before synchronized got new bid " + theBid);
-
+		
+		
+		if (_shuttingDown) {
+			/*
+			 * When the node is shutting down, don't handle new bids, just put them back on 
+			 * the queue for the new owner 
+			 */
+			logger.debug("handleNewBidMessage: shutting down and so propagating bid " + theBid);
+			_liveAuctionRabbitTemplate.convertAndSend(liveAuctionExchangeName, 
+					LiveAuctionServiceImpl.newBidRoutingKey + theBid.getAuctionId(), theBid);
+			return;
+		}
+		
 		synchronized (_newBidMessageQueue) {
 			_newBidMessageQueue.add(theBid);
 			logger.debug("handleNewBidMessage got new bid " + theBid + ". isRunning = "
@@ -209,6 +284,17 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				_isWatchdogRunning.release();
 				_isRunning.release();
 				return;
+			}
+
+			if (_shuttingDown) {
+				/*
+				 * When the node is shutting down, don't handle new bids, just put them back on 
+				 * the queue for the new owner 
+				 */
+				logger.debug("run: shutting down and so propagating bid " + theBid);
+				_liveAuctionRabbitTemplate.convertAndSend(liveAuctionExchangeName, 
+						LiveAuctionServiceImpl.newBidRoutingKey + theBid.getAuctionId(), theBid);
+				continue;
 			}
 
 			Long itemId = theBid.getItemId();
@@ -299,7 +385,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 							// Cancel and reschedule the watchdog task
 							_watchdogTaskScheduledFuture.cancel(true);
 							_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-									new WatchdogTask(), auctionMaxIdleTime, TimeUnit.SECONDS);
+									new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
 
 							// Propagate the new high bid
 							propagateNewHighBid(returnedBid);
@@ -337,6 +423,51 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				+ _auctionId, new BidRepresentation(newHighBid));
 	}
 
+	private boolean startNextItem(HighBid curHighBid) {
+		boolean auctionCompleted = false;
+		HighBid nextHighBid = null;
+		boolean nextSuceeded = false;
+		while (!nextSuceeded) {
+			try {
+				nextHighBid = _auctioneerTx.startNextItem(curHighBid);
+				nextSuceeded = true;
+				if (nextHighBid != null) {
+					_highBid = nextHighBid;
+					logger.debug("bidwatchdogtask:run propagating item start bid "
+							+ _highBid);
+					propagateNewHighBid(_highBid);
+
+				} else {
+					/*
+					 * The auction has ended. Send the auction
+					 * ended message so other nodes can update
+					 * their activeAuction lists
+					 */
+					auctionCompleted = true;
+					_liveAuctionRabbitTemplate.convertAndSend(
+							liveAuctionExchangeName, auctionEndedRoutingKey
+									+ _auctionId, new AuctionRepresentation(
+									curHighBid.getAuction()));
+
+				}
+			} catch (ObjectOptimisticLockingFailureException ex) {
+				logger.info("BidWatchdogTask:run startNextItem threw ObjectOptimisticLockingFailureException with message "
+						+ ex.getMessage()
+						+ ", auctionId = "
+						+ _auctionId
+						+ ", itemId = " + curHighBid.getItem().getId());
+			} catch (CannotAcquireLockException ex) {
+				logger.warn("BidWatchdogTask:run startNextItem threw CannotAcquireLockException with message "
+						+ ex.getMessage()
+						+ ", auctionId = "
+						+ _auctionId
+						+ ", itemId = " + curHighBid.getItem().getId());
+
+			}
+		}
+		return auctionCompleted;
+	}
+
 	protected class StartAuctionTask implements Runnable {
 
 		@Override
@@ -353,7 +484,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 					// Schedule a watchdog task
 					_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-							new WatchdogTask(), auctionMaxIdleTime, TimeUnit.SECONDS);
+							new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
 
 					suceeded = true;
 
@@ -428,10 +559,18 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 			HighBid curHighBid = null;
 			Boolean suceeded = false;
-			while (!suceeded) {
+			while (!suceeded && !_shuttingDown) {
 				try {
 					curHighBid = _auctioneerTx.makeForwardProgress(_highBid);
 
+					if (_shuttingDown) {
+						/*
+						 * If shutting down, don't try to send messages or start the next
+						 * item.  The next auction owner will do that.
+						 */
+						return;
+					}
+					
 					if (curHighBid == null) {
 						/*
 						 * Auction state was not OPEN or LASTCALL
@@ -457,46 +596,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 						 * Since the item was sold. Need to start the next item
 						 * in the auction (if any)
 						 */
-						HighBid nextHighBid = null;
-						boolean nextSuceeded = false;
-						while (!nextSuceeded) {
-							try {
-								nextHighBid = _auctioneerTx.startNextItem(curHighBid);
-								nextSuceeded = true;
-								if (nextHighBid != null) {
-									_highBid = nextHighBid;
-									logger.debug("bidwatchdogtask:run propagating item start bid "
-											+ _highBid);
-									propagateNewHighBid(_highBid);
-
-								} else {
-									/*
-									 * The auction has ended. Send the auction
-									 * ended message so other nodes can update
-									 * their activeAuction lists
-									 */
-									auctionCompleted = true;
-									_liveAuctionRabbitTemplate.convertAndSend(
-											liveAuctionExchangeName, auctionEndedRoutingKey
-													+ _auctionId, new AuctionRepresentation(
-													curHighBid.getAuction()));
-
-								}
-							} catch (ObjectOptimisticLockingFailureException ex) {
-								logger.info("BidWatchdogTask:run startNextItem threw ObjectOptimisticLockingFailureException with message "
-										+ ex.getMessage()
-										+ ", auctionId = "
-										+ _auctionId
-										+ ", itemId = " + curHighBid.getItem().getId());
-							} catch (CannotAcquireLockException ex) {
-								logger.warn("BidWatchdogTask:run startNextItem threw CannotAcquireLockException with message "
-										+ ex.getMessage()
-										+ ", auctionId = "
-										+ _auctionId
-										+ ", itemId = " + curHighBid.getItem().getId());
-
-							}
-						}
+						auctionCompleted = startNextItem(curHighBid);
 
 					}
 
@@ -518,14 +618,15 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 			}
 
-			if (!auctionCompleted) {
+			if (!auctionCompleted && !_shuttingDown) {
 				// Schedule a new watchdog task
 				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-						new WatchdogTask(), auctionMaxIdleTime, TimeUnit.SECONDS);
+						new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
 			} else {
 				_watchdogTaskScheduledFuture = null;
 			}
 			_isWatchdogRunning.release();
 		}
+
 	}
 }

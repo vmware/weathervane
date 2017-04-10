@@ -488,7 +488,7 @@ sub getWwwHostname {
 
 sub clearReloadDb {
 	my ($self) = @_;
-	$self->dataManager->reloadDb(0);
+	$self->dataManager->setParamValue( 'reloadDb', 0 );;
 }
 
 sub checkConfig {

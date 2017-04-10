@@ -62,15 +62,15 @@ import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
+import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.data.repository.BidRepository;
-import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
+import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
-import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
 import com.vmware.weathervane.auction.service.BidService;
 import com.vmware.weathervane.auction.service.GroupMembershipService;
 import com.vmware.weathervane.auction.service.exception.AuctionNotActiveException;
@@ -83,11 +83,11 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 	private static final Logger logger = LoggerFactory.getLogger(LiveAuctionServiceImpl.class);
 
-	private static final String auctionManagementGroupName = "liveAuctionMgmtGroup";
-	private static final String auctionAssignmentMapName = "liveAuctionAssignmentMap";
+	public static final String auctionManagementGroupName = "liveAuctionMgmtGroup";
+	public static final String auctionAssignmentMapName = "liveAuctionAssignmentMap";
 
-	private static final String liveAuctionExchangeName = "liveAuctionMgmtExchange";
-	private static final String newBidRoutingKey = "newBid.";
+	public static final String liveAuctionExchangeName = "liveAuctionMgmtExchange";
+	public static final String newBidRoutingKey = "newBid.";
 
 
 	// The longest that an auction can go (in seconds) without a bid before the
@@ -195,12 +195,11 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 	public LiveAuctionServiceImpl() {
 	}
-
+	
 	@PostConstruct
 	private void initialize() throws Exception {
 		logger.info("LiveAuctionService initialize.  Creating thread pools. numAuctioneerThreads = " + _numAuctioneerExecutorThreads
 				+ ", numClientUpdateThreads = " + _numClientUpdateExecutorThreads);
-
 		_auctioneerExecutorService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(_numAuctioneerExecutorThreads, new ThreadFactory() {
 			private final AtomicInteger counter = new AtomicInteger();
 
@@ -330,6 +329,8 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 			 */
 			for (Long auctionId : _auctionIdToBindingMap.keySet()) {
 				rabbitAdmin.removeBinding(_auctionIdToBindingMap.get(auctionId));
+				Auctioneer auctioneer = _auctionIdToAuctioneerMap.get(auctionId);
+				auctioneer.shutdown();
 			}
 
 			/*
@@ -507,7 +508,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		_auctionIdToBindingMap.put(auctionId, newBidBinding);
 
 		Auctioneer auctioneer = new AuctioneerImpl(auctionId, _auctioneerExecutorService, _auctioneerTx, _highBidDao, _bidRepository, auctionDao,
-				liveAuctionRabbitTemplate);
+				liveAuctionRabbitTemplate, auctionMaxIdleTime);
 		_auctionIdToAuctioneerMap.put(auctionId, auctioneer);
 
 	}
@@ -871,7 +872,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 				_auctionIdToBindingMap.put(auctionId, newBidBinding);
 
 				Auctioneer auctioneer = new AuctioneerImpl(auctionId, _auctioneerExecutorService, _auctioneerTx, _highBidDao, _bidRepository, auctionDao,
-						liveAuctionRabbitTemplate);
+						liveAuctionRabbitTemplate, auctionMaxIdleTime);
 				_auctionIdToAuctioneerMap.put(auctionId, auctioneer);
 			}
 

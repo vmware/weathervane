@@ -53,12 +53,6 @@ has 'host' => (
 	isa => 'Host',
 );
 
-has 'reloadDb' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
 # internalPortMap: A map from a name for a port (e.g. http) to
 # the ports used by this service.  This represents the view from
 # inside a docker container
@@ -78,9 +72,6 @@ has 'portMap' => (
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
-	
-	$self->reloadDb($self->getParamValue('reloadDb'));
-	
 	
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	

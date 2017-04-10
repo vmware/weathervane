@@ -23,4 +23,6 @@ public interface Auctioneer extends Runnable{
 
 	void cleanup();
 
+	void shutdown();
+
 }

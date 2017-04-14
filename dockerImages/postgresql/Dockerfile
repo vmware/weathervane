@@ -1,0 +1,24 @@
+FROM 10.159.13.130:5000/centos7ssh:1.0b5
+MAINTAINER hrosenbe@vmware.com
+
+ENV PG_MAJOR 9.3
+ENV PG_MAJOR_PKG 93
+ENV PGDATA /var/lib/pgsql/${PG_MAJOR}/data
+
+COPY dbScripts /dbScripts
+COPY pg-init.sh /pg-init.sh
+COPY pg_hba.conf /pg_hba.conf
+COPY entrypoint.sh /entrypoint.sh
+
+RUN mkdir -p /mnt/dbLogs/postgresql && \
+	mkdir -p /mnt/dbData/postgresql && \
+	mkdir -p /mnt/dbBackup/postgresql && \
+	echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo && \
+	yum install -y http://yum.postgresql.org/${PG_MAJOR}/redhat/rhel-7-x86_64/pgdg-redhat${PG_MAJOR_PKG}-${PG_MAJOR}-3.noarch.rpm && \
+	yum install -y postgresql${PG_MAJOR_PKG} && \
+	yum install -y postgresql${PG_MAJOR_PKG}-server && \
+	chmod 777 /pg-init.sh && \
+	chmod 777 /entrypoint.sh && \
+  	yum -y clean all 
+	
+ENTRYPOINT ["/entrypoint.sh"]  

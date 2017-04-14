@@ -85,7 +85,7 @@ public class LogoutJoinLeaveTransitionChooser extends DefaultTransitionChooser i
 			ResponseHolder<String, BidRepresentation> currentBidHolder = _currentBidsProvider.getBidHolderForBehavior(key);
 			currentBid = currentBidHolder.getParsedResponse();
 
-			if (currentBid == null) {
+			if ((currentBid == null) || (currentBid.getBiddingState() == null)) {
 				continue;
 			}
 

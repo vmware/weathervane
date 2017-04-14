@@ -114,7 +114,7 @@ public class BidLeaveOtherTransitionChooser extends DefaultTransitionChooser imp
 			ResponseHolder<String, ItemRepresentation> currentItemHolder = _currentItemsProvider.getItemHolderForBehavior(key);
 			currentItem = currentItemHolder.getParsedResponse();
 
-			if ((currentBid == null) || (currentItem == null)) {
+			if ((currentBid == null) || (currentItem == null) || (currentBid.getUserId() == null)) {
 				continue;
 			}
 			

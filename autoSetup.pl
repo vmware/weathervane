@@ -313,6 +313,13 @@ runAndLog( $fileout, "cp /opt/apache-tomcat/bin/tomcat-juli.jar /opt/apache-tomc
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/work" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/temp" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/logs" );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/lib" );
+runAndLog( $fileout,
+"curl -s http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar -o /opt/apache-tomcat-auction1/lib/mysql-connector-java-5.1.41.jar"
+);
+runAndLog( $fileout,
+"curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-auction1/lib/postgresql-9.4.1212.jre7.jar"
+);
 
 print "Fetching and installing Httpd\n";
 print $fileout "Fetching and installing Httpd\n";

@@ -457,6 +457,7 @@ print "Installing RabbitMQ\n";
 print $fileout "Installing RabbitMQ\n";
 runAndLog( $fileout, "wget http://www.rabbitmq.com/releases/erlang/erlang-17.4-1.el6.x86_64.rpm" );
 runAndLog( $fileout, "yum install -y erlang-17.4-1.el6.x86_64.rpm" );
+runAndLog( $fileout, "rm -f erlang-17.4-1.el6.x86_64.rpm" );
 runAndLog( $fileout,
 	"yum install -y http://www.rabbitmq.com/releases/rabbitmq-server/v3.5.3/rabbitmq-server-3.5.3-1.noarch.rpm" );
 

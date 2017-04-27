@@ -1,6 +1,4 @@
-
-
-# Weathervane
+![Weathervane](doc/images/VMW-Weathervane-logo-LRG.png)
 
 [![Join the chat at https://gitter.im/vmware/weathervane](https://badges.gitter.im/vmware/weathervane.svg)](https://gitter.im/vmware/weathervane?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

@@ -38,7 +38,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'dbLoader' 
 	}
 	
 	ext {
-		orgSpringframeworkVersion = "4.3.3.RELEASE"
+		orgSpringframeworkVersion = "4.3.8.RELEASE"
 		orgSpringframeworkSecurityVersion = "3.2.9.RELEASE"
 		orgHibernateVersion = "4.3.11.Final"
 		orgAspectjVersion = "1.8.8"

@@ -1,4 +1,4 @@
-![Weathervane](doc/images/VMW-Weathervane-Logo-LRG.png)
+![Weathervane](doc/images/VMW-Weathervane-Logo-SML.png)
 
 ## Overview
 

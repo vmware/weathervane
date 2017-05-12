@@ -1,4 +1,4 @@
-FROM 10.159.13.130:5000/centos7ssh:1.0b5
+FROM namespace/centos7ssh:version
 MAINTAINER hrosenbe@vmware.com
 
 ENV PG_MAJOR 9.3

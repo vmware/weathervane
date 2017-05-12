@@ -1,4 +1,4 @@
-FROM 10.159.13.130:5000/centos7ssh:1.0b5
+FROM namespace/centos7ssh:version
 MAINTAINER hrosenbe@vmware.com
 
 RUN yum install -y http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm && \

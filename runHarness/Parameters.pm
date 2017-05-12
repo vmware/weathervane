@@ -652,7 +652,7 @@ sub getSingletonInstanceParamHashRef {
 
 }
 
-our $version = "1.0.12";
+our $version = "1.0.14";
 
 # These variables contain the key names for the parameter hashes
 tie( our %parameters, 'Tie::IxHash' );

@@ -90,6 +90,27 @@ sub runAndLog {
 	close CMD;
 }
 
+sub rewriteDockerfile {
+	my ( $dirName, $namespace, $version) = @_;
+	`mv $dirName/Dockerfile $dirName/Dockerfile.orig`;
+	open(my $filein, "$dirName/Dockerfile.orig") or die "Can't open file $dirName/Dockerfile.orig for reading: $!\n";
+	open(my $fileout, ">$dirName/Dockerfile") or die "Can't open file $dirName/Dockerfile for writing: $!\n";
+	while (my $inline = <$filein>) {
+		if ($inline =~ /^FROM/) {
+			print $fileout "FROM $namespace/centos7ssh:$version\n";
+		} else {
+			print $fileout $inline;
+		}
+	}
+	close $filein;
+	close $fileout
+}
+
+sub cleanupDockerfile {
+	my ( $dirName) = @_;
+	`mv $dirName/Dockerfile.orig $dirName/Dockerfile`;
+}
+
 my $cmdout;
 my $fileout;
 open( $fileout, ">buildDockerImages.log" ) or die "Can't open file buildDockerImages.log for writing: $!\n";
@@ -113,44 +134,58 @@ runAndLog($fileout, "docker push $namespace/centos7ssh:$version");
 
 print "Building and pushing haproxy image.\n";
 print $fileout "Building and pushing haproxy image.\n";
+rewriteDockerfile("./dockerImages/haproxy", $namespace, $version);
 runAndLog($fileout, "docker build -t $namespace/weathervane-haproxy:$version ./dockerImages/haproxy");
 runAndLog($fileout, "docker push $namespace/weathervane-haproxy:$version");
+cleanupDockerfile("./dockerImages/haproxy");
 
 print "Building and pushing mongodb image.\n";
 print $fileout "Building and pushing mongodb image.\n";
+rewriteDockerfile("./dockerImages/mongodb", $namespace, $version);
 runAndLog($fileout, "docker build -t $namespace/weathervane-mongodb:$version ./dockerImages/mongodb");
 runAndLog($fileout, "docker push $namespace/weathervane-mongodb:$version");
+cleanupDockerfile("./dockerImages/mongodb");
 
 print "Building and pushing nginx image.\n";
 print $fileout "Building and pushing nginx image.\n";
+rewriteDockerfile("./dockerImages/nginx", $namespace, $version);
 runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
 runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
 runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
 runAndLog($fileout, "docker build -t $namespace/weathervane-nginx:$version ./dockerImages/nginx");
 runAndLog($fileout, "docker push $namespace/weathervane-nginx:$version");
+cleanupDockerfile("./dockerImages/nginx");
 
 print "Building and pushing postgresql image.\n";
 print $fileout "Building and pushing postgresql image.\n";
+rewriteDockerfile("./dockerImages/postgresql", $namespace, $version);
 runAndLog($fileout, "docker build -t $namespace/weathervane-postgresql:$version ./dockerImages/postgresql");
 runAndLog($fileout, "docker push $namespace/weathervane-postgresql:$version");
+cleanupDockerfile("./dockerImages/postgresql");
 
 print "Building and pushing rabbitmq image.\n";
 print $fileout "Building and pushing rabbitmq image.\n";
+rewriteDockerfile("./dockerImages/rabbitmq", $namespace, $version);
 runAndLog($fileout, "docker build -t $namespace/weathervane-rabbitmq:$version ./dockerImages/rabbitmq");
 runAndLog($fileout, "docker push $namespace/weathervane-rabbitmq:$version");
+cleanupDockerfile("./dockerImages/rabbitmq");
 
 print "Building and pushing zookeeper image.\n";
 print $fileout "Building and pushing zookeeper image.\n";
+rewriteDockerfile("./dockerImages/zookeeper", $namespace, $version);
 runAndLog($fileout, "docker build -t $namespace/weathervane-zookeeper:$version ./dockerImages/zookeeper");
 runAndLog($fileout, "docker push $namespace/weathervane-zookeeper:$version");
+cleanupDockerfile("./dockerImages/zookeeper");
 
 print "Building and pushing tomcat image.\n";
 print $fileout "Building and pushing tomcat image.\n";
+rewriteDockerfile("./dockerImages/tomcat", $namespace, $version);
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "cp ./dist/auction*.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
 runAndLog($fileout, "docker build -t $namespace/weathervane-tomcat:$version ./dockerImages/tomcat");
 runAndLog($fileout, "docker push $namespace/weathervane-tomcat:$version");
+cleanupDockerfile("./dockerImages/tomcat");
 
 1;

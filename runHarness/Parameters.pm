@@ -1357,7 +1357,7 @@ $parameters{"stopStatsScript"} = {
 
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
-	"default"   => "1.0.12",
+	"default"   => "1.0.14",
 	"parent"    => "host",
 	"usageText" => "",
 	"showUsage" => 0,

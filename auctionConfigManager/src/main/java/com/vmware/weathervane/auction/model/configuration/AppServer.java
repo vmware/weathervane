@@ -1066,7 +1066,7 @@ public class AppServer extends Service {
 		public void run() {
 			RestTemplate restTemplate = new RestTemplate();
 			
-			String baseUrl = "http://" + getHostHostName() + ":" + getHttpInternalPort() + "/auction";
+			String baseUrl = "http://" + getHostHostName() + ":" + getHttpPort() + "/auction";
 			String loginUrl = baseUrl + "/login";
 			String logoutUrl = baseUrl + "/logout";
 			String getActiveAuctionsUrl = baseUrl + "/live/auction?pageSize=5&page=0";

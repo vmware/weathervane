@@ -75,7 +75,7 @@ public abstract class Service {
 
 	private Boolean useDocker;
 	private Integer dockerMemorySwap;
-	private Integer dockerMemory;
+	private String dockerMemory;
 	private String dockerCpuSetCpus;
 	private String dockerNet;
 	private Long dockerCpuShares;
@@ -170,11 +170,11 @@ public abstract class Service {
 		this.dockerMemorySwap = dockerMemorySwap;
 	}
 
-	public Integer getDockerMemory() {
+	public String getDockerMemory() {
 		return dockerMemory;
 	}
 
-	public void setDockerMemory(Integer dockerMemory) {
+	public void setDockerMemory(String dockerMemory) {
 		this.dockerMemory = dockerMemory;
 	}
 

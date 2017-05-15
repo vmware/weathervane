@@ -27,7 +27,7 @@ public class Defaults {
 	
 	private Boolean useDocker;
 	private Integer dockerMemorySwap = 0;
-	private Integer dockerMemory = 0;
+	private String dockerMemory = "";
 	private Integer dockerHostPort;
 	private String dockerCpuSetCpus = "";
 	private String dockerNet = "bridge";
@@ -75,10 +75,10 @@ public class Defaults {
 	public void setDockerMemorySwap(Integer dockerMemorySwap) {
 		this.dockerMemorySwap = dockerMemorySwap;
 	}
-	public Integer getDockerMemory() {
+	public String getDockerMemory() {
 		return dockerMemory;
 	}
-	public void setDockerMemory(Integer dockerMemory) {
+	public void setDockerMemory(String dockerMemory) {
 		this.dockerMemory = dockerMemory;
 	}
 	public String getDockerCpuSetCpus() {

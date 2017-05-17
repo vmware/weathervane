@@ -11,7 +11,7 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package ConfigurationManager;
+package ConfigurationManagerDocker;
 
 use Moose;
 use MooseX::Storage;
@@ -30,7 +30,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'ConfigurationManager', );
+has '+name' => ( default => 'ConfigurationManagerDocker', );
 
 has '+version' => ( default => 'xx', );
 
@@ -44,84 +44,93 @@ override 'initialize' => sub {
 
 sub stop {
 	my ( $self, $logPath ) = @_;
-	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
-	$logger->debug("stop ConfigurationManager");
-	my $sshConnectString = $self->host->sshConnectString;
+	my $logger = get_logger("Weathervane::Services::ConfigurationManagerDocker");
+	
 	my $hostname         = $self->host->hostName;
+	my $name             = $self->getParamValue('dockerName');
+	my $time     = `date +%H:%M`;
+	chomp($time);
+	my $logName          = "$logPath/StopConfigurationManagerDocker-$hostname-$name-$time.log";
+	$logger->debug("stop ConfigurationManagerDocker");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $logName = "$logPath/StopConfiguration-$hostname-W${workloadNum}I${appInstanceNum}.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	print $applog
-	  "Checking whether the configuration manager is up on $hostname\n";
-	if ( $self->isRunning($applog) ) {
-
-		# The server is running
-		print $applog "Stopping Configuration manager on $hostname\n";
-		my $cmdOut = `$sshConnectString ps x`;
-		print $applog $cmdOut;
-		$cmdOut =~ /^\s*(\d+)\s+.*:\d\d\s+java.*W${workloadNum}I${appInstanceNum}.*auctionConfigManager/m;
-		my $pid = $1;
-		$logger->debug( "Found pid "
-                      . $pid
-                      . " for ConfigurationManager W${workloadNum}I${appInstanceNum} on "
-                      . $hostname );
-		$cmdOut = `$sshConnectString kill $pid`;
-		print $applog "$cmdOut\n";
-		sleep(5);
-
-		if ( $self->isRunning($applog) ) {
-			print $applog
-			  "Couldn't stop Configuration manager on $hostname: $cmdOut";
-			die "Couldn't stop Configuration manager on $hostname: $cmdOut";
-		}
-
-	}
+	$self->host->dockerStop( $applog, $name );
 
 	close $applog;
+	
 }
+
+override 'create' => sub {
+	my ($self, $logPath)            = @_;
+	
+	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->hostName;
+	my $impl = $self->getImpl();
+
+	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
+	
+	# The default create doesn't map any volumes
+	my %volumeMap;
+	
+	# Set the environment variables for the Configuration manager
+	my %envVarMap;
+	my $jvmOpts = $self->getParamValue('configurationManagerJvmOpts');
+	$envVarMap{"JVMOPTS"} = "\"$jvmOpts\"";
+	$envVarMap{"WORKLOADNUM"} = $self->getParamValue('workloadNum');
+	$envVarMap{"APPINSTANCENUM"} = $self->getParamValue('appInstanceNum');
+	$envVarMap{"PORT"} = $self->internalPortMap->{$impl};
+	
+	# Create the container
+	my %portMap;
+	my $directMap = 0;
+	if ($self->getParamValue( 'serviceType' ) eq $self->appInstance->getEdgeService()) {
+		# This is an edge service.  Map the internal ports to the host ports
+		$directMap = 1;
+	}
+	foreach my $key (keys %{$self->internalPortMap}) {
+		my $port = $self->internalPortMap->{$key};
+		$portMap{$port} = $port;
+	}
+	
+	my $cmd = "";
+	my $entryPoint = "";
+	
+	my $portMapRef = $self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
+		$entryPoint, $cmd, $self->needsTty);
+		
+	if ( $self->getParamValue('dockerNet') eq "host" ) {
+
+		# For docker host networking, external ports are same as internal ports
+		$self->	portMap->{$impl}   = $self->internalPortMap->{$impl};
+	}
+	else {
+
+		# For bridged networking, ports get assigned at start time
+		$self->portMap->{$impl}   = $portMapRef->{ $self->internalPortMap->{$impl} };
+	}
+	$self->registerPortsWithHost();
+	
+	close $applog;
+};
 
 sub start {
 	my ( $self, $logPath ) = @_;
-
-	my $hostname         = $self->host->hostName;
-	my $sshConnectString = $self->host->sshConnectString;
+	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 	my $workloadNum      = $self->getParamValue('workloadNum');
 	my $appInstanceNum   = $self->getParamValue('appInstanceNum');
+	my $hostname         = $self->host->hostName;
 	my $logName =
-"$logPath/StartConfigurationManager-$hostname-W${workloadNum}I${appInstanceNum}.log";
-	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
+"$logPath/StartConfigurationManagerDocker-$hostname-W${workloadNum}I${appInstanceNum}.log";
+	open( my $applog, ">$logName" ) || die "Error opening /$logName:$!";
 
-	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getImpl();
-	$self->portMap->{$self->getImpl()} = $self->internalPortMap->{$self->getImpl()};
-	my $port = $self->internalPortMap->{$impl};
-	$self->registerPortsWithHost();
-
-	my $distDir = $self->getParamValue('distDir');
-	my $jvmOpts = $self->getParamValue('configurationManagerJvmOpts');
-	my $applog;
-	open( $applog, ">$logName" ) || die "Error opening /$logName:$!";
-
-	$logger->info(
-"Checking whether the configuraration manager is already up on $hostname"
-	);
-	print $applog
-	  "Checking whether the configuration manager is already up on $hostname\n";
-	if ( !$self->isRunning($applog) ) {
-		$logger->info("Starting configuration manager on $hostname");
-		print $applog "Starting configuration manager on $hostname\n";
-		my $cmdString =
-"\"java -jar $jvmOpts -DWA=W${workloadNum}I${appInstanceNum} $distDir/auctionConfigManager.jar --port=$port > /tmp/configurationManager-W${workloadNum}I${appInstanceNum}.log 2>&1 &\"";
-		print $applog "$sshConnectString $cmdString\n";
-		my $cmdOut = `$sshConnectString $cmdString`;
-		$logger->debug("Result: $cmdOut");
-		print $applog $cmdOut;
-	}
+	# Don't need to reload as we configure properly on initial create
 
 	# Wait for the configurationManager to be up and then
 	# configure it with the information on the initial services
@@ -134,13 +143,14 @@ sub start {
 		$curSleepTotal += $sleepTime;
 	}
 
+	close $applog;
+
 	if ( $curSleepTotal <= $maxSleep ) {
 		$self->configureAfterIsUp();
 	}
-
-	close $applog;
-
+	
 }
+
 
 sub configureAfterIsUp {
 	my ($self) = @_;
@@ -447,6 +457,23 @@ sub configureAfterIsUp {
 
 }
 
+override 'remove' => sub {
+	my ( $self, $logPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::ConfigurationManagerDocker");
+	my $hostname = $self->host->hostName;
+	my $name     = $self->getParamValue('dockerName');
+	$logger->debug("remove. logPath = $logPath, hostname = $hostname, dockerName = $name");
+	my $logName  = "$logPath/RemoveConfigurationManagerDocker-$hostname-$name.log";
+
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
+
+	$self->host->dockerStopAndRemove( $applog, $name );
+
+	close $applog;
+};
+
 sub isUp {
 	my ( $self, $fileout ) = @_;
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
@@ -473,37 +500,30 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $workloadNum      = $self->getParamValue('workloadNum');
-	my $appInstanceNum   = $self->getParamValue('appInstanceNum');
+	my $name = $self->getParamValue('dockerName');
 
-	my $cmdOut = `$sshConnectString ps x`;
-	if ( $cmdOut =~ /W${workloadNum}I${appInstanceNum}.*auctionConfigManager/ ) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
+	return $self->host->dockerIsRunning( $fileout, $name );
 }
 
 sub setPortNumbers {
 	my ($self) = @_;
 
 	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getParamValue( $serviceType . "Impl" );
+	my $impl        = $self->getImpl();
 	my $portMultiplier =
 	  $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
 	my $portOffset =
 	  $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier;
 
 	$self->internalPortMap->{$impl} =
-	  $self->getParamValue('configurationManagerPort') + $portOffset;
+	  $self->getParamValue('configurationManagerPort') + $portOffset;	  
+
 }
 
 sub setExternalPortNumbers {
 	my ($self) = @_;
-
 	$self->portMap->{$self->getImpl()} = $self->internalPortMap->{$self->getImpl()};
+
 }
 
 sub configure {
@@ -535,36 +555,33 @@ sub cleanStatsFiles {
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $workloadNum      = $self->getParamValue('workloadNum');
-	my $appInstanceNum   = $self->getParamValue('appInstanceNum');
-	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
-
-	my $maxLogLines = $self->getParamValue('maxLogLines');
-	$self->checkSizeAndTruncate( "/tmp",
-		"configurationManager-W${workloadNum}I${appInstanceNum}.log",
-		$maxLogLines );
 	
-	my $cmd = "$scpConnectString root\@$scpHostString:/tmp/configurationManager-W${workloadNum}I${appInstanceNum}.log $destinationPath/.  2>&1";
-	$logger->debug("getLogFiles command: $cmd");
-	my $out = `$cmd`;
-	$logger->debug("getLogFiles result: $out");
+	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->hostName;
+
+	my $logpath = "$destinationPath/$name";
+	if ( !( -e $logpath ) ) {
+		`mkdir -p $logpath`;
+	}
+
+	my $logName = "$logpath/ConfigurationManagerDockerLogs-$hostname-$name.log";
+
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening $logName:$!";
+
+	my $logContents = $self->host->dockerGetLogs( $applog, $name );
+
+	print $applog $logContents;
+
+	close $applog;
+
 
 }
 
 sub cleanLogFiles {
 	my ($self)           = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $workloadNum      = $self->getParamValue('workloadNum');
-	my $appInstanceNum   = $self->getParamValue('appInstanceNum');
-	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
-
-	my $cmd = "$sshConnectString \"rm /tmp/configurationManager-W${workloadNum}I${appInstanceNum}.log 2>&1\"";
-	$logger->debug("cleanLogFiles command: $cmd");
-	my $out = `$cmd`;
-	$logger->debug("cleanLogFiles result: $out");
-
+	
 }
 
 sub parseLogFiles {
@@ -574,7 +591,7 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
-
+	
 }
 
 sub getConfigSummary {

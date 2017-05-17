@@ -165,7 +165,7 @@ sub run {
 
 	# Remove the services if they are dockerized
 	$debug_logger->debug("Remove services");
-	@methods = qw(removeFrontendServices removeBackendServices removeDataServices);
+	@methods = qw(removeFrontendServices removeBackendServices removeDataServices removeInfrastructureServices);
 	callMethodsOnObjectParallel1( \@methods, $self, $setupLogDir );
 
 	# redeploy artifacts if selected

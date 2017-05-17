@@ -33,7 +33,7 @@ our %serviceTypes = (
 
 # services that can be run on docker
 our %dockerServiceTypes = ( 
-	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'coordinationServer'], 
+	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'coordinationServer', 'configurationManager'], 
 );
 
 # Services are started in the order data->backend->frontend

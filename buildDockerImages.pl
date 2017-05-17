@@ -178,6 +178,15 @@ runAndLog($fileout, "docker build -t $namespace/weathervane-zookeeper:$version .
 runAndLog($fileout, "docker push $namespace/weathervane-zookeeper:$version");
 cleanupDockerfile("./dockerImages/zookeeper");
 
+print "Building and pushing configurationManager image.\n";
+print $fileout "Building and pushing configurationManager image.\n";
+rewriteDockerfile("./dockerImages/configurationManager", $namespace, $version);
+runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationManager/auctionConfigManager.jar");
+runAndLog($fileout, "docker build -t $namespace/weathervane-cm:$version ./dockerImages/configurationManager");
+runAndLog($fileout, "docker push $namespace/weathervane-cm:$version");
+runAndLog($fileout, "rm -f ./dockerImages/configurationManager/auctionConfigManager.jar");
+cleanupDockerfile("./dockerImages/configurationManager");
+
 print "Building and pushing tomcat image.\n";
 print $fileout "Building and pushing tomcat image.\n";
 rewriteDockerfile("./dockerImages/tomcat", $namespace, $version);

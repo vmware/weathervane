@@ -51,7 +51,7 @@ sub stop {
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName          = "$logPath/StopZookeeperDocker-$hostname-$name-$time.log";
-	$logger->debug("stop PostgresqlDockerService");
+	$logger->debug("stop ZookeeperDockerServer");
 
 	my $applog;
 	open( $applog, ">$logName" )

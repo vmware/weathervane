@@ -34,6 +34,7 @@ use Services::RabbitmqService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
 use Services::ConfigurationManager;
+use Services::ConfigurationManagerDocker;
 use Services::ScheduledElasticityService;
 use Services::SimpleElasticityService;
 
@@ -187,10 +188,17 @@ sub getServiceByType {
 		);
 	}
 	elsif ( $serviceName eq "webConfig" ) {
-		$service = ConfigurationManager->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
+		if ($docker) {
+			$service = ConfigurationManagerDocker->new(
+					paramHashRef => $paramHashRef,
+					appInstance => $appInstance,
+			);
+		} else {
+			$service = ConfigurationManager->new(
+						paramHashRef => $paramHashRef,
+					appInstance => $appInstance,
+			);	
+		}
 	}
 	elsif ( $serviceName eq "simpleES" ) {
 		$service = SimpleElasticityService->new(

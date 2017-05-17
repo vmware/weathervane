@@ -1469,6 +1469,7 @@ $parameters{"dockerServiceImages"} = {
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
 		"zookeeper"  => "weathervane-zookeeper",
+		"webConfig"  => "weathervane-cm",
 	},
 	"parent"    => "host",
 	"usageText" => "",

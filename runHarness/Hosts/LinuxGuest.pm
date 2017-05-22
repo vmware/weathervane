@@ -68,11 +68,13 @@ override 'getCpuMemConfig' => sub {
 	my $hostname = $self->hostName();
 
 	# determine the CPU count and memory size
-	my $cpuInfo = `ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/cpuinfo 2>&1`;
+	my $cpuInfo =
+`ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/cpuinfo 2>&1`;
 	my $numCpus = () = $cpuInfo =~ /processor\s+\:\s+\d/gi;
 	$self->cpus($numCpus);
 
-	my $memInfo = `ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/meminfo 2>&1`;
+	my $memInfo =
+`ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/meminfo 2>&1`;
 	if ( $memInfo =~ /MemTotal:\s+(\d+)\skB/ ) {
 		$self->memKb($1);
 	}
@@ -89,11 +91,13 @@ override 'registerService' => sub {
 	my $servicesRef    = $self->servicesRef;
 
 	my $dockerName = $serviceRef->getDockerName();
-	$logger->debug( "Registering service $dockerName with host ", $self->hostName );
+	$logger->debug( "Registering service $dockerName with host ",
+		$self->hostName );
 
 	if ( $serviceRef->useDocker() ) {
 		if ( exists $self->dockerNameHashRef->{$dockerName} ) {
-			$console_logger->error( "Have two services on host ", $self->hostName, " with docker name $dockerName." );
+			$console_logger->error( "Have two services on host ",
+				$self->hostName, " with docker name $dockerName." );
 			exit(-1);
 		}
 		$self->dockerNameHashRef->{$dockerName} = 1;
@@ -113,7 +117,8 @@ sub startNscd {
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $sshConnectString = $self->sshConnectString;
 	my $cmdOut           = `$sshConnectString service nscd start 2>&1`;
-	$logger->debug( "service nscd start for ", $self->hostName, " returned ", $cmdOut );
+	$logger->debug( "service nscd start for ",
+		$self->hostName, " returned ", $cmdOut );
 }
 
 sub stopNscd {
@@ -121,9 +126,11 @@ sub stopNscd {
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $sshConnectString = $self->sshConnectString;
 	my $cmdOut           = `$sshConnectString \"nscd --invalidate=hosts 2>&1\"`;
-	$logger->debug( "nscd --invalidate=hosts for ", $self->hostName, " returned ", $cmdOut );
+	$logger->debug( "nscd --invalidate=hosts for ",
+		$self->hostName, " returned ", $cmdOut );
 	$cmdOut = `$sshConnectString service nscd stop 2>&1`;
-	$logger->debug( "service nscd stop for ", $self->hostName, " returned ", $cmdOut );
+	$logger->debug( "service nscd stop for ",
+		$self->hostName, " returned ", $cmdOut );
 }
 
 sub restartNtp {
@@ -137,7 +144,7 @@ sub restartNtp {
 	if ( $self->getParamValue('harnessHostNtpServer') ) {
 
 		# Copy the ntp.conf to each host
-		`$scpConnectString /tmp/ntp.conf root\@$scpHostString:/etc/ntp.conf 2>&1`;
+`$scpConnectString /tmp/ntp.conf root\@$scpHostString:/etc/ntp.conf 2>&1`;
 	}
 
 	my $out = `$sshConnectString service ntpd restart 2>&1`;
@@ -149,8 +156,9 @@ sub openPortNumber {
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $sshConnectString = $self->sshConnectString;
 
-	$logger->debug( "Adding iptables rule to ", $self->hostName, " to open port $portNumber for input" );
-	`$sshConnectString iptables -I INPUT -p tcp --dport $portNumber -j ACCEPT 2>&1`;
+	$logger->debug( "Adding iptables rule to ",
+		$self->hostName, " to open port $portNumber for input" );
+`$sshConnectString iptables -I INPUT -p tcp --dport $portNumber -j ACCEPT 2>&1`;
 
 }
 
@@ -159,8 +167,9 @@ sub closePortNumber {
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $sshConnectString = $self->sshConnectString;
 
-	$logger->debug( "Removing iptables rule from ", $self->hostName, " to close port $portNumber for input" );
-	`$sshConnectString iptables -D INPUT -p tcp --dport $portNumber -j ACCEPT 2>&1`;
+	$logger->debug( "Removing iptables rule from ",
+		$self->hostName, " to close port $portNumber for input" );
+`$sshConnectString iptables -D INPUT -p tcp --dport $portNumber -j ACCEPT 2>&1`;
 }
 
 # Services use this method to notify the host that they are using
@@ -178,13 +187,20 @@ override 'registerPortNumber' => sub {
 		# Notify about conflict and exit
 		my $conflictService = $portMapHashRef->{$portNumber};
 		$console_logger->error(
-			"Conflict on port $portNumber on host ", $self->hostName,
-			". Required by both ",                   $conflictService->getDockerName(),
-			" from Workload ",                       $conflictService->getWorkloadNum(),
-			" AppInstance ",                         $conflictService->getAppInstanceNum(),
-			" and ",                                 $service->getDockerName(),
-			" from Workload ",                       $service->getWorkloadNum(),
-			" AppInstance ",                         $service->getAppInstanceNum(),
+			"Conflict on port $portNumber on host ",
+			$self->hostName,
+			". Required by both ",
+			$conflictService->getDockerName(),
+			" from Workload ",
+			$conflictService->getWorkloadNum(),
+			" AppInstance ",
+			$conflictService->getAppInstanceNum(),
+			" and ",
+			$service->getDockerName(),
+			" from Workload ",
+			$service->getWorkloadNum(),
+			" AppInstance ",
+			$service->getAppInstanceNum(),
 			"."
 		);
 		exit(-1);
@@ -198,7 +214,8 @@ override 'unRegisterPortNumber' => sub {
 	my ( $self, $portNumber ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
-	$logger->debug( "Unregistering port $portNumber for host ", $self->hostName );
+	$logger->debug( "Unregistering port $portNumber for host ",
+		$self->hostName );
 
 	my $portMapHashRef = $self->portMapHashRef;
 	if ( exists $portMapHashRef->{$portNumber} ) {
@@ -242,7 +259,8 @@ override 'configureDockerPinning' => sub {
 	my $numCpus = $self->cpus;
 	my $memKb   = $self->memKb;
 
-	my $cpusForPinningHashRef = $self->initializeCpusForPinning( $pinMode, $numCpus );
+	my $cpusForPinningHashRef =
+	  $self->initializeCpusForPinning( $pinMode, $numCpus );
 	my $servicesRef = $self->servicesRef;
 
 	# Remove CPUs that are pre-selected for pinning if user
@@ -251,13 +269,17 @@ override 'configureDockerPinning' => sub {
 		my $svcDocker              = $serviceHashRef->useDocker();
 		my $svcDockerConfigHashRef = $serviceHashRef->dockerConfigHashRef;
 		my $name                   = $serviceHashRef->getDockerName();
-		if ( !$svcDocker || !exists( $svcDockerConfigHashRef->{"cpuset-cpus"} ) ) {
+		if (   !$svcDocker
+			|| !exists( $svcDockerConfigHashRef->{"cpuset-cpus"} ) )
+		{
 			next;
 		}
 
 		if ( defined( $svcDockerConfigHashRef->{"cpus"} ) ) {
-			$console_logger->warn( "Notice: dockerConfig for service $name specifies both cpus and cpuset.",
-				" Only cpuset specification will be used." );
+			$console_logger->warn(
+"Notice: dockerConfig for service $name specifies both cpus and cpuset.",
+				" Only cpuset specification will be used."
+			);
 		}
 
 		my $cpuSet = $svcDockerConfigHashRef->{"cpuset-cpus"};
@@ -280,14 +302,16 @@ override 'configureDockerPinning' => sub {
 		my $svcDockerConfigHashRef = $serviceHashRef->dockerConfigHashRef;
 		my $name                   = $serviceHashRef->getDockerName();
 
-		if ( !$svcDocker || exists( $svcDockerConfigHashRef->{"cpuset-cpus"} ) ) {
+		if ( !$svcDocker || exists( $svcDockerConfigHashRef->{"cpuset-cpus"} ) )
+		{
 			next;
 		}
 
 		my $svcNumCpus = $svcDockerConfigHashRef->{"cpus"};
 
 		if ( !defined($svcNumCpus) ) {
-			$console_logger->error( "When using Docker pinning, must specify the number of CPUs for service "
+			$console_logger->error(
+"When using Docker pinning, must specify the number of CPUs for service "
 				  . $serviceHashRef->getParamValue('dockerName')
 				  . " in dockerCpus" );
 			exit(-1);
@@ -295,8 +319,9 @@ override 'configureDockerPinning' => sub {
 
 		if ( $svcNumCpus > $numCpus ) {
 			$console_logger->error(
-				"Number of cpus specified for service $name is greater than the number of cpus on the host ",
-				$self->hostName );
+"Number of cpus specified for service $name is greater than the number of cpus on the host ",
+				$self->hostName
+			);
 			exit(-1);
 		}
 
@@ -305,11 +330,15 @@ override 'configureDockerPinning' => sub {
 			my @cpusForPinning = keys %$cpusForPinningHashRef;
 			if ( $#cpusForPinning == -1 ) {
 
-				# Have run out of available CPUs before determining a pinning for all Service CPUs
-				# Reset the list and print a warning
-				$console_logger->warn( "Notice: CPUs are overcommitted for pinning on Docker host ",
-					$self->hostName, ", Pinning for service $name may use an unexpected combination of CPUs." );
-				$cpusForPinningHashRef = $self->initializeCpusForPinning( $pinMode, $numCpus );
+# Have run out of available CPUs before determining a pinning for all Service CPUs
+# Reset the list and print a warning
+				$console_logger->warn(
+"Notice: CPUs are overcommitted for pinning on Docker host ",
+					$self->hostName,
+", Pinning for service $name may use an unexpected combination of CPUs."
+				);
+				$cpusForPinningHashRef =
+				  $self->initializeCpusForPinning( $pinMode, $numCpus );
 				@cpusForPinning = keys %$cpusForPinningHashRef;
 			}
 
@@ -325,9 +354,9 @@ override 'configureDockerPinning' => sub {
 		$svcDockerConfigHashRef->{"cpuset-cpus"} = join( ",", @cpuSetCpus );
 	}
 
-	# Check for over-committing and other issues
-	# Tests:
-	#	  - Die if haven't specified either cpus or cpuset and docker svc is running on a host with pinning
+# Check for over-committing and other issues
+# Tests:
+#	  - Die if haven't specified either cpus or cpuset and docker svc is running on a host with pinning
 	my $assignedCpus  = 0;
 	my $assignedmemKb = 0;
 	foreach my $serviceHashRef (@$servicesRef) {
@@ -339,8 +368,11 @@ override 'configureDockerPinning' => sub {
 			&& !defined( $svcDockerConfigHashRef->{"cpu-shares"} )
 			&& !defined( $svcDockerConfigHashRef->{"cpuset-cpus"} ) )
 		{
-			$console_logger->error( "Host ", $self->hostName,
-				" has pin enabled for Dockerized services, but service $name doesn't specify either cpus or cpuset." );
+			$console_logger->error(
+				"Host ",
+				$self->hostName,
+" has pin enabled for Dockerized services, but service $name doesn't specify either cpus or cpuset."
+			);
 			exit(-1);
 		}
 
@@ -363,19 +395,36 @@ override 'startStatsCollection' => sub {
 
 	my $pid = fork();
 	if ( !defined $pid ) {
-		$console_logger->error("For hostname $hostname, couldn't fork a process: $!");
+		$console_logger->error(
+			"For hostname $hostname, couldn't fork a process: $!");
 	}
 	elsif ( $pid == 0 ) {
 		$pid = fork();
 		if ( !defined $pid ) {
-			$console_logger->error("For hostname $hostname, couldn't fork a process: $!");
+			$console_logger->error(
+				"For hostname $hostname, couldn't fork a process: $!");
 		}
 		elsif ( $pid == 0 ) {
+			$pid = fork();
+			if ( !defined $pid ) {
+				$console_logger->error(
+					"For hostname $hostname, couldn't fork a process: $!");
+			}
+			elsif ( $pid == 0 ) {
 
-			# get sar data
-			my $cmdOut = `$sshConnectString sar -o /tmp/${hostname}_sar.out $intervalLengthSec $numIntervals &`;
-			$logger->debug("Started sar on $hostname. ");
-			exit;
+				# get mpstat -I data
+				my $cmdOut = `$sshConnectString mpstat -I ALL $intervalLengthSec $numIntervals > /tmp/${hostname}_mpstat.txt `;
+
+				exit;
+			}
+			else {
+
+				# get sar data
+				my $cmdOut = `$sshConnectString sar -o /tmp/${hostname}_sar.out $intervalLengthSec $numIntervals &`;
+				$logger->debug("Started sar on $hostname. ");
+
+				exit;
+			}
 		}
 		else {
 			# Get socket usage data
@@ -419,10 +468,17 @@ override 'getStatsFiles' => sub {
 	my $scpHostString    = $self->scpHostString;
 	my $cmdOut           = `$sshConnectString sync 2>&1`;
 	$logger->debug( "getStatsFiles from $hostname. sync cmdOut = ", $cmdOut );
-	$cmdOut = `$scpConnectString root\@$scpHostString:/tmp/${hostname}_sar.out $destinationPath/. 2>&1 `;
-	$logger->debug( "getStatsFiles from $hostname. scp cmdOut = ", $cmdOut );
-	$cmdOut = `sar -Ap -f $destinationPath/${hostname}_sar.out > $destinationPath/${hostname}_sar.txt 2>&1`;
-	$logger->debug( "getStatsFiles from $hostname. sar -Ap cmdOut = ", $cmdOut );
+	$cmdOut = `mv /tmp/${hostname}_mpstat.txt $destinationPath/. 2>&1 `;
+	$logger->debug( "getStatsFiles from $hostname. scp mpstat cmdOut = ",
+		$cmdOut );
+	$cmdOut =
+`$scpConnectString root\@$scpHostString:/tmp/${hostname}_sar.out $destinationPath/. 2>&1 `;
+	$logger->debug( "getStatsFiles from $hostname. scp sar cmdOut = ",
+		$cmdOut );
+	$cmdOut =
+`sar -Ap -f $destinationPath/${hostname}_sar.out > $destinationPath/${hostname}_sar.txt 2>&1`;
+	$logger->debug( "getStatsFiles from $hostname. sar -Ap cmdOut = ",
+		$cmdOut );
 
 	my $logName = "/tmp/$hostname-socketStats.log";
 	$cmdOut = `mv $logName $destinationPath/.`;
@@ -436,7 +492,8 @@ override 'cleanStatsFiles' => sub {
 
 	my $hostname         = $self->hostName;
 	my $sshConnectString = $self->sshConnectString;
-	my $cmdOut           = `$sshConnectString \"rm -f /tmp/${hostname}_sar.out 2>&1\" 2>&1`;
+	my $cmdOut =
+	  `$sshConnectString \"rm -f /tmp/${hostname}_sar.out 2>&1\" 2>&1`;
 	$logger->debug( "cleanStatsFiles on $hostname. cmdOut = ", $cmdOut );
 
 };
@@ -456,7 +513,7 @@ override 'cleanLogFiles' => sub {
 	super();
 
 	my $sshConnectString = $self->sshConnectString;
-	my $cmdOut           = `$sshConnectString \"nscd --invalidate=hosts 2>&1\" 2>&1`;
+	my $cmdOut = `$sshConnectString \"nscd --invalidate=hosts 2>&1\" 2>&1`;
 	$logger->debug( "cleanLogFiles on $hostname. cmdOut = ", $cmdOut );
 
 };
@@ -477,23 +534,31 @@ override 'getConfigFiles' => sub {
 	my $scpConnectString = $self->scpConnectString;
 	my $scpHostString    = $self->scpHostString;
 
-	my $out = `$scpConnectString root\@$scpHostString:/etc/sysctl.conf $destinationPath/. 2>&1`;
+	my $out =
+`$scpConnectString root\@$scpHostString:/etc/sysctl.conf $destinationPath/. 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 1 out = ", $out );
-	$out = `$scpConnectString root\@$scpHostString:/etc/rc.local $destinationPath/. 2>&1`;
+	$out =
+`$scpConnectString root\@$scpHostString:/etc/rc.local $destinationPath/. 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 2 out = ", $out );
-	$out = `$scpConnectString root\@$scpHostString:/etc/fstab $destinationPath/. 2>&1`;
+	$out =
+`$scpConnectString root\@$scpHostString:/etc/fstab $destinationPath/. 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 3 out = ", $out );
 
-	$out = `$sshConnectString \"cat /proc/cpuinfo\" > $destinationPath/cpuinfo 2>&1`;
+	$out =
+	  `$sshConnectString \"cat /proc/cpuinfo\" > $destinationPath/cpuinfo 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 4 out = ", $out );
-	$out = `$sshConnectString \"cat /proc/meminfo\" >  $destinationPath/meminfo 2>&1`;
+	$out =
+`$sshConnectString \"cat /proc/meminfo\" >  $destinationPath/meminfo 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 5 out = ", $out );
-	$out = `$sshConnectString \"cat /proc/mounts\" >  $destinationPath/mounts 2>&1`;
+	$out =
+	  `$sshConnectString \"cat /proc/mounts\" >  $destinationPath/mounts 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 6 out = ", $out );
 
-	$out = `$sshConnectString \"ifconfig\" > $destinationPath/ifconfig.txt 2>&1`;
+	$out =
+	  `$sshConnectString \"ifconfig\" > $destinationPath/ifconfig.txt 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 7 out = ", $out );
-	$out = `$sshConnectString \"ip route show\" > $destinationPath/ipRouteShow.txt 2>&1`;
+	$out =
+`$sshConnectString \"ip route show\" > $destinationPath/ipRouteShow.txt 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 8 out = ", $out );
 	$out = `$sshConnectString \"ulimit -a\" > $destinationPath/ulimit.txt 2>&1`;
 	$logger->debug( "getConfigFiles on $hostname. 9 out = ", $out );

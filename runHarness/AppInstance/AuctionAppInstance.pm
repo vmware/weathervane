@@ -307,12 +307,14 @@ override 'redeploy' => sub {
 		foreach my $service (@$servicesRef) {
 			my $host = $service->host;
 			my $hostname = $host->hostName;
-			my $sshConnectString = $host->sshConnectString;
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
+			my $sshConnectString = $host->sshConnectString;	
+			if ($host->isNonDocker()) {			
+				my $ls          = `$sshConnectString \"ls\" 2>&1`;
+				if ( $ls =~ /No route/ ) {
+					# This host is not up so can't redeploy
+					$logger->debug("Don't redeploy to $hostname as it is not up.");
+					next;
+				}
 			}
 			$logger->debug( "Calling pullDockerImage for service ", $service->meta->name );
 			$service->pullDockerImage($logfile);
@@ -329,11 +331,13 @@ override 'redeploy' => sub {
 			my $host = $appServer->host;
 			my $hostname = $host->hostName;
 			my $sshConnectString = $host->sshConnectString;
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
+			if ($host->isNonDocker()) {			
+				my $ls          = `$sshConnectString \"ls\" 2>&1`;
+				if ( $ls =~ /No route/ ) {
+					# This host is not up so can't redeploy
+					$logger->debug("Don't redeploy to $hostname as it is not up.");
+					next;
+				}
 			}
 			$appServer->host->dockerPull( $logfile, $nosqlServer->getImpl() );
 		}
@@ -371,11 +375,13 @@ override 'redeploy' => sub {
 		my $host = $server->host;
 		my $hostname = $host->hostName;
 		my $sshConnectString = $host->sshConnectString;
-		my $ls          = `$sshConnectString \"ls\" 2>&1`;
-		if ( $ls =~ /No route/ ) {
-			# This host is not up so can't redeploy
-			$logger->debug("Don't redeploy to $hostname as it is not up.");
-			next;
+		if ($host->isNonDocker()) {			
+			my $ls          = `$sshConnectString \"ls\" 2>&1`;
+			if ( $ls =~ /No route/ ) {
+				# This host is not up so can't redeploy
+				$logger->debug("Don't redeploy to $hostname as it is not up.");
+				next;
+			}
 		}
 		
 		my $scpConnectString = $server->host->scpConnectString;
@@ -414,13 +420,15 @@ override 'redeploy' => sub {
 		my $host = $server->host;
 		my $hostname = $host->hostName;
 		my $sshConnectString = $host->sshConnectString;
-		my $ls          = `$sshConnectString \"ls\" 2>&1`;
-		if ( $ls =~ /No route/ ) {
-			# This host is not up so can't redeploy
-			$logger->debug("Don't redeploy to $hostname as it is not up.");
-			next;
+		if ($host->isNonDocker()) {			
+			my $ls          = `$sshConnectString \"ls\" 2>&1`;
+			if ( $ls =~ /No route/ ) {
+				# This host is not up so can't redeploy
+				$logger->debug("Don't redeploy to $hostname as it is not up.");
+				next;
+			}
 		}
-
+		
 		my $scpConnectString = $server->host->scpConnectString;
 		my $scpHostString    = $server->host->scpHostString;
 		my $webServerImpl    = $server->getParamValue('webServerImpl');
@@ -466,11 +474,13 @@ override 'redeploy' => sub {
 		my $host = $server->host;
 		my $hostname = $host->hostName;
 		my $sshConnectString = $host->sshConnectString;
-		my $ls          = `$sshConnectString \"ls\" 2>&1`;
-		if ( $ls =~ /No route/ ) {
-			# This host is not up so can't redeploy
-			$logger->debug("Don't redeploy to $hostname as it is not up.");
-			next;
+		if ($host->isNonDocker()) {			
+			my $ls          = `$sshConnectString \"ls\" 2>&1`;
+			if ( $ls =~ /No route/ ) {
+				# This host is not up so can't redeploy
+				$logger->debug("Don't redeploy to $hostname as it is not up.");
+				next;
+			}
 		}
 		my $scpConnectString = $server->host->scpConnectString;
 		my $scpHostString    = $server->host->scpHostString;

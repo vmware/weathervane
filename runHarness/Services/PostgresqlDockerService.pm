@@ -80,7 +80,7 @@ override 'create' => sub {
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
 	$volumeMap{"/mnt/dbData/postgresql"} = $self->getParamValue('postgresqlDataDir');
-	$volumeMap{"/mnt/dbLogs/postgresql"} = $logDir;
+	$volumeMap{$logDir} = $logDir;
 
 	my %envVarMap;
 	$envVarMap{"POSTGRES_USER"}     = "auction";

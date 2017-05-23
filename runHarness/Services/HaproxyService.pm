@@ -139,11 +139,19 @@ sub isRunning {
 sub setPortNumbers {
 	my ( $self ) = @_;
 	
-	$self->internalPortMap->{"http"} = 80;
-	$self->internalPortMap->{"https"} = 443;
-	$self->internalPortMap->{"stats"} = 10080;
-}
+	my $serviceType = $self->getParamValue( 'serviceType' );
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 
+	my $portOffset = 0;
+	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
+	if (!$useVirtualIp) {
+		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
+	} 
+	$self->internalPortMap->{"http"} = 80 + $portOffset;
+	$self->internalPortMap->{"https"} = 443 + $portOffset;
+	$self->internalPortMap->{"stats"} = 10080 + $portOffset;	
+}
 
 sub setExternalPortNumbers {
 	my ( $self ) = @_;

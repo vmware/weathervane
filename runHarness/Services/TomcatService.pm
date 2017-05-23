@@ -164,20 +164,18 @@ sub isRunning {
 sub setPortNumbers {
 	my ( $self ) = @_;
 	
-	my $serviceType    = $self->getParamValue('serviceType');
-	my $isEdgeServer = $self->isEdgeService();
-	my $portStep = 0;
-	my $portOffset     = 0;
+	my $serviceType = $self->getParamValue( 'serviceType' );
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
+
+	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if ( !$isEdgeServer ) {
-		$portStep = ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-		$portOffset =
-		  $self->getParamValue( $serviceType . 'PortOffset' ) + $portStep;
+	if (!$useVirtualIp) {
+		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	} 
-	$self->internalPortMap->{"http"}  = 80 + $portOffset;
+	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
-	$self->internalPortMap->{"shutdown"} = 8005 + $portStep;
-	
+	$self->internalPortMap->{"shutdown"} = 8005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 }
 
 sub setExternalPortNumbers {

@@ -2569,6 +2569,21 @@ $parameters{"coordinationServerPortStep"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"lbServerPortOffset"} = {
+	"type"      => "=i",
+	"default"   => 7000,
+	"parent"    => "lbServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"lbServerPortStep"} = {
+	"type"      => "=i",
+	"default"   => 1,
+	"parent"    => "lbServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"webServerPortOffset"} = {
 	"type"      => "=i",
 	"default"   => 9000,

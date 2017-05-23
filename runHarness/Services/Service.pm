@@ -236,6 +236,7 @@ sub getAppInstanceNum {
 
 sub create {
 	my ($self, $logPath)            = @_;
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 	
 	if (!$self->getParamValue('useDocker')) {
 		return;
@@ -259,8 +260,8 @@ sub create {
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
-	if ($self->getParamValue( 'serviceType' ) eq $self->appInstance->getEdgeService()) {
-		# This is an edge service.  Map the internal ports to the host ports
+	if ($self->isEdgeService() && $useVirtualIp)  {
+		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
 		$directMap = 1;
 	}
 	foreach my $key (keys %{$self->internalPortMap}) {

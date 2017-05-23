@@ -61,6 +61,13 @@ has 'isGuest' => (
 	default => 0,
 );
 
+# This will be set to true if host is running any non-dockerized service
+has 'isNonDocker' => (
+	is  => 'rw',
+	isa => 'Bool',
+	default => 0,
+);
+
 has 'sshConnectString' => (
 	is  => 'rw',
 	isa => 'Str',

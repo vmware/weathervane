@@ -488,6 +488,11 @@ override 'getStatsFiles' => sub {
 override 'cleanStatsFiles' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::Hosts::LinuxGuest");
+	
+	if (!$self->isNonDocker()) {
+		return;
+	}
+	
 	super();
 
 	my $hostname         = $self->hostName;
@@ -510,6 +515,12 @@ override 'cleanLogFiles' => sub {
 	my ($self)   = @_;
 	my $logger   = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $hostname = $self->hostName;
+
+	
+	if (!$self->isNonDocker()) {
+		return;
+	}
+
 	super();
 
 	my $sshConnectString = $self->sshConnectString;

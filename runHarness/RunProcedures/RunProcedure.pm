@@ -1389,6 +1389,10 @@ sub checkVersions {
 	my $allSame = 1;
 	foreach my $host ( @{ $self->hostsRef } ) {
 
+		if (!$host->isNonDocker()) {
+			next;
+		}
+
 		# Get the host's version number
 		my $hostname         = $host->hostName;
 		my $sshConnectString = $host->sshConnectString;

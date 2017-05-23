@@ -92,7 +92,9 @@ sub createHost {
 		$instance->setHost($host);
 	}
 
-	return $createdNew;
+	my @retVal = ($createdNew, $host);
+
+	return \@retVal;
 }
 
 # read in the command-line options
@@ -392,7 +394,8 @@ foreach my $paramHashRef (@$hostsParamHashRefs) {
 	$logger->debug( "For host ", $paramHashRef->{'hostName'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
-	my $createdNew = createHost( $paramHashRef, $runProcedure, 0, \%ipToHostHash );
+	my $retArrayRef = createHost( $paramHashRef, $runProcedure, 0, \%ipToHostHash );
+	my ($createdNew, $host) = @$retArrayRef;
 	if ( !$createdNew ) {
 		$console_logger->warn( "Warning: Have defined multiple host instances in the host block which point "
 			  . "to the same IP address.\nOnly the parameters for the first such host will be used." );
@@ -522,7 +525,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($hostParamHashRef);
 	$logger->debug($tmp);
-	createHost( $hostParamHashRef, $runProcedure, $workloadDriver, \%ipToHostHash );
+	my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $workloadDriver, \%ipToHostHash );
+	my ($createdNew, $host) = @$retArrayRef;
+	# The workload driver is always non-Docker
+	$host->isNonDocker(1);
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
@@ -552,7 +558,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 		$tmp = $json->encode($hostParamHashRef);
 		$logger->debug($tmp);
-		createHost( $hostParamHashRef, $runProcedure, $secondary, \%ipToHostHash );
+		my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $secondary, \%ipToHostHash );
+		my ($createdNew, $host) = @$retArrayRef;
+		# The workload driver is always non-Docker
+		$host->isNonDocker(1);
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -628,8 +637,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 				$tmp = $json->encode($hostParamHashRef);
 				$logger->debug($tmp);
-				createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
-
+				my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
+				my ($createdNew, $host) = @$retArrayRef;
+				if (!$service->getParamValue('useDocker')) {
+					$host->isNonDocker(1);
+				}
 				$svcNum++;
 			}
 
@@ -699,7 +711,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 				$tmp = $json->encode($hostParamHashRef);
 				$logger->debug($tmp);
-				createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
+				my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
+				my ($createdNew, $host) = @$retArrayRef;
+				if (!$service->getParamValue('useDocker')) {
+					$host->isNonDocker(1);
+				}
 
 				$svcNum++;
 			}
@@ -735,7 +751,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 		$tmp = $json->encode($hostParamHashRef);
 		$logger->debug($tmp);
-		createHost( $hostParamHashRef, $runProcedure, $dataManager, \%ipToHostHash );
+		my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $dataManager, \%ipToHostHash );
+		my ($createdNew, $host) = @$retArrayRef;
+		# data manager is always non-Docker
+		$host->isNonDocker(1);
+
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 
 		# Now that the configuration of the appInstance is complete, ask it to check whether the

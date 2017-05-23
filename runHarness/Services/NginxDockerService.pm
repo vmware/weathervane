@@ -130,17 +130,17 @@ sub setPortNumbers {
 	my ( $self ) = @_;
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
-	my $isEdgeServer = $self->isEdgeService();
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
+
 	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if (!$isEdgeServer) {
-		$portOffset = $self->getParamValue( $serviceType . 'PortOffset') +
-		  ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-	}
+	if (!$useVirtualIp) {
+		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
+	} 
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
-	$self->internalPortMap->{"https"} = 443 + $portOffset;		
+	$self->internalPortMap->{"https"} = 443 + $portOffset;
 }
-
 
 sub setExternalPortNumbers {
 	my ( $self ) = @_;

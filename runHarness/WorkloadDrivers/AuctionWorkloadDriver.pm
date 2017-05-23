@@ -386,21 +386,25 @@ sub createRunConfigHash {
 
 		# There should be one target for each IP address
 		# associated with the www hostname for each appInstance
-		my $wwwIpAddrsRef;
+		my $wwwIpAddrsRef = [];
 		if ( $appInstance->getParamValue('useVirtualIp') ) {
 			$logger->debug("configure for workload $workloadNum, appInstance uses virtualIp");
 			my $wwwHostname = $appInstance->getWwwHostname();
-			$wwwIpAddrsRef = Utils::getIpAddresses($wwwHostname);
+			my $wwwIpsRef = Utils::getIpAddresses($wwwHostname);
+			foreach my $ip (@$wwwIpsRef) {
+				# When using virtualIP addresses, all edge services must use the same
+				# default port numbers
+				push @$wwwIpAddrsRef, [$ip, 80, 443];				
+			}
 		}
 		else {
-			$wwwIpAddrsRef = [];
 			my $edgeService  = $appInstance->getEdgeService();
 			my $edgeServices = $appInstance->getActiveServicesByType($edgeService);
 			$logger->debug(
 				"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
 			);
 			foreach my $service (@$edgeServices) {
-				push @$wwwIpAddrsRef, $service->host->ipAddr;
+				push @$wwwIpAddrsRef, [$service->host->ipAddr, $service->portMap->{"http"}, $service->portMap->{"https"}];
 			}
 		}
 		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
@@ -408,14 +412,19 @@ sub createRunConfigHash {
 		my $users = $appInstance->getUsers();
 
 		my $loadPathName = "";
+		my $uniquifier = 1;
 		for ( my $vipNum = 0 ; $vipNum < $numVIPs ; $vipNum++ ) {
 			my $target = {};
 
-			my $serverName = $wwwIpAddrsRef->[$vipNum];
+			my $serverName = $wwwIpAddrsRef->[$vipNum]->[0];
+			my $httpPort = $wwwIpAddrsRef->[$vipNum]->[1];
+			my $httpsPort = $wwwIpAddrsRef->[$vipNum]->[2];
 			$loadPathName = "loadPath" . $instanceNum . "-" . $serverName;
 
 			$target->{"type"}     = "http";
 			$target->{"hostname"} = "$serverName";
+			$target->{"httpPort"} = "$httpPort";
+			$target->{"httpsPort"} = "$httpsPort";
 			if ( $self->getParamValue('ssl') ) {
 				$target->{"sslEnabled"} = JSON::true;
 			}
@@ -425,7 +434,12 @@ sub createRunConfigHash {
 			$target->{"loadPathName"} = $loadPathName;
 			$target->{"workloadName"} = "appInstance" . $instanceNum;
 
-			$runRef->{"targets"}->{$serverName} = $target;
+			my $targetName = $serverName;
+			while (exists $runRef->{"targets"}->{$targetName}) {
+				$targetName = "$targetName-$uniquifier";
+				$uniquifier++;
+			}
+			$runRef->{"targets"}->{$targetName} = $target;
 
 			my $loadPath = {};
 			$loadPath->{"type"}          = "interval";
@@ -904,7 +918,7 @@ sub initializeRun {
 		my $pid              = fork();
 		if ( $pid == 0 ) {
 			my $cmdString =
-"$sshConnectString \"java $driverJvmOpts -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run_$hostname$suffix.log\" > $logDir/run_$hostname$suffix.log 2>&1";
+"$sshConnectString \"java $driverJvmOpts -DwkldNum=$workloadNum -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run_$hostname$suffix.log\" > $logDir/run_$hostname$suffix.log 2>&1";
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname: $cmdString");
 			`$cmdString`;
 			exit;

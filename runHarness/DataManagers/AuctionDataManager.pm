@@ -689,12 +689,12 @@ sub loadData {
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $hostname         = $self->host->hostName;
-	my $logName          = "$logPath/loadData-$hostname.log";
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $appInstance      = $self->appInstance;
 	my $sshConnectString = $self->host->sshConnectString;
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $applog;
@@ -1017,7 +1017,7 @@ sub loadData {
 	if ( $ppid == 0 ) {
 		print $applog "Starting dbLoader\n";
 		my $cmdString =
-"java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions ";
+"java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum} -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions ";
 		my $cmdOut =
 `$sshConnectString "$cmdString 2>&1 | tee /tmp/dbLoader_W${workloadNum}I${appInstanceNum}.log" 2>&1  > $logPath/dbLoader_W${workloadNum}I${appInstanceNum}.log `;
 		print $applog "$sshConnectString $cmdString\n";
@@ -1028,12 +1028,14 @@ sub loadData {
 	# get the pid of the dbLoader process
 	sleep(30);
 	my $loaderPid = "";
-	my $out = `$sshConnectString ps aux | grep DBLoader | grep -v grep | grep -v time`;
-	if ( $out =~ /^root\s+(\d+)\s/ ) {
+	my $out = `$sshConnectString ps x`;
+	$logger->debug("Looking for pid of dbLoader_W${workloadNum}I${appInstanceNum}: $out");
+	if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-Dwkld=W${workloadNum}I${appInstanceNum}.*DBLoader/m ) {
 		$loaderPid = $1;
+		$logger->debug("Found pid $loaderPid for dbLoader_W${workloadNum}I${appInstanceNum}");
 	}
 	else {
-		# Check again is the data is loaded.  The dbLoader may have finished
+		# Check again if the data is loaded.  The dbLoader may have finished
 		# before 30 seconds
 		my $isDataLoaded = 0;
 		try {
@@ -1042,9 +1044,11 @@ sub loadData {
 
 		if ( !$isDataLoaded ) {
 			# check one last time for the pid
-			my $out = `$sshConnectString ps aux | grep DBLoader | grep -v grep | grep -v time`;
-			if ( $out =~ /^root\s+(\d+)\s/ ) {
+			my $out = `$sshConnectString ps x`;
+			$logger->debug("Looking for pid of dbLoader_W${workloadNum}I${appInstanceNum}: $out");
+			if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-Dwkld=W${workloadNum}I${appInstanceNum}.*DBLoader/m ) {
 				$loaderPid = $1;
+				$logger->debug("Found pid $loaderPid for dbLoader_W${workloadNum}I${appInstanceNum}");
 			} else {
 				$console_logger->error( "Can't find dbloader pid for workload $workloadNum, appInstance $appInstanceNum" );
 				return 0;
@@ -1393,7 +1397,7 @@ sub isDataLoaded {
 		$scale = $self->getParamValue('scale');
 	}
 
-	my $logName = "$logPath/isDataLoaded-$hostname.log";
+	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";

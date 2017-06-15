@@ -81,7 +81,7 @@ public class HighBid implements Serializable, DomainObject {
 	}
 
 	public HighBid(HighBid that) {
-		this.id = null;
+		this.id = that.id;
 		this.amount = that.amount;
 		this.state = that.state;
 		this.bidCount = that.bidCount;

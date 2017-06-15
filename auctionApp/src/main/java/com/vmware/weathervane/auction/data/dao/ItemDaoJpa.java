@@ -15,7 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.dao;
 
-import java.util.Date;
 import java.util.List;
 
 import javax.persistence.Query;

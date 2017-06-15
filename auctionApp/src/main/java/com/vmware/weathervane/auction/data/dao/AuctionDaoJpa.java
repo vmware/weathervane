@@ -206,6 +206,25 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 		return (Item) theQuery.getSingleResult();
 
 	}
+	
+	@Override
+	@Transactional(readOnly = true, noRollbackFor = { EmptyResultDataAccessException.class })
+	public Item getNextUnsoldItem(Auction theAuction) {
+		logger.info("getNextUnsoldItem. auctionId = " + theAuction.getId() );
+
+		String theQueryString = "SELECT e FROM Item e "
+				+ "WHERE e.auction = :auction  and e.state = :state " + "ORDER BY e.id ASC";
+
+		logger.info("getNextUnsoldItem. theQueryString = " + theQueryString);
+
+		Query theQuery = entityManager.createQuery(theQueryString)
+				.setParameter("auction", theAuction)
+				.setParameter("state", Item.ItemState.INAUCTION)
+				.setMaxResults(1);
+
+		return (Item) theQuery.getSingleResult();
+
+	}
 
 	@Override
 	@Transactional(readOnly = true, noRollbackFor = { EmptyResultDataAccessException.class })

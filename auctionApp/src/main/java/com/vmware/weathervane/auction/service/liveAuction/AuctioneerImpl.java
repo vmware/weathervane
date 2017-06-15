@@ -562,7 +562,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			while (!suceeded && !_shuttingDown) {
 				try {
 					curHighBid = _auctioneerTx.makeForwardProgress(_highBid);
-
+					logger.info("bidwatchdogtask:run for auction " + _auctionId + ". makeForwardProgress returned highbid: " + curHighBid);
 					if (_shuttingDown) {
 						/*
 						 * If shutting down, don't try to send messages or start the next

@@ -22,4 +22,5 @@ public class AuctionConstants {
    
    public static final int DEFAULT_USERS_SCALE_FACTOR = 5;  // There are SCALE_FACTOR * users Users in the DB
    public static final int DEFAULT_MAX_NUM_ASYNC_BEHAVIORS = 3;
+   public static final int DEFAULT_USERS_PER_AUCTION = 15;
 }

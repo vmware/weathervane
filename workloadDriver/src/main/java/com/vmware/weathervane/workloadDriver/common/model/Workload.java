@@ -92,7 +92,7 @@ public abstract class Workload {
 	@JsonIgnore
 	private List<Operation> operations = null;
 	
-	public abstract User createUser(Long userId, Long orderingId, Target target);
+	public abstract User createUser(Long userId, Long orderingId, Long globalOrderingId, Target target);
 
 	public void initialize(String name, Integer nodeNumber, Integer numNodes, 
 			Map<String, StatsIntervalSpec> statsIntervalSpecsMap,

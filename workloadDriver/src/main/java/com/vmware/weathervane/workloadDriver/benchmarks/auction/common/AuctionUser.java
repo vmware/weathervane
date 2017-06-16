@@ -61,6 +61,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsCurrentBid;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsCurrentItem;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsDetailItem;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsFirstAuctionId;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsLoginResponse;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsPurchaseHistoryInfo;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ContainsUserProfile;
@@ -74,6 +75,9 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.CurrentItemsProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.DetailItemListener;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.DetailItemProvider;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.FirstAuctionIdListener;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.FirstAuctionIdProvider;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.GlobalOrderingIdProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.LoginResponseListener;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.LoginResponseProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsActiveAuctions;
@@ -91,6 +95,8 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsCurrentItem;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsCurrentItems;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsDetailItem;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsFirstAuctionId;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsGlobalOrderingId;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsLoginResponse;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsPageSize;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsPassword;
@@ -98,6 +104,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsPersons;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsPurchaseHistoryInfo;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsUserProfile;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsUsersPerAuction;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PageSizeProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PasswordProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PersonNameProvider;
@@ -106,6 +113,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PurchaseHistoryInfoProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.UserProfileListener;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.UserProfileProvider;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.UsersPerAuctionProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.factory.AuctionOperationFactory;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.factory.AuctionTransitionChooserFactory;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.AttendanceRecordRepresentation;
@@ -119,8 +127,8 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.BidSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.RandomBidStrategy;
 import com.vmware.weathervane.workloadDriver.common.chooser.Chooser;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs;
-import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.XHolderProvider;
+import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.util.Holder;
 import com.vmware.weathervane.workloadDriver.common.util.ResponseHolder;
@@ -160,7 +168,13 @@ public class AuctionUser extends User {
 	 * This holds the itemId from the last item added by this user
 	 */
 	private Holder<Long> _addedItemId = new Holder<Long>();
-
+	
+	/**
+	 * This holds the id of the first active auction. It is used when forming
+	 * the id for the auctions to join.
+	 */
+	private Holder<Long> _firstAuctionId = new Holder<Long>();
+	
 	private ResponseHolder<String, CollectionRepresentation<AuctionRepresentation>> _activeAuctions 
 		= new ResponseHolder<String, CollectionRepresentation<AuctionRepresentation>>();
 
@@ -227,8 +241,8 @@ public class AuctionUser extends User {
 
 	private Random _randomGenerator;
 
-	public AuctionUser(Long id, Long orderingId, String behaviorSpecName, Target target, AuctionWorkload workload) {
-		super(id, orderingId, behaviorSpecName, target);
+	public AuctionUser(Long id, Long orderingId, Long globalOrderingId, String behaviorSpecName, Target target, AuctionWorkload workload) {
+		super(id, orderingId, globalOrderingId, behaviorSpecName, target);
 		this.setWorkload(workload);
 		this.setOperationFactory(new AuctionOperationFactory());
 		this.setTransitionChooserFactory(new AuctionTransitionChooserFactory());
@@ -305,6 +319,10 @@ public class AuctionUser extends User {
 			((ContainsAddedItemId) theObject).registerAddedItemIdListener(new AddedItemIdListener(
 					_addedItemId, (ContainsAddedItemId) theObject));
 		}
+		if (theObject instanceof ContainsFirstAuctionId) {
+			((ContainsFirstAuctionId) theObject).registerFirstAuctionIdListener(new FirstAuctionIdListener(
+					_firstAuctionId, (ContainsFirstAuctionId) theObject));
+		}
 
 		if (theObject instanceof NeedsLoginResponse) {
 			((NeedsLoginResponse) theObject)
@@ -350,6 +368,9 @@ public class AuctionUser extends User {
 		if (theObject instanceof NeedsPageSize) {
 			((NeedsPageSize) theObject).registerPageSizeProvider(new PageSizeProvider(_workload.getPageSizeHolder()));
 		}
+		if (theObject instanceof NeedsUsersPerAuction) {
+			((NeedsUsersPerAuction) theObject).registerUsersPerAuctionProvider(new UsersPerAuctionProvider(_workload.getUsersPerAuctionHolder()));
+		}
 		if (theObject instanceof NeedsAuctionIdToLeave) {
 			((NeedsAuctionIdToLeave) theObject)
 					.registerAuctionIdToLeaveProvider(new AuctionIdToLeaveProvider(
@@ -378,6 +399,14 @@ public class AuctionUser extends User {
 		if (theObject instanceof NeedsAddedItemId) {
 			((NeedsAddedItemId) theObject).registerAddedItemIdProvider(new AddedItemIdProvider(
 					_addedItemId));
+		}
+		if (theObject instanceof NeedsFirstAuctionId) {
+			((NeedsFirstAuctionId) theObject).registerFirstAuctionIdProvider(new FirstAuctionIdProvider(
+					_firstAuctionId));
+		}
+		if (theObject instanceof NeedsGlobalOrderingId) {
+			((NeedsGlobalOrderingId) theObject).registerGlobalOrderingIdProvider(new GlobalOrderingIdProvider(
+					new Holder<Long>(_globalOrderingId)));
 		}
 
 		if (theObject instanceof ChoosesBidStrategy) {

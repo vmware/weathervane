@@ -176,6 +176,14 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 		public void registerAddedItemIdProvider(AddedItemIdProvider provider);
 	}
 
+	public interface NeedsFirstAuctionId extends Needs {
+		public void registerFirstAuctionIdProvider(FirstAuctionIdProvider provider);
+	}
+
+	public interface NeedsGlobalOrderingId extends Needs {
+		public void registerGlobalOrderingIdProvider(GlobalOrderingIdProvider provider);
+	}
+
 	public interface NeedsPersons extends NeedsStatic {
 		public void registerPersonProvider(PersonProvider provider);
 	}
@@ -190,6 +198,10 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 
 	public interface NeedsPageSize extends NeedsStatic {
 		public void registerPageSizeProvider(PageSizeProvider provider);
+	}
+
+	public interface NeedsUsersPerAuction extends NeedsStatic {
+		public void registerUsersPerAuctionProvider(UsersPerAuctionProvider provider);
 	}
 
 	/*** CONTAINS INTERFACES ***/
@@ -264,6 +276,10 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 
 	public interface ContainsAddedItemId extends Contains {
 		public void registerAddedItemIdListener(AddedItemIdListener listener);
+	}
+
+	public interface ContainsFirstAuctionId extends Contains {
+		public void registerFirstAuctionIdListener(FirstAuctionIdListener listener);
 	}
 
 	/*** DATA CLASSES ***/
@@ -511,6 +527,34 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 				throw new RuntimeException(ex);
 			}
 
+		}
+
+		@Override
+		protected Long convertStringToT(String value) {
+			return Long.getLong(value);
+		}
+
+		@Override
+		protected boolean validateValue(String value) {
+			return true;
+		}
+
+		@Override
+		public boolean needsString() {
+			return true;
+		}
+		
+	}
+
+
+	public static class FirstAuctionIdListener extends XHolderListener<Long> {
+
+		public FirstAuctionIdListener(Holder<Long> data, ContainsFirstAuctionId operation) {
+			super(data);
+		}
+
+		public void setFirstAuctionId(Long auctionId) {
+			this.addX(auctionId);
 		}
 
 		@Override
@@ -1525,6 +1569,22 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 
 	}
 
+	public static class FirstAuctionIdProvider extends XHolderProvider<Long> {
+
+		public FirstAuctionIdProvider(Holder<Long> data) {
+			super(data);
+		}
+
+	}
+
+	public static class GlobalOrderingIdProvider extends XHolderProvider<Long> {
+
+		public GlobalOrderingIdProvider(Holder<Long> data) {
+			super(data);
+		}
+
+	}
+
 	public static class PersonProvider extends XMapStringProvider {
 
 		public PersonProvider(Map<String, String> data, Random random) {
@@ -1586,6 +1646,14 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 	public static class PageSizeProvider extends XHolderProvider<Integer> {
 
 		public PageSizeProvider(Holder<Integer> data) {
+			super(data);
+		}
+
+	}
+
+	public static class UsersPerAuctionProvider extends XHolderProvider<Integer> {
+
+		public UsersPerAuctionProvider(Holder<Integer> data) {
 			super(data);
 		}
 

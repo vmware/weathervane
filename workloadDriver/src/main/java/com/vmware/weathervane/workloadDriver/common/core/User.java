@@ -64,8 +64,14 @@ public abstract class User implements LoadProfileChangeCallback {
 	 * The orderingId uniquely identifies the user in its own ScenarioTrack. It
 	 * is used when deciding which users should be running
 	 */
-	private long _orderingId;
+	protected long _orderingId;
 
+	/**
+	 * The _globalOrderingId uniquely orders users across all 
+	 * workload driver nodes
+	 */
+	protected long _globalOrderingId;
+	
 	private OperationFactory _operationFactory = null;
 	private TransitionChooserFactory _transitionChooserFactory = null;
 	
@@ -131,11 +137,13 @@ public abstract class User implements LoadProfileChangeCallback {
 
 	protected Random _randomNumberGenerator;
 
-	public User(Long id, Long orderingId, String behaviorSpecName, Target target) {
+	public User(Long id, Long orderingId, Long globalOrderingId, String behaviorSpecName, Target target) {
 
-		logger.debug("Creating user with userId " + id + " for target " + target.getName());
+		logger.debug("Creating user with userId " + id + ", globalOrderingId = " 
+				+ globalOrderingId + " for target " + target.getName());
 		this._id = id;
 		this._orderingId = orderingId;
+		this._globalOrderingId = globalOrderingId;
 		this.target = target;
 		this._behaviorSpecName = behaviorSpecName;
 		
@@ -386,7 +394,7 @@ public abstract class User implements LoadProfileChangeCallback {
 		/*
 		 * Start a new user to replace this one.
 		 */
-		User newUser = target.getWorkload().createUser(_id, _orderingId, target);
+		User newUser = target.getWorkload().createUser(_id, _orderingId, _globalOrderingId, target);
 		newUser.setStatsCollector(_statsCollector);
 		target.registerLoadProfileChangeCallback(newUser);
 		newUser.start(_timeToQuit, target.getNumActiveUsers());

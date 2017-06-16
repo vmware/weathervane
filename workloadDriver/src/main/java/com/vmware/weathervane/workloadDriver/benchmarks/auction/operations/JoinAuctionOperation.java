@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionOperation;
-import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.ActiveAuctionProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.AttendedAuctionsListener;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.AttendedAuctionsListenerConfig;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.AttendedAuctionsProvider;
@@ -39,25 +38,30 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.CurrentItemListener;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.CurrentItemListenerConfig;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.CurrentItemProvider;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.FirstAuctionIdProvider;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.GlobalOrderingIdProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.LoginResponseProvider;
-import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsActiveAuctions;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsAttendedAuctions;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsCurrentBid;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsCurrentItem;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsFirstAuctionId;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsGlobalOrderingId;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsLoginResponse;
-import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.AuctionRepresentation;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsUsersPerAuction;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.UsersPerAuctionProvider;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
-import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
+import com.vmware.weathervane.workloadDriver.common.core.User;
+import com.vmware.weathervane.workloadDriver.common.exceptions.OperationFailedException;
 import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
-public class JoinAuctionOperation extends AuctionOperation implements NeedsLoginResponse, NeedsActiveAuctions,
+public class JoinAuctionOperation extends AuctionOperation implements NeedsLoginResponse,
 		ContainsCurrentAuction, ContainsCurrentItem, ContainsCurrentBid, NeedsAttendedAuctions,
-		ContainsAttendedAuctions,  NeedsCurrentItem, NeedsCurrentBid {
+		ContainsAttendedAuctions,  NeedsCurrentItem, NeedsCurrentBid, NeedsUsersPerAuction, 
+		NeedsFirstAuctionId, NeedsGlobalOrderingId {
 
-	private ActiveAuctionProvider _activeAuctionProvider;
 	private CurrentAuctionListener _currentAuctionListener;
 	private CurrentItemListener _currentItemListener;
 	private CurrentBidListener _currentBidListener;
@@ -66,11 +70,17 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 	private LoginResponseProvider _loginResponseProvider;
 	private CurrentItemProvider _currentItemProvider;
 	private CurrentBidProvider _currentBidProvider;
+	private UsersPerAuctionProvider _usersPerAuctionProvider;
+	private FirstAuctionIdProvider _firstAuctionIdProvider;
+	private GlobalOrderingIdProvider _globalOrderingIdProvider;
 
 	private Long _auctionId;
 	private String _authToken;
 	private Map<String, String> _authTokenHeaders = new HashMap<String, String>();
 	private Long _userId;
+	private Integer _maxNumAsyncBehaviors;
+	private Integer _usersPerAuction;
+	private Long _firstAuctionId;
 	private List<String> _itemImageURLs;
 	private Map<String, String> _bindVarsMap = new HashMap<String, String>();
 
@@ -96,6 +106,9 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 			_authTokenHeaders.put("Accept", "application/json");
 			_authTokenHeaders.put("Content-Type", "application/json");
 			_userId = _loginResponseProvider.getUserId();
+			_maxNumAsyncBehaviors = getBehavior().getBehaviorSpec().getMaxNumAsyncBehaviors();
+			_usersPerAuction = _usersPerAuctionProvider.getItem("usersPerAuction");
+			_firstAuctionId = _firstAuctionIdProvider.getItem("auctionId");
 			joinAuctionStep();
 			break;
 
@@ -136,13 +149,37 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 	}
 
 	public void joinAuctionStep() throws Throwable {
-
-		do {
-			AuctionRepresentation anAuction = _activeAuctionProvider.getRandomActiveAuction();
-			_auctionId = anAuction.getId();
-			_bindVarsMap.put("auctionId", Long.toString(_auctionId));
-			logger.debug("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " Got AuctionId = " + _auctionId);
-		} while (_attendedAuctionsProvider.contains(_auctionId));
+		
+		/*
+		 * Each user joins only a specific set of auctions.  The id of the auctions
+		 * are chosen so that there are at most _usersPerAuctions users attending each
+		 * auction.  The auctionIdOffset is added to the firstAuctionId to get the actual
+		 * ID of the first auction that a user can attend.  A user can attend at most 
+		 * maxNumAsyncBehavior auctions.
+		 */
+		long globalOrderingId = _globalOrderingIdProvider.getItem("Id");
+		long auctionIdOffset = ((globalOrderingId - 1) /(_usersPerAuction * _maxNumAsyncBehaviors)) * _maxNumAsyncBehaviors;
+		_auctionId = _firstAuctionId + auctionIdOffset;
+		int auctionIdsTried = 0;
+		logger.debug("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
+				+ _userId + ", globalOrderingId = " + globalOrderingId + ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
+				+ ", first try at auctionId = " + _auctionId);
+		while (_attendedAuctionsProvider.contains(_auctionId) && (auctionIdsTried < _maxNumAsyncBehaviors)) {
+			_auctionId++;
+			auctionIdsTried++;
+		}
+		if (auctionIdsTried >= _maxNumAsyncBehaviors) {
+			/*
+			 * This user is already attending the max allowable number of 
+			 * auctions.  This should not happen.
+			 */
+			throw new OperationFailedException("JoinAuctionOperation:initialStep User " + _userId + " with behaviorID = " + this.getBehaviorId()
+			+ " is already attending all allowed auction. maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors);
+		}
+		_bindVarsMap.put("auctionId", Long.toString(_auctionId));
+		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " Joining AuctionId = "
+				+ _auctionId);
+		
 		
 		SimpleUri uri = getOperationUri(UrlType.POST, 0);
 
@@ -243,11 +280,6 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 	}
 
 	@Override
-	public void registerActiveAuctionProvider(ActiveAuctionProvider provider) {
-		_activeAuctionProvider = provider;
-	}
-
-	@Override
 	public void registerCurrentAuctionListener(CurrentAuctionListener listener) {
 		_currentAuctionListener = listener;
 	}
@@ -305,6 +337,21 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 	@Override
 	public void registerCurrentBidProvider(CurrentBidProvider provider) {
 		_currentBidProvider = provider;
+	}
+
+	@Override
+	public void registerUsersPerAuctionProvider(UsersPerAuctionProvider provider) {
+		_usersPerAuctionProvider = provider;
+	}
+
+	@Override
+	public void registerFirstAuctionIdProvider(FirstAuctionIdProvider provider) {
+		_firstAuctionIdProvider = provider;
+	}
+
+	@Override
+	public void registerGlobalOrderingIdProvider(GlobalOrderingIdProvider provider) {
+		_globalOrderingIdProvider = provider;
 	}
 
 }

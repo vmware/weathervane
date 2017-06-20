@@ -152,7 +152,7 @@ public abstract class Target implements Runnable {
 		for (long i = 1; i <= numUsersForThisNode; i++) {
 			long userId = userIdCounter.getAndIncrement();
 			long orderingId = orderingIdCounter++;
-			long globalOrderingId = (nodeNumber + 1) + ((userId - 1) * numNodes);
+			long globalOrderingId = (nodeNumber + 1) + ((orderingId - 1) * numNodes);
 			User user = getWorkload().createUser(userId, orderingId, globalOrderingId, this);
 			user.setStatsCollector(getWorkload().getStatsCollector());
 			this.registerLoadProfileChangeCallback(user);
@@ -246,7 +246,7 @@ public abstract class Target implements Runnable {
 			for (long i = 1; i <= usersToCreate; i++) {
 				long userId = userIdCounter.getAndIncrement();
 				long orderingId = orderingIdCounter++;
-				long globalOrderingId = (nodeNumber + 1) + ((userId - 1) * numNodes);
+				long globalOrderingId = (nodeNumber + 1) + ((orderingId - 1) * numNodes);
 				User user = getWorkload().createUser(userId, orderingId, globalOrderingId, this);
 				user.setStatsCollector(getWorkload().getStatsCollector());
 				this.registerLoadProfileChangeCallback(user);

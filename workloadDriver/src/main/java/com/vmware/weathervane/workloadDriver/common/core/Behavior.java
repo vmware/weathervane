@@ -101,8 +101,6 @@ public class Behavior implements OperationCompleteCallback {
 
 	private List<Operation> _operationsRun = new ArrayList<Operation>();
 
-	private long _timeToQuit;
-
 	protected Random _randomNumberGenerator;
 
 	private UUID _selectedAsyncId;
@@ -112,7 +110,7 @@ public class Behavior implements OperationCompleteCallback {
 	private static final Logger logger = LoggerFactory.getLogger(Behavior.class);
 
 	public Behavior(User user, BehaviorSpec behaviorSpec,
-			StatsCollector statsCollector, Target target, long timeToQuit) {
+			StatsCollector statsCollector, Target target) {
 		
 		logger.debug("Creating Behavior with BehaviorSpec named: " + behaviorSpec.getName());
 		
@@ -120,7 +118,7 @@ public class Behavior implements OperationCompleteCallback {
 		_behaviorSpec = behaviorSpec;
 		_statsCollector = statsCollector;
 		_target = target;
-		_timeToQuit = timeToQuit;
+
 		// Give this behavior a unique If
 		_behaviorId = UUID.randomUUID();
 
@@ -296,7 +294,7 @@ public class Behavior implements OperationCompleteCallback {
 			 * operation if this behavior has not been told to stop and it is
 			 * not time to end.
 			 */
-			if (!_stop && (now < _timeToQuit)) {
+			if (!_stop) {
 
 				/*
 				 * Decide whether any sub-behavior should be stopped. This was
@@ -445,7 +443,7 @@ public class Behavior implements OperationCompleteCallback {
 				 * Create a new asynchronous sub-behavior
 				 */
 				BehaviorSpec spec = BehaviorSpec.getBehaviorSpec(asyncMixName);
-				_pendingAsyncBehavior = new Behavior(_user, spec,_statsCollector, _target, _timeToQuit);
+				_pendingAsyncBehavior = new Behavior(_user, spec,_statsCollector, _target);
 				UUID behaviorId = _pendingAsyncBehavior.getBehaviorId();
 				_pendingAsyncBehavior.setOperations(_user.getOperationFactory().getOperations(_statsCollector, _user, _pendingAsyncBehavior, _target));
 				for (Operation operation : _pendingAsyncBehavior.getOperations()) {
@@ -726,14 +724,6 @@ public class Behavior implements OperationCompleteCallback {
 			}
 		}
 		return null;
-	}
-
-	public long getTimeToQuit() {
-		return _timeToQuit;
-	}
-
-	public void setTimeToQuit(long _timeToQuit) {
-		this._timeToQuit = _timeToQuit;
 	}
 
 	public UUID getBehaviorId() {

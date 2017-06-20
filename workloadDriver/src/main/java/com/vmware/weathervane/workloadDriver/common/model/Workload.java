@@ -16,10 +16,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,180 +35,302 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionWorkload;
-import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
-import com.vmware.weathervane.workloadDriver.common.core.User;
+import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
+import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
+import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
 import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadStatsMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StopWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
-@JsonSubTypes({ 
-	@Type(value = AuctionWorkload.class, name = "auction")
-})
-public abstract class Workload {
+@JsonSubTypes({ @Type(value = AuctionWorkload.class, name = "auction") })
+public abstract class Workload implements UserFactory {
 	private static final Logger logger = LoggerFactory.getLogger(Workload.class);
 
-	@JsonIgnore
-	public static final RestTemplate restTemplate = new RestTemplate();
-	
+	private String name;
+
+	public enum WorkloadState {
+		PENDING, INITIALIZED, RUNNING, STOPPING, COMPLETED
+	};
+
+	private WorkloadState state;
+
 	private String behaviorSpecName;
 	private int maxUsers;
 
 	private Boolean useThinkTime = false;
-	
-	private List<String> statsIntervalSpecNames;
+
+	private List<Target> targets;
+
+	private LoadPath loadPath;
+
+	private List<StatsIntervalSpec> statsIntervalSpecs;
 
 	@JsonIgnore
-	private String name;
-	@JsonIgnore
-	private Integer nodeNumber;
-	@JsonIgnore
-	private Integer numNodes;
-	
-	@JsonIgnore
-	private List<String> targetNames = new ArrayList<String>();
-	
-	@JsonIgnore
-	private Map<String,Target> targets = new HashMap<String, Target>();
-	
+	private List<String> hosts;
+
 	@JsonIgnore
 	private StatsCollector statsCollector;
-	
-	@JsonIgnore
-	private String masterHostName;
 
 	@JsonIgnore
-	private int masterPortNumber;
+	private String runName;
 
 	@JsonIgnore
-	private String localHostName;
+	private String statsHostName;
+
+	@JsonIgnore
+	private int statsPortNumber;
+
+	@JsonIgnore
+	private String hostname = null;
+
+	@JsonIgnore
+	protected int numNodes;
+
+	@JsonIgnore
+	protected int nodeNumber;
 
 	@JsonIgnore
 	private List<Operation> operations = null;
-	
-	public abstract User createUser(Long userId, Long orderingId, Long globalOrderingId, Target target);
 
-	public void initialize(String name, Integer nodeNumber, Integer numNodes, 
-			Map<String, StatsIntervalSpec> statsIntervalSpecsMap,
-			String masterHostName, int masterPortNumber, String localHostname) {
-		this.name = name;
-		this.nodeNumber = nodeNumber;
-		this.numNodes = numNodes;
-		this.masterHostName = masterHostName;
-		this.masterPortNumber = masterPortNumber;
-		this.localHostName = localHostname;
-		
-		
-		operations = this.getOperations();
-		
-		List<StatsIntervalSpec> statsIntervalSpecs = new LinkedList<StatsIntervalSpec>();
-		for (String statsIntervalSpecName : statsIntervalSpecNames) {
-			StatsIntervalSpec spec = statsIntervalSpecsMap.get(statsIntervalSpecName);
-			if (spec == null) {
-				logger.error("Definition of workload " + name 
-						+ " specifies a statsIntervalSpec named " + statsIntervalSpecName
-						+ " which does not exist.");
-				System.exit(1);
-			}
-			statsIntervalSpecs.add(spec);
+	@JsonIgnore
+	private RestTemplate restTemplate = new RestTemplate();
+
+	@JsonIgnore
+	private ScheduledExecutorService executorService = null;
+	
+	/*
+	 * Used to initialize the master workload in the RunService
+	 */
+	public void initialize(String runName, List<String> hosts, String statsHostName, int statsPortNumber, 
+			RestTemplate restTemplate, ScheduledExecutorService executorService) {
+		logger.debug("Initialize workload: " + this.toString());
+
+		if (getLoadPath() == null) {
+			logger.error("There must be a load path defined for each workload.");
+			System.exit(1);
 		}
-		statsCollector = new StatsCollector(statsIntervalSpecs, operations, name, masterHostName, 
-									masterPortNumber, localHostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+
+		if (getStatsIntervalSpecs() == null) {
+			logger.error("There must be at least one StatsIntervalSpec defined for each workload.");
+			System.exit(1);
+		}
+
+		this.runName = runName;
+		this.hosts = hosts;
+		this.statsHostName = statsHostName;
+		this.statsPortNumber = statsPortNumber;
+		this.restTemplate = restTemplate;
+		this.executorService = executorService;
+		
+		/*
+		 * Send initialize workload message to all of the driver nodes
+		 */
+		int nodeNum = 0;
+		for (String hostname : hosts) {
+			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
+			msg.setHostname(hostname);
+			msg.setNodeNumber(nodeNum);
+			msg.setNumNodes(hosts.size());
+			msg.setStatsHostName(statsHostName);
+			msg.setStatsPortNumber(statsPortNumber);
+			msg.setRunName(runName);
+			/*
+			 * Send the initialize workload message to the host
+			 */
+			HttpHeaders requestHeaders = new HttpHeaders();
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
+					requestHeaders);
+			String url = "http://" + hostname + ":" + statsPortNumber + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
+			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+					BasicResponse.class);
+
+			BasicResponse response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload initialization to " + url);
+			}
+
+			nodeNum++;
+		}
+		
+		/* 
+		 * StatsIntervalSpecs run locally
+		 */
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
+			spec.initialize(runName, name, hosts, statsPortNumber, restTemplate, executorService);
+		}
+		
+		/*
+		 * LoadPaths run locally
+		 */
+		getLoadPath().initialize(runName, name, hosts, statsPortNumber, restTemplate, executorService);
+
+		state = WorkloadState.INITIALIZED;
+	}
+
+	/*
+	 * Used to initialize the workload in each DriverService
+	 */
+	public void initializeNode(InitializeWorkloadMessage initializeWorkloadMessage) {
+		logger.debug("initializeNode name = " + name);
+		this.hostname = initializeWorkloadMessage.getHostname();
+		this.statsHostName = initializeWorkloadMessage.getStatsHostName();
+		this.statsPortNumber = initializeWorkloadMessage.getStatsPortNumber();
+		this.numNodes = initializeWorkloadMessage.getNumNodes();
+		this.nodeNumber = initializeWorkloadMessage.getNodeNumber();
+		this.runName = initializeWorkloadMessage.getRunName();
+
+		operations = this.getOperations();
+
+		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, statsHostName, statsPortNumber,
+				hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+
+		/*
+		 * Initialize all of the targets in the workload
+		 */
+		List<String> targetNames = new ArrayList<String>();
+		for (Target target: getTargets()) {
+			target.initialize(name, maxUsers, nodeNumber, numNodes, this, statsCollector);
+			targetNames.add(target.getName());
+		}
+
+		/*
+		 * Set the target names in the statsCollector so that we send a summary
+		 * for every interval even if there is no activity for that target
+		 */
+		statsCollector.setTargetNames(targetNames);
+		
+		state = WorkloadState.INITIALIZED;
+
+	}
+
+	public void start() {
+		logger.debug("start for workload " + name);
+		getLoadPath().start();
+
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {
+			spec.start();
+		}
+		
+		state = WorkloadState.RUNNING;
+	}
+	
+	public void stop() {
+		logger.debug("stop for workload " + name);
+
+		getLoadPath().stop();
+
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {
+			spec.stop();
+		}
+		
+		/*
+		 * Send stop messages to workloads on all nodes
+		 */
+		for (String hostname : hosts) {
+			StopWorkloadMessage msg = new StopWorkloadMessage();
+			msg.setRunName(runName);
+			/*
+			 * Send the initialize workload message to the host
+			 */
+			HttpHeaders requestHeaders = new HttpHeaders();
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
+					requestHeaders);
+			String url = "http://" + hostname + ":" + statsPortNumber + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
+			logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
+					+ " at url " + url);
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+					BasicResponse.class);
+
+			BasicResponse response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload stop to " + url);
+			}
+
+		}
+		
+		state = WorkloadState.STOPPING;
+
+	}
+
+	public void stopNode() {
+		logger.debug("stopNode for workload " + name);
+
+		for (Target target : targets) {
+			target.stop();
+		}
+		
+		state = WorkloadState.STOPPING;
+
+	}
+	
+	public void shutdown() {
+		logger.debug("shutdown for workload " + name);
+
+		state = WorkloadState.COMPLETED;
 
 	}
 	
 	protected abstract List<Operation> getOperations();
 
-	public void start() {
-
-		/*
-		 * Set the target names in the statsCollector so that we send a summary for every
-		 * interval even if there is no activity for that target
-		 */
-		statsCollector.setTargetNames(targetNames);
-		
-		/*
-		 * Let the stats service know about this workload so that it can 
-		 * properly aggregate stats for targets
-		 */
-		HttpHeaders requestHeaders = new HttpHeaders();
-		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-		InitializeWorkloadStatsMessage initializeWorkloadStatsMessage = new InitializeWorkloadStatsMessage();
-		initializeWorkloadStatsMessage.setWorkloadName(name);
-		initializeWorkloadStatsMessage.setTargetNames(targetNames);
-		initializeWorkloadStatsMessage.setStatsIntervalSpecNames(statsIntervalSpecNames);
-		
-		HttpEntity<InitializeWorkloadStatsMessage> statsEntity = new HttpEntity<InitializeWorkloadStatsMessage>(initializeWorkloadStatsMessage, requestHeaders);
-		String url = "http://" + masterHostName + ":" + masterPortNumber + "/stats/initialize/workload";
-		ResponseEntity<BasicResponse> responseEntity 
-				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
-
-		BasicResponse response = responseEntity.getBody();
-		if (responseEntity.getStatusCode() != HttpStatus.OK) {
-			logger.error("Error posting workload initialization to " + url);
-		}
-		
-	}
-	
+	@JsonIgnore
 	public long getNumActiveUsers() {
-		
-		long numUsers = 0;
-		
-		for (String name : targets.keySet()) {
-			numUsers += targets.get(name).getNumActiveUsers();
-		}
-		return numUsers;
+		return getLoadPath().getNumActiveUsers();
 	}
-	
+
 	public void changeActiveUsers(long numUsers) throws TooManyUsersException {
 		if (maxUsers < numUsers) {
 			throw new TooManyUsersException("MaxUsers = " + maxUsers);
 		}
+		getLoadPath().changeActiveUsers(numUsers);
+	}
+
+
+	public void setCurrentUsers(long numUsers) throws TooManyUsersException {
+		if (maxUsers < numUsers) {
+			throw new TooManyUsersException("MaxUsers = " + maxUsers);
+		}
 		
-		int numTargets = targetNames.size();
-		
+		/*
+		 * Divide the users among the targets and set the load per-target
+		 */
+		int numTargets = getTargets().size();
 		long baseUsersPerTarget = numUsers / numTargets;
-		long remainingUsers = numUsers % numTargets;
-		
-		for (String name : targets.keySet()) {
-			long newUsers = baseUsersPerTarget + ((remainingUsers > 0) ? 1 : 0);
-			logger.info("Setting numUsers for target " + name + " to " + newUsers);
-			targets.get(name).setUserLoad(newUsers);
-			logger.info("Setting numUsers for target " + name + " returned");
-			logger.info("");
-			remainingUsers--;
-		}
-		
-	}
-	
-	/*
-	 * ToDo: Check for valid targetName and throw exception if not 
-	 */
-	public void changeActiveUsers(long numUsers, String targetName) throws TooManyUsersException {
-		Target target = targets.get(targetName);
-		if (target != null) {
-			target.setUserLoad(numUsers);
+		long remainingUsers = numUsers - (baseUsersPerTarget * numTargets);
+		int targetNum = 0;
+		for (Target target : getTargets()) {
+			long targetNumUsers = baseUsersPerTarget;
+			if (remainingUsers > targetNum) {
+				targetNumUsers += 1;
+			}
+			target.setUserLoad(targetNumUsers);
 		}
 	}
 	
-	public Integer getNodeNumber() {
-		return nodeNumber;
+
+	public void statsIntervalComplete(StatsIntervalCompleteMessage statsIntervalCompleteMessage) {
+		logger.debug("statsIntervalComplete");
+		statsCollector.statsIntervalComplete(statsIntervalCompleteMessage);
+		logger.debug("statsIntervalComplete returning");
 	}
 
-	public void setNodeNumber(Integer nodeNumber) {
-		this.nodeNumber = nodeNumber;
+	public String getName() {
+		return name;
 	}
 
-	public Integer getNumNodes() {
-		return numNodes;
-	}
-
-	public void setNumNodes(Integer numNodes) {
-		this.numNodes = numNodes;
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getBehaviorSpecName() {
@@ -245,29 +365,74 @@ public abstract class Workload {
 		this.statsCollector = statsCollector;
 	}
 
-	public List<String> getStatsIntervalSpecNames() {
-		return statsIntervalSpecNames;
+	@JsonIgnore
+	public int getNumTargets() {
+		return getTargets().size();
+	}
+	
+	public WorkloadState getState() {
+		return state;
 	}
 
-	public void setStatsIntervalSpecNames(List<String> statsIntervalSpecNames) {
-		this.statsIntervalSpecNames = statsIntervalSpecNames;
+	public void setState(WorkloadState state) {
+		this.state = state;
+	}
+	
+
+	public List<Target> getTargets() {
+		return targets;
 	}
 
-	public void addTargetName(String targetName) {
-		this.targetNames.add(targetName);
+	public void setTargets(List<Target> targets) {
+		this.targets = targets;
 	}
 
-	public void addTarget(Target target) {
-		this.targets.put(target.getName(), target);
-		this.addTargetName(target.getName());
+	public LoadPath getLoadPath() {
+		return loadPath;
 	}
 
-	public String getLocalHostName() {
-		return localHostName;
+	public void setLoadPath(LoadPath loadPath) {
+		this.loadPath = loadPath;
 	}
 
-	public void setLocalHostName(String localHostName) {
-		this.localHostName = localHostName;
+	public List<StatsIntervalSpec> getStatsIntervalSpecs() {
+		return statsIntervalSpecs;
+	}
+
+	public void setStatsIntervalSpecs(List<StatsIntervalSpec> statsIntervalSpecs) {
+		this.statsIntervalSpecs = statsIntervalSpecs;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder theStringBuilder = new StringBuilder();
+		theStringBuilder.append("Workload name: " + name);
+		theStringBuilder.append(", state: " + state);
+		theStringBuilder.append(", behaviorSpecName: " + behaviorSpecName);
+		theStringBuilder.append(", maxUsers: " + maxUsers);
+		theStringBuilder.append(", useThinkTime: " + useThinkTime);
+		if (getLoadPath() != null) {
+			theStringBuilder.append(", loadPath: " + getLoadPath().getName());
+		} else {
+			theStringBuilder.append(", No Load Path");
+		}
+		if (getStatsIntervalSpecs() != null) {
+			for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {
+				theStringBuilder.append(", statsIntervalSpec: " + spec.getName());
+			}
+		} else {
+			theStringBuilder.append(", No StatsIntervalSpecs");
+		}
+		if (getTargets() != null) {
+			for (Target target : getTargets()) {
+				theStringBuilder.append(", target: " + target.getName());
+			}
+		} else {
+			theStringBuilder.append(", No Targets");
+		}
+
+		
+		return theStringBuilder.toString();
 	}
 
 }

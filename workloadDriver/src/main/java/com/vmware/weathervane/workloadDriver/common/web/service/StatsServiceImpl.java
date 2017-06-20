@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
 @Service
@@ -40,10 +39,9 @@ public class StatsServiceImpl implements StatsService {
 
 	private long curPeriod = 0;
 	
-	private List<String> hosts;
-	private Map<String, List<String>> workloadNameToTargetNamesMap = new HashMap<String, List<String>>();
-	private Map<String, List<String>> workloadNameToSpecNamesMap = new HashMap<String, List<String>>();
-	private String statsOutputDirName;
+	private Map<String, List<String>> runNameToHostsListMap = new HashMap<String, List<String>>();
+	private Map<String, String> runNameToStatsOutputDirName = new HashMap<String, String>();
+	private Map<String, Map<String, Integer>> runNameToWorkloadNameToNumTargetsMap = new HashMap<String, Map<String, Integer>>();
 	
 	/*
 	 * Writers for csv files.
@@ -74,12 +72,13 @@ public class StatsServiceImpl implements StatsService {
 	private Map<String, Map<String, Queue<String>>> workloadToStatsSpecToIntervalOrder = new HashMap<String, Map<String, Queue<String>>>();
 	
 	@Override
-	public synchronized void postStatsSummary(StatsSummary statsSummary) throws IOException {
-		logger.debug("postStatsSummary: " + statsSummary.toString());
+	public synchronized void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException {
+		logger.debug("postStatsSummary for run " + runName + ": " + statsSummary.toString());
 		String workloadName = statsSummary.getWorkloadName();
 		String statsIntervalSpecName = statsSummary.getStatsIntervalSpecName();
 		String intervalName = statsSummary.getIntervalName();
-	
+		Map<String, Integer> workloadNameToNumTargetsMap = runNameToWorkloadNameToNumTargetsMap.get(runName);
+		
 		if (statsSummary.getPrintSummary()) {
 			/*
 			 * Store the interval name so that we can print the intervals out in
@@ -145,7 +144,9 @@ public class StatsServiceImpl implements StatsService {
 			 * Check whether we have received all of the samples for this interval.
 			 * We should have received numHosts * workload->numTargets
 			 */
-			if (intervalSamplesReceived < (hosts.size() * workloadNameToTargetNamesMap.get(workloadName).size())) {
+			List<String> hosts = runNameToHostsListMap.get(runName);
+			String statsOutputDirName = runNameToStatsOutputDirName.get(runName);
+			if (intervalSamplesReceived < (hosts.size() * workloadNameToNumTargetsMap.get(workloadName))) {
 				logger.debug("postStatsSummary: This is sample " + intervalSamplesReceived + ". Haven't received all samples for workload " + workloadName
 						+ ", statsIntervalSpec " + statsIntervalSpecName + ", and interval " + intervalName);
 				/*
@@ -206,7 +207,7 @@ public class StatsServiceImpl implements StatsService {
 				if (intervalAggregatedStats.getPrintIntervals()) {
 
 					boolean includeWorkload = true;
-					if (workloadNameToTargetNamesMap.keySet().size() == 1) {
+					if (workloadNameToNumTargetsMap.keySet().size() == 1) {
 						includeWorkload = false;
 					}
 					if (((curPeriod % 20) == 0) || (curPeriod == 0)) {
@@ -236,29 +237,37 @@ public class StatsServiceImpl implements StatsService {
 	}
 
 	@Override
-	public void initializeRun(InitializeRunStatsMessage initializeRunStatsMessage) {
-		hosts = initializeRunStatsMessage.getHosts();
-		statsOutputDirName = initializeRunStatsMessage.getStatsOutputDirName();
-	}
+	public void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage) {
+		logger.debug("initializeRun runName = " + runName + ", statsOutputDirName = " + initializeRunStatsMessage.getStatsOutputDirName());
 
-	@Override
-	public void initializeWorkload(InitializeWorkloadStatsMessage initializeWorkloadStatsMessage) {
-		workloadNameToTargetNamesMap.put(initializeWorkloadStatsMessage.getWorkloadName(), initializeWorkloadStatsMessage.getTargetNames());
-		workloadNameToSpecNamesMap.put(initializeWorkloadStatsMessage.getWorkloadName(), initializeWorkloadStatsMessage.getStatsIntervalSpecNames());
+		runNameToHostsListMap.put(runName, initializeRunStatsMessage.getHosts());
+
+		runNameToStatsOutputDirName.put(runName, 
+				initializeRunStatsMessage.getStatsOutputDirName());
+		
+		runNameToWorkloadNameToNumTargetsMap.put(runName, initializeRunStatsMessage.getWorkloadNameToNumTargetsMap());
 	}
 	
 	@Override
-	public void runStarted() {
+	public void runStarted(String runName) {
 		
 	}
 
 	@Override
-	public void runComplete() throws IOException {
-		logger.debug("runComplete");
+	public void runComplete(String runName) throws IOException {
+		logger.debug("runComplete runName = " + runName);
 		/*
 		 * Print the summaries for all of the workloads and statsIntervalSpecs
 		 */
+		String statsOutputDirName = runNameToStatsOutputDirName.get(runName);
+		if (statsOutputDirName == null) {
+			logger.debug("runComplete statsOutputDirName is null. All pairs:");
+			for (String key : runNameToStatsOutputDirName.keySet()) {
+				logger.debug("\tkey = " + key + " : value = " + runNameToStatsOutputDirName.get(key));
+			}
+		}
 		for (String workloadName : aggregatedStatsSummaries.keySet()) {
+			logger.debug("runComplete for run " + runName + ", processing workload " + workloadName);
 			Map<String, Queue<String>> statsSpecToIntervalOrder = workloadToStatsSpecToIntervalOrder.get(workloadName);
 			System.out.println("Summary Statistics for workload " + workloadName);
 			for (String specName : aggregatedStatsSummaries.get(workloadName).keySet()) {

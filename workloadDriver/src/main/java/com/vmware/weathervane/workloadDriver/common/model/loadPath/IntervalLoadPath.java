@@ -16,12 +16,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.model.loadPath;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -36,14 +36,15 @@ public class IntervalLoadPath extends LoadPath {
 	private List<UniformLoadInterval> uniformIntervals = null;
 	
 	@JsonIgnore
-	private Map<String, Integer> nextIntervalIndices = new HashMap<String, Integer>();
+	private int nextIntervalIndex = 0;
 	
 	@JsonIgnore
-	private Map<String, Integer> nextStatsIntervalIndices = new HashMap<String, Integer>();
+	private int nextStatsIntervalIndex = 0;
 	
 	@Override
-	public void initialize(String name, Integer nodeNumber, Integer numNodes) {
-		super.initialize(name, nodeNumber, numNodes);
+	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber, RestTemplate restTemplate, 
+			ScheduledExecutorService executorService) {
+		super.initialize(runName, workloadName, hosts, portNumber, restTemplate, executorService);
 		
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
 		
@@ -63,16 +64,14 @@ public class IntervalLoadPath extends LoadPath {
 			if (interval instanceof UniformLoadInterval) {
 				UniformLoadInterval uniformInterval = (UniformLoadInterval) interval;
 				
-				long adjustedUsers = adjustUserCount(uniformInterval.getUsers(), numNodes); 
+				long users = uniformInterval.getUsers(); 
+
 				logger.debug("For intervalLoadPath " + getName() + ", interval = " + interval.getName() 
-						+ ", adjustedUsers = " + adjustedUsers);
-				UniformLoadInterval newInterval = new UniformLoadInterval(adjustedUsers, interval.getDuration());
+						+ ", users = " + users);
+				UniformLoadInterval newInterval = new UniformLoadInterval(users, interval.getDuration());
 				newInterval.setName(interval.getName());
 				uniformIntervals.add(newInterval);
-				if (adjustedUsers > maxUsers) {
-					maxUsers = adjustedUsers;
-				}
-				previousIntervalEndUsers = adjustedUsers;
+				previousIntervalEndUsers = users;
 			} else if (interval instanceof RampLoadInterval) {
 				/*
 				 * Turn the single ramp interval into a series of uniform 
@@ -81,16 +80,13 @@ public class IntervalLoadPath extends LoadPath {
 				RampLoadInterval rampInterval = (RampLoadInterval) interval;
 				long timeStep = rampInterval.getTimeStep();
 				long numIntervals = (long) Math.ceil(duration / (timeStep * 1.0));
-				
+												
 				Long endUsers = rampInterval.getEndUsers();
 				if (endUsers == null) {
 					logger.error("The parameter endUsers must be specified for all ramp load intervals.");
 					System.exit(1);
-				} else {
-					endUsers = adjustUserCount(endUsers, numNodes);
-				}
-				previousIntervalEndUsers = endUsers;
-								
+				} 
+
 				Long startUsers = rampInterval.getStartUsers();
 				if (startUsers == null) {
 					if (firstInterval) {
@@ -103,9 +99,9 @@ public class IntervalLoadPath extends LoadPath {
 					} else {
 						startUsers = previousIntervalEndUsers;						
 					}
-				} else {
-					startUsers = adjustUserCount(startUsers, numNodes);
 				}
+				
+				previousIntervalEndUsers = endUsers;
 				
 				/*
 				 * When calculating the change in users per interval, need to 
@@ -143,34 +139,24 @@ public class IntervalLoadPath extends LoadPath {
 					newInterval.setName(interval.getName());
 					uniformIntervals.add(newInterval);
 
-					if (curUsers > maxUsers) {
-						maxUsers = curUsers;
-					}
-
 					totalDuration += timeStep;
 					
 				}
 			}
 			firstInterval = false;
 		}
-		logger.debug("For intervalLoadPath " + getName() + ", maxUsers = " + this.maxUsers);
 		
 	}
 		
+	@JsonIgnore
 	@Override
-	public UniformLoadInterval getNextInterval(String targetName) {
-		logger.debug("getNextInterval for target " + targetName);
+	public UniformLoadInterval getNextInterval() {
+		
+		logger.debug("getNextInterval, nextIntervalIndex = " + nextIntervalIndex);
 		if ((uniformIntervals == null) || (uniformIntervals.size() == 0)) {
-			logger.debug("getNextInterval for target " + targetName + " returning null");
+			logger.debug("getNextInterval returning null");
 			return null;
 		}
-
-		if (!nextIntervalIndices.containsKey(targetName)) {
-			nextIntervalIndices.put(targetName, 0);
-		}
-		
-		Integer nextIntervalIndex = nextIntervalIndices.get(targetName);
-		logger.debug("getNextInterval for target " + targetName + ", nextIntervalIndex = " + nextIntervalIndex);
 
 		/* 
 		 * wrap at end of intervals
@@ -182,23 +168,16 @@ public class IntervalLoadPath extends LoadPath {
 		UniformLoadInterval nextInterval = uniformIntervals.get(nextIntervalIndex);
 		nextIntervalIndex++;
 		
-		nextIntervalIndices.put(targetName, nextIntervalIndex);
-		logger.debug("getNextInterval for target " + targetName + ", returning interval: " + nextInterval);
+		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 	}
 
 	
+	@JsonIgnore
 	@Override
-	public LoadInterval getNextStatsInterval(String targetName) {
-		logger.debug("getNextStatsInterval for target " + targetName);
-
-		if (!nextStatsIntervalIndices.containsKey(targetName)) {
-			nextStatsIntervalIndices.put(targetName, 0);
-		}		
-		Integer nextStatsIntervalIndex = nextStatsIntervalIndices.get(targetName);
+	public LoadInterval getNextStatsInterval() {
+		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
 		
-		logger.debug("getNextStatsInterval for target " + targetName + ", nextStatsIntervalIndex = " + nextStatsIntervalIndex);
-
 		/* 
 		 * wrap at end of intervals
 		 */
@@ -209,27 +188,10 @@ public class IntervalLoadPath extends LoadPath {
 		LoadInterval nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex);
 		nextStatsIntervalIndex++;
 		
-		nextStatsIntervalIndices.put(targetName, nextStatsIntervalIndex);
-		logger.debug("getNextStatsInterval for target " + targetName + ", returning interval: " + nextStatsInterval);
+		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
 		return nextStatsInterval;
 	}
 
-	private long adjustUserCount(long originalUserCount, int numRemoteNodes) {
-		
-		long adjustedUserCount = originalUserCount / numRemoteNodes;
-
-		/*
-		 * Add an additional user from the remainder for the first 
-		 * usersRemaining nodes
-		 */
-		long usersRemaining = originalUserCount - (numRemoteNodes * adjustedUserCount);	
-		if (usersRemaining > getNodeNumber()) {
-			adjustedUserCount++;
-		}
-		
-		return adjustedUserCount;
-	}
-	
 	public final List<LoadInterval> getLoadIntervals() {
 		return loadIntervals;
 	}

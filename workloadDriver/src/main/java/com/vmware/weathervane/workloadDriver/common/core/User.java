@@ -94,16 +94,11 @@ public abstract class User implements LoadProfileChangeCallback {
 	 * This is the user's behavior. It is the entity that actually executes a
 	 * workload. The behavior may change when the load profile changes
 	 */
-	protected Behavior _behavior;
+	protected Behavior _behavior = null;
 
 	private HttpTransport _httpTransport;
 	
 	private StatsCollector _statsCollector = null;
-
-	/** A value representing that a time property has not been set. */
-	public static long TIME_NOT_SET = -1;
-
-	protected long _timeToQuit = TIME_NOT_SET;
 
 	/**
 	 * If this is set to true then this user's behaviours will use think-time
@@ -158,11 +153,11 @@ public abstract class User implements LoadProfileChangeCallback {
 	 * This method starts the User running by creating the initial behavior and
 	 * scheduling it for execution.
 	 */
-	public void start(long finishTime, long numActiveUsers) {
+	public void start(long numActiveUsers) {
 
 		_isActive = false;
 		_behavior = null;
-		this._timeToQuit = finishTime;
+
 		/*
 		 * Check whether the user is active in the current load profile. If it
 		 * is, then create the initial behavior.
@@ -350,7 +345,7 @@ public abstract class User implements LoadProfileChangeCallback {
 
 	protected Behavior createBehavior() {
 		BehaviorSpec spec = BehaviorSpec.getBehaviorSpec(_behaviorSpecName);
-		Behavior behavior = new Behavior(this, spec, _statsCollector, target, _timeToQuit);
+		Behavior behavior = new Behavior(this, spec, _statsCollector, target);
 		logger.debug("createBehavior Created behavior " + behavior.getBehaviorId());
 		UUID behaviorId = behavior.getBehaviorId();
 
@@ -394,10 +389,10 @@ public abstract class User implements LoadProfileChangeCallback {
 		/*
 		 * Start a new user to replace this one.
 		 */
-		User newUser = target.getWorkload().createUser(_id, _orderingId, _globalOrderingId, target);
+		User newUser = target.getUserFactory().createUser(_id, _orderingId, _globalOrderingId, target);
 		newUser.setStatsCollector(_statsCollector);
 		target.registerLoadProfileChangeCallback(newUser);
-		newUser.start(_timeToQuit, target.getNumActiveUsers());
+		newUser.start(target.getNumActiveUsers());
 		
 		/*
 		 * Schedule a timeout before forcing the reset to complete

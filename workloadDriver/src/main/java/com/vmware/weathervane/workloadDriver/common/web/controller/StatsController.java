@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -30,7 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.RunCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStartedMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
@@ -44,14 +44,14 @@ public class StatsController {
 	@Autowired
 	private StatsService statsService;
 
-	@RequestMapping(method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> postStatsSummary(@RequestBody StatsSummary statsSummary) {
-		logger.debug("postStatsSummary: " + statsSummary.toString());
+	@RequestMapping(value="/run/{runName}", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> postStatsSummary(@PathVariable String runName, @RequestBody StatsSummary statsSummary) {
+		logger.debug("postStatsSummary for run " + runName + ": " + statsSummary.toString());
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
 		try {
-			statsService.postStatsSummary(statsSummary);
+			statsService.postStatsSummary(runName, statsSummary);
 		} catch (IOException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
@@ -61,46 +61,35 @@ public class StatsController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/initialize/run", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> initializeRun(@RequestBody InitializeRunStatsMessage initializeRunStatsMessage) {
-		logger.debug("initializeRun: " + initializeRunStatsMessage.toString());
+	@RequestMapping(value="/initialize/run/{runName}", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> initializeRun(@PathVariable String runName, @RequestBody InitializeRunStatsMessage initializeRunStatsMessage) {
+		logger.debug("initializeRun for run " + runName + ", message: " + initializeRunStatsMessage.toString());
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
-		statsService.initializeRun(initializeRunStatsMessage);
+		statsService.initializeRun(runName, initializeRunStatsMessage);
 	
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/initialize/workload", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> initializeWorkload(@RequestBody InitializeWorkloadStatsMessage initializeWorkloadStatsMessage) {
-		logger.debug("initializeWorkload: " + initializeWorkloadStatsMessage.toString());
+	@RequestMapping(value="/started/{runName}", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> runStarted(@PathVariable String runName, @RequestBody RunStartedMessage runStartedMessage) {
+		logger.debug("runStarted for run " + runName );
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
-		statsService.initializeWorkload(initializeWorkloadStatsMessage);
+		statsService.runStarted(runName);
 	
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/started", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> runStarted(@RequestBody RunStartedMessage runStartedMessage) {
-		logger.debug("runStarted: " );
+	@RequestMapping(value="/complete/{runName}", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> runComplete(@PathVariable String runName, @RequestBody RunCompleteMessage runCompleteMessage) throws IOException {
+		logger.debug("runComplete for run " + runName);
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
-		statsService.runStarted();
-	
-		return new ResponseEntity<BasicResponse>(response, status);
-	}
-
-	@RequestMapping(value="/complete", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> runComplete(@RequestBody RunCompleteMessage runCompleteMessage) throws IOException {
-		logger.debug("runComplete: " );
-		BasicResponse response = new BasicResponse();
-		HttpStatus status = HttpStatus.OK;
-		
-		statsService.runComplete();
+		statsService.runComplete(runName);
 	
 		return new ResponseEntity<BasicResponse>(response, status);
 	}

@@ -18,9 +18,13 @@ package com.vmware.weathervane.workloadDriver.common.chooser;
 import java.util.List;
 import java.util.Random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.vmware.weathervane.workloadDriver.common.util.Holder;
 
 public class Chooser<T> {
+	private static final Logger logger = LoggerFactory.getLogger(Chooser.class);
 
 	List<T> choices;
 	Holder<T> choosen;
@@ -33,10 +37,13 @@ public class Chooser<T> {
 	}
 
 	public void chooseRandom() {
+		logger.debug("chooseRandom numChoices = " + choices.size());
 		int numChoices = choices.size();
 		double randVal = randGen.nextDouble();
 
 		int choice = (int) Math.floor(randVal * numChoices);
+		logger.debug("chooseRandom numChoices = " + choices.size() + ", randVal = " + randVal
+				+ ", choice = " + choice);
 		synchronized (choosen) {
 			choosen.set(choices.get(choice));
 		}

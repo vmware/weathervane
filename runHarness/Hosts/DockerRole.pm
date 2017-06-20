@@ -327,7 +327,7 @@ sub dockerCreate {
 		$cmd = "";
 	}
 	
-	my $cmdString = "$dockerHostString docker create --ulimit nofile=1048576:1048576 $envString $volumeString $netString $portString "
+	my $cmdString = "$dockerHostString docker create --sysctl kernel.sem='250 32000 32 2000' --ulimit nofile=1048576:1048576 $envString $volumeString $netString $portString "
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $entryPointString " 
 		. " --name $name $namespace/$imageName:$version $cmd 2>&1";
@@ -434,7 +434,7 @@ sub dockerRun {
 		$cmd = "";
 	}
 	
-	my $cmdString = "$dockerHostString docker run --ulimit nofile=1048576:1048576 -d $envString $volumeString $netString $portString "
+	my $cmdString = "$dockerHostString docker run --sysctl kernel.sem='250 32000 32 2000' --ulimit nofile=1048576:1048576 -d $envString $volumeString $netString $portString "
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $ttyString $entryPointString " 
 		. " --name $name $namespace/$imageName:$version $cmd 2>&1";

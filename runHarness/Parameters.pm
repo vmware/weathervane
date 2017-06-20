@@ -1121,11 +1121,19 @@ $parameters{"rampDown"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"loadPathType"} = {
+	"type"      => "=s",
+	"default"   => "fixed",
+	"parent"    => "appInstance",
+	"usageText" => "The type of loadPath to use for the run. Allowed values are: fixed, interval, findmax, ramptomax ",
+	"showUsage" => 1,
+};
+
 $parameters{"userLoadPath"} = {
 	"type"      => "list",
 	"default"   => [],
 	"parent"    => "appInstance",
-	"usageText" => "This is the load path for the run. It is a list of load intervals. ",
+	"usageText" => "This is the load path for runs with an interval loadPathType. It is a list of load intervals. ",
 	"showUsage" => 1,
 };
 

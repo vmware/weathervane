@@ -13,12 +13,47 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.statistics;
+package com.vmware.weathervane.workloadDriver.common.representation;
 
-import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
+public class StatsIntervalCompleteMessage {
 
-public interface StatsIntervalCompleteCallback {
-
-	void statsIntervalComplete(StatsIntervalSpec statsIntervalSpec);
-
+	private String completedSpecName;
+	private Long curIntervalStartTime;
+	private Long lastIntervalEndTime;
+	private String curIntervalName;
+	
+	public String getCompletedSpecName() {
+		return completedSpecName;
+	}
+	public void setCompletedSpecName(String completedSpecName) {
+		this.completedSpecName = completedSpecName;
+	}
+	public Long getCurIntervalStartTime() {
+		return curIntervalStartTime;
+	}
+	public void setCurIntervalStartTime(Long curIntervalStartTime) {
+		this.curIntervalStartTime = curIntervalStartTime;
+	}
+	public Long getLastIntervalEndTime() {
+		return lastIntervalEndTime;
+	}
+	public void setLastIntervalEndTime(Long lastIntervalEndTime) {
+		this.lastIntervalEndTime = lastIntervalEndTime;
+	}
+	public String getCurIntervalName() {
+		return curIntervalName;
+	}
+	public void setCurIntervalName(String curIntervalName) {
+		this.curIntervalName = curIntervalName;
+	}
+	
+	@Override
+	public String toString() {
+		return "StatsIntervalCompleteMessage: "
+				+ "completedSpecName = " + completedSpecName
+				+ ", curIntervalName = " + curIntervalName
+				+ ", curIntervalStartTime = " + curIntervalStartTime
+				+ ", lastIntervalEndTime = " + lastIntervalEndTime;
+	}
+	
 }

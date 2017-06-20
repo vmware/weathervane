@@ -156,9 +156,26 @@ override 'initialize' => sub {
 	}
 	if ($self->getParamValue('dockerCpuShares')) {
 		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
-	}
+	} 
 	if ($self->getParamValue('dockerCpuSetCpus')) {
 		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
+		
+		# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
+		# set dockerCpus accordingly so that services can know how many CPUs the 
+		# container has when configuring
+		my $numCpus = 0;
+		my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
+		foreach my $cpuGroup (@cpuGroups) {
+			if ($cpuGroup =~ /-/) { 
+				# This cpu group is a range
+				my @rangeEnds = split(/-/,$cpuGroup);
+				$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
+			} else {
+				$numCpus++;
+			}
+		}
+		$self->setParamValue('dockerCpus', $numCpus);
+		$self->dockerConfigHashRef->{'cpus'} = $numCpus;
 	}
 	if ($self->getParamValue('dockerCpuSetMems')) {
 		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');

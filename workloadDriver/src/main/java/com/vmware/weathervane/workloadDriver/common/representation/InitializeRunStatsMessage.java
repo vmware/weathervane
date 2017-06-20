@@ -16,11 +16,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.representation;
 
 import java.util.List;
+import java.util.Map;
 
 public class InitializeRunStatsMessage {
 
+	private String runName;
 	private List<String> hosts;
 	private String statsOutputDirName;
+	private Map<String, Integer> workloadNameToNumTargetsMap;
 	
 	public List<String> getHosts() {
 		return hosts;
@@ -44,8 +47,29 @@ public class InitializeRunStatsMessage {
 		for (String name : hosts) {
 			retVal.append(name + ", ");
 		}
-		
+		retVal.append(", runName = " + runName);
+		retVal.append(", statsOutputDirName = " + statsOutputDirName);
+		for (String workloadName : workloadNameToNumTargetsMap.keySet()) {
+			retVal.append(", workload " + workloadName + " has " + workloadNameToNumTargetsMap.get(workloadName)
+			+ " targets");
+		}
 		return retVal.toString();
+	}
+
+	public String getRunName() {
+		return runName;
+	}
+
+	public void setRunName(String runName) {
+		this.runName = runName;
+	}
+
+	public Map<String, Integer> getWorkloadNameToNumTargetsMap() {
+		return workloadNameToNumTargetsMap;
+	}
+
+	public void setWorkloadNameToNumTargetsMap(Map<String, Integer> workloadNameToNumTargetsMap) {
+		this.workloadNameToNumTargetsMap = workloadNameToNumTargetsMap;
 	}
 	
 }

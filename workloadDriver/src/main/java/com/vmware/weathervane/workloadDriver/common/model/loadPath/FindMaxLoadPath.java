@@ -13,49 +13,67 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec;
+package com.vmware.weathervane.workloadDriver.common.model.loadPath;
+
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName(value = "periodic")
-public class PeriodicStatsIntervalSpec extends StatsIntervalSpec {
-	private static final Logger logger = LoggerFactory.getLogger(PeriodicStatsIntervalSpec.class);
+@JsonTypeName(value = "findmax")
+public class FindMaxLoadPath extends LoadPath {
+	private static final Logger logger = LoggerFactory.getLogger(FindMaxLoadPath.class);
 
-	private Long period = null;
+	private long maxUsers;
 
-	@JsonIgnore
-	private long intervalCount = 1;
-	
-	public Long getPeriod() {
-		return period;
-	}
+	@Override
+	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber,
+			RestTemplate restTemplate, ScheduledExecutorService executorService) {
+		super.initialize(runName, workloadName, hosts, portNumber, restTemplate, executorService);
 
-	public void setPeriod(Long period) {
-		this.period = period;
 	}
 
 	@JsonIgnore
 	@Override
-	protected StatsInterval getNextInterval() {
-		StatsInterval nextInterval = new StatsInterval();
-		nextInterval.setDuration(period);
-		nextInterval.setName(Long.toString(intervalCount * period));
-		intervalCount++;
-		logger.debug("getNextInterval returning interval with duration = " + nextInterval.getDuration() + ", name = " + nextInterval.getName());
+	public UniformLoadInterval getNextInterval() {
+
+		logger.debug("getNextInterval ");
+
+		UniformLoadInterval nextInterval = new UniformLoadInterval();
+
+		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 	}
-	
+
+	@JsonIgnore
+	@Override
+	public LoadInterval getNextStatsInterval() {
+		logger.debug("getNextStatsInterval");
+		UniformLoadInterval nextStatsInterval = new UniformLoadInterval();
+
+		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
+		return nextStatsInterval;
+	}
+
+
+	public long getMaxUsers() {
+		return maxUsers;
+	}
+
+	public void setMaxUsers(long maxUsers) {
+		this.maxUsers = maxUsers;
+	}
+
 	@Override
 	public String toString() {
-		StringBuilder retVal = new StringBuilder("FixedStatsIntervalSpec: name = " + getName());
-		retVal.append(", printSummary = " + getPrintSummary());
-		retVal.append(", printIntervals = " + getPrintIntervals());
-		retVal.append(", period = " + period);
-		
-		return retVal.toString();
+		StringBuilder theStringBuilder = new StringBuilder("FixedLoadPath: ");
+
+		return theStringBuilder.toString();
 	}
+
 }

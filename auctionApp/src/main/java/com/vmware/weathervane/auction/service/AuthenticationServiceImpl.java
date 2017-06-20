@@ -94,6 +94,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		if (theUser != null) {
 	 		theUser.setLoggedin(false); // remove token
 			userDao.update(theUser);
+			attendanceRecordRepository.leaveAuctionsForUser(theUser.getId());
 		} else {
 			throw new InvalidStateException("User not authenticated");
 		}

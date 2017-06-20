@@ -17,28 +17,31 @@ package com.vmware.weathervane.workloadDriver.common.web.service;
 
 import java.net.UnknownHostException;
 
+import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.model.Run;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
-import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 
 public interface RunService {
 
-	void setRun(Run theRun);
+	void addRun(String runName, Run theRun) throws DuplicateRunException;
 
-	void initialize() throws UnknownHostException;
+	void initialize(String runName) throws UnknownHostException;
 
-	void start();
+	void start(String runName);
 
-	void stop();
+	void stop(String runName);
 
-	boolean isStarted();
+	boolean isStarted(String runName);
 
-	boolean isUp();
+	boolean isUp(String runName);
 
-	void shutdown();
+	void shutdown(String runName);
 	
-	void changeActiveUsers(String workloadName, long numUsers) throws TooManyUsersException;
+	void changeActiveUsers(String runName, String workloadName, long numUsers) throws TooManyUsersException;
 	
-	ActiveUsersResponse getNumActiveUsers();
+	ActiveUsersResponse getNumActiveUsers(String runName);
+
+	Run getRun(String runName);
+
 }

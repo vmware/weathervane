@@ -271,6 +271,10 @@ public class DBLoader {
 				/ (1.0 * theLoadParams.getUsersScaleFactor()));
 		long numAuctions = (long) Math.ceil(maxActiveUsers
 				/ (1.0 * theLoadParams.getUsersPerCurrentAuction()));
+		// The number of active auctions needs to be a multiple of 2
+		if ((numAuctions % 2) != 0) {
+			numAuctions++;
+		}
 
 		/*
 		 * Read in the items file and convert it into a JSON array

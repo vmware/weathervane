@@ -65,7 +65,7 @@
 	      username="auction"
 	      password="auction"
 	      driverClassName="org.postgresql.Driver"
-	      url="jdbc:postgresql://vmc-perf-h13:33104/auction"/>
+	      url="jdbc:postgresql://AuctionDB1:5432/auction"/>
   </GlobalNamingResources>
   
   <!-- A "Service" is a collection of one or more "Connectors" that share
@@ -78,8 +78,7 @@
                   minSpareThreads="34"
                 name="tomcatThreadPool"
                 namePrefix="tomcat-http--"/>
-
-      <Connector 
+   <Connector
 acceptCount="100"
 acceptorThreadCount="2"
 connectionTimeout="60000"
@@ -90,13 +89,13 @@ socketBuffer="65536"
 executor="tomcatThreadPool"
 maxKeepAliveRequests="-1"
 keepAliveTimeout="-1"
-maxConnections="10000"
-protocol="org.apache.coyote.http11.Http11AprProtocol"
+maxConnections="3000"
+protocol="org.apache.coyote.http11.Http11NioProtocol"
 port="8080"
 redirectPort="8443"/>
 
     <!-- You should set jvmRoute to support load-balancing via AJP ie :-->
-    <Engine name="Catalina" defaultHost="localhost" jvmRoute="zdocker">
+    <Engine name="Catalina" defaultHost="localhost" jvmRoute="AuctionApp1">
     <!--
     <Engine name="Catalina" defaultHost="localhost">
     -->

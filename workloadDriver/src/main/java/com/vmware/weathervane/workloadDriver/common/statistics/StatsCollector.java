@@ -29,13 +29,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
+import com.vmware.weathervane.workloadDriver.common.core.Operation;
+import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
-public class StatsCollector implements StatsIntervalCompleteCallback {
+public class StatsCollector  {
 	private static final Logger logger = LoggerFactory.getLogger(StatsCollector.class);
+
+	private static final RestTemplate restTemplate = new RestTemplate();
 
 	private String workloadName;
 
@@ -48,39 +52,38 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 	
 	private Map<String, StatsSummary> targetToCurrentStatsMap = new HashMap<String, StatsSummary>();
 		
-	private Map<String, StatsIntervalSpec> statsIntervalSpecs = new HashMap<String, StatsIntervalSpec>();
+	private List<StatsIntervalSpec> statsIntervalSpecs = null;
 	
 	private BehaviorSpec behaviorSpec = null;
 	
-	private RestTemplate restTemplate = new RestTemplate();
 	private String masterHostName;
 	private int masterPortNumber;
 	private String localHostname;
+
+	private String runName;
+
+	private LoadPath loadPath;
 	
-	public StatsCollector(List<StatsIntervalSpec> specs, List<Operation> operations, String workloadName, String masterHostName, 
+	public StatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
 								int masterPortNumber, String localHostname, BehaviorSpec behaviorSpec) {
+		this.runName = runName;
 		this.workloadName = workloadName;
 		this.masterHostName = masterHostName;
 		this.masterPortNumber = masterPortNumber;
 		this.localHostname = localHostname;
 		this.operations = operations;
 		this.behaviorSpec = behaviorSpec;
-
+		this.statsIntervalSpecs = statsIntervalSpecs;
+		this.loadPath = loadPath;
+		
 		/*
-		 * A collector registers a callback for each interval it uses.  The
-		 * callback triggers the roll-up of stats for that interval
+		 * A collector gets a message for each interval it uses.  The
+		 * message triggers the roll-up of stats for that interval
 		 */
-		for (StatsIntervalSpec spec : specs) {
-			String specName =  spec.getName();
-			logger.debug("StatsCollector registerStatsIntervalCompleteCallback for statsIntervalSpec " + specName);
-			spec.registerStatsIntervalCompleteCallback(this);
-			specNameToTargetToIntervalStatsMap.put(specName, new HashMap<String, StatsSummary>());
-			
-			/*
-			 * Save the info about the specs
-			 */
-			statsIntervalSpecs.put(specName, spec);
+		for (StatsIntervalSpec spec : this.statsIntervalSpecs) {
+			specNameToTargetToIntervalStatsMap.put(spec.getName(), new HashMap<String, StatsSummary>());			
 		}
+		specNameToTargetToIntervalStatsMap.put(loadPath.getName(), new HashMap<String, StatsSummary>());			
 		
 	}
 	
@@ -108,9 +111,8 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 	 * For the intervalSpec that actually ended, send the rollup to the stats service
 	 * on the master node and reset the stats.
 	 */
-	@Override
-	public synchronized void statsIntervalComplete(StatsIntervalSpec statsIntervalSpec) {
-		logger.debug("statsIntervalComplete: " + statsIntervalSpec);
+	public synchronized void statsIntervalComplete(StatsIntervalCompleteMessage completeMessage) {
+		logger.debug("statsIntervalComplete: " + completeMessage);
 
 		/*
 		 * First take the current stats map and replace it with a fresh map so that we don't start
@@ -136,7 +138,8 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 			logger.info("statsIntervalComplete: Merging curStats for target " + targetName); 
 			StatsSummary curPeriodTargetStatsSummary = curPeriodTargetToCurrentStatsMap.get(targetName);
 
-			for (String specName : specNameToTargetToIntervalStatsMap.keySet()) {
+			for (StatsIntervalSpec spec : statsIntervalSpecs) {
+				String specName = spec.getName();
 				Map<String, StatsSummary> specTargetToCurrentStatsMap = specNameToTargetToIntervalStatsMap.get(specName);
 				logger.info("statsIntervalComplete: Merging curStats for target " + targetName + 
 						" into targetStats for spec " + specName);
@@ -145,15 +148,34 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 				if (targetStatsSummary == null) {
 					targetStatsSummary = new StatsSummary(workloadName, operations, behaviorSpec,
 													targetName, localHostname, specName);
-					targetStatsSummary.setPrintSummary(statsIntervalSpecs.get(specName).getPrintSummary());
-					targetStatsSummary.setPrintIntervals(statsIntervalSpecs.get(specName).getPrintIntervals());
-					targetStatsSummary.setPrintCsv(statsIntervalSpecs.get(specName).getPrintCsv());
+					targetStatsSummary.setPrintSummary(spec.getPrintSummary());
+					targetStatsSummary.setPrintIntervals(spec.getPrintIntervals());
+					targetStatsSummary.setPrintCsv(spec.getPrintCsv());
 					specTargetToCurrentStatsMap.put(targetName, targetStatsSummary);
 					logger.info("statsIntervalComplete: Created a new StatsSummary for spec " + specName
 							+ " and target " + targetName + ": " + targetStatsSummary);
 				} 
 				targetStatsSummary.merge(curPeriodTargetStatsSummary);
 			}
+			
+			// Do the same thing for the loadPath intervals
+			String loadPathName = loadPath.getName();
+			Map<String, StatsSummary> specTargetToCurrentStatsMap = specNameToTargetToIntervalStatsMap.get(loadPathName);
+			logger.info("statsIntervalComplete: Merging curStats for target " + targetName + 
+					" into targetStats for spec " + loadPathName);
+			
+			StatsSummary targetStatsSummary = specTargetToCurrentStatsMap.get(targetName);
+			if (targetStatsSummary == null) {
+				targetStatsSummary = new StatsSummary(workloadName, operations, behaviorSpec,
+												targetName, localHostname, loadPathName);
+				targetStatsSummary.setPrintSummary(loadPath.getPrintSummary());
+				targetStatsSummary.setPrintIntervals(loadPath.getPrintIntervals());
+				targetStatsSummary.setPrintCsv(loadPath.getPrintCsv());
+				specTargetToCurrentStatsMap.put(targetName, targetStatsSummary);
+				logger.info("statsIntervalComplete: Created a new StatsSummary for spec " + loadPathName
+						+ " and target " + targetName + ": " + targetStatsSummary);
+			} 
+			targetStatsSummary.merge(curPeriodTargetStatsSummary);
 		}
 		
 		/*
@@ -162,15 +184,15 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 		 */
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-		String completedSpecName = statsIntervalSpec.getName();
+		String completedSpecName = completeMessage.getCompletedSpecName();
 		logger.info("Preparing to send target summaries for spec " + completedSpecName);
 		Map<String, StatsSummary> specTargetToCurrentStatsMap = specNameToTargetToIntervalStatsMap.get(completedSpecName);
 		for (String targetName : specTargetToCurrentStatsMap.keySet()) {
 
 			StatsSummary targetStatsSummary = specTargetToCurrentStatsMap.get(targetName);
-			targetStatsSummary.setIntervalStartTime(statsIntervalSpec.getCurIntervalStartTime());
-			targetStatsSummary.setIntervalEndTime(statsIntervalSpec.getLastIntervalEndTime());
-			targetStatsSummary.setIntervalName(statsIntervalSpec.getCurIntervalName());
+			targetStatsSummary.setIntervalStartTime(completeMessage.getCurIntervalStartTime());
+			targetStatsSummary.setIntervalEndTime(completeMessage.getLastIntervalEndTime());
+			targetStatsSummary.setIntervalName(completeMessage.getCurIntervalName());
 
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
 					+ " and target " + targetName + ", summary = " + targetStatsSummary);
@@ -179,7 +201,7 @@ public class StatsCollector implements StatsIntervalCompleteCallback {
 			 * Send the stats summary
 			 */
 			HttpEntity<StatsSummary> statsEntity = new HttpEntity<StatsSummary>(targetStatsSummary, requestHeaders);
-			String url = "http://" + masterHostName + ":" + masterPortNumber + "/stats";
+			String url = "http://" + masterHostName + ":" + masterPortNumber + "/stats/run/" + runName;
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
 					+ " and target " + targetName + " to url " + url);
 

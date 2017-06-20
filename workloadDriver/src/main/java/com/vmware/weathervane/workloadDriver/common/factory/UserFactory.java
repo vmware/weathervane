@@ -13,23 +13,12 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec;
+package com.vmware.weathervane.workloadDriver.common.factory;
 
-public class FixedStatsInterval {
+import com.vmware.weathervane.workloadDriver.common.core.User;
+import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 
-	private String name;
-	private Long duration;
-	
-	public String getName() {
-		return name;
-	}
-	public void setName(String name) {
-		this.name = name;
-	}
-	public Long getDuration() {
-		return duration;
-	}
-	public void setDuration(Long duration) {
-		this.duration = duration;
-	}
+public interface UserFactory {
+	User createUser(Long userId, Long orderingId, Long globalOrderingId, Target target);
 }
+

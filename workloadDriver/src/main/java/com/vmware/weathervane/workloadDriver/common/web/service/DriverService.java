@@ -13,49 +13,29 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.representation;
+package com.vmware.weathervane.workloadDriver.common.web.service;
 
-import java.util.List;
+import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
+import com.vmware.weathervane.workloadDriver.common.model.Workload;
+import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 
-public class InitializeWorkloadStatsMessage {
+public interface DriverService {
 
-	private String workloadName;
-	private List<String> targetNames;
-	private List<String> statsIntervalSpecNames;
+	void addWorkload(String runName, String workloadName, Workload theWorkload) throws DuplicateRunException;
 
-	public String getWorkloadName() {
-		return workloadName;
-	}
+	void stopWorkload(String runName, String workloadName);
 
-	public void setWorkloadName(String workloadName) {
-		this.workloadName = workloadName;
-	}
+	void initializeWorkload(String runName, String workloadName, InitializeWorkloadMessage initializeWorkloadMessage);
 
-	public List<String> getTargetNames() {
-		return targetNames;
-	}
+	void changeActiveUsers(String runName, String workloadName, long activeUsers);
 
-	public void setTargetNames(List<String> targetNames) {
-		this.targetNames = targetNames;
-	}
-	
-	public List<String> getStatsIntervalSpecNames() {
-		return statsIntervalSpecNames;
-	}
+	void addRun(String runName) throws DuplicateRunException;
+	void removeRun(String runName);
 
-	public void setStatsIntervalSpecNames(List<String> statsIntervalSpecNames) {
-		this.statsIntervalSpecNames = statsIntervalSpecNames;
-	}
+	void statsIntervalComplete(String runName, String workloadName,
+			StatsIntervalCompleteMessage statsIntervalCompleteMessage);
 
-	@Override
-	public String toString() {
-		StringBuilder retVal = new StringBuilder("InitializeWorkloadStatsMessage: workload = " + workloadName
-				+ ", targets = ");
-		for (String targetName : targetNames) {
-			retVal.append(targetName + ", ");
-		}
-		
-		return retVal.toString();
-	}
-	
+	void exit(String runName);
+
 }

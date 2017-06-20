@@ -32,13 +32,21 @@ import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.model.target.HttpTarget;
 import com.vmware.weathervane.workloadDriver.common.model.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
+import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.util.Holder;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeName(value = "auction")
 public class AuctionWorkload extends Workload {
 	private static final Logger logger = LoggerFactory.getLogger(AuctionWorkload.class);
+
+	/*
+	 * Parameters that are specific to the Auction workload
+	 */
+	private Integer usersScaleFactor = AuctionConstants.DEFAULT_USERS_SCALE_FACTOR;
+	private Integer pageSize = AuctionConstants.DEFAULT_PAGE_SIZE;
+	private Integer usersPerAuction = AuctionConstants.DEFAULT_USERS_PER_AUCTION;
+
 	/*
 	 * This map from userName to password contains all of the userNames that can
 	 * be used by a workload. 
@@ -56,14 +64,7 @@ public class AuctionWorkload extends Workload {
 
 	@JsonIgnore
 	private AuctionOperationFactory opFactory = new AuctionOperationFactory();
-	
-	/*
-	 * Parameters that are specific to the Auction workload
-	 */
-	private Integer usersScaleFactor = AuctionConstants.DEFAULT_USERS_SCALE_FACTOR;
-	private Integer pageSize = AuctionConstants.DEFAULT_PAGE_SIZE;
-	private Integer usersPerAuction = AuctionConstants.DEFAULT_USERS_PER_AUCTION;
-	
+		
 	@JsonIgnore
 	private Holder<Integer> pageSizeHolder = new Holder<Integer>();
 	
@@ -71,12 +72,9 @@ public class AuctionWorkload extends Workload {
 	private Holder<Integer> usersPerAuctionHolder = new Holder<Integer>();
 	
 	@Override
-	public void initialize(String name, Integer nodeNumber, Integer numNodes,
-			Map<String, StatsIntervalSpec> statsIntervalSpecsMap,
-			String masterHostName, int masterPortNumber, String localHostname) {
+	public void initializeNode(InitializeWorkloadMessage initializeWorkloadMessage) {
 		logger.debug("Initializing an auction workload");
-		super.initialize(name, nodeNumber, numNodes, statsIntervalSpecsMap, 
-				masterHostName, masterPortNumber, localHostname);
+		super.initializeNode(initializeWorkloadMessage);
 		
 		/*
 		 * The start user number is determined by figuring out the number of users
@@ -185,10 +183,13 @@ public class AuctionWorkload extends Workload {
 
 	@Override
 	public String toString() {
-		StringBuilder theStringBuilder = new StringBuilder("AuctionWorkload: ");
-		theStringBuilder.append("behaviorSpecName: " + getBehaviorSpecName()); 
+		StringBuilder theStringBuilder = new StringBuilder(" AuctionWorkload: ");
+		String header = super.toString();
+				
+		theStringBuilder.append("usersScaleFactor:" + usersScaleFactor);
+		theStringBuilder.append(", pageSize:" + pageSize);
+		theStringBuilder.append(", usersScaleFactor:" + usersScaleFactor);
 		
-		return theStringBuilder.toString();
-
+		return header + theStringBuilder.toString();
 	}
 }

@@ -246,15 +246,16 @@ public class AuctionUser extends User {
 		this.setWorkload(workload);
 		this.setOperationFactory(new AuctionOperationFactory());
 		this.setTransitionChooserFactory(new AuctionTransitionChooserFactory());
-	}
 
-	@Override
-	public void start(long finishTime, long activeUsers) {
 		_randomGenerator = new Random();
 
 		_allBidStrategies.add(new RandomBidStrategy());
+	}
 
-		super.start(finishTime, activeUsers);
+	@Override
+	public void start(long activeUsers) {
+
+		super.start(activeUsers);
 	}
 
 	@Override

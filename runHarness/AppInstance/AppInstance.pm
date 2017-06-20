@@ -155,9 +155,9 @@ override 'initialize' => sub {
 	if ( $#$userLoadPath >= 0 ) {
 		$logger->debug( "AppInstance " . $self->getParamValue('instanceNum') . " uses a user load path." );
 		my $parsedPathRef = parseLoadPath($userLoadPath);
-		my $users         = $parsedPathRef->[0];
-		if ( $users > $self->users ) {
-			$self->users($users);
+		my $maxUsers         = $parsedPathRef->[0];
+		if ( $maxUsers > $self->users ) {
+			$self->users($maxUsers);
 		}
 	}
 

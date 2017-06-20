@@ -13,17 +13,29 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.representation;
+/**
+ * 
+ *
+ * @author Hal
+ */
+package com.vmware.weathervane.workloadDriver.common.exceptions;
 
-public class ChangeUsersMessage {
+/**
+ * @author Hal
+ *
+ */
+public class DuplicateRunException extends RuntimeException {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
-	private long activeUsers;
-	
-	public long getActiveUsers() {
-		return activeUsers;
+	public DuplicateRunException() {
+		super();
 	}
-	public void setActiveUsers(long activeUsers) {
-		this.activeUsers = activeUsers;
+	
+	public DuplicateRunException(String msg) {
+		super(msg);
 	}
 
 }

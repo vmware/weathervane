@@ -15,9 +15,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.model;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,13 +37,9 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.LoadPathStatsIntervalSpec;
-import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
 public class Run {
 	private static final Logger logger = LoggerFactory.getLogger(Run.class);
@@ -53,46 +47,27 @@ public class Run {
 	@JsonIgnore
 	public static final RestTemplate restTemplate = new RestTemplate();
 
-	private Long rampUp;
-	private Long steadyState;
-	private Long rampDown;
+	private String name;
+	
+	public enum RunState {PENDING, INITIALIZED, RUNNING, STOPPING, COMPLETED};
 
-	private String behaviorSpecDirName;
+	private RunState state;
+	
 	private String statsOutputDirName;
 	
-	private int statsInterval = 10;
+	private String statsHost;
 
-	private Map<String, Workload> workloads;	
+	private Integer portNumber = 7500;
 
-	private Map<String,  LoadPath> loadPaths;
-
-	private Map<String, Target> targets;
-
-	private Map<String, StatsIntervalSpec> statsIntervalSpecs;
-	
 	private List<String> hosts;
 
-	private String statsHost;
-	
-	private Integer portNumber = 7500;
-	
-	@JsonIgnore
-	private String localHostname;
-	
+	private List<Workload> workloads;	
+		
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
-
+	
 	public void initialize() throws UnknownHostException {
-		
-		if (targets == null) {
-			logger.error("There must be at least one target defined in the run configuration file.");
-			System.exit(1);
-		}
-		
-		if (loadPaths == null) {
-			logger.error("There must be at least one load path defined in the run configuration file.");
-			System.exit(1);
-		}
+		logger.debug("initialize name = " + name);
 		
 		if (workloads == null) {
 			logger.error("There must be at least one workload defined in the run configuration file.");
@@ -104,7 +79,7 @@ public class Run {
 			System.exit(1);
 		}
 		
-		executorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+		executorService = Executors.newScheduledThreadPool(4 * Runtime.getRuntime().availableProcessors());
 		
 		/*
 		 * Convert all of the host names to lower case
@@ -114,51 +89,7 @@ public class Run {
 			lcHosts.add(host.toLowerCase());
 		}
 		hosts = lcHosts;
-		
-		/*
-		 * First determine the nodeNumber of this node (based on position in hosts list).
-		 * if there is only one node then we know this is node 0
-		 */
-		String[] localHostnameParts = InetAddress.getLocalHost().getHostName().split ("\\.");
-		if (localHostnameParts.length <= 0) {
-			throw new UnknownHostException();
-		}
-		localHostname = localHostnameParts[0].toLowerCase();
-		int nodeNumber = 0;
-		if (hosts.size() > 1) {
-			localHostname = determineLocalHostname();
-			nodeNumber = determineNodeNumber(localHostname);
-		}
-
-		for (String name : getStatsIntervalSpecs().keySet()) {
-			StatsIntervalSpec spec = statsIntervalSpecs.get(name);
-			if (spec instanceof LoadPathStatsIntervalSpec) {
-				String loadPathName = ((LoadPathStatsIntervalSpec) spec).getLoadPathName();
-				LoadPath path = loadPaths.get(loadPathName);
-				if (path == null) {
-					logger.error("StatsIntervalSpec " + name + " refers to a LoadPath called " 
-							+ loadPathName + " which does not exist" );
-					System.exit(1);
-				}
-				((LoadPathStatsIntervalSpec) spec).setLoadPath(path);
-			}
-			
-			spec.initialize(name);
-		}
-
-		for (String name : loadPaths.keySet()) {
-			loadPaths.get(name).initialize(name, nodeNumber, hosts.size());
-		}
-
-		for (String name : workloads.keySet()) {
-			workloads.get(name).initialize(name, nodeNumber, hosts.size(),
-					statsIntervalSpecs,	statsHost, portNumber, localHostname);
-		}
-		
-		for (String name : targets.keySet()) {
-			targets.get(name).initialize(name, rampUp, steadyState, rampDown, executorService, 
-									loadPaths, workloads, nodeNumber, hosts.size());
-		}
+	
 		
 		/*
 		 * Let the stats service know about the run so that it can
@@ -169,9 +100,15 @@ public class Run {
 		InitializeRunStatsMessage initializeRunStatsMessage = new InitializeRunStatsMessage();
 		initializeRunStatsMessage.setHosts(hosts);
 		initializeRunStatsMessage.setStatsOutputDirName(getStatsOutputDirName());
+		Map<String, Integer> workloadNameToNumTargetsMap = new HashMap<String, Integer>();
+		for (Workload workload : workloads) {
+			workloadNameToNumTargetsMap.put(workload.getName(), workload.getNumTargets());
+		}
+		initializeRunStatsMessage.setWorkloadNameToNumTargetsMap(workloadNameToNumTargetsMap);
 		
 		HttpEntity<InitializeRunStatsMessage> statsEntity = new HttpEntity<InitializeRunStatsMessage>(initializeRunStatsMessage, requestHeaders);
-		String url = "http://" + statsHost + ":" + portNumber + "/stats/initialize/run";
+		String url = "http://" + statsHost + ":" + portNumber + "/stats/initialize/run/" + name;
+		logger.debug("Sending initialize run message to stats controller.  url = " + url + ", maessage: " + initializeRunStatsMessage);
 		ResponseEntity<BasicResponse> responseEntity 
 				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
 
@@ -180,37 +117,46 @@ public class Run {
 			logger.error("Error posting workload initialization to " + url);
 		}
 
+		/*
+		 * Initialize the workloads
+		 */
+		for (Workload workload : workloads) {
+			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
+			workload.initialize(name, hosts, statsHost, portNumber, restTemplate, executorService);
+		}
+		
+		state = RunState.INITIALIZED;
+		
 	}
 	
 	public void start() {
 		
-		for (Workload workload : workloads.values()) {
+		for (Workload workload : workloads) {
+			logger.debug("start run " + name + " starting workload " + workload.getName());
 			workload.start();
 		}
-
-		for (Target target : targets.values()) {
-			target.start();
-		}
-
-		for (StatsIntervalSpec spec : statsIntervalSpecs.values()) {
-			spec.start();
-		}
 		
-		Thread progressMessageThread = new Thread(new progressMessageRunner());
-		progressMessageThread.start();
+		state = RunState.RUNNING;
 
 	}
 	
 	public void stop() {
-		logger.debug("stop");
-		for (Target target : targets.values()) {
-			target.stop();
+		logger.debug("stop for run " + name);
+		state = RunState.STOPPING;
+		
+		for (Workload workload : workloads) {
+			workload.stop();
 		}
-		logger.debug("stopped targets");
+		state = RunState.COMPLETED;
+
+		logger.debug("stopped load paths and spec intervals");
 		
-		StatsIntervalSpec.stop();
-		logger.debug("stopped spec intervals");
-		
+	}
+	
+	
+	public void shutdown() {
+		logger.debug("shutdown for run " + name);
+
 		executorService.shutdown();
 		try {
 			executorService.awaitTermination(10, TimeUnit.SECONDS);
@@ -223,12 +169,27 @@ public class Run {
 		} catch (InterruptedException e) {
 		}
 		logger.debug("stopped Operation executor");
-	}
-	
-	
-	public void shutdown() {
-		logger.debug("shutdown");
 
+		/*
+		 * Send exit messages to the other driver nodes
+		 */
+		for (String hostname : hosts) {
+			if (hostname == statsHost) {
+				continue;
+			}
+			HttpHeaders requestHeaders = new HttpHeaders();
+			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+			String url = "http://" + hostname + ":" + portNumber + "/driver/exit/" + name;
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
+					BasicResponse.class);
+
+			BasicResponse response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload to " + url);
+			}
+		}
+		
 		/*
 		 * Shutdown the driver after returning so that the web interface can
 		 * send a response
@@ -236,106 +197,15 @@ public class Run {
 		Thread shutdownThread = new Thread(new ShutdownThreadRunner());
 		shutdownThread.start();
 	}
-	
-	
-	private String determineLocalHostname() {
-		String localHostname = null;
-		String canonicalLocalHostname = null;
-		String localAddress = null;
-		try {
-			String[] localHostnameParts = InetAddress.getLocalHost().getHostName().split ("\\.");
-			if (localHostnameParts.length <= 0) {
-				throw new UnknownHostException();
-			}
-			localHostname = localHostnameParts[0].toLowerCase();
-			
-			canonicalLocalHostname = InetAddress.getLocalHost().getCanonicalHostName().toLowerCase();
-			localAddress = InetAddress.getLocalHost().getHostAddress().toLowerCase();
-			
-			logger.info("localHostname = " + localHostname);
-			logger.info("canonical localHostname = " + canonicalLocalHostname);
-			logger.info("local address = " + localAddress);
-			
-		} catch (UnknownHostException e) {
-			String hostnameEnv = System.getenv("HOSTNAME");
-			if (hostnameEnv == null) {
-				logger.error("Can't determine the hostname of the local system");
-				System.exit(1);				
-			}
-			
-			String[] localHostnameParts = hostnameEnv.split ("\\.");
-			if (localHostnameParts.length <= 0) {
-				logger.error("Can't determine the hostname of the local system");
-				System.exit(1);
-			}
-			localHostname = localHostnameParts[0].toLowerCase();
-			logger.info("localHostname from System.getenv = " + localHostname);
-			canonicalLocalHostname = System.getenv("HOSTNAME");
-			if (canonicalLocalHostname != null) {
-				canonicalLocalHostname = canonicalLocalHostname.toLowerCase();
-			}
-			
-		}
 
-		int nodeNumber = -1;
-		if (localHostname != null) {
-			nodeNumber = hosts.indexOf(localHostname);
-			if (nodeNumber != -1) return localHostname;
-		}
-		if (canonicalLocalHostname != null) {
-			nodeNumber = hosts.indexOf(canonicalLocalHostname);			
-			if (nodeNumber != -1) return canonicalLocalHostname;
-		}
-		if (localAddress != null) {
-			nodeNumber = hosts.indexOf(localAddress);			
-			if (nodeNumber != -1) return localAddress;
-		}
-
-		/*
-		 * Check if the local IP address matches the IP address for
-		 * any of the hosts
-		 */
-		for (String host : hosts) {
-			String hostAddress = null;
-			try {
-				hostAddress = InetAddress.getByName(host).getHostAddress();
-				if ((localAddress != null) && localAddress.equals(hostAddress)) {
-					return host;
-				}
-				
-			}  catch (UnknownHostException e) {				
-				logger.error("Can't resolve ip address for host named " + host);
-				System.exit(1);
-				return null;
-			}
-			
-		}
-		
-		logger.error("The hostname or address of the host for this driver node must be in the run's \"hosts\" list");
-		System.exit(1);
-		return null;
-		
-	}
-	
-	private int determineNodeNumber(String hostname) {
-		return hosts.indexOf(hostname);
-	}
-	
-	private boolean determineIsMaster(String hostname) {
-		boolean isMaster = false;
-		if (hostname.equals(statsHost.toLowerCase())) {
-			isMaster = true;
-		}
-
-		return isMaster;
-	}
-	
 	public ActiveUsersResponse getNumActiveUsers() {
 		ActiveUsersResponse activeUsersResponse = new ActiveUsersResponse();
 		Map<String, Long> workloadActiveUsersMap = new HashMap<String, Long>();
 		
-		for (String name : workloads.keySet()) {
-			workloadActiveUsersMap.put(name, workloads.get(name).getNumActiveUsers());
+		long numActiveUsers = 0;
+		for (Workload workload : workloads) {
+			numActiveUsers = workload.getNumActiveUsers();
+			workloadActiveUsersMap.put(workload.getName(), numActiveUsers);
 		}
 		
 		activeUsersResponse.setWorkloadActiveUsers(workloadActiveUsersMap);
@@ -343,37 +213,31 @@ public class Run {
 	}
 	
 	public void changeActiveUsers(String workloadName, long numUsers) throws TooManyUsersException {
-		Workload workload = workloads.get(workloadName);
-		workload.changeActiveUsers(numUsers);
+		for (Workload workload : workloads) {
+			if (workload.getName() == workloadName) {
+				if (numUsers > workload.getMaxUsers()) {
+					throw new TooManyUsersException("Workload " + workloadName 
+							+ " has a maxUsers of " + workload.getMaxUsers() + " users.");
+				}
+				workload.changeActiveUsers(numUsers);
+			}
+		}
 	}
-
-	
-	public Map<String, Target> getTargets() {
-		return targets;
-	}
-	public void setTargets(Map<String, Target> targets) {
-		this.targets = targets;
-	}
-	public Map<String, LoadPath> getLoadPaths() {
-		return loadPaths;
-	}
-	public void setLoadPaths(Map<String, LoadPath> loadPaths) {
-		this.loadPaths = loadPaths;
-	}
-	public Map<String, Workload> getWorkloads() {
+	public List<Workload> getWorkloads() {
 		return workloads;
 	}
-	public void setWorkloads(Map<String, Workload> workloads) {
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setWorkloads(List<Workload> workloads) {
 		this.workloads = workloads;
 	}
 
-	public Map<String, StatsIntervalSpec> getStatsIntervalSpecs() {
-		return statsIntervalSpecs;
-	}
-
-	public void setStatsIntervalSpecs(Map<String, StatsIntervalSpec> statsIntervalSpecs) {
-		this.statsIntervalSpecs = statsIntervalSpecs;
-	}
 
 	public List<String> getHosts() {
 		return hosts;
@@ -383,39 +247,12 @@ public class Run {
 		this.hosts = hosts;
 	}
 
-	public Long getRampUp() {
-		return rampUp;
-	}
-	public void setRampUp(Long rampUp) {
-		this.rampUp = rampUp;
-	}
-	public Long getSteadyState() {
-		return steadyState;
-	}
-	public void setSteadyState(Long steadyState) {
-		this.steadyState = steadyState;
-	}
-	public Long getRampDown() {
-		return rampDown;
-	}
-	public void setRampDown(Long rampDown) {
-		this.rampDown = rampDown;
-	}
-	
-	public String getBehaviorSpecDirName() {
-		return behaviorSpecDirName;
+	public RunState getState() {
+		return state;
 	}
 
-	public void setBehaviorSpecDirName(String behaviorSpecDirName) {
-		this.behaviorSpecDirName = behaviorSpecDirName;
-	}
-
-	public int getStatsInterval() {
-		return statsInterval;
-	}
-
-	public void setStatsInterval(int statsInterval) {
-		this.statsInterval = statsInterval;
+	public void setState(RunState state) {
+		this.state = state;
 	}
 
 	public String getStatsHost() {
@@ -445,65 +282,19 @@ public class Run {
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("Run: ");
-		theStringBuilder.append("rampUp: " + getRampUp());
-		theStringBuilder.append("; steadyState: " + getSteadyState());
-		theStringBuilder.append("; rampDown: " + getRampDown());
-		theStringBuilder.append("; behaviorSpecDirName: " + getBehaviorSpecDirName());
 		
 		if (workloads != null) {
-			for (String name : workloads.keySet()) {
-				theStringBuilder.append("\n\tWorkload " + name + ": " + workloads.get(name).toString());
+			for (Workload workload : workloads) {
+				theStringBuilder.append("\n\tWorkload " + workload.getName() + ": " + workload.toString());
 			}
 		} else {
 			theStringBuilder.append("\n\tNo Workloads!");
 		}
-
-		if (loadPaths != null) {
-			for (String name : loadPaths.keySet()) {
-				theStringBuilder.append("\n\tLoadPath " + name + ": " + loadPaths.get(name).toString());
-			}
-		} else {
-			theStringBuilder.append("\n\tNo LoadPaths!");
-		}
-
-		if (targets != null) {
-			for (String name : targets.keySet()) {
-				theStringBuilder.append("\n\tTarget " + name + ": " + targets.get(name).toString());
-			}
-		} else {
-			theStringBuilder.append("\n\tNo Targets!");
-		}
 		
 		return theStringBuilder.toString();
 
-
 	}
-	
-	private class progressMessageRunner implements Runnable {
 
-		@Override
-		public void run() {
-			try {
-
-				SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd HH" + ":mm:ss.SSS");
-
-				System.out.println(formatter.format(System.currentTimeMillis()) + ": Ramp-Up Started");
-				Thread.sleep(rampUp * 1000);
-
-				System.out.println(formatter.format(System.currentTimeMillis()) + ": Steady-State Started");
-				Thread.sleep(steadyState * 1000);
-
-				System.out.println(formatter.format(System.currentTimeMillis()) + ": Steady-State Ended");
-				Thread.sleep(rampDown * 1000);
-
-				System.out.println(formatter.format(System.currentTimeMillis()) + ": Ramp-Down Ended");
-
-			} catch (InterruptedException e) {
-			}
-
-		}
-
-	}
 	
 	private class ShutdownThreadRunner implements Runnable {
 

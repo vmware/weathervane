@@ -1,0 +1,69 @@
+{
+	"loadPaths": [
+		{
+			"name": "loadpath1",
+			"type": "interval",
+			"isStatsInterval": true,
+			"printSummary": true,
+			"printIntervals": false,
+			"printCsv": true,
+			"loadIntervals": [
+				{
+					"startUsers": 10,
+					"name": "rampUp",
+					"duration": 300,
+					"endUsers": 1000,
+					"type": "ramp",
+					"timeStep": 10
+				},
+				{
+					"name": "steadyState",
+					"duration": 900,
+					"users": 1000,
+					"type": "uniform"
+				},
+				{
+					"name": "rampDown",
+					"duration": 60,
+					"users": 1000,
+					"type": "uniform"
+				}
+			]
+		},
+		{
+			"name": "loadpath2",
+			"type": "findmax",
+			"isStatsInterval": true,
+			"printSummary": true,
+			"printIntervals": false,
+			"printCsv": true,
+			"maxUsers": 40000
+		},
+		{
+			"name": "loadpath3",
+			"type": "fixed",
+			"isStatsInterval": true,
+			"printSummary": true,
+			"printIntervals": false,
+			"printCsv": true,
+			"rampUp": 120,
+			"steadyState": 600,
+			"rampDown": 60,
+			"users": 40000,
+			"timeStep" : 15
+		},
+		{
+			"name": "loadpath4",
+			"type": "ramptomax",
+			"isStatsInterval": true,
+			"printSummary": true,
+			"printIntervals": true,
+			"printCsv": true,
+			"startUsers": 5000,
+			"maxUsers": 40000,
+			"stepSize": 5000,
+			"intervalDuration": 300,
+			"rampIntervalDuration": 300
+		}
+	]
+}

@@ -22,35 +22,34 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(value = "fixed")
 public class FixedStatsIntervalSpec extends StatsIntervalSpec {
-	private List<FixedStatsInterval> intervals = null;
+	private List<StatsInterval> intervals = null;
 
 	@JsonIgnore
 	private int nextIntervalNum = 0;
 	
-	public List<FixedStatsInterval> getIntervals() {
+	public List<StatsInterval> getIntervals() {
 		return intervals;
 	}
 
-	public void setIntervals(List<FixedStatsInterval> intervals) {
+	public void setIntervals(List<StatsInterval> intervals) {
 		this.intervals = intervals;
 	}
 
 	@JsonIgnore
 	@Override
-	protected long getNextInterval() {
+	protected StatsInterval getNextInterval() {
 		if (intervals == null) {
-			return 0;
+			return null;
 		}
 		
-		FixedStatsInterval returnInterval = null;
+		StatsInterval returnInterval = null;
 		if (nextIntervalNum <= (intervals.size() - 1)) {
 			returnInterval = intervals.get(nextIntervalNum);
 		}
 		
-		setCurIntervalName(returnInterval.getName());
 		nextIntervalNum++;
 		
-		return returnInterval.getDuration();
+		return returnInterval;
 	}
 	
 	@Override

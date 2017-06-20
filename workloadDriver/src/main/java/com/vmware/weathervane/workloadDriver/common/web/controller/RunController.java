@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitializedException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.model.Run;
@@ -46,15 +47,15 @@ public class RunController {
 	@Autowired
 	private RunService runService;
 
-	@RequestMapping(method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> setRun(@RequestBody Run theRun) {
-		logger.debug("setRun: " + theRun.toString());
+	@RequestMapping(value="/{runName}", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> addRun(@PathVariable String runName, @RequestBody Run theRun) {
+		logger.debug("setRun for run " + runName );
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
 		try {
-			runService.setRun(theRun);
-		} catch (RunNotInitializedException e) {
+			runService.addRun(runName, theRun);
+		} catch (DuplicateRunException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -63,14 +64,29 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/initialize", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> initialize() {
-		logger.debug("initialize");
+
+	@RequestMapping(value="/{runName}", method = RequestMethod.GET)
+	public HttpEntity<Run> getRun(@PathVariable String runName) {
+		logger.debug("getRun for run " + runName );
+		HttpStatus status = HttpStatus.OK;
+		Run theRun = null;
+		try {
+			theRun = runService.getRun(runName);
+		} catch (RunNotInitializedException e) {
+			status = HttpStatus.CONFLICT;
+		}
+
+		return new ResponseEntity<Run>(theRun, status);
+	}
+
+	@RequestMapping(value="/{runName}/initialize", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> initialize(@PathVariable String runName, @RequestBody Run theRun) {
+		logger.debug("initialize for run " + runName);
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
 		try {
-			runService.initialize();
+			runService.initialize(runName);
 		} catch (RunNotInitializedException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
@@ -84,14 +100,35 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/start", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> start() {
-		logger.debug("start");
+	@RequestMapping(value="/{runName}/start", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> start(@PathVariable String runName) {
+		logger.debug("start for run " + runName);
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
 		try {
-			runService.start();
+			runService.start(runName);
+		} catch (RunNotInitializedException e) {
+			response.setMessage(e.getMessage());
+			response.setStatus("Failure");
+			status = HttpStatus.CONFLICT;
+		} catch (DuplicateRunException e) {
+			response.setMessage(e.getMessage());
+			response.setStatus("Failure");
+			status = HttpStatus.CONFLICT;
+		}
+
+		return new ResponseEntity<BasicResponse>(response, status);
+	}
+
+	@RequestMapping(value="/{runName}/stop", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> stop(@PathVariable String runName) {
+		logger.debug("stop for run " + runName);
+		BasicResponse response = new BasicResponse();
+		HttpStatus status = HttpStatus.OK;
+		
+		try {
+			runService.stop(runName);
 		} catch (RunNotInitializedException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
@@ -101,14 +138,14 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/stop", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> stop() {
-		logger.debug("stop");
+	@RequestMapping(value="/{runName}/shutdown", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> shutdown(@PathVariable String runName) {
+		logger.debug("shutdown for run " + runName);
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		
 		try {
-			runService.stop();
+			runService.shutdown(runName);
 		} catch (RunNotInitializedException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
@@ -118,68 +155,63 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-	@RequestMapping(value="/shutdown", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> shutdown() {
-		logger.debug("stop");
-		BasicResponse response = new BasicResponse();
-		HttpStatus status = HttpStatus.OK;
-		
-		try {
-			runService.shutdown();
-		} catch (RunNotInitializedException e) {
-			response.setMessage(e.getMessage());
-			response.setStatus("Failure");
-			status = HttpStatus.CONFLICT;
-		}
-
-		return new ResponseEntity<BasicResponse>(response, status);
-	}
-
-	@RequestMapping(value="/start", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isStarted() {
-		logger.debug("start");
+	@RequestMapping(value="/{runName}/start", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> isStarted(@PathVariable String runName) {
+		logger.debug("start for run " + runName);
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
 		
-		response.setIsStarted(runService.isStarted());
+		response.setIsStarted(runService.isStarted(runName));
 
 		return new ResponseEntity<IsStartedResponse>(response, status);
 	}
 
-	@RequestMapping(value="/users", method = RequestMethod.GET)
-	public HttpEntity<ActiveUsersResponse> getNumActiveUsers() {
-		logger.debug("getActiveUsers");
-		ActiveUsersResponse response = runService.getNumActiveUsers();
+	@RequestMapping(value="/{runName}/users", method = RequestMethod.GET)
+	public HttpEntity<ActiveUsersResponse> getNumActiveUsers(@PathVariable String runName) {
+		logger.debug("getActiveUsers for run " + runName);
+		ActiveUsersResponse response = new ActiveUsersResponse();
 		HttpStatus status = HttpStatus.OK;
-		response.setStatus("Success");
-		response.setMessage("");
+
+		try {
+			response = runService.getNumActiveUsers(runName);
+			response.setStatus("Success");
+			response.setMessage("");
+		} catch (RunNotInitializedException e) {
+			response.setMessage(e.getMessage());
+			response.setStatus("Failure");
+			status = HttpStatus.CONFLICT;
+		}
 		
 		return new ResponseEntity<ActiveUsersResponse>(response, status);
 	}
 
-	@RequestMapping(value="/up", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isUp() {
-		logger.debug("isUp");
+	@RequestMapping(value="/{runName}/up", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> isUp(@PathVariable String runName) {
+		logger.debug("isUp for run " + runName);
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
-		response.setIsStarted(runService.isUp());
+		response.setIsStarted(runService.isUp(runName));
 
 		return new ResponseEntity<IsStartedResponse>(response, status);
 	}
 
-	@RequestMapping(value="/workload/{workloadName}/users", method = RequestMethod.POST)
+	@RequestMapping(value="/{runName}/workload/{workloadName}/users", method = RequestMethod.POST)
 	public HttpEntity<BasicResponse> changeActiveUsers(@RequestBody ChangeUsersMessage changeUsersMessage,
-														@PathVariable String workloadName) {
-		logger.debug("changeActiveUsers: workloadName = " + workloadName
-					+ ", numUsers = " + changeUsersMessage.getNumUsers());
+			@PathVariable String runName, @PathVariable String workloadName) {
+		logger.debug("changeActiveUsers for run " + runName + ": workloadName = " + workloadName
+					+ ", numUsers = " + changeUsersMessage.getActiveUsers());
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		response.setMessage("Num Users changed");
 		response.setStatus("Success");
 		
 		try {
-			runService.changeActiveUsers(workloadName, changeUsersMessage.getNumUsers());
+			runService.changeActiveUsers(runName, workloadName, changeUsersMessage.getActiveUsers());
 		} catch (TooManyUsersException e) {
+			response.setMessage(e.getMessage());
+			response.setStatus("Failure");
+			status = HttpStatus.CONFLICT;
+		} catch (RunNotInitializedException e) {
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;

@@ -1,59 +1,74 @@
 {
-  "rampUp" : 120,
-  "steadyState" : 600,
-  "rampDown" : 60,
-  "nodeNumber" : 0,
-  "behaviorSpecDirName" : "/root/weathervane/workloadTemplates/behaviorSpecs",
-  "statsInterval" : 10,
-  "hosts" : [ "auctionDriver1" ],
-  "statsIntervalSpecs" : {
-  	"loadpath1" : {
-		"type" : "loadpath",
-		"printSummary" : true,
-		"loadPathName" : "loadpath1"
-  	},
-  	"periodic" : {
-		"type" : "periodic",
-		"printSummary" : false,
-		"period" : 15
-  	}
-  },
-  "workloads" : {
-    "auctionWorkload" : {
-    	"type" : "auction",
-    	"behaviorSpecName" : "auctionMainUser",
-    	"statsIntervalSpecNames" : [ "periodic", "loadPath1" ],
-    	"maxUsers" : 1,
-		"useThinkTime" : false,
-    	"usersScaleFactor" : 5,
-		"pageSize" : 5
-    }
-  },
-  "loadPaths" : {
-    "loadpath1" : {
-      "type" : "interval",
-      "loadIntervals" : [
-        {
-          "type" : "uniform",
-          "users" : 1,
-      	  "duration" : 120
-        },
-        {
-          "type" : "ramp",
-  	  "startUsers" : 1,
-  	  "endUsers" : 2,
-      	  "duration" : 600
-        }
-      ]    
-    }
-  },
-  "targets" : {
-    "target1" : {
-     "type" : "http",
-     "hostname" : "AuctionLb1",
-     "sslEnabled" : true,
-     "loadPathName" : "loadpath1",
-     "workloadName" : "auctionWorkload"
-    }
-  }
+	"name" : "run1",
+	"state": "PENDING",
+	"statsOutputDirName": "/tmp",
+	"statsHost": "auctionDriver1",
+	"portNumber": 7500,
+	"hosts": [
+		"auctionDriver1",
+		"auctionDriver2"
+	],
+	"workloads": [
+		{
+			"name": "auctionWorkload",
+			"state": "PENDING",
+			"type": "auction",
+			"maxUsers": 30000,
+			"useThinkTime": false,
+			"behaviorSpecName": "auctionMainUser",
+			"usersScaleFactor": 5,
+			"pageSize": 5,
+			"usersPerAuction": 15,
+			"loadPath": {
+				"name": "loadpath1",
+				"type": "interval",
+				"isStatsInterval": true,
+				"printSummary": true,
+				"printIntervals": false,
+				"printCsv": true,
+				"loadIntervals": [
+					{
+						"startUsers": 10,
+						"name": "rampUp",
+						"duration": 300,
+						"endUsers": 1000,
+						"type": "ramp",
+						"timeStep": 10
+					},
+					{
+						"name": "steadyState",
+						"duration": 900,
+						"users": 1000,
+						"type": "uniform"
+					},
+					{
+						"name": "rampDown",
+						"duration": 60,
+						"users": 1000,
+						"type": "uniform"
+					}
+				]
+			},
+			"statsIntervalSpecs": [
+				{
+					"name": "periodic",
+					"type": "periodic",
+					"printSummary": false,
+					"printIntervals": true,
+					"printCsv": true,
+					"period": 15
+				}
+			],
+			"targets": [
+				{
+					"name": "target1",
+					"type": "http",
+					"httpPort": "2167",
+					"httpsPort": "2166",
+					"hostname": "192.168.1.239",
+					"sslEnabled": true
+				}
+			]
+		}
+	]
 }

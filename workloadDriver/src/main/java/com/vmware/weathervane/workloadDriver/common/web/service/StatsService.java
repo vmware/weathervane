@@ -18,19 +18,16 @@ package com.vmware.weathervane.workloadDriver.common.web.service;
 import java.io.IOException;
 
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
 public interface StatsService {
 
-	void postStatsSummary(StatsSummary statsSummary) throws IOException;
+	void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException;
 
-	void initializeRun(InitializeRunStatsMessage initializeRunStatsMessage);
+	void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage);
 
-	void initializeWorkload(InitializeWorkloadStatsMessage initializeWorkloadStatsMessage);
-
-	void runStarted();
+	void runStarted(String runName);
 	
-	void runComplete() throws IOException;
+	void runComplete(String runName) throws IOException;
 
 }

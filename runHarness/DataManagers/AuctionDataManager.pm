@@ -246,6 +246,10 @@ sub prepareData {
 		if ( $auctions < 4 ) {
 			$auctions = 4;
 		}
+		# Must be multiple of 2
+		if (($auctions % 2) != 0) {
+			$auctions++;
+		}
 	}
 
 	my $dbServersRef    = $self->appInstance->getActiveServicesByType('dbServer');

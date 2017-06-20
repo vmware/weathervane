@@ -15,15 +15,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.model.target;
 
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
+import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 @JsonTypeName(value = "http")
 public class HttpTarget extends Target {
@@ -37,19 +34,10 @@ public class HttpTarget extends Target {
 	private String httpsScheme = "https";
 
 	@Override
-	public void initialize(String name, long rampUp, long steadyState, long rampDown,
-			ScheduledExecutorService executorService,
-			Map<String,  LoadPath> loadPaths, Map<String, Workload> workloads, 
-			Integer nodeNumber, Integer numNodes) {
-		super.initialize(name, rampUp, steadyState, rampDown, executorService, loadPaths, 
-								workloads, nodeNumber, numNodes);
+	public void initialize(String workloadName,	long maxUsers, Integer nodeNumber, Integer numNodes, 
+			UserFactory userFactory, StatsCollector statsCollector) {
+		super.initialize(workloadName, maxUsers, nodeNumber, numNodes, userFactory, statsCollector);
 	}
-
-	@Override
-	public void start() {
-		logger.debug("Starting HttpTarget " + getName() + " with hostname " + hostname);
-		super.start();
-	} 
 
 	public String getHostname() {
 		return hostname;
@@ -99,7 +87,6 @@ public class HttpTarget extends Target {
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("HttpTarget: ");
-		theStringBuilder.append("loadPathName: " + getLoadPathName()); 
 		theStringBuilder.append("; workloadName: " + getWorkloadName()); 
 		theStringBuilder.append("; hostname: " + hostname); 
 		theStringBuilder.append("; sslEnabled: " + sslEnabled); 

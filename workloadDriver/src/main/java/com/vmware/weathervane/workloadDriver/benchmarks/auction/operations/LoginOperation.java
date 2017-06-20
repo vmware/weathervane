@@ -93,7 +93,10 @@ public class LoginOperation extends AuctionOperation implements  NeedsPersonName
 		// user's login
 		_bidStrategyChooser.chooseRandom();
 
+		logger.info("LoginOperation:loginStep behaviorID = " + this.getBehaviorId() + ", get password for userName =  " + _userName);
 		String pwd = _passwordProvider.getPasswordForPerson(_userName);
+		logger.info("LoginOperation:loginStep behaviorID = " + this.getBehaviorId() + ", Got password for userName =  " + _userName 
+				+ ", password = " + pwd);
 
 		SimpleUri uri = getOperationUri(UrlType.POST, 0);
 

@@ -15,52 +15,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadInterval;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
+public class StatsInterval {
 
-@JsonTypeName(value = "loadpath")
-public class LoadPathStatsIntervalSpec extends StatsIntervalSpec {
-	private String loadPathName = null;
-
-	@JsonIgnore
-	private LoadPath loadPath;
+	private String name;
+	private Long duration;
 	
-	@JsonIgnore
-	@Override
-	protected long getNextInterval() {
-		LoadInterval interval = loadPath.getNextStatsInterval(getName());
-		setCurIntervalName(interval.getName());
-
-		
-		return interval.getDuration();
+	public String getName() {
+		return name;
 	}
-
-	public String getLoadPathName() {
-		return loadPathName;
+	public void setName(String name) {
+		this.name = name;
 	}
-
-	public void setLoadPathName(String loadPathName) {
-		this.loadPathName = loadPathName;
+	public Long getDuration() {
+		return duration;
 	}
-
-	public LoadPath getLoadPath() {
-		return loadPath;
+	public void setDuration(Long duration) {
+		this.duration = duration;
 	}
-
-	public void setLoadPath(LoadPath loadPath) {
-		this.loadPath = loadPath;
-	}
-	
-	@Override
-	public String toString() {
-		StringBuilder retVal = new StringBuilder("FixedStatsIntervalSpec: name = " + getName());
-		retVal.append(", printSummary = " + getPrintSummary());
-		retVal.append(", printIntervals = " + getPrintIntervals());
-		retVal.append(", loadPathName = " + loadPathName);
-		
-		return retVal.toString();
-	}
-
 }

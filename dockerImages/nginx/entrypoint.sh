@@ -13,8 +13,10 @@ sigusr1()
    echo "signal USR1 received.  pid = $pid. Reloading"
    if pgrep -x "nginx" > /dev/null
    then
+	   perl /configure.pl
 	   /usr/sbin/nginx -s reload
 	else
+	   perl /configure.pl
 	   /usr/sbin/nginx &
 	fi
 }
@@ -27,6 +29,7 @@ echo "search weathervane eng.vmware.com" >> /etc/resolv.conf
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+	perl /configure.pl
 	/usr/sbin/nginx  &
 fi
 

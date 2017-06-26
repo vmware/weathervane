@@ -83,7 +83,6 @@ sub prepareData {
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $reloadDb       = $self->getParamValue('reloadDb');
-	my $maxUsers = $self->getParamValue('maxUsers');
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
@@ -239,10 +238,10 @@ sub prepareData {
 	}
 
 	# if the number of auctions wasn't explicitly set, determine based on
-	# the usersPerAuctionScaleFactor and maxUsers
+	# the usersPerAuctionScaleFactor
 	my $auctions = $self->getParamValue('auctions');
 	if ( !$auctions ) {
-		$auctions = ceil( $maxUsers / $self->getParamValue('usersPerAuctionScaleFactor') );
+		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 		if ( $auctions < 4 ) {
 			$auctions = 4;
 		}

@@ -62,13 +62,9 @@ public class AuctionWorkload extends Workload {
 	 */
 	private Integer usersScaleFactor = AuctionConstants.DEFAULT_USERS_SCALE_FACTOR;
 	private Integer pageSize = AuctionConstants.DEFAULT_PAGE_SIZE;
-	private Integer usersPerAuction = AuctionConstants.DEFAULT_USERS_PER_AUCTION;
 	
 	@JsonIgnore
 	private Holder<Integer> pageSizeHolder = new Holder<Integer>();
-	
-	@JsonIgnore
-	private Holder<Integer> usersPerAuctionHolder = new Holder<Integer>();
 	
 	@Override
 	public void initialize(String name, Integer nodeNumber, Integer numNodes,
@@ -104,11 +100,11 @@ public class AuctionWorkload extends Workload {
 		allPersons = AuctionValueGenerator.generateUsers( startUserNumber, numUsersForThisNode, availablePersonNames);
 
 		getPageSizeHolder().set(pageSize);
-		getUsersPerAuctionHolder().set(usersPerAuction);
+		
 	}
 
 	@Override
-	public User createUser(Long userId, Long orderingId, Long globalOrderingId, Target target) {
+	public User createUser(Long userId, Long orderingId, Target target) {
 		
 		if (!(target instanceof HttpTarget)) {
 			logger.error("AuctionWorkload::CreateUser AuctionUser can only be used with targets of type HttpTarget");
@@ -116,7 +112,7 @@ public class AuctionWorkload extends Workload {
 		}
 		
 		logger.debug("Creating user with userId = " + userId + ", orderingId = " + orderingId + ", target = " + target);
-		AuctionUser user = new AuctionUser(userId, orderingId, globalOrderingId, this.getBehaviorSpecName(), target, this);
+		AuctionUser user = new AuctionUser(userId, orderingId, this.getBehaviorSpecName(), target, this);
 		user.setUseThinkTime(getUseThinkTime());
 		return user;
 	}	
@@ -165,22 +161,6 @@ public class AuctionWorkload extends Workload {
 
 	public void setPageSizeHolder(Holder<Integer> pageSizeHolder) {
 		this.pageSizeHolder = pageSizeHolder;
-	}
-
-	public Integer getUsersPerAuction() {
-		return usersPerAuction;
-	}
-
-	public void setUsersPerAuction(Integer usersPerAuction) {
-		this.usersPerAuction = usersPerAuction;
-	}
-
-	public Holder<Integer> getUsersPerAuctionHolder() {
-		return usersPerAuctionHolder;
-	}
-
-	public void setUsersPerAuctionHolder(Holder<Integer> UsersPerAuctionHolder) {
-		this.usersPerAuctionHolder = UsersPerAuctionHolder;
 	}
 
 	@Override

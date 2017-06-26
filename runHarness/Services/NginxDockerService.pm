@@ -39,6 +39,86 @@ override 'initialize' => sub {
 	super();
 };
 
+override 'create' => sub {
+	my ($self, $logPath)            = @_;
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
+	
+	if (!$self->getParamValue('useDocker')) {
+		return;
+	}
+	
+	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->hostName;
+	my $impl = $self->getImpl();
+
+	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
+	
+	# The default create doesn't map any volumes
+	my %volumeMap;
+	
+	my %envVarMap;
+	my $users = $self->appInstance->getUsers();
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	if ( $workerConnections < 100 ) {
+		$workerConnections = 100;
+	}
+	if ( $self->getParamValue('nginxWorkerConnections') ) {
+		$workerConnections = $self->getParamValue('nginxWorkerConnections');
+	}
+	$envVarMap{'WORKERCONNECTIONS'} = $workerConnections;
+	
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	$envVarMap{'PERSERVERCONNECTIONS'} = $perServerConnections;
+	
+	$envVarMap{'KEEPALIVETIMEOUT'} = $self->getParamValue('nginxKeepaliveTimeout');
+	$envVarMap{'MAXKEEPALIVEREQUESTS'} = $self->getParamValue('nginxMaxKeepaliveRequests');
+	$envVarMap{'IMAGESTORETYPE'} = $self->getParamValue('imageStoreType');
+	
+	$envVarMap{'HTTPPORT'} = $self->internalPortMap->{"http"};
+	$envVarMap{'HTTPSPORT'} = $self->internalPortMap->{"https"};
+	
+	# Add the appserver names for the balancer
+	my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
+	my $appServersString = "";
+	my $cnt = 1;
+	foreach my $appServer (@$appServersRef) {
+		my $appHostname = $self->getHostnameForUsedService($appServer);
+		my $appServerPort = $self->getPortNumberForUsedService($appServer, "http");
+		$appServersString .= "$appHostname:$appServerPort";
+		if ($cnt != (scalar @{ $appServersRef }) ) {
+			$appServersString .= ",";
+		}
+		$cnt++;
+	}
+	$envVarMap{'APPSERVERS'} = $appServersString;
+	
+	# Create the container
+	my %portMap;
+	my $directMap = 0;
+	if ($self->isEdgeService() && $useVirtualIp)  {
+		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
+		$directMap = 1;
+	}
+	foreach my $key (keys %{$self->internalPortMap}) {
+		my $port = $self->internalPortMap->{$key};
+		$portMap{$port} = $port;
+	}
+	
+	my $cmd = "";
+	my $entryPoint = "";
+	
+	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
+		$entryPoint, $cmd, $self->needsTty);
+		
+	$self->setExternalPortNumbers();
+	
+	close $applog;
+};
+
 sub stop {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxDockerService");
@@ -68,7 +148,7 @@ sub start {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	my $portMapRef = $self->host->dockerReload($applog, $name);
+	my $portMapRef = $self->host->dockerPort($name);
 
 	if  ($self->getParamValue('dockerNet') eq "host") {
 		# For docker host networking, external ports are same as internal ports
@@ -160,140 +240,7 @@ sub setExternalPortNumbers {
 }
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $nginxServerRoot  = $self->getParamValue('nginxServerRoot');
-	my $configDir        = $self->getParamValue('configDir');
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
-	my $logName          = "$logPath/ConfigureNginxDocker-$hostname-$name.log";
 
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-	
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
-	if ( $workerConnections < 100 ) {
-		$workerConnections = 100;
-	}
-	if ( $self->getParamValue('nginxWorkerConnections') ) {
-		$workerConnections = $self->getParamValue('nginxWorkerConnections');
-	}
-
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
-
-	# Modify nginx.conf and then copy to web server
-	open( FILEIN,  "$configDir/nginx/nginxDocker.conf" ) or die "Can't open file $configDir/nginx/nginx.conf: $!";
-	open( FILEOUT, ">/tmp/nginx$suffix.conf" )            or die "Can't open file /tmp/nginx$suffix.conf: $!";
-
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /[^\$]upstream/ ) {
-			print FILEOUT $inline;
-			print FILEOUT "least_conn;\n";
-			do {
-				$inline = <FILEIN>;
-			} while ( !( $inline =~ /}/ ) );
-
-			# Add the balancer lines for each app server
-			my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
-
-			my $cnt = 1;
-			foreach my $appServer (@$appServersRef) {
-				my $appHostname = $self->getHostnameForUsedService($appServer);
-				my $appServerPort = $self->getPortNumberForUsedService($appServer, "http");
-				print FILEOUT "      server $appHostname:$appServerPort max_fails=0 ;\n";
-			}
-			print FILEOUT "      keepalive 1000;";
-			print FILEOUT "    }\n";
-		}
-		elsif ( $inline =~ /^\s*worker_connections\s/ ) {
-			print FILEOUT "    worker_connections " . $workerConnections . ";\n";
-		}
-		elsif ( $inline =~ /^\s*keepalive_timeout\s/ ) {
-			print FILEOUT "    keepalive_timeout " . $self->getParamValue('nginxKeepaliveTimeout') . ";\n";
-		}
-		elsif ( $inline =~ /^\s*keepalive_requests\s/ ) {
-			print FILEOUT "    keepalive_requests " . $self->getParamValue('nginxMaxKeepaliveRequests') . ";\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-
-	}
-
-	close FILEIN;
-	close FILEOUT;
-	
-	# Push the config file to the docker container 
-	$self->host->dockerScpFileTo($applog, $name, "/tmp/nginx$suffix.conf", "/etc/nginx/nginx.conf");
-		
-	# Modify ssl.conf and then copy to web server
-	open( FILEIN,  "$configDir/nginx/ssl.conf" ) or die "Can't open file $configDir/nginx/ssl.conf: $!";
-	open( FILEOUT, ">/tmp/ssl$suffix.conf" )            or die "Can't open file /tmp/ssl$suffix.conf: $!";
-
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /rewrite rules go here/ ) {
-			print FILEOUT $inline;
-			if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-				print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-				print FILEOUT "set \$size \$1;\n";
-				print FILEOUT "rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-				print FILEOUT "}\n";
-				print FILEOUT "location /imageStore{\n";
-				print FILEOUT "root /mnt;\n";
-				print FILEOUT "}\n";
-
-			}
-		}
-		elsif ( $inline =~ /^\s*listen\s+443/ ) {
-			print FILEOUT "    listen   " . $self->internalPortMap->{"https"} . " ssl backlog=16384 ;\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-
-	}
-
-	close FILEIN;
-	close FILEOUT;
-
-	# Push the config file to the docker container 
-	$self->host->dockerScpFileTo($applog, $name, "/tmp/ssl$suffix.conf", "/etc/nginx/conf.d/ssl.conf");
-	
-	open( FILEIN,  "$configDir/nginx/default.conf" ) or die "Can't open file $configDir/nginx/default.conf: $!";
-	open( FILEOUT, ">/tmp/default$suffix.conf" )            or die "Can't open file /tmp/default$suffix.conf: $!";
-
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /rewrite rules go here/ ) {
-			print FILEOUT $inline;
-			if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-				print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-				print FILEOUT "set \$size \$1;\n";
-				print FILEOUT "rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-				print FILEOUT "}\n";
-				print FILEOUT "location /imageStore{\n";
-				print FILEOUT "root /mnt;\n";
-				print FILEOUT "}\n";
-
-			}
-		}
-		elsif ( $inline =~ /^\s*listen\s+80/ ) {
-			print FILEOUT "    listen   " . $self->internalPortMap->{"http"} . " backlog=16384 ;\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-
-	}
-
-	close FILEIN;
-	close FILEOUT;
-
-	# Push the config file to the docker container 
-	$self->host->dockerScpFileTo($applog, $name, "/tmp/default$suffix.conf", "/etc/nginx/conf.d/default.conf");
-
-	close $applog;
 }
 
 sub stopStatsCollection {

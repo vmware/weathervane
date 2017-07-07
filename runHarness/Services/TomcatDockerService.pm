@@ -321,7 +321,7 @@ sub configure {
 
 	open( FILEIN,  "$configDir/tomcat/server.xml" );
 	open( FILEOUT, ">/tmp/server$suffix.xml" );
-	my $maxIdle = ceil( $connections / 2 );
+	my $maxIdle = $self->getParamValue('appServerJdbcConnections');
 	while ( my $inline = <FILEIN> ) {
 
 		if ( $inline =~ /<Server port="8005" shutdown="SHUTDOWN">/ ) {

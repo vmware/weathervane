@@ -56,9 +56,10 @@ override 'create' => sub {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	# The default create doesn't map any volumes
 	my %volumeMap;
-	
+	my $instanceNumber = $self->getParamValue('instanceNum');
+	$volumeMap{"/var/cache/nginx"} = "/mnt/cache/nginx$instanceNumber";
+		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();
 	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );

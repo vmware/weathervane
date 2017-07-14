@@ -173,8 +173,12 @@ cleanupDockerfile("./dockerImages/rabbitmq");
 
 print "Building and pushing zookeeper image.\n";
 print $fileout "Building and pushing zookeeper image.\n";
+# Figure out the latest version of Zookeeper
+my $zookeeperGet = `curl -s http://www.us.apache.org/dist/zookeeper/stable/`;
+$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
+my $zookeeperVers = $1;
 rewriteDockerfile("./dockerImages/zookeeper", $namespace, $version);
-runAndLog($fileout, "docker build -t $namespace/weathervane-zookeeper:$version ./dockerImages/zookeeper");
+runAndLog($fileout, "docker build --build-arg ZOOKEEPER_VERSION=$zookeeperVers -t $namespace/weathervane-zookeeper:$version ./dockerImages/zookeeper");
 runAndLog($fileout, "docker push $namespace/weathervane-zookeeper:$version");
 cleanupDockerfile("./dockerImages/zookeeper");
 
@@ -189,11 +193,15 @@ cleanupDockerfile("./dockerImages/configurationManager");
 
 print "Building and pushing tomcat image.\n";
 print $fileout "Building and pushing tomcat image.\n";
+# Figure out the latest version of Tomcat 8.5
+my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
+$tomcat8get =~ />v8\.5\.(\d+)\//;
+my $tomcat8vers = $1;
 rewriteDockerfile("./dockerImages/tomcat", $namespace, $version);
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "cp ./dist/auction*.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
-runAndLog($fileout, "docker build -t $namespace/weathervane-tomcat:$version ./dockerImages/tomcat");
+runAndLog($fileout, "docker build --build-arg TOMCAT_VERSION=$tomcat8vers -t $namespace/weathervane-tomcat:$version ./dockerImages/tomcat");
 runAndLog($fileout, "docker push $namespace/weathervane-tomcat:$version");
 cleanupDockerfile("./dockerImages/tomcat");
 

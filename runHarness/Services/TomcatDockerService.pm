@@ -236,6 +236,7 @@ sub configure {
 	my $scpHostString    = $self->host->scpHostString;
 	my $configDir        = $self->getParamValue('configDir');
 	my $name             = $self->getParamValue('dockerName');
+	my $nodeNum = $self->getParamValue('instanceNum');
 
 	my $logName = "$logPath/ConfigureTomcatDocker-$hostname-$name.log";
 
@@ -272,12 +273,11 @@ sub configure {
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";
 	}
-	my $nodeNum = $self->getParamValue('instanceNum');
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 
 	# Modify setenv.sh and then copy to app server
 	open( FILEIN,  "$configDir/tomcat/setenv.sh" ) or die "Can't open file $configDir/tomcat/setenv.sh: $!\n";
-	open( FILEOUT, ">/tmp/setenv$suffix.sh" )      or die "Can't open file /tmp/setenv.sh: $!\n";
+	open( FILEOUT, ">/tmp/setenv${suffix}-N${nodeNum}.sh" )      or die "Can't open file /tmp/setenv${suffix}-N${nodeNum}.sh: $!\n";
 
 	while ( my $inline = <FILEIN> ) {
 
@@ -294,7 +294,7 @@ sub configure {
 	close FILEOUT;
 
 	# Push the config file to the docker container
-	$self->host->dockerScpFileTo( $applog, $name, "/tmp/setenv$suffix.sh", "${tomcatCatalinaBase}/bin/setenv.sh" );
+	$self->host->dockerScpFileTo( $applog, $name, "/tmp/setenv${suffix}-N${nodeNum}.sh", "${tomcatCatalinaBase}/bin/setenv.sh" );
 
 	# Configure the database info
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
@@ -320,7 +320,7 @@ sub configure {
 	}
 
 	open( FILEIN,  "$configDir/tomcat/server.xml" );
-	open( FILEOUT, ">/tmp/server$suffix.xml" );
+	open( FILEOUT, ">/tmp/server$suffix-N${nodeNum}.xml" );
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
 	while ( my $inline = <FILEIN> ) {
 
@@ -432,13 +432,13 @@ sub configure {
 	close FILEOUT;
 
 	# Push the config file to the docker container
-	$self->host->dockerScpFileTo( $applog, $name, "/tmp/server$suffix.xml", "${tomcatCatalinaBase}/conf/server.xml" );
+	$self->host->dockerScpFileTo( $applog, $name, "/tmp/server$suffix-N${nodeNum}.xml", "${tomcatCatalinaBase}/conf/server.xml" );
 
 	# if the number of web servers is 0, and we are using ssl,
 	# we need to add a security
 	# constraint to Tomcat's web.xml so all traffic is redirected to ssl
 	open( FILEIN,  "$configDir/tomcat/web.xml" );
-	open( FILEOUT, ">/tmp/web$suffix.xml" );
+	open( FILEOUT, ">/tmp/web$suffix-N${nodeNum}.xml" );
 	while ( my $inline = <FILEIN> ) {
 		if (   ( $inline =~ /<\/web-app>/ )
 			&& ( $self->appInstance->getNumActiveOfServiceType('webServer') == 0 )
@@ -464,7 +464,7 @@ sub configure {
 	close FILEOUT;
 
 	# Push the config file to the docker container
-	$self->host->dockerScpFileTo( $applog, $name, "/tmp/web$suffix.xml", "${tomcatCatalinaBase}/conf/web.xml" );
+	$self->host->dockerScpFileTo( $applog, $name, "/tmp/web$suffix-N${nodeNum}.xml", "${tomcatCatalinaBase}/conf/web.xml" );
 
 	# Push the config file to the docker container
 	$self->host->dockerScpFileTo(

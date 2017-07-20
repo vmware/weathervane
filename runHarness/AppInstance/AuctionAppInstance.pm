@@ -656,17 +656,12 @@ sub getServiceConfigParameters {
 		}
 
 		my $numCpus;
-		if ( !$service->useDocker() ) {
-			$numCpus = $service->host->cpus;
-		}
-		elsif ( $service->dockerConfigHashRef->{'cpu-shares'} ) {
-			$numCpus = $service->dockerConfigHashRef->{'cpu-shares'};
-		}
-		elsif ( !$service->host->isBonneville() ) {
-			$numCpus = $service->host->cpus;
+		if ( $service->useDocker() &&
+		  (exists $service->dockerConfigHashRef->{'cpus'}) && (defined $service->dockerConfigHashRef->{'cpus'})) {
+			$numCpus = $service->dockerConfigHashRef->{'cpus'};
 		}
 		else {
-			$numCpus = 1;
+			$numCpus = $service->host->cpus;
 		}
 		
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');

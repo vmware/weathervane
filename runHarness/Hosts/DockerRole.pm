@@ -299,12 +299,12 @@ sub dockerCreate {
 	}
 
 	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-cpus"} && $dockerConfigHashRef->{"cpuset-cpus"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}
 
 	my $cpuSetMemsString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-mems"} && $dockerConfigHashRef->{"cpuset-mems"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-mems"}) {
 		$cpuSetMemsString = "--cpuset-mems=". $dockerConfigHashRef->{"cpuset-mems"};
 	}
 	
@@ -401,12 +401,12 @@ sub dockerRun {
 	}
 
 	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-cpus"} && $dockerConfigHashRef->{"cpuset-cpus"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}
 
 	my $cpuSetMemsString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-mems"} && $dockerConfigHashRef->{"cpuset-mems"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-mems"}) {
 		$cpuSetMemsString = "--cpuset-mems=". $dockerConfigHashRef->{"cpuset-mems"};
 	}
 	

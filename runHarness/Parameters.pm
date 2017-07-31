@@ -1397,7 +1397,7 @@ $parameters{"dockerCpuShares"} = {
 
 $parameters{"dockerCpuSetCpus"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "unset",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1405,7 +1405,7 @@ $parameters{"dockerCpuSetCpus"} = {
 
 $parameters{"dockerCpuSetMems"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "unset",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

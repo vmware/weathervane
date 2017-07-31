@@ -157,7 +157,7 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerCpuShares')) {
 		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
 	} 
-	if ($self->getParamValue('dockerCpuSetCpus')) {
+	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
 		
 		if ($self->getParamValue('dockerCpus') == 0) {
@@ -179,7 +179,7 @@ override 'initialize' => sub {
 			$self->dockerConfigHashRef->{'cpus'} = $numCpus;
 		}
 	}
-	if ($self->getParamValue('dockerCpuSetMems')) {
+	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
 	}
 	if ($self->getParamValue('dockerMemory')) {

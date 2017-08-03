@@ -15,18 +15,26 @@ sigusr1()
    if [ $# -gt 0 ]; then
 	  eval "$* &"
    else
-	  sudo -u postgres /usr/pgsql-9.3/bin/pg_ctl restart -D /mnt/dbData/postgresql 
+	perl /configure.pl
+	sudo -u postgres /usr/pgsql-9.3/bin/pg_ctl restart -D /mnt/dbData/postgresql 
    fi
 }
 
+sigusr2()
+{
+   echo "signal USR1 received."
+
+}
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
+trap 'sigusr2' USR2
 
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+	perl /configure.pl
 	/pg-init.sh &
 fi
 

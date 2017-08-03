@@ -85,7 +85,31 @@ override 'create' => sub {
 	my %envVarMap;
 	$envVarMap{"POSTGRES_USER"}     = "auction";
 	$envVarMap{"POSTGRES_PASSWORD"} = "auction";
+	
+	$envVarMap{"POSTGRESPORT"} = $self->internalPortMap->{$impl};
 
+	if (   ( exists $self->dockerConfigHashRef->{'memory'} )
+		&&  $self->dockerConfigHashRef->{'memory'}  )
+	{
+		my $memString = $self->dockerConfigHashRef->{'memory'};
+		$logger->debug("docker memory is set to $memString, using this to tune postgres.");
+		$memString =~ /(\d+)\s*(\w)/;
+		$totalMem     = $1;
+		$totalMemUnit = $2;
+		$envVarMap{"POSTGRESTOTALMEM"} = $totalMem;
+		$envVarMap{"POSTGRESTOTALMEMUNIT"} = $totalMemUnit;
+		
+		$logger->debug("docker memory is set to $memString, using this to tune postgres. total=$totalMem, unit=$totalMemUnit");
+	} else {
+		$envVarMap{"POSTGRESTOTALMEM"} = 0;
+		$envVarMap{"POSTGRESTOTALMEMUNIT"} = 0;		
+	}
+	$envVarMap{"POSTGRESSHAREDBUFFERS"} = $self->getParamValue('postgresqlSharedBuffers');		
+	$envVarMap{"POSTGRESSHAREDBUFFERSPCT"} = $self->getParamValue('postgresqlSharedBuffersPct');		
+ 	$envVarMap{"POSTGRESEFFECTIVECACHESIZE"} = $self->getParamValue('postgresqlEffectiveCacheSize');
+ 	$envVarMap{"POSTGRESEFFECTIVECACHESIZEPCT"} = $self->getParamValue('postgresqlEffectiveCacheSizePct');
+ 	$envVarMap{"POSTGRESMAXCONNECTIONS"} = $self->getParamValue('postgresqlMaxConnections');
+ 	
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
@@ -115,7 +139,7 @@ sub start {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	my $portMapRef = $self->host->dockerReload( $applog, $name );
+	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->getParamValue('dockerNet') eq "host" ) {
 
@@ -248,160 +272,6 @@ sub setExternalPortNumbers {
 
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $configDir        = $self->getParamValue('configDir');
-	my $name             = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
-	my $time     = `date +%H:%M`;
-	chomp($time);
-	my $logName          = "$logPath/ConfigurePostgresDocker-$hostname-$name-$time.log";
-	my $logger           = get_logger("Weathervane::Services::PostgresqlDockerService");
-
-	# Need to start and stop postgres before configuring to make sure that
-	# the database files are populated on the first use.
-	#		$self->start($logPath);
-	#		sleep 15;
-	#		$self->stop($logPath);
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening $logName:$!";
-
-	my $totalMem;
-	my $totalMemUnit;
-	if (   ( exists $self->dockerConfigHashRef->{'memory'} )
-		&&  $self->dockerConfigHashRef->{'memory'}  )
-	{
-		my $memString = $self->dockerConfigHashRef->{'memory'};
-		$logger->debug("docker memory is set to $memString, using this to tune postgres.");
-		$memString =~ /(\d+)\s*(\w)/;
-		$totalMem     = $1;
-		$totalMemUnit = $2;
-		$logger->debug("docker memory is set to $memString, using this to tune postgres. total=$totalMem, unit=$totalMemUnit");
-	}
-	else {
-
-		# Find the total amount of memory on the host
-		my $out = `$sshConnectString cat /proc/meminfo`;
-		$out =~ /MemTotal:\s+(\d+)\s+(\w)/;
-		$totalMem     = $1;
-		$totalMemUnit = $2;
-		$logger->debug("Host memory is set to $out, using this to tune postgres. total=$totalMem, unit=$totalMemUnit");
-	}
-	if ( uc($totalMemUnit) eq "K" ) {
-		$totalMemUnit = "kB";
-	}
-	elsif ( uc($totalMemUnit) eq "M" ) {
-		$totalMemUnit = "MB";
-	}
-	elsif ( uc($totalMemUnit) eq "G" ) {
-		$totalMemUnit = "GB";
-	}
-	
-	# Modify the postgresql.conf and
-	# then copy the new version to the DB
-	open( FILEIN,  "$configDir/postgresql/postgresqlDocker.conf" );
-	open( FILEOUT, ">/tmp/postgresql$suffix.conf" );
-	while ( my $inline = <FILEIN> ) {
-
-		if ( $inline =~ /^\s*shared_buffers\s*=\s*(.*)/ ) {
-			my $origValue = $1;
-
-			# If postgresqlSharedBuffers was set, then use it
-			# as the value. Otherwise, if postgresqlSharedBuffersPct
-			# was set, use that percentage of total memory,
-			# otherwise use what was in the original file
-			if ( $self->getParamValue('postgresqlSharedBuffers') ) {
-
-				#					print $self->meta->name
-				#					  . " In postgresqlService::configure setting shared_buffers to "
-				#					  . $self->postgresqlSharedBuffers . "\n";
-				print FILEOUT "shared_buffers = " . $self->getParamValue('postgresqlSharedBuffers') . "\n";
-
-			}
-			elsif ( $self->getParamValue('postgresqlSharedBuffersPct') ) {
-
-				my $bufferMem = floor( $totalMem * $self->getParamValue('postgresqlSharedBuffersPct') );
-
-				if ( $bufferMem > $totalMem ) {
-					die "postgresqlSharedBuffersPct must be less than 1";
-				}
-
-				#					print $self->meta->name
-				#					  . " In postgresqlService::configure setting shared_buffers to $bufferMem$totalMemUnit\n";
-				print FILEOUT "shared_buffers = $bufferMem$totalMemUnit\n";
-
-				$self->setParamValue( 'postgresqlSharedBuffers', $bufferMem . $totalMemUnit );
-			}
-			else {
-				print FILEOUT $inline;
-				$self->setParamValue( 'postgresqlSharedBuffers', $origValue );
-			}
-		}
-		elsif ( $inline =~ /^\s*effective_cache_size\s*=\s*(.*)/ ) {
-			my $origValue = $1;
-
-			# If postgresqlEffectiveCacheSize was set, then use it
-			# as the value. Otherwise, if postgresqlEffectiveCacheSizePct
-			# was set, use that percentage of total memory,
-			# otherwise use what was in the original file
-			if ( $self->getParamValue('postgresqlEffectiveCacheSize') ) {
-
-				#					print $self->meta->name
-				#					  . " In postgresqlService::configure setting effective_cache_size to "
-				#					  . $self->postgresqlEffectiveCacheSize . "\n";
-				print FILEOUT "effective_cache_size = " . $self->getParamValue('postgresqlEffectiveCacheSize') . "\n";
-
-			}
-			elsif ( $self->getParamValue('postgresqlEffectiveCacheSizePct') ) {
-
-				my $bufferMem = floor( $totalMem * $self->getParamValue('postgresqlEffectiveCacheSizePct') );
-
-				if ( $bufferMem > $totalMem ) {
-					die "postgresqlEffectiveCacheSizePct must be less than 1";
-				}
-
-				#					print $self->meta->name
-				#					  . " In postgresqlService::configure setting effective_cache_size to $bufferMem$totalMemUnit\n";
-				print FILEOUT "effective_cache_size = $bufferMem$totalMemUnit\n";
-				$self->setParamValue( 'postgresqlEffectiveCacheSize', $bufferMem . $totalMemUnit );
-
-			}
-			else {
-				print FILEOUT $inline;
-				$self->setParamValue( 'postgresqlEffectiveCacheSize', $origValue );
-			}
-		}
-		elsif ( $inline =~ /^\s*max_connections\s*=\s*(\d*)/ ) {
-			my $origValue = $1;
-			if ( $self->getParamValue('postgresqlMaxConnections') ) {
-				print FILEOUT "max_connections = " . $self->getParamValue('postgresqlMaxConnections') . "\n";
-
-			}
-			else {
-				print FILEOUT $inline;
-				$self->setParamValue( 'postgresqlMaxConnections', $origValue );
-			}
-		}
-		elsif ( $inline =~ /^\s*port\s*=\s*(\d*)/ ) {
-			my $serviceType = $self->getParamValue('serviceType');
-			my $impl        = $self->getParamValue( $serviceType . "Impl" );
-			print FILEOUT "port = '" . $self->internalPortMap->{$impl} . "'\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	# Push the config file to the docker container
-	$self->host->dockerScpFileTo( $applog, $name, "/tmp/postgresql$suffix.conf",
-		"/mnt/dbData/postgresql/postgresql.conf" );
-	$self->host->dockerExec( $applog, $name, "chown postgres:postgres /mnt/dbData/postgresql/postgresql.conf" );
-
-	close $applog;
 
 }
 

@@ -9,6 +9,8 @@ COPY dbScripts /dbScripts
 COPY pg-init.sh /pg-init.sh
 COPY pg_hba.conf /pg_hba.conf
 COPY entrypoint.sh /entrypoint.sh
+COPY configure.pl /configure.pl
+COPY dumpStats.pl /dumpStats.pl
 
 RUN mkdir -p /mnt/dbLogs/postgresql && \
 	mkdir -p /mnt/dbData/postgresql && \
@@ -20,5 +22,7 @@ RUN mkdir -p /mnt/dbLogs/postgresql && \
 	chmod 777 /pg-init.sh && \
 	chmod 777 /entrypoint.sh && \
   	yum -y clean all 
+  	
+COPY postgresql.conf /mnt/dbData/postgresql/postgresql.conf
 	
 ENTRYPOINT ["/entrypoint.sh"]  

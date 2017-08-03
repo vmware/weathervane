@@ -94,12 +94,9 @@ override 'create' => sub {
 		my $memString = $self->dockerConfigHashRef->{'memory'};
 		$logger->debug("docker memory is set to $memString, using this to tune postgres.");
 		$memString =~ /(\d+)\s*(\w)/;
-		$totalMem     = $1;
-		$totalMemUnit = $2;
-		$envVarMap{"POSTGRESTOTALMEM"} = $totalMem;
-		$envVarMap{"POSTGRESTOTALMEMUNIT"} = $totalMemUnit;
+		$envVarMap{"POSTGRESTOTALMEM"} = $1;
+		$envVarMap{"POSTGRESTOTALMEMUNIT"} = $2;
 		
-		$logger->debug("docker memory is set to $memString, using this to tune postgres. total=$totalMem, unit=$totalMemUnit");
 	} else {
 		$envVarMap{"POSTGRESTOTALMEM"} = 0;
 		$envVarMap{"POSTGRESTOTALMEMUNIT"} = 0;		

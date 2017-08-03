@@ -333,12 +333,6 @@ sub prepareData {
 		return 0;
 	}
 
-	if ( $dbServicesRef->[0]->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$dbServer->doVacuum($logHandle);
-		}
-	}
-
 	if (   ( $self->appInstance->numNosqlReplicas > 0 )
 		&& ( $self->appInstance->numNosqlShards == 0 ) )
 	{
@@ -1080,13 +1074,6 @@ sub loadData {
 		waitForMongodbReplicaSync( $self, $applog );
 	}
 
-	my $dbServersRef = $self->appInstance->getActiveServicesByType('dbServer');
-	if ( $dbService->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$dbServer->doVacuum($applog);
-		}
-	}
-
 	close $applog;
 
 	# Now make sure that the data is really loaded properly
@@ -1738,26 +1725,6 @@ sub cleanData {
 			"Data cleaning process failed.  Check CleanData_W${workloadNum}I${appInstanceNum}.log for more information."
 		);
 		return 0;
-	}
-
-	if ( $dbServicesRef->[0]->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$logger->debug(
-				"cleanData. Running vacuum on DB host ",
-				$dbServer->host->hostName,
-				" for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$dbServer->doVacuum($logHandle);
-			$logger->debug(
-				"cleanData. Ran vacuum on DB host ",
-				$dbServer->host->hostName,
-				" for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-		}
 	}
 
 	if (   ( $self->appInstance->numNosqlReplicas > 0 )

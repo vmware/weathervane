@@ -193,6 +193,19 @@ sub dockerRestart {
 		
 }
 
+sub dockerKill {
+	my ( $self, $signal, $logFileHandle, $name) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerKill name = $name");
+	my $dockerHostString  = $self->dockerHostString;
+	
+	my $out;
+	$out = `$dockerHostString docker kill --signal $signal $name 2>&1`;
+	print $logFileHandle "$dockerHostString docker kill --signal $signal $name 2>&1\n";
+	print $logFileHandle "$out\n";	
+
+}
+
 sub dockerReload {
 	my ( $self, $logFileHandle, $name) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");

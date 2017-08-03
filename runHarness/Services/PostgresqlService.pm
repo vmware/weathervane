@@ -88,6 +88,9 @@ sub start {
 		my $cmdOut = `$sshConnectString service $postgresqlServiceName start 2>&1`;
 	}
 	
+	# Force a vacuum and a checkpoint
+	$self->doVacuum($dblog);
+	
 	$self->portMap->{$impl} = $self->internalPortMap->{$impl};
 
 	

@@ -28,4 +28,3 @@ print $out;
 $out = `psql -p $port -U auction --command="select pg_stat_reset_shared('bgwriter');"`;
 print $out;
 
-		

@@ -121,7 +121,6 @@ override 'create' => sub {
 		$memString =~ /(\d+)\s*(\w)/;
 		$envVarMap{"POSTGRESTOTALMEM"} = $1;
 		$envVarMap{"POSTGRESTOTALMEMUNIT"} = $2;
-		
 	} else {
 		$envVarMap{"POSTGRESTOTALMEM"} = 0;
 		$envVarMap{"POSTGRESTOTALMEMUNIT"} = 0;		

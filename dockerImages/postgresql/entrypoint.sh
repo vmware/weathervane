@@ -10,23 +10,28 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received.  pid = $pid. Reloading"
-   kill $pid
-   if [ $# -gt 0 ]; then
-	  eval "$* &"
-   else
-	  sudo -u postgres /usr/pgsql-9.3/bin/pg_ctl restart -D /mnt/dbData/postgresql 
-   fi
+   echo "signal USR1 received.  Clearing auction database"
+   psql -p ${POSTGRESPORT} -U auction -d postgres -f /dbScripts/auction_postgresql_database.sql
+   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_tables.sql
+   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_constraints.sql
+   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql
 }
 
+sigusr2()
+{
+   echo "signal USR2 received. Dumping postgresql stats to stdout."
+	perl /dumpStats.pl
+}
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
+trap 'sigusr2' USR2
 
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+	perl /configure.pl
 	/pg-init.sh &
 fi
 

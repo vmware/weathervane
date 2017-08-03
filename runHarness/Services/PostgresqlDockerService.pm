@@ -67,6 +67,7 @@ override 'create' => sub {
 	my $impl             = $self->getImpl();
 	my $logDir           = $self->getParamValue('postgresqlLogDir');
 	my $sshConnectString = $self->host->sshConnectString;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 
 	#	`$sshConnectString chmod -R 777 $logDir`;
 

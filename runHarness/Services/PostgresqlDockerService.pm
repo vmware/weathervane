@@ -248,19 +248,8 @@ sub isBackupAvailable {
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $name        = $self->getParamValue('dockerName');
 
-	my $sshConnectString = $self->host->sshConnectString;
-
-	my $chkOut =  $self->host->dockerExec( $applog, $name, "sh -c \"[ -d $backupDirPath ] && echo 'found'\"" );
-	if ( !( $chkOut =~ /found/ ) ) {
-		return 0;
-	}
-	$chkOut =  $self->host->dockerExec( $applog, $name, "sh -c \"[ \\\"$(ls -A $backupDirPath)\\\" ] && echo \\\"Full\\\" || echo \\\"Empty\\\"\"" );
-	if ( $chkOut =~ /Empty/ ) {
-		return 0;
-	}
-
-	return 1;
-
+	# The postgresqlDocker does not currently support backups
+	return 0;
 }
 
 sub stopStatsCollection {
@@ -371,15 +360,15 @@ sub getConfigFiles {
 		`mkdir -p $logpath`;
 	}
 
-	my $logName = "$logpath/GetConfigFilesPostgresqlDocker-$hostname-$name.log";
+#	my $logName = "$logpath/GetConfigFilesPostgresqlDocker-$hostname-$name.log";
 
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
+#	my $applog;
+#	open( $applog, ">$logName" )
+#	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
+#	$self->host->dockerScpFileFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
 
-	close $applog;
+#	close $applog;
 
 }
 

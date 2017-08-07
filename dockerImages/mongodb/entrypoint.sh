@@ -14,14 +14,7 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received. cmd = $cmd, $numArgs = $numArgs. Reloading"
-   if [ $numArgs -gt 0 ]; then
-   	  eval "$cmd --shutdown"
-	  eval "$cmd &"
-   else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
-    /usr/bin/mongod -f /etc/mongod.conf &
-   fi
+   echo "signal USR1 received. "
 }
 
 trap 'sigterm' TERM
@@ -35,10 +28,11 @@ echo never > /sys/kernel/mm/transparent_hugepage/defrag
 cmd=$*
 numArgs=$#
 
+perl /configure.pl
+
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
 	/usr/bin/mongod -f /etc/mongod.conf &
 fi
 

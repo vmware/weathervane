@@ -154,8 +154,8 @@ sub createSingleMongodb {
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
-	$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
-	$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+	$envVarMap{"NUMSHARDS"} = $self->appInstance->numNosqlShards;
+	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
 		
@@ -329,8 +329,8 @@ sub createReplicatedMongodb {
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
-	$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
-	$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+	$envVarMap{"NUMSHARDS"} = $self->appInstance->numNosqlShards;
+	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
 	

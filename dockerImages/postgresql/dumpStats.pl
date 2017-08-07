@@ -25,7 +25,7 @@ print $out;
 # Reset the stats tables
 $out = `psql -p $port -U auction --command='select pg_stat_reset();'`;
 print $out;
-$out = `psql -p $port -U auction --command=\"select pg_stat_reset_shared('bgwriter');`;
+$out = `psql -p $port -U auction --command="select pg_stat_reset_shared('bgwriter');"`;
 print $out;
 
 		

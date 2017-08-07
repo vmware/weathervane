@@ -46,3 +46,7 @@ sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_resetxlog -f /mnt/dbData/postgres
 
 # Start postgresql
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/postgres -D /mnt/dbData/postgresql 
+
+# Force a vacuum and checkpoint
+psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
+psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"

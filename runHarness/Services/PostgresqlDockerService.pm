@@ -181,9 +181,6 @@ sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
 	my $hostname    = $self->host->hostName;
 	my $name        = $self->getParamValue('dockerName');
-	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getParamValue( $serviceType . "Impl" );
-	my $port        = $self->internalPortMap->{$impl};
 
 	my $time     = `date +%H:%M`;
 	chomp($time);
@@ -193,36 +190,9 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From PortgreSQL\n";
 
-	# Make sure the database exists and is empty
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction -d postgres -f /dbScripts/auction_postgresql_database.sql" );
-
-	# Make sure the tables exist and are empty
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction -d auction -f /dbScripts/auction_postgresql_tables.sql" );
-
-	# Add the foreign key constraints
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction -d auction -f /dbScripts/auction_postgresql_constraints.sql" );
-
-	# Add the indices
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql" );
+	$self->host->dockerKill("USR1", $applog, $name);
 
 	close $applog;
-
-}
-
-sub doVacuum {
-	my ( $self, $fileout ) = @_;
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
-	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getParamValue( $serviceType . "Impl" );
-	my $port        = $self->internalPortMap->{$impl};
-
-	$self->host->dockerExec( $fileout, $name, "psql -p $port -U auction -d auction -c \"vacuum analyze;\"" );
-	$self->host->dockerExec( $fileout, $name, "psql -p $port -U auction -d auction -c \"checkpoint;\"" );
 
 }
 
@@ -306,24 +276,7 @@ sub stopStatsCollection {
 	my $applog;
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Getting end of steady-state stats from PortgreSQL\n";
-
-	# Get interesting views on the pg_stats table
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_activity;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_bgwriter;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_database;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_database_conflicts;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_user_tables;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_statio_user_tables;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_stat_user_indexes;'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command='select * from pg_statio_user_indexes;'" );
+	$self->host->dockerKill("USR2", $applog, $name);
 
 	close $applog;
 
@@ -342,10 +295,8 @@ sub startStatsCollection {
 	my $applog;
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 
-	# Reset the stats tables
-	$self->host->dockerExec( $applog, $name, "psql -p $port -U auction --command='select pg_stat_reset();'" );
-	$self->host->dockerExec( $applog, $name,
-		"psql -p $port -U auction --command=\"select pg_stat_reset_shared('bgwriter');\"" );
+	print $applog "Getting start of steady-state stats from PortgreSQL\n";
+	$self->host->dockerKill("USR2", $applog, $name);
 
 	close $applog;
 }

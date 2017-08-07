@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use POSIX;
 
 my $port     = $ENV{'POSTGRESPORT'};
 my $totalMem = $ENV{'POSTGRESTOTALMEM'};

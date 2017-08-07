@@ -2,7 +2,7 @@
 
 sigterm()
 {
-   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"
+   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"   
    rm -f /fifo
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"
@@ -14,14 +14,15 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received. cmd = $cmd, $numArgs = $numArgs. Reloading"
-   if [ $numArgs -gt 0 ]; then
-   	  eval "$cmd --shutdown"
-	  eval "$cmd &"
+   echo "signal USR1 received. Performing sanity checks"
+   perl /sanityCheck.pl
+   if [ $? -eq 0 ]
+   then
+   	echo "Sanity Checks Passed"
    else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
-    /usr/bin/mongod -f /etc/mongod.conf &
+   	echo "Sanity Checks Failed"
    fi
+   
 }
 
 trap 'sigterm' TERM
@@ -35,10 +36,11 @@ echo never > /sys/kernel/mm/transparent_hugepage/defrag
 cmd=$*
 numArgs=$#
 
+perl /configure.pl
+
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
 	/usr/bin/mongod -f /etc/mongod.conf &
 fi
 

@@ -1443,6 +1443,7 @@ $parameters{"vicHost"} = {
 	"showUsage" => 1,
 };
 
+<<<<<<< HEAD
 $parameters{"dockerHostUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -1451,6 +1452,8 @@ $parameters{"dockerHostUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
+=======
+>>>>>>> a883605... Add a VICHost type to override operations not meaningful on VIC
 $parameters{"dockerHostPin"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

@@ -153,6 +153,12 @@ sub createSingleMongodb {
 	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
 
 	my %envVarMap;
+	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+	$envVarMap{"NUMSHARDS"} = $self->appInstance->numNosqlShards;
+	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
+	$envVarMap{"ISCFGSVR"} = 0;
+	$envVarMap{"ISMONGOS"} = 0;
+		
 	my %portMap;
 	my $directMap = 0;
 
@@ -222,10 +228,20 @@ sub createShardedMongodb {
 			foreach my $nosqlServer (@$nosqlServersRef) {
 
 				$logger->debug( "Creating config server $curCfgSvr on ", $nosqlServer->host->hostName );
+				print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
+				
 				my %volumeMap;
 				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
 
 				my %envVarMap;
+				$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+				$envVarMap{"MONGOCPORT"} = $self->internalPortMap->{'mongoc'.$curCfgSvr};
+				$envVarMap{"CFGSVRNUM"} = $curCfgSvr;
+				$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
+				$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+				$envVarMap{"ISCFGSVR"} = 1;
+	  			$envVarMap{"ISMONGOS"} = 0;
+				
 				my %portMap;
 				my $directMap = 1;
 
@@ -261,6 +277,12 @@ sub createShardedMongodb {
 	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
 
 	my %envVarMap;
+	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+	$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
+	$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+	$envVarMap{"ISCFGSVR"} = 0;
+	$envVarMap{"ISMONGOS"} = 0;
+	
 	my %portMap;
 	my $directMap = 1;
 
@@ -308,6 +330,12 @@ sub createReplicatedMongodb {
 	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
 
 	my %envVarMap;
+	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+	$envVarMap{"NUMSHARDS"} = $self->appInstance->numNosqlShards;
+	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
+	$envVarMap{"ISCFGSVR"} = 0;
+	$envVarMap{"ISMONGOS"} = 0;
+	
 	my %portMap;
 	my $directMap = 1;
 
@@ -332,29 +360,6 @@ sub createShardedReplicatedMongodb {
 	$console_logger->error("Dockerized sharded and replicated MongoDB is not yet implemented.");
 	exit(-1);
 
-}
-
-sub configureTHP {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
-
-#	my $sshConnectString = $self->host->sshConnectString;
-#	if ( $self->getParamValue('mongodbUseTHP') ) {
-#		$logger->debug( "Enabling THP on ", $self->host->hostName );
-#		my $cmdOut = `$sshConnectString \"echo always > /sys/kernel/mm/transparent_hugepage/enabled\"`;
-#		$logger->debug($cmdOut);
-#		$cmdOut = `$sshConnectString \"echo always > /sys/kernel/mm/transparent_hugepage/defrag\"`;
-#		$logger->debug($cmdOut);
-#	}
-#	else {
-#
-#		# Turn off transparent huge pages
-#		$logger->debug( "Disabling THP on ", $self->host->hostName );
-#		my $cmdOut = `$sshConnectString \"echo never > /sys/kernel/mm/transparent_hugepage/enabled\"`;
-#		$logger->debug($cmdOut);
-#		$cmdOut = `$sshConnectString \"echo never > /sys/kernel/mm/transparent_hugepage/defrag\"`;
-#		$logger->debug($cmdOut);
-#	}
 }
 
 sub setPortNumbers {
@@ -426,249 +431,37 @@ sub setExternalPortNumbers {
 override 'sanityCheck' => sub {
 	my ($self, $cleanupLogDir) = @_;
 	my $console_logger = get_logger("Console");
-	my $sshConnectString = $self->host->sshConnectString;
 	my $hostname         = $self->host->hostName;
 	my $name     = $self->getParamValue('dockerName');
 	my $logName          = "$cleanupLogDir/SanityCheckMongoDB-$hostname-$name.log";
-	my $dir = $self->getParamValue('mongodbDataDir');
 
 	my $dblog;
 	open( $dblog, ">$logName" )
 	  || die "Error opening /$logName:$!";
-
-	my $cmdString = "df -h $dir";
-	my $cmdout = $self->host->dockerExec( $dblog, $name, $cmdString );
-	print $dblog "$cmdout\n";
-
+	
+	$self->host->dockerKill("USR1", $dblog, $name);
+	
+	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
+	my @lines = split /\n/, $logContents;
+	
+	foreach my $inline (@lines) {
+		if ($inline =~ /Sanity\sChecks\sPassed/) {
+			close $dblog;
+			return 1;
+		} elsif ($inline =~ /Sanity\sChecks\sFailed/) {
+			$console_logger->error("Failed Sanity Check: MongoDB Data Directory is full on $hostname.");
+			close $dblog;
+			return 0;
+		} 
+	}
 	close $dblog;
 
-	if ($cmdout =~ /100\%/) {
-		$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
-		return 0;
-	} else {
-		return 1;
-	}
-	
+	$console_logger->error("Failed Sanity Check: Did not find sanity check results.");
+	return 0;
 };
 
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $appInstance      = $self->appInstance;
-	my $numShards        = $appInstance->numNosqlShards;
-	my $numReplicas      = $appInstance->numNosqlReplicas;
-
-	$self->configureTHP();
-
-	my $nodeNum = $self->getParamValue('instanceNum');
-	if ( ( $numShards > 0 ) && ( $numReplicas > 0 ) ) {
-		$self->configureShardedReplicatedMongodb( $logPath, $users, $suffix, $nodeNum );
-	}
-	elsif ( $numShards > 0 ) {
-		$self->configureShardedMongodb( $logPath, $users, $suffix, $nodeNum );
-	}
-	elsif ( $numReplicas > 0 ) {
-		$self->configureReplicatedMongodb( $logPath, $users, $suffix, $nodeNum );
-	}
-	else {
-		$self->configureSingleMongodb( $logPath, $users, $suffix, $nodeNum );
-	}
-
-}
-
-sub configureSingleMongodb {
-	my ( $self, $logPath, $users, $suffix, $nodeNum ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $configDir        = $self->getParamValue('configDir');
-
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $logName = "$logPath/ConfigureSingleMongodbDocker-$hostname-name-$time.log";
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	print $dblog $self->meta->name . " In MongodbDockerService::ConfigureMongodb\n";
-
-	open( FILEIN, "$configDir/mongodbDocker/mongod-unsharded.conf" )
-	  or die "Error opening $configDir/mongodbDocker/mongod-unsharded.conf:$!";
-	open( FILEOUT, ">/tmp/$hostname-$name-mongod$suffix.conf" )
-	  or die "Error opening /tmp/$hostname-$name-mongod$suffix.conf:$!";
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /port:/ ) {
-			print FILEOUT "    port: " . $self->internalPortMap->{'mongod'} . "\n";
-		}
-		elsif ( $inline =~ /fork/ ) {
-			next;
-		}
-		elsif ( $inline =~ /path/ ) {
-			next;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	$self->host->dockerScpFileTo($dblog, $name, "/tmp/$hostname-$name-mongod$suffix.conf", "/etc/mongod.conf");
-
-	close $dblog;
-}
-
-sub configureShardedMongodb {
-	my ( $self, $logPath, $users, $suffix, $nodeNum ) = @_;
-	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
-
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $appInstance      = $self->appInstance;
-
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $logName = "$logPath/ConfigureShardedMongodbDocker-$hostname-name-$time.log";
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	print $dblog $self->meta->name . " In MongodbDockerService::ConfigureShardedMongodb\n";
-	$logger->debug("configureShardedMongodb for $name: $logPath, $users, $suffix, $nodeNum");
-
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $configDir        = $self->getParamValue('configDir');
-
-	open( FILEIN, "$configDir/mongodbDocker/mongod-sharded.conf" )
-	  or die "Error opening $configDir/mongodbDocker/mongod-sharded.conf:$!";
-	open( FILEOUT, ">/tmp/$hostname-$name-mongod$suffix.conf" )
-	  or die "Error opening /tmp/$hostname-$name-mongod$suffix.conf:$!";
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /port:/ ) {
-			print FILEOUT "    port: " . $self->internalPortMap->{'mongod'} . "\n";
-		}
-		elsif ( $inline =~ /fork/ ) {
-			next;
-		}
-		elsif ( $inline =~ /path/ ) {
-			next;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	$self->host->dockerScpFileTo($dblog, $name, "/tmp/$hostname-$name-mongod$suffix.conf", "/etc/mongod.conf");
-
-	# If this is the first MongoDB service to be configured,
-	# then configure the numShardsProcessed variable
-	if ( !$appInstance->has_numShardsProcessed() ) {
-		$logger->debug("Setting numShardsProcessed to 1");
-		print $dblog "Setting numShardsProcessed to 1\n";
-		$appInstance->numShardsProcessed(1);
-
-		# Configure the config servers
-		my $configServersRef = $self->configServersRef;
-		my $curCfgSvr        = 1;
-		my $wkldNum          = $self->getWorkloadNum();
-		my $appInstNum       = $self->getAppInstanceNum();
-		foreach my $configServer (@$configServersRef) {
-			my $configServerHost = $configServer->host;
-			$logger->debug("Configuring config server for mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-
-			my $hostname = $configServerHost->hostName;
-			open( FILEIN, "$configDir/mongodbDocker/mongoc$curCfgSvr.conf" )
-			  or die "Error opening $configDir/mongodbDocker/mongoc$curCfgSvr.conf:$!";
-			open( FILEOUT, ">/tmp/$hostname-mongoc$curCfgSvr$suffix.conf" )
-			  or die "Error opening /tmp/$hostname-mongoc$curCfgSvr$suffix.conf:$!";
-			while ( my $inline = <FILEIN> ) {
-				if ( $inline =~ /port:/ ) {
-					print FILEOUT "    port: " . $self->internalPortMap->{"mongoc$curCfgSvr"} . "\n";
-				}
-				elsif ( $inline =~ /fork/ ) {
-					next;
-				}
-				elsif ( $inline =~ /path/ ) {
-					next;
-				}
-				else {
-					print FILEOUT $inline;
-				}
-			}
-			close FILEIN;
-			close FILEOUT;
-
-			$configServer->host->dockerScpFileTo($dblog, "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}", 
-			    					"/tmp/$hostname-mongoc$curCfgSvr$suffix.conf", "/etc/mongoc$curCfgSvr.conf");
-
-			$curCfgSvr++;
-		}
-	}
-	else {
-		print $dblog "Incrementing numShardsProcessed from " . $appInstance->numShardsProcessed . "\n";
-		$logger->debug( "Incrementing numShardsProcessed from " . $appInstance->numShardsProcessed );
-		$appInstance->numShardsProcessed( $appInstance->numShardsProcessed + 1 );
-	}
-
-	if ( $appInstance->numShardsProcessed == $appInstance->numNosqlShards ) {
-		print $dblog "numShardsProcessed = numNosqlShards\n";
-		$logger->debug("numShardsProcessed = numNosqlShards");
-		$appInstance->clear_numShardsProcessed;
-	}
-
-	close $dblog;
-}
-
-sub configureReplicatedMongodb {
-	my ( $self, $logPath, $users, $suffix, $nodeNum ) = @_;
-	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
-	my $console_logger = get_logger("Console");
-	my $configDir        = $self->getParamValue('configDir');
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $logName = "$logPath/ConfigureReplicateddMongodbDocker-$hostname-name-$time.log";
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	print $dblog $self->meta->name . " In MongodbDockerService::ConfigureReplicatedMongodb\n";
-	$logger->debug("configureReplicatedMongodb for $name: $logPath, $users, $suffix, $nodeNum");
-
-	open( FILEIN, "$configDir/mongodbDocker/mongod-replica.conf" )
-	  or die "Error opening $configDir/mongodbDocker/mongod-replica.conf:$!";
-	open( FILEOUT, ">/tmp/$hostname-$name-mongod$suffix.conf" )
-	  or die "Error opening /tmp/$hostname-$name-mongod$suffix.conf:$!";
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /port:/ ) {
-			print FILEOUT "    port: " . $self->internalPortMap->{'mongod'} . "\n";
-		}
-		elsif ( $inline =~ /path/ ) {
-			next;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	$self->host->dockerScpFileTo($dblog, $name, "/tmp/$hostname-$name-mongod$suffix.conf", "/etc/mongod.conf");
-	
-	close $dblog;
-}
-
-sub configureShardedReplicatedMongodb {
-	my ( $self, $logPath, $users, $suffix, $nodeNum ) = @_;
-	my $console_logger = get_logger("Console");
-	$console_logger->error("Dockerized sharded and replicated MongoDB is not yet implemented.");
-	exit(-1);
 
 }
 
@@ -740,9 +533,10 @@ sub startShardedMongodb {
 		my $appInstNum       = $self->getAppInstanceNum();
 		foreach my $configServer (@$configServersRef) {
 			my $configServerHost = $configServer->host;
-			$logger->debug( "Restarting config server $curCfgSvr on host ", $configServerHost->hostName );
-			my $portMapRef = $configServerHost->dockerRestart( $dblog, "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}" );
-
+			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName, 
+				", dockerName = ", "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
+			my $portMapRef = $configServer->host->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
+			$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 			if ( $self->getParamValue('dockerNet') eq "host" ) {
 
 				# For docker host networking, external ports are same as internal ports
@@ -752,8 +546,11 @@ sub startShardedMongodb {
 			else {
 
 				# For bridged networking, ports get assigned at start time
-				$configPort = $configServer->portMap->{"mongoc$curCfgSvr"} =
-				  $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
+				$logger->debug("Looking up port from portMapRef for mongoc$curCfgSvr-W${wkldNum}I${appInstNum} for port "
+					 . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
+				$configPort = $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
+				$logger->debug("Found external port number $configPort for internal port " . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
+				$configServer->portMap->{"mongoc$curCfgSvr"} = $configPort;
 			}
 			$logger->debug( "Port number for config server $curCfgSvr on host ",
 				$configServerHost->hostName, " is ", $configPort );
@@ -771,9 +568,9 @@ sub startShardedMongodb {
 		$appInstance->configDbString($configdbString);
 	}
 
-	# start the shard on this host
+	# configure ports for the shard on this host
 	print $dblog "Starting mongod on $hostname\n";
-	my $portMapRef = $self->host->dockerRestart( $dblog, $name );
+	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->getParamValue('dockerNet') eq "host" ) {
 
@@ -823,8 +620,7 @@ sub startShardedMongodb {
 
 					# Also use the internal port if the appServer is also using docker and is on
 					# the same (non-host) network as the mongos, but use the docker name rather than the hostname
-					my $mongosDocker = $dockerName;
-					$mongosDocker =~ s/\./-/g;
+					my $mongosDocker = $appServer->host->dockerGetIp($dockerName);
 					$appServer->setMongosDocker($mongosDocker);
 				}
 				else {
@@ -838,16 +634,22 @@ sub startShardedMongodb {
 				next;
 			}
 			$logger->debug( "Creating mongos on ", $appServer->host->hostName );
-
-			my %volumeMap;
-			my %envVarMap;
-			my %portMap;
-			my $directMap = 1;
-
 			my $mongosPort =
 			  $self->internalPortMap->{'mongos'} +
 			  ( $self->getParamValue( $self->getParamValue('serviceType') . 'PortStep' ) * $numMongos );
 			$numMongos++;
+
+			my %volumeMap;
+			my %envVarMap;
+			$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+			$envVarMap{"MONGOSPORT"} = $mongosPort;
+			$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
+			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+			$envVarMap{"ISCFGSVR"} = 0;
+			$envVarMap{"ISMONGOS"} = 1;
+			
+			my %portMap;
+			my $directMap = 1;
 
 			# Save the mongos port for this host in the internalPortMap
 			$portMap{$mongosPort} = $mongosPort;
@@ -859,31 +661,8 @@ sub startShardedMongodb {
 			$appServer->host->dockerRun( $dblog, $dockerName, $self->getImpl(), $directMap, \%portMap, \%volumeMap,
 				\%envVarMap, $self->dockerConfigHashRef, $entrypoint, $cmd, $self->needsTty );
 
-			# push out the config file
-			my $hostname = $appServer->host->hostName;
-			open( FILEIN,  "$configDir/mongodbDocker/mongos.conf" );
-			open( FILEOUT, ">/tmp/$hostname-mongos.conf" );
-			while ( my $inline = <FILEIN> ) {
-				if ( $inline =~ /port:/ ) {
-					print FILEOUT "    port: " . $mongosPort . "\n";
-				}
-				elsif ( $inline =~ /fork/ ) {
-					next;
-				}
-				elsif ( $inline =~ /path/ ) {
-					next;
-				}
-				else {
-					print FILEOUT $inline;
-				}
-			}
-			close FILEIN;
-			close FILEOUT;
-
-			$appServer->host->dockerScpFileTo($dblog, $dockerName, "/tmp/$hostname-mongos.conf", "/etc/mongos.conf");
-
-			# start the container
-			my $portMapRef = $appServer->host->dockerRestart( $dblog, $dockerName );
+			# set up the ports
+			my $portMapRef = $appServer->host->dockerPort($dockerName);
 
 			if ( exists( $self->dockerConfigHashRef->{"net"} ) && ( $self->dockerConfigHashRef->{"net"} eq "host" ) ) {
 				$logger->debug("mongos $dockerName uses host networking, setting app server to use external name and port");
@@ -901,9 +680,7 @@ sub startShardedMongodb {
 				# the same (non-host) network as the mongos, but use the docker name rather than the hostname
 				$logger->debug("app server and mongos are both dockerized on the same host and network, setting app server to use internal name and port");
 				$appServer->internalPortMap->{'mongos'} = $mongosPort;
-				my $mongosDocker = $dockerName;
-				$mongosDocker =~ s/\./-/g;
-				$logger->debug("\toriginal dockerName = $dockerName, with .s removed = $mongosDocker");
+				my $mongosDocker = $appServer->host->dockerGetIp($dockerName);
 				$appServer->setMongosDocker($mongosDocker);
 				$hostsMongosCreated{$appIpAddr} = $mongosPort;
 
@@ -935,18 +712,26 @@ sub startShardedMongodb {
 		my $dataManagerIpAddr           = $dataManagerDriver->host->ipAddr;
 		my $localMongosPort;
 		if ( !exists $hostsMongosCreated{$dataManagerIpAddr} ) {
-			my %volumeMap;
-			my %envVarMap;
-			my %portMap;
-			my $directMap = 1;
-
-			my $wkldNum    = $dataManagerDriver->getWorkloadNum();
-			my $appInstNum = $dataManagerDriver->getAppInstanceNum();
 
 			my $mongosPort =
 			  $self->internalPortMap->{'mongos'} +
 			  ( $self->getParamValue( $self->getParamValue('serviceType') . 'PortStep' ) * $numMongos );
 			$numMongos++;
+
+			my %volumeMap;
+			my %envVarMap;
+			$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
+			$envVarMap{"MONGOSPORT"} = $mongosPort;
+			$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
+			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+			$envVarMap{"ISCFGSVR"} = 0;
+			$envVarMap{"ISMONGOS"} = 1;
+			
+			my %portMap;
+			my $directMap = 1;
+
+			my $wkldNum    = $dataManagerDriver->getWorkloadNum();
+			my $appInstNum = $dataManagerDriver->getAppInstanceNum();
 
 			# Save the mongos port for this hostname in the internalPortMap
 			$hostsMongosCreated{$dataManagerIpAddr} = $mongosPort;
@@ -962,29 +747,8 @@ sub startShardedMongodb {
 
 			my $hostname = $dataManagerDriver->host->hostName;
 
-			open( FILEIN,  "$configDir/mongodbDocker/mongos.conf" );
-			open( FILEOUT, ">/tmp/$hostname-mongos.conf" );
-			while ( my $inline = <FILEIN> ) {
-				if ( $inline =~ /port:/ ) {
-					print FILEOUT "    port: " . $mongosPort . "\n";
-				}
-				elsif ( $inline =~ /fork/ ) {
-					next;
-				}
-				elsif ( $inline =~ /path/ ) {
-					next;
-				}
-				else {
-					print FILEOUT $inline;
-				}
-			}
-			close FILEIN;
-			close FILEOUT;
-
-			$dataManagerDriver->host->dockerScpFileTo($dblog, $dockerName, "/tmp/$hostname-mongos.conf", "/etc/mongos.conf");
-
-			# start the container
-			my $portMapRef = $dataManagerDriver->host->dockerRestart( $dblog, $dockerName );
+			# get the ports
+			my $portMapRef = $dataManagerDriver->host->dockerPort($dockerName );
 
 			if ( $self->getParamValue('dockerNet') eq "host" ) {
 
@@ -1028,7 +792,7 @@ sub startReplicatedMongodb {
 	my $cmdOut;
 	print $dblog "$hostname has shardNum " . $self->shardNum . " and replicaNum " . $self->replicaNum . "\n";
 
-	my $portMapRef = $self->host->dockerReload( $dblog, $name );
+	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->getParamValue('dockerNet') eq "host" ) {
 
@@ -1069,7 +833,7 @@ sub startSingleMongodb {
 	my $cmdOut;
 	print $dblog "$hostname has shardNum " . $self->shardNum . " and replicaNum " . $self->replicaNum . "\n";
 
-	my $portMapRef = $self->host->dockerReload( $dblog, $name );
+	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->getParamValue('dockerNet') eq "host" ) {
 
@@ -1443,18 +1207,8 @@ sub isBackupAvailable {
 	my ( $self, $backupDirPath, $applog ) = @_;
 	my $name        = $self->getParamValue('dockerName');
 
-	my $sshConnectString = $self->host->sshConnectString;
-
-	my $chkOut =  $self->host->dockerExec( $applog, $name, "sh -c \"[ -d $backupDirPath ] && echo 'found'\"" );
-	if ( !( $chkOut =~ /found/ ) ) {
-		return 0;
-	}
-	$chkOut =  $self->host->dockerExec( $applog, $name, "sh -c \"[ \\\"$(ls -A $backupDirPath)\\\" ] && echo \\\"Full\\\" || echo \\\"Empty\\\"\"" );
-	if ( $chkOut =~ /Empty/ ) {
-		return 0;
-	}
-
-	return 1;
+	# Backups are not supported when running with docker
+	return 0;
 
 }
 
@@ -1638,7 +1392,7 @@ sub getConfigFiles {
 			$appInstance->numShardsProcessed(1);
 
 			# get the config files for the config servers
-			`cp /tmp/*-mongoc*.conf $destinationPath/.`;
+			`cp /tmp/*-mongoc*.conf $destinationPath/. 2>&1`;
 		}
 		else {
 			$appInstance->numShardsProcessed( $appInstance->numShardsProcessed + 1 );

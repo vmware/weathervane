@@ -3,115 +3,165 @@
 use strict;
 use POSIX;
 
-my $port     = $ENV{'POSTGRESPORT'};
-my $totalMem = $ENV{'POSTGRESTOTALMEM'};
-my $totalMemUnit = $ENV{'POSTGRESTOTALMEMUNIT'};
-my $postgresqlSharedBuffers = $ENV{'POSTGRESSHAREDBUFFERS'};
-my $postgresqlSharedBuffersPct = $ENV{'POSTGRESSHAREDBUFFERSPCT'};
-my $postgresqlEffectiveCacheSize = $ENV{'POSTGRESEFFECTIVECACHESIZE'};
-my $postgresqlEffectiveCacheSizePct = $ENV{'POSTGRESEFFECTIVECACHESIZEPCT'};
-my $postgresqlMaxConnections = $ENV{'POSTGRESMAXCONNECTIONS'};
+my $mongodPort  = $ENV{'MONGODPORT'};
+my $numShards   = $ENV{'NUMSHARDS'};
+my $numReplicas = $ENV{'NUMREPLICAS'};
+my $isCfgSvr    = $ENV{'ISCFGSVR'};
+my $isMongos    = $ENV{'ISMONGOS'};
 
-
-if (!$totalMem || !$totalMemUnit) {
-	# Find the total amount of memory on the host
-	my $out = `cat /proc/meminfo`;
-	$out =~ /MemTotal:\s+(\d+)\s+(\w)/;
-	$totalMem     = $1;
-	$totalMemUnit = $2;
+if ( ( $numShards > 0 ) && ( $numReplicas > 0 ) ) {
+	if ($isCfgSvr) {
+		configureConfigSvr();
+	}
+	elsif ($isMongos) {
+		configureMongos();
+	}
+	else {
+		configureShardedReplicatedMongodb();
+	}
 }
-if ( uc($totalMemUnit) eq "K" ) {
-	$totalMemUnit = "kB";
+elsif ( $numShards > 0 ) {
+	if ($isCfgSvr) {
+		configureConfigSvr();
+	}
+	elsif ($isMongos) {
+		configureMongos();
+	}
+	else {
+		configureShardedMongodb();
+	}
 }
-elsif ( uc($totalMemUnit) eq "M" ) {
-	$totalMemUnit = "MB";
+elsif ( $numReplicas > 0 ) {
+	configureReplicatedMongodb();
 }
-elsif ( uc($totalMemUnit) eq "G" ) {
-	$totalMemUnit = "GB";
+else {
+	configureSingleMongodb();
 }
-	
-# Modify the postgresql.conf and
-# then copy the new version to the DB
-open( FILEIN,  "/mnt/dbData/postgresql/postgresql.conf" );
-open( FILEOUT, ">/tmp/postgresql.conf" );
-while ( my $inline = <FILEIN> ) {
 
-	if ( $inline =~ /^\s*shared_buffers\s*=\s*(.*)/ ) {
-		my $origValue = $1;
+sub configureSingleMongodb {
 
-			# If postgresqlSharedBuffers was set, then use it
-			# as the value. Otherwise, if postgresqlSharedBuffersPct
-			# was set, use that percentage of total memory,
-			# otherwise use what was in the original file
-			if ($postgresqlSharedBuffers) {
-				print FILEOUT "shared_buffers = " . $postgresqlSharedBuffers . "\n";
-
-			}
-			elsif ($postgresqlSharedBuffersPct ) {
-
-				my $bufferMem = floor( $totalMem * $postgresqlSharedBuffersPct );
-
-				if ( $bufferMem > $totalMem ) {
-					die "postgresqlSharedBuffersPct must be less than 1";
-				}
-
-				#					print $self->meta->name
-				#					  . " In postgresqlService::configure setting shared_buffers to $bufferMem$totalMemUnit\n";
-				print FILEOUT "shared_buffers = $bufferMem$totalMemUnit\n";
-
-			}
-			else {
-				print FILEOUT $inline;
-			}
+	open( FILEIN, "/etc/mongod-unsharded.conf" )
+	  or die "Error opening /etc/mongod-unsharded.conf:$!";
+	open( FILEOUT, ">/etc/mongod.conf" )
+	  or die "Error opening /etc/mongod.conf:$!";
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /port:/ ) {
+			print FILEOUT "    port: " . $mongodPort . "\n";
 		}
-		elsif ( $inline =~ /^\s*effective_cache_size\s*=\s*(.*)/ ) {
-			my $origValue = $1;
-
-			# If postgresqlEffectiveCacheSize was set, then use it
-			# as the value. Otherwise, if postgresqlEffectiveCacheSizePct
-			# was set, use that percentage of total memory,
-			# otherwise use what was in the original file
-			if ( $postgresqlEffectiveCacheSize ) {
-				print FILEOUT "effective_cache_size = " . $postgresqlEffectiveCacheSize . "\n";
-
-			}
-			elsif ( $postgresqlEffectiveCacheSizePct ) {
-
-				my $bufferMem = floor( $totalMem * $postgresqlEffectiveCacheSizePct );
-
-				if ( $bufferMem > $totalMem ) {
-					die "postgresqlEffectiveCacheSizePct must be less than 1";
-				}
-
-				print FILEOUT "effective_cache_size = $bufferMem$totalMemUnit\n";
-
-			}
-			else {
-				print FILEOUT $inline;
-			}
+		elsif ( $inline =~ /fork/ ) {
+			next;
 		}
-		elsif ( $inline =~ /^\s*max_connections\s*=\s*(\d*)/ ) {
-			my $origValue = $1;
-			if ( $postgresqlMaxConnections ) {
-				print FILEOUT "max_connections = " . $postgresqlMaxConnections . "\n";
-
-			}
-			else {
-				print FILEOUT $inline;
-			}
-		}
-		elsif ( $inline =~ /^\s*port\s*=\s*(\d*)/ ) {
-			print FILEOUT "port = '" . $port . "'\n";
+		elsif ( $inline =~ /path/ ) {
+			next;
 		}
 		else {
 			print FILEOUT $inline;
 		}
-
 	}
 	close FILEIN;
 	close FILEOUT;
 
-	# Push the config file to the docker container
-	`mv /tmp/postgresql.conf /mnt/dbData/postgresql/postgresql.conf`;
-	`chown postgres:postgres /mnt/dbData/postgresql/postgresql.conf`
+}
+
+sub configureShardedMongodb {
+
+	open( FILEIN, "/etc/mongod-sharded.conf" )
+	  or die "Error opening /etc/mongod-sharded.conf:$!";
+	open( FILEOUT, ">/tmp/mongod.conf" )
+	  or die "Error opening /tmp/mongod.conf:$!";
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /port:/ ) {
+			print FILEOUT "    port: " . $mongodPort . "\n";
+		}
+		elsif ( $inline =~ /fork/ ) {
+			next;
+		}
+		elsif ( $inline =~ /path/ ) {
+			next;
+		}
+		else {
+			print FILEOUT $inline;
+		}
+	}
+	close FILEIN;
+	close FILEOUT;
+
+}
+
+sub configureConfigSvr {
+	my $mongocPort  = $ENV{'MONGOCPORT'};
+	my $cfgSvrNum   = $ENV{'CFGSVRNUM'};
+
+	open( FILEIN, "/etc/mongoc$cfgSvrNum.conf" )
+	  or die "Error opening /etc/mongoc$cfgSvrNum.conf:$!";
+	open( FILEOUT, ">/tmp/mongoc$cfgSvrNum.conf" )
+	  or die "Error opening /tmp/mongoc$cfgSvrNum.conf:$!";
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /port:/ ) {
+			print FILEOUT "    port: " . $mongocPort . "\n";
+		}
+		elsif ( $inline =~ /fork/ ) {
+			next;
+		}
+		elsif ( $inline =~ /path/ ) {
+			next;
+		}
+		else {
+			print FILEOUT $inline;
+		}
+	}
+	close FILEIN;
+	close FILEOUT;
+
+	`mv /tmp/mongoc$cfgSvrNum.conf /etc/mongoc$cfgSvrNum.conf`;
+}
+
+sub configureMongos {
+	my $mongosPort  = $ENV{'MONGOSPORT'};
 	
+	open( FILEIN,  "/etc/mongos.conf" );
+	open( FILEOUT, ">/tmp/mongos.conf" );
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /port:/ ) {
+			print FILEOUT "    port: " . $mongosPort . "\n";
+		}
+		elsif ( $inline =~ /fork/ ) {
+			next;
+		}
+		elsif ( $inline =~ /path/ ) {
+			next;
+		}
+		else {
+			print FILEOUT $inline;
+		}
+	}
+	close FILEIN;
+	close FILEOUT;
+	`mv /tmp/mongos.conf /etc/mongos.conf`;
+}
+
+sub configureReplicatedMongodb {
+
+	open( FILEIN, "/etc/mongod-replica.conf" )
+	  or die "Error opening /etc/mongod-replica.conf:$!";
+	open( FILEOUT, ">/etc/mongod.conf" )
+	  or die "Error opening /etc/mongod.conf:$!";
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /port:/ ) {
+			print FILEOUT "    port: " . $mongodPort . "\n";
+		}
+		elsif ( $inline =~ /path/ ) {
+			next;
+		}
+		else {
+			print FILEOUT $inline;
+		}
+	}
+	close FILEIN;
+	close FILEOUT;
+}
+
+sub configureShardedReplicatedMongodb {
+	print("Dockerized sharded and replicated MongoDB is not yet implemented.");
+	exit(-1);
+}

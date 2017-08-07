@@ -10,7 +10,6 @@ my $isCfgSvr    = $ENV{'ISCFGSVR'};
 my $isMongos    = $ENV{'ISMONGOS'};
 
 print "configure mongo.  numShards = $numShards, numReplicas = $numReplicas, isCfgSvr = $isCfgSvr, isMongos = $isMongos\n";
-
 if ( ( $numShards > 0 ) && ( $numReplicas > 0 ) ) {
 	if ($isCfgSvr) {
 		configureConfigSvr();
@@ -158,6 +157,7 @@ sub configureReplicatedMongodb {
 		}
 		elsif ( $inline =~ /path/ ) {
 			next;
+
 		}
 		else {
 			print FILEOUT $inline;

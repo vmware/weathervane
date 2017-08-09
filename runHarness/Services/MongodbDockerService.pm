@@ -531,7 +531,7 @@ sub startShardedMongodb {
 			my $configServerHost = $configServer->host;
 			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName, 
 				", dockerName = ", "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-			my $portMapRef = $self->host->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
+			my $portMapRef = $configServer->host->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
 			$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 			if ( $self->getParamValue('dockerNet') eq "host" ) {
 

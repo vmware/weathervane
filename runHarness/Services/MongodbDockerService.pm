@@ -228,6 +228,8 @@ sub createShardedMongodb {
 			foreach my $nosqlServer (@$nosqlServersRef) {
 
 				$logger->debug( "Creating config server $curCfgSvr on ", $nosqlServer->host->hostName );
+				print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
+				
 				my %volumeMap;
 				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
 
@@ -527,9 +529,10 @@ sub startShardedMongodb {
 		my $appInstNum       = $self->getAppInstanceNum();
 		foreach my $configServer (@$configServersRef) {
 			my $configServerHost = $configServer->host;
-			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName );
+			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName, 
+				", dockerName = ", "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
 			my $portMapRef = $self->host->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-
+			$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 			if ( $self->getParamValue('dockerNet') eq "host" ) {
 
 				# For docker host networking, external ports are same as internal ports
@@ -539,8 +542,11 @@ sub startShardedMongodb {
 			else {
 
 				# For bridged networking, ports get assigned at start time
-				$configPort = $configServer->portMap->{"mongoc$curCfgSvr"} =
-				  $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
+				$logger->debug("Looking up port from portMapRef for mongoc$curCfgSvr-W${wkldNum}I${appInstNum} for port "
+					 . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
+				$configPort = $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
+				$logger->debug("Found external port number $configPort for internal port " . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
+				$configServer->portMap->{"mongoc$curCfgSvr"} = $configPort;
 			}
 			$logger->debug( "Port number for config server $curCfgSvr on host ",
 				$configServerHost->hostName, " is ", $configPort );
@@ -558,7 +564,7 @@ sub startShardedMongodb {
 		$appInstance->configDbString($configdbString);
 	}
 
-	# start the shard on this host
+	# configure ports for the shard on this host
 	print $dblog "Starting mongod on $hostname\n";
 	my $portMapRef = $self->host->dockerPort($name);
 

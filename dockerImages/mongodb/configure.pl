@@ -70,8 +70,8 @@ sub configureShardedMongodb {
 	print "Configure Sharded MongoDB\n";
 	open( FILEIN, "/etc/mongod-sharded.conf" )
 	  or die "Error opening /etc/mongod-sharded.conf:$!";
-	open( FILEOUT, ">/tmp/mongod.conf" )
-	  or die "Error opening /tmp/mongod.conf:$!";
+	open( FILEOUT, ">/etc/mongod.conf" )
+	  or die "Error opening /etc/mongod.conf:$!";
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /port:/ ) {
 			print FILEOUT "    port: " . $mongodPort . "\n";

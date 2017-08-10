@@ -616,8 +616,7 @@ sub startShardedMongodb {
 
 					# Also use the internal port if the appServer is also using docker and is on
 					# the same (non-host) network as the mongos, but use the docker name rather than the hostname
-					my $mongosDocker = $dockerName;
-					$mongosDocker =~ s/\./-/g;
+					my $mongosDocker = $appServer->host->dockerGetIp($other->getDockerName();
 					$appServer->setMongosDocker($mongosDocker);
 				}
 				else {
@@ -677,9 +676,7 @@ sub startShardedMongodb {
 				# the same (non-host) network as the mongos, but use the docker name rather than the hostname
 				$logger->debug("app server and mongos are both dockerized on the same host and network, setting app server to use internal name and port");
 				$appServer->internalPortMap->{'mongos'} = $mongosPort;
-				my $mongosDocker = $dockerName;
-				$mongosDocker =~ s/\./-/g;
-				$logger->debug("\toriginal dockerName = $dockerName, with .s removed = $mongosDocker");
+				my $mongosDocker = $appServer->host->dockerGetIp($other->getDockerName();
 				$appServer->setMongosDocker($mongosDocker);
 				$hostsMongosCreated{$appIpAddr} = $mongosPort;
 

@@ -431,18 +431,28 @@ sub setExternalPortNumbers {
 override 'sanityCheck' => sub {
 	my ($self, $cleanupLogDir) = @_;
 	my $console_logger = get_logger("Console");
-	
+	my $hostname         = $self->host->hostName;
+	my $name     = $self->getParamValue('dockerName');
+	my $logName          = "$cleanupLogDir/SanityCheckMongoDB-$hostname-$name.log";
+
+	my $dblog;
+	open( $dblog, ">$logName" )
+	  || die "Error opening /$logName:$!";
 	
 	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
 
 	while (my $inline = <$logContents>) {
 		if ($inline =~ /Sanity\sChecks\sPassed/) {
+			close $dblog;
 			return 1;
 		} elsif ($inline =~ /Sanity\sChecks\sFailed/) {
 			$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
+			close $dblog;
 			return 0;
 		} 
 	}
+	close $dblog;
+
 	$console_logger->error("Failed Sanity Check: Did not find sanity check results.");
 	return 0;
 };

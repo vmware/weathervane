@@ -431,29 +431,20 @@ sub setExternalPortNumbers {
 override 'sanityCheck' => sub {
 	my ($self, $cleanupLogDir) = @_;
 	my $console_logger = get_logger("Console");
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
-	my $logName          = "$cleanupLogDir/SanityCheckMongoDB-$hostname-$name.log";
-	my $dir = $self->getParamValue('mongodbDataDir');
-
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	my $cmdString = "df -h $dir";
-	my $cmdout = $self->host->dockerExec( $dblog, $name, $cmdString );
-	print $dblog "$cmdout\n";
-
-	close $dblog;
-
-	if ($cmdout =~ /100\%/) {
-		$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
-		return 0;
-	} else {
-		return 1;
-	}
 	
+	
+	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
+
+	while (my $inline = <$logContents>) {
+		if ($inline =~ /Sanity\sChecks\sPassed/) {
+			return 1;
+		} elsif ($inline =~ /Sanity\sChecks\sFailed/) {
+			$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
+			return 0;
+		} 
+	}
+	$console_logger->error("Failed Sanity Check: Did not find sanity check results.");
+	return 0;
 };
 
 sub configure {

@@ -9,6 +9,8 @@ my $numReplicas = $ENV{'NUMREPLICAS'};
 my $isCfgSvr    = $ENV{'ISCFGSVR'};
 my $isMongos    = $ENV{'ISMONGOS'};
 
+print "configure mongo.  numShards = $numShards, numReplicas = $numReplicas, isCfgSvr = $isCfgSvr, isMongos = $isMongos\n";
+
 if ( ( $numShards > 0 ) && ( $numReplicas > 0 ) ) {
 	if ($isCfgSvr) {
 		configureConfigSvr();
@@ -39,7 +41,7 @@ else {
 }
 
 sub configureSingleMongodb {
-
+	print "Configure Single MongoDB\n";
 	open( FILEIN, "/etc/mongod-unsharded.conf" )
 	  or die "Error opening /etc/mongod-unsharded.conf:$!";
 	open( FILEOUT, ">/etc/mongod.conf" )
@@ -65,6 +67,7 @@ sub configureSingleMongodb {
 
 sub configureShardedMongodb {
 
+	print "Configure Sharded MongoDB\n";
 	open( FILEIN, "/etc/mongod-sharded.conf" )
 	  or die "Error opening /etc/mongod-sharded.conf:$!";
 	open( FILEOUT, ">/tmp/mongod.conf" )
@@ -91,6 +94,7 @@ sub configureShardedMongodb {
 sub configureConfigSvr {
 	my $mongocPort  = $ENV{'MONGOCPORT'};
 	my $cfgSvrNum   = $ENV{'CFGSVRNUM'};
+	print "Configure MongoDB Config Server.  port = $mongocPort, cfgSvrNum = $cfgSvrNum\n";
 
 	open( FILEIN, "/etc/mongoc$cfgSvrNum.conf" )
 	  or die "Error opening /etc/mongoc$cfgSvrNum.conf:$!";
@@ -118,6 +122,7 @@ sub configureConfigSvr {
 
 sub configureMongos {
 	my $mongosPort  = $ENV{'MONGOSPORT'};
+	print "Configure mongod.  port = $mongosPort\n";
 	
 	open( FILEIN,  "/etc/mongos.conf" );
 	open( FILEOUT, ">/tmp/mongos.conf" );
@@ -141,6 +146,7 @@ sub configureMongos {
 }
 
 sub configureReplicatedMongodb {
+	print "Configure Replicated MongoDB\n";
 
 	open( FILEIN, "/etc/mongod-replica.conf" )
 	  or die "Error opening /etc/mongod-replica.conf:$!";

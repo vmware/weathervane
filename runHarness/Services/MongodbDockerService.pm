@@ -446,7 +446,7 @@ override 'sanityCheck' => sub {
 			close $dblog;
 			return 1;
 		} elsif ($inline =~ /Sanity\sChecks\sFailed/) {
-			$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
+			$console_logger->error("Failed Sanity Check: MongoDB Data Directory is full on $hostname.");
 			close $dblog;
 			return 0;
 		} 

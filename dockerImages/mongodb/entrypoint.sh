@@ -3,6 +3,14 @@
 sigterm()
 {
    echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"
+   perl /sanityCheck.pl
+   if [$? -eq 0]
+   then
+   	echo "Sanity Checks Passed"
+   else
+   	echo "Sanity Checks Failed"
+   fi
+   
    rm -f /fifo
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"

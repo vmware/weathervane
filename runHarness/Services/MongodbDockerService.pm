@@ -1388,7 +1388,7 @@ sub getConfigFiles {
 			$appInstance->numShardsProcessed(1);
 
 			# get the config files for the config servers
-			`cp /tmp/*-mongoc*.conf $destinationPath/.`;
+			`cp /tmp/*-mongoc*.conf $destinationPath/. 2>&1`;
 		}
 		else {
 			$appInstance->numShardsProcessed( $appInstance->numShardsProcessed + 1 );

@@ -4,7 +4,7 @@ sigterm()
 {
    echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"
    perl /sanityCheck.pl
-   if [$? -eq 0]
+   if [ $? -eq 0 ]
    then
    	echo "Sanity Checks Passed"
    else

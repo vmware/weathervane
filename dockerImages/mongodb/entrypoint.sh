@@ -2,15 +2,7 @@
 
 sigterm()
 {
-   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"
-   perl /sanityCheck.pl
-   if [ $? -eq 0 ]
-   then
-   	echo "Sanity Checks Passed"
-   else
-   	echo "Sanity Checks Failed"
-   fi
-   
+   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"   
    rm -f /fifo
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"
@@ -22,7 +14,15 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received. "
+   echo "signal USR1 received. Performing sanity checks"
+   perl /sanityCheck.pl
+   if [ $? -eq 0 ]
+   then
+   	echo "Sanity Checks Passed"
+   else
+   	echo "Sanity Checks Failed"
+   fi
+   
 }
 
 trap 'sigterm' TERM

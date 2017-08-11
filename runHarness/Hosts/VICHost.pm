@@ -49,6 +49,19 @@ override 'unRegisterPortNumber' => sub {
 sub restartNtp {
 	my ($self) = @_;
 }
+
+sub restartNtp {
+	my ($self) = @_;
+}
+
+sub startNscd {
+	my ($self)           = @_;
+}
+
+sub stopNscd {
+	my ($self)           = @_;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

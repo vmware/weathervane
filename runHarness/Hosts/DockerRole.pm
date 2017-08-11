@@ -492,6 +492,50 @@ sub dockerGetLogs {
 	return "";
 }
 
+sub dockerVolumeCreate {
+	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
+	print $logFileHandle "dockerVolumeCreate $volumeName\n";
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerVolumeCreate $volumeName");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	my $cmd = "$dockerHostString docker volume create --name $volumeName ";
+	if ($self->getParamValue('vicHost')) {
+		# Add capacity
+		$cmd .= "--opt Capacity=" . $volumeSize;
+	}
+	
+	$logger->debug("dockerVolumeCreate cmd = $cmd");
+	print $logFileHandle "$cmd\n";
+	my $out = `$cmd`;
+	$logger->debug("dockerVolumeCreate out = $out");
+	print $logFileHandle "$out\n";
+
+}
+
+sub dockerVolumeExists {
+	my ( $self, $logFileHandle, $volumeName ) = @_;
+	print $logFileHandle "dockerVolumeExists $volumeName\n";
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerVolumeExists $volumeName");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	my $cmd = "$dockerHostString docker volume ls -q";
+	print $logFileHandle "$cmd\n";
+	my $out = `$cmd`;
+	print $logFileHandle "$out\n";
+	my @lines = split /\n/, $out;
+	foreach my $line (@lines) {
+		chomp($line);
+		if ($line eq $volumeName) {
+			$logger->debug("dockerVolumeExists $volumeName exists");
+			return 1;				
+		}	
+	} 	
+	$logger->debug("dockerVolumeExists $volumeName does not exist");
+	return 0;	
+}
+
 sub dockerRm {
 	my ( $self, $logFileHandle, $name ) = @_;
 	print $logFileHandle "dockerRm $name\n";
@@ -510,7 +554,12 @@ sub dockerRm {
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
 	my $dockerHostString  = $self->dockerHostString;	
-	my $out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	my $out;
+	if ($self->getParamValue('vicHost')) {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
+	} else {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	}
 	chomp($out);
 	return $out;
 }

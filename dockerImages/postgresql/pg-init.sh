@@ -31,16 +31,15 @@ if [ "$MODE" == 'firstrun' ]; then
   mv /mnt/dbData/postgresql/pg_xlog/* /mnt/dbLogs/postgresql/.
   rmdir /mnt/dbData/postgresql/pg_xlog
   ln -s /mnt/dbLogs/postgresql /mnt/dbData/postgresql/pg_xlog
-  chmod 700 /mnt/dbData/postgresql
-  chown -R postgres:postgres /mnt/dbData/postgresql
-  chown -R postgres:postgres /mnt/dbLogs/postgresql
-  
 
 fi
 
 # Cleanup
-rm -f $postgresqlDataDir/serverlog
-rm -f $postgresqlDataDir/pg_log/*
+chown -R postgres:postgres /mnt/dbData
+chown -R postgres:postgres /mnt/dbLogs
+chmod 700 /mnt/dbData/postgresql
+rm -f /mnt/dbData/serverlog
+rm -f /mnt/dbData/pg_log/*
 rm -f /mnt/dbData/postgresql/postmaster.pid
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_resetxlog -f /mnt/dbData/postgresql
 

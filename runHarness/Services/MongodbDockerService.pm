@@ -66,6 +66,12 @@ has 'configServersRef' => (
 	default => sub { [] },
 );
 
+has 'clearBeforeStart' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ( $self, $numNosqlServers ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
@@ -134,11 +140,14 @@ override 'create' => sub {
 	else {
 		$self->createSingleMongodb($logPath);
 	}
+	
+	$self->clearBeforeStart(0);
 };
 
 sub createSingleMongodb {
 	my ( $self, $logPath ) = @_;
 	my $name     = $self->getParamValue('dockerName');
+	my $host = $self->host;
 	my $hostname = $self->host->hostName;
 	my $impl     = $self->getImpl();
 
@@ -150,7 +159,20 @@ sub createSingleMongodb {
 	  || die "Error opening /$logName:$!";
 
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir');
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -158,6 +180,12 @@ sub createSingleMongodb {
 	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 		
 	my %portMap;
 	my $directMap = 0;
@@ -183,6 +211,7 @@ sub createShardedMongodb {
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
 
 	my $hostname = $self->host->hostName;
+	my $host = $self->host;
 	my $name     = $self->getParamValue('dockerName');
 	my $time     = `date +%H:%M`;
 	chomp($time);
@@ -231,7 +260,20 @@ sub createShardedMongodb {
 				print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
 				
 				my %volumeMap;
-				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
+				my $dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
+				if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+					$dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataVolume");
+					# use named volumes.  Create volume if it doesn't exist
+					if (!$host->dockerVolumeExists($dblog, $dataDir)) {
+						# Create the volume
+						my $volumeSize = 0;
+						if ($host->getParamValue('vicHost')) {
+							$volumeSize = $self->getParamValue("mongodbC${curCfgSvr}DataVolumeSize");
+						}
+						$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
+					}
+				}
+				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $dataDir;
 
 				my %envVarMap;
 				$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -241,6 +283,11 @@ sub createShardedMongodb {
 				$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 				$envVarMap{"ISCFGSVR"} = 1;
 	  			$envVarMap{"ISMONGOS"} = 0;
+				if ($self->clearBeforeStart) {
+					$envVarMap{"CLEARBEFORESTART"} = 1;		
+				} else {
+					$envVarMap{"CLEARBEFORESTART"} = 0;		
+				}
 				
 				my %portMap;
 				my $directMap = 1;
@@ -274,7 +321,20 @@ sub createShardedMongodb {
 	print $dblog "Creating mongod on $hostname\n";
 	$logger->debug("Creating mongod for $name on $hostname");
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir');
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -282,6 +342,11 @@ sub createShardedMongodb {
 	$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 	
 	my %portMap;
 	my $directMap = 1;
@@ -316,6 +381,7 @@ sub createReplicatedMongodb {
 	my ( $self, $logPath ) = @_;
 	my $name     = $self->getParamValue('dockerName');
 	my $hostname = $self->host->hostName;
+	my $host = $self->host;
 	my $impl     = $self->getImpl();
 	my $replicaName      = "auction" . $self->shardNum;
 
@@ -327,7 +393,20 @@ sub createReplicatedMongodb {
 	  || die "Error opening /$logName:$!";
 
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir');
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -335,6 +414,11 @@ sub createReplicatedMongodb {
 	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 	
 	my %portMap;
 	my $directMap = 1;
@@ -439,7 +523,7 @@ override 'sanityCheck' => sub {
 	open( $dblog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	$self->host->dockerKill("USR1", $dblog, $name);
+	$self->host->dockerKill("USR2", $dblog, $name);
 	
 	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
 	my @lines = split /\n/, $logContents;
@@ -647,6 +731,7 @@ sub startShardedMongodb {
 			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 0;
 			$envVarMap{"ISMONGOS"} = 1;
+			$envVarMap{"CLEARBEFORESTART"} = 0;		
 			
 			my %portMap;
 			my $directMap = 1;
@@ -726,6 +811,7 @@ sub startShardedMongodb {
 			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 0;
 			$envVarMap{"ISMONGOS"} = 1;
+			$envVarMap{"CLEARBEFORESTART"} = 0;		
 			
 			my %portMap;
 			my $directMap = 1;
@@ -1149,40 +1235,9 @@ sub clearDataAfterStart {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $hostname         = $self->host->hostName;
-	my $logName          = "$logPath/MongoDB-clearData-$hostname.log";
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-	my $mongodbC1DataDir = $self->getParamValue('mongodbC1DataDir');
-	my $mongodbC2DataDir = $self->getParamValue('mongodbC2DataDir');
-	my $mongodbC3DataDir = $self->getParamValue('mongodbC3DataDir');
-
-	my $applog;
-	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
-
-	my $sshConnectString = $self->host->sshConnectString;
-	print $applog "Clearing old MongoDB data on " . $hostname . "\n";
-
-	my $cmdout = `$sshConnectString \"find $mongodbDataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbDataDir 2>&1\"`;
-	print $applog "After clearing, MongoDB data dir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC1DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC1DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC1DataDir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC2DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC2DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC2DataDir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC3DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC3DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC3DataDir has: $cmdout";
-
-	close $applog;
-
+	
+	$self->clearBeforeStart(1);
+	
 }
 
 sub isUp {

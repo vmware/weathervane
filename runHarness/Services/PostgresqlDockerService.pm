@@ -66,10 +66,13 @@ override 'create' => sub {
 	my $hostname         = $self->host->hostName;
 	my $impl             = $self->getImpl();
 	my $logDir           = $self->getParamValue('postgresqlLogDir');
+<<<<<<< HEAD
 	my $sshConnectString = $self->host->sshConnectString;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 
 	#	`$sshConnectString chmod -R 777 $logDir`;
+=======
+>>>>>>> af8968a... Add a VICHost type to override operations not meaningful on VIC
 
 	my $time     = `date +%H:%M`;
 	chomp($time);

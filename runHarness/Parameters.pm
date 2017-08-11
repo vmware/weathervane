@@ -1435,6 +1435,14 @@ $parameters{"dockerNet"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"vicHost"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "host",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerHostPin"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

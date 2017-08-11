@@ -19,6 +19,7 @@ use MooseX::ClassAttribute;
 use Moose::Util qw( apply_all_roles );
 use Hosts::LinuxGuest;
 use Hosts::DockerRole;
+use Hosts::VICHost;
 use Hosts::ESXiHost;
 use Hosts::VirtualCenterHost;
 use Parameters qw(getParamValue);
@@ -30,14 +31,20 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getHost {
 	my ( $self, $paramsHashRef ) = @_;
-	my $host;
-
 	my $logger = get_logger("Weathervane::Factories::HostFactory");
+	my $host;	
+	my $isVIC = $paramsHashRef->{'vicHost'};	
 	my $hostname = $paramsHashRef->{'hostName'};
 	
+	if ($isVIC) {
+		$logger->debug("Creating a VIC Host with hostname $hostname");
+		$host = VICHost->new(
+			'paramHashRef' => $paramsHashRef,);
+	} else {
 		$logger->debug("Creating a Linux Host with hostname $hostname");
 		$host = LinuxGuest->new(
 			'paramHashRef' => $paramsHashRef,);
+	}
 	$host->initialize();
 
 	apply_all_roles($host, 'DockerRole');		

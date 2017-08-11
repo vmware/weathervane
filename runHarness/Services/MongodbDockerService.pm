@@ -440,8 +440,9 @@ override 'sanityCheck' => sub {
 	  || die "Error opening /$logName:$!";
 	
 	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
-
-	while (my $inline = <$logContents>) {
+	my @lines = split /\n/, $logContents;
+	
+	foreach my $inline (@lines) {
 		if ($inline =~ /Sanity\sChecks\sPassed/) {
 			close $dblog;
 			return 1;

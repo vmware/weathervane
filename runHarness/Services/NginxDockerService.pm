@@ -49,6 +49,7 @@ override 'create' => sub {
 	
 	my $name = $self->getParamValue('dockerName');
 	my $hostname         = $self->host->hostName;
+	my $host = $self->host;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
@@ -58,7 +59,20 @@ override 'create' => sub {
 	
 	my %volumeMap;
 	my $instanceNumber = $self->getParamValue('instanceNum');
-	$volumeMap{"/var/cache/nginx"} = "/mnt/cache/nginx$instanceNumber";
+	my $dataDir = "/mnt/cache/nginx$instanceNumber";
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('nginxCacheVolume') . $instanceNumber;
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('nginxCacheVolumeSize');
+			}
+			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+		}
+	}	
+	$volumeMap{"/var/cache/nginx"} = $dataDir;
 		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();

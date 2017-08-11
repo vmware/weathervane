@@ -107,11 +107,6 @@ override 'registerService' => sub {
 
 };
 
-sub isBonneville {
-	my ($self) = @_;
-	return JSON::false;
-}
-
 sub startNscd {
 	my ($self)           = @_;
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");

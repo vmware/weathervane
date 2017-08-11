@@ -14,7 +14,14 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received. Performing sanity checks"
+   echo "signal USR1 received. Clearing data and restarting"
+
+}
+
+
+sigusr2()
+{
+   echo "signal USR2 received. Performing sanity checks"
    perl /sanityCheck.pl
    if [ $? -eq 0 ]
    then
@@ -27,6 +34,7 @@ sigusr1()
 
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
+trap 'sigusr2' USR2
 
 echo "search weathervane" >> /etc/resolv.conf 
 
@@ -35,6 +43,13 @@ echo never > /sys/kernel/mm/transparent_hugepage/defrag
 
 cmd=$*
 numArgs=$#
+
+if [ $CLEARBEFORESTART -eq 1 ]; then
+  find /mnt/mongoData/* -delete
+  find /mnt/mongoC1Data/* -delete
+  find /mnt/mongoC2Data/* -delete
+  find /mnt/mongoC3Data/* -delete
+fi
 
 perl /configure.pl
 

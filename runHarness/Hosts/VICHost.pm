@@ -34,22 +34,18 @@ override 'initialize' => sub {
 override 'registerService' => sub {
 	my ( $self ) = @_;
 
-}
+};
 
 override 'registerPortNumber' => sub {
 	my ( $self ) = @_;
 
-}
+};
 
 override 'unRegisterPortNumber' => sub {
 	my ( $self ) = @_;
 
-}
+};
 
-override '' => sub {
-	my ( $self ) = @_;
-
-}
 
 __PACKAGE__->meta->make_immutable;
 

@@ -26,6 +26,12 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Host';
 
+has 'servicesRef' => (
+	is      => 'rw',
+	default => sub { [] },
+	isa     => 'ArrayRef[Service]',
+);
+
 has 'dockerHostString' => (
 	is  => 'rw',
 	isa => 'Str',

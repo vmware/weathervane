@@ -66,6 +66,12 @@ has 'configServersRef' => (
 	default => sub { [] },
 );
 
+has 'clearBeforeStart' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ( $self, $numNosqlServers ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
@@ -134,6 +140,8 @@ override 'create' => sub {
 	else {
 		$self->createSingleMongodb($logPath);
 	}
+	
+	$self->clearBeforeStart(0);
 };
 
 sub createSingleMongodb {
@@ -158,6 +166,12 @@ sub createSingleMongodb {
 	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 		
 	my %portMap;
 	my $directMap = 0;
@@ -241,6 +255,11 @@ sub createShardedMongodb {
 				$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 				$envVarMap{"ISCFGSVR"} = 1;
 	  			$envVarMap{"ISMONGOS"} = 0;
+				if ($self->clearBeforeStart) {
+					$envVarMap{"CLEARBEFORESTART"} = 1;		
+				} else {
+					$envVarMap{"CLEARBEFORESTART"} = 0;		
+				}
 				
 				my %portMap;
 				my $directMap = 1;
@@ -282,6 +301,11 @@ sub createShardedMongodb {
 	$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 	
 	my %portMap;
 	my $directMap = 1;
@@ -335,6 +359,11 @@ sub createReplicatedMongodb {
 	$envVarMap{"NUMREPLICAS"} = $self->appInstance->numNosqlReplicas;
 	$envVarMap{"ISCFGSVR"} = 0;
 	$envVarMap{"ISMONGOS"} = 0;
+	if ($self->clearBeforeStart) {
+		$envVarMap{"CLEARBEFORESTART"} = 1;		
+	} else {
+		$envVarMap{"CLEARBEFORESTART"} = 0;		
+	}
 	
 	my %portMap;
 	my $directMap = 1;
@@ -439,7 +468,7 @@ override 'sanityCheck' => sub {
 	open( $dblog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	$self->host->dockerKill("USR1", $dblog, $name);
+	$self->host->dockerKill("USR2", $dblog, $name);
 	
 	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
 	my @lines = split /\n/, $logContents;
@@ -647,6 +676,7 @@ sub startShardedMongodb {
 			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 0;
 			$envVarMap{"ISMONGOS"} = 1;
+			$envVarMap{"CLEARBEFORESTART"} = 0;		
 			
 			my %portMap;
 			my $directMap = 1;
@@ -726,6 +756,7 @@ sub startShardedMongodb {
 			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 0;
 			$envVarMap{"ISMONGOS"} = 1;
+			$envVarMap{"CLEARBEFORESTART"} = 0;		
 			
 			my %portMap;
 			my $directMap = 1;
@@ -1149,40 +1180,9 @@ sub clearDataAfterStart {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $hostname         = $self->host->hostName;
-	my $logName          = "$logPath/MongoDB-clearData-$hostname.log";
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-	my $mongodbC1DataDir = $self->getParamValue('mongodbC1DataDir');
-	my $mongodbC2DataDir = $self->getParamValue('mongodbC2DataDir');
-	my $mongodbC3DataDir = $self->getParamValue('mongodbC3DataDir');
-
-	my $applog;
-	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
-
-	my $sshConnectString = $self->host->sshConnectString;
-	print $applog "Clearing old MongoDB data on " . $hostname . "\n";
-
-	my $cmdout = `$sshConnectString \"find $mongodbDataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbDataDir 2>&1\"`;
-	print $applog "After clearing, MongoDB data dir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC1DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC1DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC1DataDir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC2DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC2DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC2DataDir has: $cmdout";
-
-	$cmdout = `$sshConnectString \"find $mongodbC3DataDir/* -delete 2>&1\"`;
-	print $applog $cmdout;
-	$cmdout = `$sshConnectString \"ls -l $mongodbC3DataDir 2>&1\"`;
-	print $applog "After clearing, $mongodbC3DataDir has: $cmdout";
-
-	close $applog;
-
+	
+	$self->clearBeforeStart(1);
+	
 }
 
 sub isUp {

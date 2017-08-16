@@ -163,13 +163,13 @@ sub createSingleMongodb {
 	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
 			# Create the volume
 			my $volumeSize = 0;
 			if ($host->getParamValue('vicHost')) {
 				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
 			}
-			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
 		}
 	}
 	$volumeMap{"/mnt/mongoData"} = $dataDir;
@@ -264,13 +264,13 @@ sub createShardedMongodb {
 				if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 					$dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataVolume");
 					# use named volumes.  Create volume if it doesn't exist
-					if (!$host->dockerVolumeExists($applog, $dataDir)) {
+					if (!$host->dockerVolumeExists($dblog, $dataDir)) {
 						# Create the volume
 						my $volumeSize = 0;
 						if ($host->getParamValue('vicHost')) {
 							$volumeSize = $self->getParamValue("mongodbC${curCfgSvr}DataVolumeSize");
 						}
-						$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+						$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
 					}
 				}
 				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $dataDir;
@@ -325,13 +325,13 @@ sub createShardedMongodb {
 	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
 			# Create the volume
 			my $volumeSize = 0;
 			if ($host->getParamValue('vicHost')) {
 				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
 			}
-			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
 		}
 	}
 	$volumeMap{"/mnt/mongoData"} = $dataDir;
@@ -397,13 +397,13 @@ sub createReplicatedMongodb {
 	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
 			# Create the volume
 			my $volumeSize = 0;
 			if ($host->getParamValue('vicHost')) {
 				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
 			}
-			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+			$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
 		}
 	}
 	$volumeMap{"/mnt/mongoData"} = $dataDir;

@@ -147,6 +147,7 @@ override 'create' => sub {
 sub createSingleMongodb {
 	my ( $self, $logPath ) = @_;
 	my $name     = $self->getParamValue('dockerName');
+	my $host = $self->host;
 	my $hostname = $self->host->hostName;
 	my $impl     = $self->getImpl();
 
@@ -210,6 +211,7 @@ sub createShardedMongodb {
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
 
 	my $hostname = $self->host->hostName;
+	my $host = $self->host;
 	my $name     = $self->getParamValue('dockerName');
 	my $time     = `date +%H:%M`;
 	chomp($time);
@@ -379,6 +381,7 @@ sub createReplicatedMongodb {
 	my ( $self, $logPath ) = @_;
 	my $name     = $self->getParamValue('dockerName');
 	my $hostname = $self->host->hostName;
+	my $host = $self->host;
 	my $impl     = $self->getImpl();
 	my $replicaName      = "auction" . $self->shardNum;
 

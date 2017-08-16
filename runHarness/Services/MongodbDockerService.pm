@@ -260,7 +260,7 @@ sub createShardedMongodb {
 				print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
 				
 				my %volumeMap;
-				my $dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataDir")
+				my $dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
 				if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 					$dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataVolume");
 					# use named volumes.  Create volume if it doesn't exist
@@ -321,7 +321,7 @@ sub createShardedMongodb {
 	print $dblog "Creating mongod on $hostname\n";
 	$logger->debug("Creating mongod for $name on $hostname");
 	my %volumeMap;
-	my $dataDir = $self->getParamValue('mongodbDataDir')
+	my $dataDir = $self->getParamValue('mongodbDataDir');
 	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
@@ -393,7 +393,7 @@ sub createReplicatedMongodb {
 	  || die "Error opening /$logName:$!";
 
 	my %volumeMap;
-	my $dataDir = $self->getParamValue('mongodbDataDir')
+	my $dataDir = $self->getParamValue('mongodbDataDir');
 	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist

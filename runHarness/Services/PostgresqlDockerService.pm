@@ -102,7 +102,7 @@ override 'create' => sub {
 			$host->dockerVolumeCreate($applog, $logDir, $volumeSize);
 		}
 	}
-	$volumeMap{"/mnt/dbData/postgresql"} = $hostDir;
+	$volumeMap{"/mnt/dbData/postgresql"} = $hostDataDir;
 	$volumeMap{"/mnt/dbLogs/postgresql"} = $logDir;
 
 	my %envVarMap;

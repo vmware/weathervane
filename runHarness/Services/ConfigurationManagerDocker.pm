@@ -374,7 +374,6 @@ sub configureAfterIsUp {
 			$paramHash{"hostIpAddr"}       = $service->host->ipAddr;
 			$paramHash{"hostCpus"}         = $service->host->cpus + 0;
 			$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
-			$paramHash{"hostIsBonneville"} = $service->host->isBonneville();
 
 			my $content = $json->encode( \%paramHash );
 			my $url     = "http://$hostname:$port/$serviceType/add";

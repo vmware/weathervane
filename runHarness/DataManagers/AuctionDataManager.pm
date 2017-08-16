@@ -1738,7 +1738,6 @@ sub cleanData {
 
 		# Compact all mongodb collections
 		foreach my $nosqlService (@$nosqlServersRef) {
-			my $sshConnectString = $nosqlService->host->sshConnectString;
 			my $hostname         = $nosqlService->host->hostName;
 			my $port             = $nosqlService->portMap->{'mongod'};
 			print $logHandle "Compacting MongoDB collections on $hostname\n";
@@ -1748,20 +1747,15 @@ sub cleanData {
 				$appInstanceNum
 			);
 
-			my $cmdString = "$sshConnectString du -hsc /mnt/mongoData";
-			print $logHandle "$cmdString\n";
-			my $cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
 			$logger->debug(
 				"cleanData. Compacting attendanceRecord collection on $hostname for workload ",
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
+			my $cmdString =
 "mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord";
 			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			my $cmdout = `$cmdString`;
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -1824,10 +1818,6 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString = "$sshConnectString du -hsc /mnt/mongoData";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
 
 		}
 	}

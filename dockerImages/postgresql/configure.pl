@@ -32,8 +32,8 @@ elsif ( uc($totalMemUnit) eq "G" ) {
 	
 # Modify the postgresql.conf and
 # then copy the new version to the DB
-open( FILEIN,  "/mnt/dbData/postgresql/postgresql.conf" );
-open( FILEOUT, ">/tmp/postgresql.conf" );
+open( FILEIN,  "/postgresql.conf" );
+open( FILEOUT, ">/mnt/dbData/postgresql/postgresql.conf" );
 while ( my $inline = <FILEIN> ) {
 
 	if ( $inline =~ /^\s*shared_buffers\s*=\s*(.*)/ ) {
@@ -110,8 +110,5 @@ while ( my $inline = <FILEIN> ) {
 	}
 	close FILEIN;
 	close FILEOUT;
-
-	# Push the config file to the docker container
-	`mv /tmp/postgresql.conf /mnt/dbData/postgresql/postgresql.conf`;
 	`chown postgres:postgres /mnt/dbData/postgresql/postgresql.conf`
 	

@@ -19,9 +19,11 @@ trap 'sigusr1' USR1
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
 chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /root/.erlang.cookie
+chmod 600 /var/lib/rabbitmq/.erlang.cookie
+chmod 600 /root/.erlang.cookie
 
+hostname="$(hostname)"
+echo "NODENAME=rabbit@${hostname}" > /etc/rabbitmq/rabbitmq-env.conf
 
 if [ $# -gt 0 ]; then
 	eval "$* &"

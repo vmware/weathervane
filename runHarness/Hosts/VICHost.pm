@@ -18,6 +18,7 @@ use MooseX::Storage;
 use Hosts::Host;
 use VirtualInfrastructures::VirtualInfrastructure;
 use WeathervaneTypes;
+use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 

@@ -25,14 +25,48 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Host';
 
+has 'dockerHostString' => (
+	is  => 'rw',
+	isa => 'Str',
+);
+
+# used to track docker names that are used on this host
+has 'dockerNameHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-	
 	super();
+
+	my $hostname   = $self->getParamValue('hostName');
+	my $dockerPort = $self->getParamValue('dockerHostPort');
+	$self->dockerHostString( "DOCKER_HOST=" . $hostname . ":" . $dockerPort );
+
 };
 
 override 'registerService' => sub {
-	my ( $self ) = @_;
+	my ( $self, $serviceRef ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
+	my $servicesRef    = $self->servicesRef;
+
+	my $dockerName = $serviceRef->getDockerName();
+	$logger->debug( "Registering service $dockerName with host ",
+		$self->hostName );
+
+	if ( $serviceRef->useDocker() ) {
+		if ( exists $self->dockerNameHashRef->{$dockerName} ) {
+			$console_logger->error( "Have two services on host ",
+				$self->hostName, " with docker name $dockerName." );
+			exit(-1);
+		}
+		$self->dockerNameHashRef->{$dockerName} = 1;
+	}
+
+	push @$servicesRef, $serviceRef;
 
 };
 

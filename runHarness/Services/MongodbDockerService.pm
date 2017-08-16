@@ -158,7 +158,20 @@ sub createSingleMongodb {
 	  || die "Error opening /$logName:$!";
 
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir')
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -245,7 +258,20 @@ sub createShardedMongodb {
 				print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
 				
 				my %volumeMap;
-				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
+				my $dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataDir")
+				if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+					$dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataVolume");
+					# use named volumes.  Create volume if it doesn't exist
+					if (!$host->dockerVolumeExists($applog, $dataDir)) {
+						# Create the volume
+						my $volumeSize = 0;
+						if ($host->getParamValue('vicHost')) {
+							$volumeSize = $self->getParamValue("mongodbC${curCfgSvr}DataVolumeSize");
+						}
+						$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+					}
+				}
+				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $dataDir;
 
 				my %envVarMap;
 				$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -293,7 +319,20 @@ sub createShardedMongodb {
 	print $dblog "Creating mongod on $hostname\n";
 	$logger->debug("Creating mongod for $name on $hostname");
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir')
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
@@ -351,7 +390,20 @@ sub createReplicatedMongodb {
 	  || die "Error opening /$logName:$!";
 
 	my %volumeMap;
-	$volumeMap{"/mnt/mongoData"} = $self->getParamValue('mongodbDataDir');
+	my $dataDir = $self->getParamValue('mongodbDataDir')
+	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$dataDir = $self->getParamValue('mongodbDataVolume');
+		# use named volumes.  Create volume if it doesn't exist
+		if (!$host->dockerVolumeExists($applog, $dataDir)) {
+			# Create the volume
+			my $volumeSize = 0;
+			if ($host->getParamValue('vicHost')) {
+				$volumeSize = $self->getParamValue('mongodbDataVolumeSize');
+			}
+			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
+		}
+	}
+	$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 	my %envVarMap;
 	$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};

@@ -19,8 +19,8 @@ trap 'sigusr1' USR1
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
 chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /root/.erlang.cookie
+chmod 600 /var/lib/rabbitmq/.erlang.cookie
+chmod 600 /root/.erlang.cookie
 
 
 if [ $# -gt 0 ]; then

@@ -711,6 +711,10 @@ override 'redeploy' => sub {
 	$logger->debug("For redeploy.  localVersion is $localVersion");
 
 	foreach my $host (@$hostsRef) {
+		
+		if ($host->getParamValue('vicHost')) {
+			next;
+		}
 
 		# Get the host's version number
 		my $hostname         = $host->hostName;

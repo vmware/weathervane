@@ -91,10 +91,6 @@ sub restartNtp {
 	my ($self) = @_;
 }
 
-sub restartNtp {
-	my ($self) = @_;
-}
-
 sub startNscd {
 	my ($self)           = @_;
 }

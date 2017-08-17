@@ -355,6 +355,7 @@ sub pretouchData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $sshConnectString = $self->host->sshConnectString;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 
@@ -385,13 +386,13 @@ sub pretouchData {
 					print $logHandle "Touching imageFull collection to preload data and indexes\n";
 					$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
+					$cmdout = `$sshConnectString \"$cmdString\"`;
 					print $logHandle "$cmdString\n";
 					print $logHandle $cmdout;
 
 					$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
+					$cmdout = `$sshConnectString \"$cmdString\"`;
 					print $logHandle "$cmdString\n";
 					print $logHandle $cmdout;
 					exit;
@@ -411,7 +412,7 @@ sub pretouchData {
 					print $logHandle "Touching imagePreview collection to preload data and indexes\n";
 					$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
+					$cmdout = `$sshConnectString \"$cmdString\"`;
 					print $logHandle "$cmdString\n";
 					print $logHandle $cmdout;
 					exit;
@@ -428,7 +429,7 @@ sub pretouchData {
 				elsif ( $pid == 0 ) {
 					$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
+					$cmdout = `$sshConnectString \"$cmdString\"`;
 					print $logHandle "$cmdString\n";
 					print $logHandle $cmdout;
 					exit;
@@ -446,7 +447,7 @@ sub pretouchData {
 				print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 
@@ -464,7 +465,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -482,7 +483,7 @@ sub pretouchData {
 				print $logHandle "Touching imageInfo collection to preload data and indexes\n";
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 
@@ -500,7 +501,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -518,7 +519,7 @@ sub pretouchData {
 				print $logHandle "Touching attendanceRecord collection to preload data and indexes\n";
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -535,7 +536,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 
@@ -553,7 +554,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -570,7 +571,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -587,7 +588,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -605,7 +606,7 @@ sub pretouchData {
 				print $logHandle "Touching bid collection to preload data and indexes\n";
 				$cmdString =
 				  "mongo --port $port --host $hostname --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -622,7 +623,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -639,7 +640,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;
@@ -656,7 +657,7 @@ sub pretouchData {
 			elsif ( $pid == 0 ) {
 				$cmdString =
 				  "mongo --port $port --host $hostname --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
+				$cmdout = `$sshConnectString \"$cmdString\"`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 				exit;

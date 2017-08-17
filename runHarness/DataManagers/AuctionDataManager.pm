@@ -386,7 +386,8 @@ sub pretouchData {
 					print $logHandle "Touching imageFull collection to preload data and indexes\n";
 					$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$sshConnectString \"$cmdString\"`;
+					$cmdString = "$sshConnectString \"$cmdString\"";
+					$cmdout = `$cmdString`;
 					print $logHandle "$cmdString\n";
 					print $logHandle $cmdout;
 

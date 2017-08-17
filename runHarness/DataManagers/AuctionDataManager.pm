@@ -448,7 +448,8 @@ sub pretouchData {
 				print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
 				$cmdString =
 "mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$sshConnectString \"$cmdString\"`;
+				$cmdString = "$sshConnectString \"$cmdString\"";
+				$cmdout = `$cmdString`;
 				print $logHandle "$cmdString\n";
 				print $logHandle $cmdout;
 

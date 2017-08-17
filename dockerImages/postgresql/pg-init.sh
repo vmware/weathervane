@@ -1,4 +1,5 @@
-#!/bin/bash
+ls
+cd#!/bin/bash
 set -e
 
 if [ ! -s "/mnt/dbData/postgresql/PG_VERSION" ]; then
@@ -32,8 +33,8 @@ if [ "$MODE" == 'firstrun' ]; then
   rmdir /mnt/dbData/postgresql/pg_xlog
   ln -s /mnt/dbLogs/postgresql /mnt/dbData/postgresql/pg_xlog
   chmod 700 /mnt/dbData/postgresql
-  chown -R postgres:postgres /mnt/dbData/postgresql
-  chown -R postgres:postgres /mnt/dbLogs/postgresql
+  chown -R postgres:postgres /mnt/dbData
+  chown -R postgres:postgres /mnt/dbLogs
   
 
 fi

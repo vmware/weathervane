@@ -554,7 +554,12 @@ sub dockerRm {
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
 	my $dockerHostString  = $self->dockerHostString;	
-	my $out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	my $out;
+	if ($self->getParamValue('vicHost')) {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
+	} else {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	}
 	chomp($out);
 	return $out;
 }

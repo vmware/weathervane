@@ -382,7 +382,8 @@ sub corunningDockerized {
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
-		|| !$self->host->equals($other->host)) 
+		|| !$self->host->equals($other->host)
+		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
 		return 0;
 	} else {

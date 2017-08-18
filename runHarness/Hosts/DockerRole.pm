@@ -278,8 +278,9 @@ sub dockerReload {
 	my %portMap;
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
-		$line =~ /(\d+)\/.*\:(\d+)\s*$/;
-		$portMap{$1} = $2;
+		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
+			$portMap{$1} = $2;
+		}
 	}
 	
 	return \%portMap;

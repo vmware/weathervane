@@ -253,6 +253,14 @@ sub getAppInstanceNum {
 	return $self->getParamValue('appInstanceNum');
 }
 
+sub getIpAddr {
+	my ($self) = @_;
+	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+		return $self->host->dockerGetExternalNetIP($self->getDockername(), $self->dockerConfigHashRef->{'net'});
+	}
+	return $self->host->ipAddr;
+}
+
 sub create {
 	my ($self, $logPath)            = @_;
 	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
@@ -406,7 +414,7 @@ sub getHostnameForUsedService {
 	{
 		return $other->host->dockerGetIp($other->getDockerName());
 	} else {
-		return $other->host->hostName;
+		return $other->getIpAddr();
 	}	
 }
 

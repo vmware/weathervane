@@ -615,7 +615,7 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
 
 		my $appServersRef = $self->getActiveServicesByType('appServer');
-		my $app1Hostname  = $appServersRef->[0]->host->hostName;
+		my $app1Hostname  = $appServersRef->[0]->getIpAddr();
 		$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 
 		my $zookeeperConnectionString = "";

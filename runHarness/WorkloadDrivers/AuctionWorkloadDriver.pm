@@ -404,7 +404,7 @@ sub createRunConfigHash {
 				"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
 			);
 			foreach my $service (@$edgeServices) {
-				push @$wwwIpAddrsRef, [$service->host->ipAddr, $service->portMap->{"http"}, $service->portMap->{"https"}];
+				push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
 			}
 		}
 		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
@@ -1407,7 +1407,7 @@ sub stopAppStatsCollection {
 	my $servicesByTypeRef = $self->servicesByTypeRef;
 	my $dbServicesRef     = $servicesByTypeRef->{"dbServer"};
 	my $dbServer          = $dbServicesRef->[0];
-	my $dbHostname        = $dbServer->host->hostName;
+	my $dbHostname        = $dbServer->getIpAddr();
 
 	my $appStartDate    = "2020-02-02";
 	my $appStartHour    = 12;

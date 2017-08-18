@@ -198,32 +198,6 @@ sub dockerNetIsExternal {
 	die("Network $dockerNetName not found on host ", $self->hostName);
 }
 
-sub dockerGetExternalNetIP {
-	my ( $self, $name, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName");
-	my $dockerHostString  = $self->dockerHostString;
-
-	my $out = `$dockerHostString docker network ls`;
-	$logger->debug("output of docker network ls: $out");
-	my @lines = split /\n/, $out;	
-	foreach my $line (@lines) {
-		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s]+)\s+.*$/) {
-			if ($1 eq $dockerNetName) {
-				if ($2 eq 'external') {
-					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is external");
-					return 1;
-				} else {
-					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is not external");
-					return 0;
-				}
-			}
-		}
-	}
-	
-	die("Network $dockerNetName not found on host ", $self->hostName);
-}
-
 sub dockerPort {
 	my ( $self, $name) = @_;
 	my %portMap;

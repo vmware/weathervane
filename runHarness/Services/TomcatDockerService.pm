@@ -81,7 +81,7 @@ sub start {
 
 	my $portMapRef = $self->host->dockerReload( $applog, $name );
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{"http"}  = $self->internalPortMap->{"http"};
@@ -167,7 +167,7 @@ override 'create' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $port     = $self->portMap->{"http"};
 
 	my $response = `curl -s http://$hostname:$port/auction/healthCheck`;
@@ -213,7 +213,7 @@ sub setExternalPortNumbers {
 	
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{"http"}  = $self->internalPortMap->{"http"};

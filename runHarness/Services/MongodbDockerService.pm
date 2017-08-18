@@ -619,7 +619,6 @@ sub startShardedMongodb {
 			my $configServerHost = $configServer->host;
 			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName, 
 				", dockerName = ", "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-			$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 			if ( $configServerHost->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 				# For docker host networking, external ports are same as internal ports
@@ -630,6 +629,7 @@ sub startShardedMongodb {
 
 				# For bridged networking, ports get assigned at start time
 				my $portMapRef = $configServerHost->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
+				$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 				$logger->debug("Looking up port from portMapRef for mongoc$curCfgSvr-W${wkldNum}I${appInstNum} for port "
 					 . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
 				$configPort = $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
@@ -689,7 +689,7 @@ sub startShardedMongodb {
 				# If a mongos has already been created on this host,
 				# Don't start another one
 				if ( exists( $self->dockerConfigHashRef->{"net"} ) &&
-					 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) {
+					 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) 
 				{
 
 					# For docker host networking, external ports are same as internal ports

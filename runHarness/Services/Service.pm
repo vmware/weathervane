@@ -176,7 +176,6 @@ override 'initialize' => sub {
 				}
 			}
 			$self->setParamValue('dockerCpus', $numCpus);
-			$self->dockerConfigHashRef->{'cpus'} = $numCpus;
 		}
 	}
 	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
@@ -251,6 +250,14 @@ sub getWorkloadNum {
 sub getAppInstanceNum {
 	my ($self) = @_;
 	return $self->getParamValue('appInstanceNum');
+}
+
+sub getIpAddr {
+	my ($self) = @_;
+	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
+	}
+	return $self->host->ipAddr;
 }
 
 sub create {
@@ -406,7 +413,7 @@ sub getHostnameForUsedService {
 	{
 		return $other->host->dockerGetIp($other->getDockerName());
 	} else {
-		return $other->host->hostName;
+		return $other->getIpAddr();
 	}	
 }
 

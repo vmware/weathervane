@@ -163,7 +163,7 @@ sub start {
 
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{ $self->getImpl() } = $self->internalPortMap->{ $self->getImpl() };
@@ -250,7 +250,7 @@ sub setExternalPortNumbers {
 	my $name = $self->getParamValue('dockerName');
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{ $self->getImpl() } = $self->internalPortMap->{ $self->getImpl() };
@@ -416,7 +416,7 @@ sub getStatsSummary {
 sub getMaxLoadedUsers {
 	my ($self) = @_;
 	
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $impl = $self->getImpl() ;
 	my $port             = $self->portMap->{$impl};
 	my $maxUsers = `psql --host $hostname --port $port -U auction  -t -q --command="select maxusers from dbbenchmarkinfo;"`;

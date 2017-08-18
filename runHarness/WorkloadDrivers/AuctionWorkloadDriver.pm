@@ -404,7 +404,7 @@ sub createRunConfigHash {
 				"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
 			);
 			foreach my $service (@$edgeServices) {
-				push @$wwwIpAddrsRef, [$service->host->ipAddr, $service->portMap->{"http"}, $service->portMap->{"https"}];
+				push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
 			}
 		}
 		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
@@ -1407,7 +1407,7 @@ sub stopAppStatsCollection {
 	my $servicesByTypeRef = $self->servicesByTypeRef;
 	my $dbServicesRef     = $servicesByTypeRef->{"dbServer"};
 	my $dbServer          = $dbServicesRef->[0];
-	my $dbHostname        = $dbServer->host->hostName;
+	my $dbHostname        = $dbServer->getIpAddr();
 
 	my $appStartDate    = "2020-02-02";
 	my $appStartHour    = 12;
@@ -1707,6 +1707,8 @@ sub getWorkloadSummary {
 
 sub getHostStatsSummary {
 	my ( $self, $csvRef, $baseDestinationPath, $filePrefix ) = @_;
+	my $logger = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	
 	tie( my %csvRefByHostname, 'Tie::IxHash' );
 	my $headers = "";
 
@@ -1767,7 +1769,11 @@ sub getHostStatsSummary {
 
 	# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"
 	foreach my $key (@avgKeys) {
-		$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
+		if ((exists $csvRef->{"wkldDriver_average_$key"}) && (defined $csvRef->{"wkldDriver_average_$key"})) {
+			$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
+		} else {
+			$logger->debug("getHostStatsSummary csvRef value uninitialized for key wkldDriver_average_$key");
+		}
 	}
 
 	close HOSTCSVFILE;

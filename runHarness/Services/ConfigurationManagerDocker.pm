@@ -105,7 +105,7 @@ override 'create' => sub {
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->	portMap->{$impl}   = $self->internalPortMap->{$impl};

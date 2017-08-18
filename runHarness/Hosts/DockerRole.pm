@@ -146,11 +146,38 @@ sub dockerStart {
 	
 }
 
+sub dockerNetIsHostOrExternal {
+	my ( $self, $dockerNetName) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerNetIsHostOrExternal dockerNetName = $dockerNetName");
+	my $dockerHostString  = $self->dockerHostString;
+
+	my $out = `$dockerHostString docker network ls`;
+	$logger->debug("output of docker network ls: $out");
+	my @lines = split /\n/, $out;	
+	foreach my $line (@lines) {
+		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s+]\s+.*$/) {
+			if ($1 eq $dockerNetName) {
+				if (($2 eq 'host') || ($2 eq 'external')) {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is host or external");
+					return 1;
+				} else {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is not host or external");
+					return 0;
+				}
+			}
+		}
+	}
+	
+	die("Network $dockerNetName not found on host ", $self->hostName);
+}
+
 sub dockerPort {
 	my ( $self, $name) = @_;
+	my %portMap;
+
 	my $dockerHostString  = $self->dockerHostString;
 	my $out = `$dockerHostString docker port $name`;	
-	my %portMap;
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
 		$line =~ /(\d+)\/.*\:(\d+)\s*$/;

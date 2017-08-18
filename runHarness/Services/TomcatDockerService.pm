@@ -81,7 +81,7 @@ sub start {
 
 	my $portMapRef = $self->host->dockerReload( $applog, $name );
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{"http"}  = $self->internalPortMap->{"http"};
@@ -213,7 +213,7 @@ sub setExternalPortNumbers {
 	
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{"http"}  = $self->internalPortMap->{"http"};

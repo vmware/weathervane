@@ -167,7 +167,7 @@ override 'create' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $port     = $self->portMap->{"http"};
 
 	my $response = `curl -s http://$hostname:$port/auction/healthCheck`;

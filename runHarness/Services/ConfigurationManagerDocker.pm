@@ -477,7 +477,7 @@ sub isUp {
 	my ( $self, $fileout ) = @_;
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $port     = $self->portMap->{$self->getImpl()};
 
 	my $ua = LWP::UserAgent->new;

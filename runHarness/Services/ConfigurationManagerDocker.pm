@@ -105,7 +105,7 @@ override 'create' => sub {
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->	portMap->{$impl}   = $self->internalPortMap->{$impl};
@@ -157,7 +157,7 @@ sub configureAfterIsUp {
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 	my $console_logger = get_logger("Console");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $impl     = $self->getImpl();
 	my $port     = $self->portMap->{$impl};
 
@@ -372,8 +372,13 @@ sub configureAfterIsUp {
 			}
 			$paramHash{"hostHostName"}     = $service->host->hostName;
 			$paramHash{"hostIpAddr"}       = $service->host->ipAddr;
-			$paramHash{"hostCpus"}         = $service->host->cpus + 0;
-			$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
+			if ($service->host->getParamValue('vicHost')) {
+				$paramHash{"hostCpus"}         = 2;				
+				$paramHash{"hostMemKb"}        = 8192;
+			} else {
+				$paramHash{"hostCpus"}         = $service->host->cpus + 0;
+				$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
+			}
 
 			my $content = $json->encode( \%paramHash );
 			my $url     = "http://$hostname:$port/$serviceType/add";
@@ -477,7 +482,7 @@ sub isUp {
 	my ( $self, $fileout ) = @_;
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $port     = $self->portMap->{$self->getImpl()};
 
 	my $ua = LWP::UserAgent->new;

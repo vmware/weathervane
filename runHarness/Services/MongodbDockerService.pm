@@ -486,7 +486,7 @@ sub setExternalPortNumbers {
 	my $name = $self->getParamValue('dockerName');
 	my $portMapRef = $self->host->dockerPort($name );
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{'mongod'} = $self->internalPortMap->{'mongod'};
 		$self->portMap->{'mongoc1'} = $self->internalPortMap->{'mongoc1'};
@@ -619,9 +619,7 @@ sub startShardedMongodb {
 			my $configServerHost = $configServer->host;
 			$logger->debug( "Getting ports for config server $curCfgSvr on host ", $configServerHost->hostName, 
 				", dockerName = ", "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-			my $portMapRef = $configServer->host->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
-			$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
-			if ( $self->getParamValue('dockerNet') eq "host" ) {
+			if ( $configServerHost->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 				# For docker host networking, external ports are same as internal ports
 				$configPort = $configServer->portMap->{"mongoc$curCfgSvr"} =
@@ -630,6 +628,8 @@ sub startShardedMongodb {
 			else {
 
 				# For bridged networking, ports get assigned at start time
+				my $portMapRef = $configServerHost->dockerPort("mongoc$curCfgSvr-W${wkldNum}I${appInstNum}");
+				$logger->debug("Keys from docker port of mongoc$curCfgSvr-W${wkldNum}I${appInstNum} = ", keys %$portMapRef);
 				$logger->debug("Looking up port from portMapRef for mongoc$curCfgSvr-W${wkldNum}I${appInstNum} for port "
 					 . $configServer->internalPortMap->{"mongoc$curCfgSvr"});
 				$configPort = $portMapRef->{ $configServer->internalPortMap->{"mongoc$curCfgSvr"} };
@@ -654,16 +654,13 @@ sub startShardedMongodb {
 
 	# configure ports for the shard on this host
 	print $dblog "Starting mongod on $hostname\n";
-	my $portMapRef = $self->host->dockerPort($name);
-
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
-
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{'mongod'} = $self->internalPortMap->{'mongod'};
 	}
 	else {
-
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{'mongod'} = $portMapRef->{ $self->internalPortMap->{'mongod'} };
 	}
 
@@ -691,8 +688,8 @@ sub startShardedMongodb {
 
 				# If a mongos has already been created on this host,
 				# Don't start another one
-				if ( exists( $self->dockerConfigHashRef->{"net"} )
-					&& ( $self->dockerConfigHashRef->{"net"} eq "host" ) )
+				if ( exists( $self->dockerConfigHashRef->{"net"} ) &&
+					 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) 
 				{
 
 					# For docker host networking, external ports are same as internal ports
@@ -749,7 +746,8 @@ sub startShardedMongodb {
 			# set up the ports
 			my $portMapRef = $appServer->host->dockerPort($dockerName);
 
-			if ( exists( $self->dockerConfigHashRef->{"net"} ) && ( $self->dockerConfigHashRef->{"net"} eq "host" ) ) {
+			if ( exists( $self->dockerConfigHashRef->{"net"} ) &&
+				 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) {
 				$logger->debug("mongos $dockerName uses host networking, setting app server to use external name and port");
 				# For docker host networking, external ports are same as internal ports
 				$appServer->internalPortMap->{'mongos'} = $mongosPort;
@@ -836,7 +834,7 @@ sub startShardedMongodb {
 			# get the ports
 			my $portMapRef = $dataManagerDriver->host->dockerPort($dockerName );
 
-			if ( $self->getParamValue('dockerNet') eq "host" ) {
+			if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 				# For docker host networking, external ports are same as internal ports
 				$localMongosPort = $dataManagerDriver->portMap->{'mongos'} = $mongosPort;
@@ -880,7 +878,7 @@ sub startReplicatedMongodb {
 
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{'mongod'} = $self->internalPortMap->{'mongod'};
@@ -921,7 +919,7 @@ sub startSingleMongodb {
 
 	my $portMapRef = $self->host->dockerPort($name);
 
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{'mongod'} = $self->internalPortMap->{'mongod'};
@@ -1274,7 +1272,7 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname                    = $self->host->hostName;
+	my $hostname                    = $self->getIpAddr();
 	my $port                        = $self->portMap->{'mongod'};
 	my $name                        = $self->getParamValue('dockerName');
 	my $dataManager                 = $self->appInstance->dataManager;

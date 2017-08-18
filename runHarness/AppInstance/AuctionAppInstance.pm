@@ -615,14 +615,15 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
 
 		my $appServersRef = $self->getActiveServicesByType('appServer');
-		my $app1Hostname  = $appServersRef->[0]->host->hostName;
+		my $app1Hostname  = $appServersRef->[0]->getIpAddr();
 		$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
-			$zookeeperConnectionString .=
-			  $coordinationServer->host->ipAddr . ":" . $coordinationServer->portMap->{"client"} . ",";
+			my $zkHost = $service->getHostnameForUsedService($coordinationServer);
+			my $zkPort = $service->getPortNumberForUsedService( $coordinationServer, "client" );
+			$zookeeperConnectionString .= $zkHost . ":" . $zkPort . ",";
 		}
 		chop $zookeeperConnectionString;
 		$jvmOpts .= " -DZOOKEEPERCONNECTIONSTRING=$zookeeperConnectionString ";

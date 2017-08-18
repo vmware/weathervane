@@ -156,7 +156,7 @@ sub dockerNetIsHostOrExternal {
 	$logger->debug("output of docker network ls: $out");
 	my @lines = split /\n/, $out;	
 	foreach my $line (@lines) {
-		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s+]\s+.*$/) {
+		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s]+)\s+.*$/) {
 			if ($1 eq $dockerNetName) {
 				if (($2 eq 'host') || ($2 eq 'external')) {
 					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is host or external");

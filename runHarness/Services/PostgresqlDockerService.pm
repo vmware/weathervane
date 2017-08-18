@@ -414,7 +414,7 @@ sub getStatsSummary {
 sub getMaxLoadedUsers {
 	my ($self) = @_;
 	
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $impl = $self->getImpl() ;
 	my $port             = $self->portMap->{$impl};
 	my $maxUsers = `psql --host $hostname --port $port -U auction  -t -q --command="select maxusers from dbbenchmarkinfo;"`;

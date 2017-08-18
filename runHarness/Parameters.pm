@@ -2225,6 +2225,22 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"nginxCacheVolume"} = {
+	"type"      => "=s",
+	"default"   => "nginxCache",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nginxCacheVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "12GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 # Parameters specific to haproxy
 $parameters{"haproxyProcPerCpu"} = {
 	"type"      => "!",

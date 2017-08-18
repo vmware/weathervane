@@ -49,6 +49,7 @@ override 'create' => sub {
 	
 	my $name = $self->getParamValue('dockerName');
 	my $hostname         = $self->host->hostName;
+	my $host = $self->host;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";

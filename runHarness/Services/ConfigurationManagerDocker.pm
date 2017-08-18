@@ -372,8 +372,13 @@ sub configureAfterIsUp {
 			}
 			$paramHash{"hostHostName"}     = $service->host->hostName;
 			$paramHash{"hostIpAddr"}       = $service->host->ipAddr;
-			$paramHash{"hostCpus"}         = $service->host->cpus + 0;
-			$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
+			if ($service->host->getParamValue('vicHost')) {
+				$paramHash{"hostCpus"}         = 2;				
+				$paramHash{"hostMemKb"}        = 8192;
+			} else {
+				$paramHash{"hostCpus"}         = $service->host->cpus + 0;
+				$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
+			}
 
 			my $content = $json->encode( \%paramHash );
 			my $url     = "http://$hostname:$port/$serviceType/add";

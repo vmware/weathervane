@@ -256,7 +256,7 @@ sub getAppInstanceNum {
 sub getIpAddr {
 	my ($self) = @_;
 	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockername(), $self->dockerConfigHashRef->{'net'});
+		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
 	}
 	return $self->host->ipAddr;
 }

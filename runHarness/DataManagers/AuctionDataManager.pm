@@ -357,7 +357,7 @@ sub pretouchData {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
-
+	sleep 120;
 	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {

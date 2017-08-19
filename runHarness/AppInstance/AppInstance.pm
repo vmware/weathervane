@@ -2211,6 +2211,9 @@ sub getHostStatsSummary {
 		my $servicesListRef = $self->getActiveServicesByType($serviceType);
 
 		foreach my $service (@$servicesListRef) {
+			if ($service->host->getParamValue('vicHost')) {
+				return;
+			}
 			my $hostname = $service->host->hostName;
 			if (   ( !exists $csvRefByHostname{$hostname} )
 				|| ( !defined $csvRefByHostname{$hostname} ) )

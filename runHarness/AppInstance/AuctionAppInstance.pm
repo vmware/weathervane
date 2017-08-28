@@ -621,8 +621,9 @@ sub getServiceConfigParameters {
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
-			$zookeeperConnectionString .=
-			  $service->getHostnameForUsedService($coordinationServer) . ":" . $coordinationServer->portMap->{"client"} . ",";
+			my $zkHost = $service->getHostnameForUsedService($coordinationServer);
+			my $zkPort = $service->getPortNumberForUsedService( $coordinationServer, "client" );
+			$zookeeperConnectionString .= $zkHost . ":" . $zkPort . ",";
 		}
 		chop $zookeeperConnectionString;
 		$jvmOpts .= " -DZOOKEEPERCONNECTIONSTRING=$zookeeperConnectionString ";

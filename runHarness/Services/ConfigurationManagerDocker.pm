@@ -157,7 +157,7 @@ sub configureAfterIsUp {
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 	my $console_logger = get_logger("Console");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $impl     = $self->getImpl();
 	my $port     = $self->portMap->{$impl};
 

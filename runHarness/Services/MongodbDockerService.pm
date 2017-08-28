@@ -1272,7 +1272,7 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname                    = $self->host->hostName;
+	my $hostname                    = $self->getIpAddr();
 	my $port                        = $self->portMap->{'mongod'};
 	my $name                        = $self->getParamValue('dockerName');
 	my $dataManager                 = $self->appInstance->dataManager;

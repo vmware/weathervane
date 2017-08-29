@@ -1767,7 +1767,11 @@ sub getHostStatsSummary {
 
 	# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"
 	foreach my $key (@avgKeys) {
-		$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
+		if ((exists $csvRef->{"wkldDriver_average_$key"}) && (defined $csvRef->{"wkldDriver_average_$key"})) {
+			$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
+		} else {
+			$logger->debug("getHostStatsSummary csvRef value uninitialized for key wkldDriver_average_$key");
+		}
 	}
 
 	close HOSTCSVFILE;

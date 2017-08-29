@@ -357,7 +357,7 @@ sub pretouchData {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
-	sleep 120;
+
 	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {
@@ -366,9 +366,16 @@ sub pretouchData {
 	};
 
 	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+
 	my @pids            = ();
 	if ( $self->getParamValue('mongodbTouch') ) {
-		foreach my $nosqlService (@$nosqlServersRef) {
+		my $nosqlService = $nosqlServersRef->[0];
+		if ($nosqlService->host->getParamValue('vicHost')) {
+			# mongoDb takes longer to start on VIC
+			sleep 240;
+		}
+
+		foreach $nosqlService (@$nosqlServersRef) {
 
 			my $hostname = $nosqlService->getIpAddr();
 			my $port     = $nosqlService->portMap->{'mongod'};

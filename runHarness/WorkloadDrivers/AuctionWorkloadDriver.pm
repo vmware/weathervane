@@ -1707,6 +1707,8 @@ sub getWorkloadSummary {
 
 sub getHostStatsSummary {
 	my ( $self, $csvRef, $baseDestinationPath, $filePrefix ) = @_;
+	my $logger = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	
 	tie( my %csvRefByHostname, 'Tie::IxHash' );
 	my $headers = "";
 

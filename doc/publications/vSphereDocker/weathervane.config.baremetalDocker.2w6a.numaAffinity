@@ -1,0 +1,140 @@
+# This is the configuration file for the Docker/bare-metal configuration
+# discussed in the whitepaper "Performance Of Enterprise Web Applications 
+# In Docker Containers On VMware vSphere 6.5" with the container affinity
+# set to NUMA nodes
+{
+
+"users" : 30000,
+"userLoadPath" : [],
+"repeatUserLoadPath" : false,
+#"redeploy" : true,
+"hostnamePrefix" : "Iso",
+"useAllSuffixes" : true,
+
+"maxDuration" : 7200,
+"rampUp" : 300,
+
+"description" : "baremetal/Docker",
+"runLength" : "medium",
+
+"runStrategy" : "single", 
+"initialRateStep" : 5000,
+"minRateStep" : 250,
+"repeatsAtMax" : 0,
+"targetUtilization" : 70,
+"targetUtilizationServiceType" : "appServer",
+
+"dockerNamespace" : "hrosenbe",
+
+"runProcedure" : "full",
+
+"workloads" : [
+  {
+	# The workload drivers have the hostnames AuctionDriver1 ... AuctionDriver16  
+	# Each workload driver VM had 2 vCPUs and 16GB
+  	"drivers" : [{ "vmName" : "AuctionDriver1", },{ "vmName" : "AuctionDriver2", },{ "vmName" : "AuctionDriver3", },{ "vmName" : "AuctionDriver4", },
+		    { "vmName" : "AuctionDriver5", },{ "vmName" : "AuctionDriver6", },{ "vmName" : "AuctionDriver7", },{ "vmName" : "AuctionDriver8", },
+  	     	    { "vmName" : "AuctionDriver9", },{ "vmName" : "AuctionDriver10", },{ "vmName" : "AuctionDriver11", },{ "vmName" : "AuctionDriver12", },
+		    { "vmName" : "AuctionDriver13", },{ "vmName" : "AuctionDriver14", },{ "vmName" : "AuctionDriver15", },{ "vmName" : "AuctionDriver16", },
+		    ],
+	"driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+
+  	"appInstances" : [
+  	  {
+		"redeploy" : true,
+		"maxUsers" : 60000,
+		"useDocker" : true,
+		"useVirtualIp" : false,
+
+		# All of the containers run on the host with the hostname baremetal
+		"hostName" : "baremetal",
+
+		"webServerImpl" : "nginx",
+		"dbServerImpl" : "postgresql",
+		"imageStoreType" : "mongodb",
+
+  	  	"dataManagerInstance" : { "hostName" : "baremetal", },
+
+  	  	"configurationManagers" : [
+		  {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "1G", "dockerCpuSetMems" : "1", "dockerCpus" : 1, } 
+		],
+		
+  	  	"elasticityServices" : [],
+
+  	  	"coordinationServers" : [
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "1G", "dockerCpuSetMems" : "1",  "dockerCpus" : 1,} 
+		],
+
+  	  	"lbServers" : [ 
+		],
+
+  	  	"webServers" : [ 
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "16G", "dockerCpuSetMems" : "1", "dockerCpus" : 4,}, 
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "16G", "dockerCpuSetMems" : "1", "dockerCpus" : 4,}, 
+		],
+
+  	  	"appServers" : [ 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "8G", "dockerCpuSetMems" : "0", "dockerCpus" : 2,}, 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "8G", "dockerCpuSetMems" : "0", "dockerCpus" : 2,}, 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "8G", "dockerCpuSetMems" : "0", "dockerCpus" : 2,}, 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "8G", "dockerCpuSetMems" : "0", "dockerCpus" : 2,}, 
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "8G", "dockerCpuSetMems" : "1", "dockerCpus" : 2,}, 
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "8G", "dockerCpuSetMems" : "1", "dockerCpus" : 2,}, 
+		],
+
+  	  	"msgServers" : [ 
+		 {"dockerCpuSetCpus" : "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39", "dockerMemory" : "4G", "dockerCpuSetMems" : "1", "dockerCpus" : 2,}, 
+		],
+
+  	  	"fileServers" : [],
+
+  	  	"nosqlServers" : [ 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "48G", "dockerCpuSetMems" : "0", "dockerCpus" : 4,}, 
+ 		],
+		"nosqlReplicated" : false,
+		"nosqlSharded" : false,
+
+  	  	"dbServers" : [ 
+		 {"dockerCpuSetCpus" : "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38", "dockerMemory" : "16G", "dockerCpuSetMems" : "0", "dockerCpus" : 4,}, 
+		],
+
+		"configPath" : [],
+		"repeatConfigPath" : false,
+
+		"dbLoaderThreads" : 12,
+		"dbLoaderHeap" : "4G",
+		
+		"appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer",
+		"appServerThreads" : 50,
+		"appServerJdbcConnections" : 51,
+		"numAuctioneerThreads" : 2,
+		"numClientUpdateThreads" : 2,
+
+		"configurationManagerJvmOpts" : "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
+
+  	  },
+  	],
+  },
+],
+
+"virtualInfrastructureInstance" : {
+  "virtualInfrastructureType" : "vsphere",
+  "viHosts" : [
+    { "hostName" : "auctionesx4", },
+    { "hostName" : "auctionesx5", },
+  ],
+},
+
+"logLevel" : 4,
+
+"backup" : false,
+"rebackup" : false,
+"reloadDb" : false,
+ 
+#"powerOnVms" : true,
+#"powerOffAllVms" : true,
+
+"restartNtp" : true,
+"harnessHostNtpServer" : true,
+
+}

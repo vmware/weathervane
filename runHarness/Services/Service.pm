@@ -176,7 +176,6 @@ override 'initialize' => sub {
 				}
 			}
 			$self->setParamValue('dockerCpus', $numCpus);
-			$self->dockerConfigHashRef->{'cpus'} = $numCpus;
 		}
 	}
 	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {

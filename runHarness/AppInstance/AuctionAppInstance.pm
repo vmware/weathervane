@@ -657,9 +657,8 @@ sub getServiceConfigParameters {
 		}
 
 		my $numCpus;
-		if ( $service->useDocker() &&
-		  (exists $service->dockerConfigHashRef->{'cpus'}) && (defined $service->dockerConfigHashRef->{'cpus'})) {
-			$numCpus = $service->dockerConfigHashRef->{'cpus'};
+		if ( $service->useDocker() && $service->getParamValue('dockerCpus')) {
+			$numCpus = $service->getParamValue('dockerCpus');
 		}
 		else {
 			$numCpus = $service->host->cpus;

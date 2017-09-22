@@ -22,6 +22,8 @@ trap 'sigusr1' USR1
 
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
+rm -f /opt/apache-tomcat-auction1/logs/* 
+
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else

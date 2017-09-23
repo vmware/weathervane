@@ -41,7 +41,7 @@ else {
 
 sub configureSingleMongodb {
 	print "Configure Single MongoDB\n";
-	open( FILEIN, "/etc/mongod-unsharded.conf" )
+	open( FILEIN, "/root/mongod-unsharded.conf" )
 	  or die "Error opening /etc/mongod-unsharded.conf:$!";
 	open( FILEOUT, ">/etc/mongod.conf" )
 	  or die "Error opening /etc/mongod.conf:$!";
@@ -67,7 +67,7 @@ sub configureSingleMongodb {
 sub configureShardedMongodb {
 
 	print "Configure Sharded MongoDB\n";
-	open( FILEIN, "/etc/mongod-sharded.conf" )
+	open( FILEIN, "/root/mongod-sharded.conf" )
 	  or die "Error opening /etc/mongod-sharded.conf:$!";
 	open( FILEOUT, ">/etc/mongod.conf" )
 	  or die "Error opening /etc/mongod.conf:$!";
@@ -95,7 +95,7 @@ sub configureConfigSvr {
 	my $cfgSvrNum   = $ENV{'CFGSVRNUM'};
 	print "Configure MongoDB Config Server.  port = $mongocPort, cfgSvrNum = $cfgSvrNum\n";
 
-	open( FILEIN, "/etc/mongoc$cfgSvrNum.conf" )
+	open( FILEIN, "/root/mongoc$cfgSvrNum.conf" )
 	  or die "Error opening /etc/mongoc$cfgSvrNum.conf:$!";
 	open( FILEOUT, ">/tmp/mongoc$cfgSvrNum.conf" )
 	  or die "Error opening /tmp/mongoc$cfgSvrNum.conf:$!";
@@ -123,7 +123,7 @@ sub configureMongos {
 	my $mongosPort  = $ENV{'MONGOSPORT'};
 	print "Configure mongod.  port = $mongosPort\n";
 	
-	open( FILEIN,  "/etc/mongos.conf" );
+	open( FILEIN,  "/root/mongos.conf" );
 	open( FILEOUT, ">/tmp/mongos.conf" );
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /port:/ ) {
@@ -147,7 +147,7 @@ sub configureMongos {
 sub configureReplicatedMongodb {
 	print "Configure Replicated MongoDB\n";
 
-	open( FILEIN, "/etc/mongod-replica.conf" )
+	open( FILEIN, "/root/mongod-replica.conf" )
 	  or die "Error opening /etc/mongod-replica.conf:$!";
 	open( FILEOUT, ">/etc/mongod.conf" )
 	  or die "Error opening /etc/mongod.conf:$!";

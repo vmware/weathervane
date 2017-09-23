@@ -13,7 +13,7 @@ my $httpPort             = $ENV{'HTTPPORT'};
 my $httpsPort            = $ENV{'HTTPSPORT'};
 
 # Modify nginx.conf and then copy to web server
-open( FILEIN, "/etc/nginx/nginx.conf" )
+open( FILEIN, "/root/nginx/nginx.conf" )
   or die "Can't open file /etc/nginx/nginx.conf: $!";
 open( FILEOUT, ">/tmp/nginx.conf" )
   or die "Can't open file /tmp/nginx.conf: $!";
@@ -55,7 +55,7 @@ close FILEOUT;
 `mv /tmp/nginx.conf /etc/nginx/nginx.conf`;
 
 # Modify ssl.conf and then copy to web server
-open( FILEIN, "/etc/nginx/conf.d/ssl.conf" )
+open( FILEIN, "/root/nginx/conf.d/ssl.conf" )
   or die "Can't open file /etc/nginx/conf.d/ssl.conf: $!";
 open( FILEOUT, ">/tmp/ssl.conf" )
   or die "Can't open file /tmp/ssl.conf: $!";
@@ -89,7 +89,7 @@ close FILEOUT;
 
 `mv /tmp/ssl.conf /etc/nginx/conf.d/ssl.conf`;
 
-open( FILEIN, "/etc/nginx/conf.d/default.conf" )
+open( FILEIN, "/root/nginx/conf.d/default.conf" )
   or die "Can't open file /etc/nginx/conf.d/default.conf: $!";
 open( FILEOUT, ">/tmp/default.conf" )
   or die "Can't open file /tmp/default.conf: $!";

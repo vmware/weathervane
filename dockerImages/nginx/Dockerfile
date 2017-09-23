@@ -7,6 +7,7 @@ RUN yum install -y http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-
 
 COPY html /usr/share/nginx/html
 COPY nginx /etc/nginx
+COPY nginx /root/nginx
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 

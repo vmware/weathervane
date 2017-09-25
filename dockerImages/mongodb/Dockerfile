@@ -2,7 +2,7 @@ FROM namespace/centos7ssh:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY mongodb.repo /etc/yum.repos.d/mongo.repo
-COPY mongo*.conf /etc/
+COPY mongo*.conf /root/
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 COPY sanityCheck.pl /sanityCheck.pl

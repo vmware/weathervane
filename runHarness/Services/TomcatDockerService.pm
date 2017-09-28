@@ -114,7 +114,7 @@ override 'create' => sub {
 		$useTLS = 1;
 	}
 	my %envVarMap;
-	$envVarMap{"TOMCAT_JVMOPTS"} = $completeJVMOpts;
+	$envVarMap{"TOMCAT_JVMOPTS"} = "\"$completeJVMOpts\"";
 	$envVarMap{"TOMCAT_THREADS"} = $threads;
 	$envVarMap{"TOMCAT_JDBC_CONNECTIONS"} = $connections;
 	$envVarMap{"TOMCAT_JDBC_MAXIDLE"} = $maxIdle;

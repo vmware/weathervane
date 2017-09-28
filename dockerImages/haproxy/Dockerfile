@@ -8,8 +8,10 @@ RUN \
 
 ENV HAPROXY_CONFIG /etc/haproxy/haproxy.cfg
 
-COPY haproxy.cfg /etc/haproxy/haproxy.cfg
+COPY haproxy.cfg /root/haproxy/haproxy.cfg
+COPY haproxy.cfg.terminateTLS /root/haproxy/haproxy.cfg.terminateTLS
 COPY entrypoint.sh /entrypoint.sh
+COPY configure.pl /configure.pl
 
 RUN chmod +x /entrypoint.sh
 

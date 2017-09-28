@@ -132,8 +132,6 @@ sub start {
 	  || die "Error opening /$logName:$!";
 	print $applog $self->meta->name . " In RabbitmqDockerService::startRabbitMQ $name on $hostname\n";
 
-	my $portMapRef = $self->host->dockerReload($applog, $name);
-
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
 		$self->portMap->{$self->getImpl()} = $self->internalPortMap->{$self->getImpl()};
@@ -141,6 +139,7 @@ sub start {
 		$self->portMap->{'dist'} = $self->internalPortMap->{'dist'};
 	} else {
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{$self->getImpl()} = $portMapRef->{$self->internalPortMap->{$self->getImpl()}};
 		$self->portMap->{'mgmt'} = $portMapRef->{$self->internalPortMap->{'mgmt'}};
 		$self->portMap->{'dist'} = $portMapRef->{$self->internalPortMap->{'dist'}};

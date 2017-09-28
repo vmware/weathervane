@@ -2,7 +2,7 @@
 
 sigterm()
 {
-   echo "signal TERM received. pid = $pid"
+   echo "signal TERM received."
    rm -f /fifo
    /opt/apache-tomcat/bin/shutdown.sh -force
    cat /opt/apache-tomcat-auction1/logs/*
@@ -12,9 +12,8 @@ sigterm()
 
 sigusr1()
 {
-    echo "signal USR1 received.  pid = $pid. Reloading"
-    /opt/apache-tomcat/bin/shutdown.sh -force
-	/opt/apache-tomcat/bin/startup.sh &
+    echo "signal USR1 received. start stats collection"
+    cp /opt/apache-tomcat-auction1/logs/gc.log /opt/apache-tomcat-auction1/logs/gc_rampup.log
 }
 
 trap 'sigterm' TERM
@@ -23,15 +22,13 @@ trap 'sigusr1' USR1
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
 
 rm -f /opt/apache-tomcat-auction1/logs/* 
+perl /configure.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
     /opt/apache-tomcat/bin/startup.sh &
 fi
-
-pid="$!"
-
 
 if [ ! -e "/fifo" ]; then
 	mkfifo /fifo || exit

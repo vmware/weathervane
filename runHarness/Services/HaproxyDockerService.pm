@@ -65,6 +65,7 @@ override 'create' => sub {
 
 	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
 	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
+	my $users = $self->appInstance->getUsers();
 
 	my $maxConn = $self->getParamValue('frontendConnectionMultiplier') * $users;
 	if ($self->getParamValue('haproxyMaxConn')) {

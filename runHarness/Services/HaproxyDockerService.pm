@@ -49,9 +49,9 @@ override 'create' => sub {
 
 	my $name     = $self->getParamValue('dockerName');
 	my $hostname = $self->host->hostName;
-	my $impl     = uc($self->getImpl());
+	my $impl     = $self->getImpl();
 
-	my $logName = "$logPath/Create${impl}Docker-$hostname-$name.log";
+	my $logName = "$logPath/CreateHaproxyDocker-$hostname-$name.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";

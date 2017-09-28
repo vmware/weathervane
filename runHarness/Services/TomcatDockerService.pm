@@ -82,7 +82,8 @@ override 'create' => sub {
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
-
+	my $nodeNum = $self->getParamValue('instanceNum');
+	my $users = $self->appInstance->getUsers();q
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
@@ -188,6 +189,7 @@ sub start {
 	}
 	else {
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{"http"}  = $portMapRef->{ $self->internalPortMap->{"http"} };
 		$self->portMap->{"https"} = $portMapRef->{ $self->internalPortMap->{"https"} };
 		$self->portMap->{"shutdown"} = $portMapRef->{ $self->internalPortMap->{"shutdown"} };

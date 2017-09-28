@@ -2,7 +2,9 @@ FROM namespace/centos7ssh:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY apache-tomcat-auction1 /opt/apache-tomcat-auction1
+COPY apache-tomcat-auction1 /root/apache-tomcat-auction1
 COPY entrypoint.sh /entrypoint.sh
+COPY configure.pl /configure.pl
 
 ENV CATALINA_BASE /opt/apache-tomcat-auction1
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0

@@ -40,6 +40,110 @@ override 'initialize' => sub {
 	super();
 };
 
+override 'create' => sub {
+	my ( $self, $logPath ) = @_;
+
+	if ( !$self->getParamValue('useDocker') ) {
+		return;
+	}
+
+	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->hostName;
+	my $impl     = $self->getImpl();
+
+	my $logName = "$logPath/CreateHaproxyDocker-$hostname-$name.log";
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
+
+	# The default create doesn't map any volumes
+	my %volumeMap;
+
+	# Set environment variables for startup configuration
+	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $appServersRef  = $self->appInstance->getActiveServicesByType('appServer');
+
+	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
+	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
+	my $users = $self->appInstance->getUsers();
+
+	my $maxConn = $self->getParamValue('frontendConnectionMultiplier') * $users;
+	if ($self->getParamValue('haproxyMaxConn')) {
+		$maxConn = $self->getParamValue('haproxyMaxConn');
+	}
+	
+	my $serverMaxConn = $maxConn;
+	if ( $numWebServers == 0 ) {
+		$serverMaxConn = $self->getParamValue('haproxyAppServerMaxConn');
+	}
+	
+	my $terminateTLS = $self->getParamValue('haproxyTerminateTLS');
+	my $httpHostnames = "";
+	my $httpsHostnames = "";
+	if ( $numWebServers > 0 ) {
+		foreach my $webServer (@$webServersRef) {
+			my $httpPort = $self->getPortNumberForUsedService($webServer,"http");
+			my $httpsPort = $self->getPortNumberForUsedService($webServer,"https");
+			my $hostname = $self->getHostnameForUsedService($webServer);
+			$httpHostnames .=  "$hostname:$httpPort,";
+			$httpsHostnames .=  "$hostname:$httpsPort,";
+		}
+	} elsif ( $numAppServers > 0 ) {
+		foreach my $appServer (@$appServersRef) {
+			my $httpPort = $self->getPortNumberForUsedService($appServer,"http");
+			my $httpsPort = $self->getPortNumberForUsedService($appServer,"https");
+			my $hostname = $self->getHostnameForUsedService($appServer);
+			$httpHostnames .=  "$hostname:$httpPort,";
+			$httpsHostnames .=  "$hostname:$httpsPort,";
+		}
+	}
+	chop($httpHostnames);
+	chop($httpsHostnames);
+		
+	my $haproxyNbproc = 1;
+	if ($self->getParamValue('haproxyProcPerCpu') || $terminateTLS) {
+		$haproxyNbproc            = $self->host->cpus;
+		if ($self->getParamValue('dockerCpus')) {
+			$haproxyNbproc = $self->getParamValue('dockerCpus');
+		}
+	}
+	
+	my %envVarMap;
+	$envVarMap{"HAPROXY_HTTP_PORT"} = $self->internalPortMap->{"http"};
+	$envVarMap{"HAPROXY_HTTPS_PORT"} = $self->internalPortMap->{"https"};
+	$envVarMap{"HAPROXY_STATS_PORT"} = $self->internalPortMap->{"stats"} ;
+	$envVarMap{"HAPROXY_MAXCONN"} = $maxConn ;
+	$envVarMap{"HAPROXY_SERVER_MAXCONN"} = $serverMaxConn;
+	$envVarMap{"HAPROXY_SERVER_HTTPHOSTNAMES"} = "\"$httpHostnames\"";
+	$envVarMap{"HAPROXY_SERVER_HTTPSHOSTNAMES"} = "\"$httpsHostnames\"";
+	$envVarMap{"HAPROXY_TERMINATETLS"} = $terminateTLS ;
+	$envVarMap{"HAPROXY_NBPROC"} = $haproxyNbproc;
+
+	# Create the container
+	my %portMap;
+	my $directMap = 0;
+	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
+	if ( $self->isEdgeService() && $useVirtualIp ) {
+		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
+		$directMap = 1;
+	}
+	foreach my $key ( keys %{ $self->internalPortMap } ) {
+		my $port = $self->internalPortMap->{$key};
+		$portMap{$port} = $port;
+	}
+
+	my $cmd        = "";
+	my $entryPoint = "";
+
+	$self->host->dockerRun(
+		$applog, $self->getParamValue('dockerName'),
+		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
+		$entryPoint, $cmd, $self->needsTty
+	);
+
+	close $applog;
+};
+
 sub stop {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::HaproxyDockerService");
@@ -68,8 +172,6 @@ sub start {
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
-
-	my $portMapRef = $self->host->dockerReload($applog, $name);
 	
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
@@ -78,6 +180,7 @@ sub start {
 		$self->portMap->{"stats"} = $self->internalPortMap->{"stats"};				
 	} else {
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{"http"} = $portMapRef->{$self->internalPortMap->{"http"}};
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 		$self->portMap->{"stats"} = $portMapRef->{$self->internalPortMap->{"stats"}};		
@@ -145,7 +248,6 @@ sub setPortNumbers {
 sub setExternalPortNumbers {
 	my ( $self ) = @_;
 	my $name = $self->getParamValue('dockerName');
-	my $portMapRef = $self->host->dockerPort($name);
 	
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
@@ -154,6 +256,7 @@ sub setExternalPortNumbers {
 		$self->portMap->{"stats"} = $self->internalPortMap->{"stats"};				
 	} else {
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{"http"} = $portMapRef->{$self->internalPortMap->{"http"}};
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 		$self->portMap->{"stats"} = $portMapRef->{$self->internalPortMap->{"stats"}};		
@@ -163,136 +266,7 @@ sub setExternalPortNumbers {
 
 sub configure {
 	my ($self, $logPath, $users, $suffix)            = @_;
-	my $configDir         = $self->getParamValue('configDir');
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
-	my $logName          = "$logPath/ConfigureHaproxyDocker-$hostname-$name.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	# Get the haproxy.cfg from the haproxy instance, modify it, and
-	# then copy back
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
-	my $appServersRef  = $self->appInstance->getActiveServicesByType('appServer');
-
-	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
-	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
-
-	my $maxConn = $self->getParamValue('frontendConnectionMultiplier') * $users;
-	if ($self->getParamValue('haproxyMaxConn')) {
-		$maxConn = $self->getParamValue('haproxyMaxConn');
-	}
-
-	my $configFileName = "$configDir/haproxy/haproxyDocker.cfg";
-	open( FILEIN, $configFileName ) or die "Can't open file $configFileName: $!";
-	open( FILEOUT, ">/tmp/haproxy$suffix.cfg" ) or die "Can't open file /tmp/haproxy$suffix.cfg: $!";
-	while ( my $inline = <FILEIN> ) {
-
-		if ( $inline =~ /^\s*backend\s/ ) {
-			print FILEOUT $inline;
-			while ( $inline = <FILEIN> ) {
-
-				if ( $inline =~ /^\s*server\s/ ) {
-
-					# Parse the port number and any other keywords
-					$inline =~ /\:(\d+)(\s.*)$/;
-					my $endLine = $2;
-					my $filePort = $1;
-
-					# suck up all of the old server lines until the next
-					# non-server line.
-					while ( $inline = <FILEIN> ) {
-						if ( !( $inline =~ /^\s*server\s/ ) ) {
-							last;
-						}
-					}
-
-					# Output server lines for each web server, then
-					# add the line that was read after the server lines
-					my $cnt = 1;
-
-					# if there are no web servers, then balance across appServers
-					# if only one app server, don't balance at all.
-					if ( $numWebServers > 0 ) {
-						my $serverMaxConn = $maxConn;
-
-						foreach my $webServer (@$webServersRef) {
-							my $port;
-							if ($filePort == 80) {
-								$port = $self->getPortNumberForUsedService($webServer, "http");							
-							} else {
-								$port = $self->getPortNumberForUsedService($webServer, "https");																	
-							}
-							print FILEOUT "    server web" . $cnt . " "
-							  . $self->getHostnameForUsedService($webServer) .":" . $port
-							  . $endLine
-							  . " maxconn $serverMaxConn "
-							  . "\n";
-							$cnt++;
-						}
-					}
-					elsif ( $numAppServers > 0 ) {
-						foreach my $appServer (@$appServersRef) {
-							my $port;
-							if ($filePort == 80) {
-								$port = $self->getPortNumberForUsedService($appServer, "http");							
-							} else {
-								$port = $self->getPortNumberForUsedService($appServer, "https");																	
-							}
-							print FILEOUT "    server app" . $cnt . " "
-							  . $self->getHostnameForUsedService($appServer) .":" . $port
-							  . $endLine
-							  . " maxconn " . $self->getParamValue('haproxyAppServerMaxConn')
-							  . "\n";
-							$cnt++;
-						}
-					}
-
-					if ( $inline && !( $inline =~ /^\s*server\s/ ) ) {
-						print FILEOUT $inline;
-					}
-					last;
-				}
-				else {
-					print FILEOUT $inline;
-				}
-
-			}
-		}
-		elsif ( $inline =~ /maxconn/ ) {
-			print FILEOUT "    maxconn\t" . $maxConn . "\n";
-		}
-		elsif ( $inline =~ /bind\s+\*\:10080/ ) {
-			print FILEOUT "        bind *:" . $self->internalPortMap->{"stats"} . "\n";			
-		}
-		elsif ( $inline =~ /bind\s+\*\:80/ ) {
-			print FILEOUT "        bind *:" . $self->internalPortMap->{"http"} . "\n";			
-		}
-		elsif ( $inline =~ /bind\s+\*\:443/ ) {
-			print FILEOUT "        bind *:" . $self->internalPortMap->{"https"} . "\n";			
-		}
-		elsif ( $inline =~ /^\s*listen.*ssh\s/ ) {
-
-			# we are at the ssh forwarders section.
-			# suck up everything through the end of the file and then
-			# put the new forwarders in
-			last;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-
-	close FILEIN;
-	close FILEOUT;
-
-	# Push the config file to the docker container 
-	$self->host->dockerScpFileTo($applog, $name, "/tmp/haproxy$suffix.cfg", "/etc/haproxy/haproxy.cfg");	
-
-	close $applog;
 }
 
 sub stopStatsCollection {

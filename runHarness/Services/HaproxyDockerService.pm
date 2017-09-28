@@ -149,8 +149,6 @@ sub start {
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
-
-	my $portMapRef = $self->host->dockerReload($applog, $name);
 	
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
@@ -227,7 +225,6 @@ sub setPortNumbers {
 sub setExternalPortNumbers {
 	my ( $self ) = @_;
 	my $name = $self->getParamValue('dockerName');
-	my $portMapRef = $self->host->dockerPort($name);
 	
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 		# For docker host networking, external ports are same as internal ports
@@ -236,6 +233,7 @@ sub setExternalPortNumbers {
 		$self->portMap->{"stats"} = $self->internalPortMap->{"stats"};				
 	} else {
 		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
 		$self->portMap->{"http"} = $portMapRef->{$self->internalPortMap->{"http"}};
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 		$self->portMap->{"stats"} = $portMapRef->{$self->internalPortMap->{"stats"}};		

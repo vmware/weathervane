@@ -8,16 +8,11 @@ sigterm()
    exit 0
 }
 
-sigusr1()
-{
-   echo "signal USR1 received.  pid = $pid. Reloading"
-   cd /mnt/zookeeper ; /opt/zookeeper/bin/zkServer.sh restart
-}
-
 trap 'sigterm' TERM
-trap 'sigusr1' USR1
 
 echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+
+perl /configure.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
@@ -27,7 +22,6 @@ else
 fi
 
 pid="$!"
-
 
 if [ ! -e "/fifo" ]; then
 	mkfifo /fifo || exit

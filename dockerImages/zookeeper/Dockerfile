@@ -3,7 +3,7 @@ MAINTAINER hrosenbe@vmware.com
 	
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
-COPY zoo.cfg /root/zookeeper/conf
+COPY zoo.cfg /root/zookeeper/conf/zoo.cfg
 
 ARG ZOOKEEPER_VERSION=3.4.10
 

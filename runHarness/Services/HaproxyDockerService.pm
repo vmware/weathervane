@@ -78,22 +78,23 @@ override 'create' => sub {
 	}
 	
 	my $terminateTLS = $self->getParamValue('haproxyTerminateTLS');
-	my $serverPortName = "https";
-	if ($terminateTLS) {
-		$serverPortName = "http";
-	}
-	my $serverHostnames = "";
+	my $httpHostnames = "";
+	my $httpsHostnames = "";
 	if ( $numWebServers > 0 ) {
 		foreach my $webServer (@$webServersRef) {
-			my $port = $self->getPortNumberForUsedService($webServer,$serverPortName);
+			my $httpPort = $self->getPortNumberForUsedService($webServer,"http");
+			my $httpsPort = $self->getPortNumberForUsedService($webServer,"https");
 			my $hostname = $self->getHostnameForUsedService($webServer);
-			$serverHostnames .=  "$hostname:$port,";
+			$httpHostnames .=  "$hostname:$httpPort,";
+			$httpsHostnames .=  "$hostname:$httpsPort,";
 		}
 	} elsif ( $numAppServers > 0 ) {
 		foreach my $appServer (@$appServersRef) {
-			my $port = $self->getPortNumberForUsedService($appServer,$serverPortName);
+			my $httpPort = $self->getPortNumberForUsedService($appServer,"http");
+			my $httpsPort = $self->getPortNumberForUsedService($appServer,"https");
 			my $hostname = $self->getHostnameForUsedService($appServer);
-			$serverHostnames .=  "$hostname:$port,";
+			$httpHostnames .=  "$hostname:$httpPort,";
+			$httpsHostnames .=  "$hostname:$httpsPort,";
 		}
 	}
 	chop($serverHostnames);
@@ -112,7 +113,8 @@ override 'create' => sub {
 	$envVarMap{"HAPROXY_STATS_PORT"} = $self->internalPortMap->{"stats"} ;
 	$envVarMap{"HAPROXY_MAXCONN"} = $maxConn ;
 	$envVarMap{"HAPROXY_SERVER_MAXCONN"} = $serverMaxConn;
-	$envVarMap{"HAPROXY_SERVER_HOSTNAMES"} = "\"$serverHostnames\"";
+	$envVarMap{"HAPROXY_SERVER_HTTPHOSTNAMES"} = "\"$httpHostnames\"";
+	$envVarMap{"HAPROXY_SERVER_HTTPSHOSTNAMES"} = "\"$httpsHostnames\"";
 	$envVarMap{"HAPROXY_TERMINATETLS"} = $terminateTLS ;
 	$envVarMap{"HAPROXY_NBPROC"} = $haproxyNbproc;
 

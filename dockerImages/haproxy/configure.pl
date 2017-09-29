@@ -8,8 +8,10 @@ my $httpsPort       = $ENV{'HAPROXY_HTTPS_PORT'};
 my $statsPort       = $ENV{'HAPROXY_STATS_PORT'};
 my $maxConn         = $ENV{'HAPROXY_MAXCONN'};
 my $serverMaxConn   = $ENV{'HAPROXY_SERVER_MAXCONN'};
-my $serverHostnames = $ENV{'HAPROXY_SERVER_HOSTNAMES'};
-my @serverHostnames = split /,/, $serverHostnames;
+my $httpHostnames = $ENV{'HAPROXY_SERVER_HTTPHOSTNAMES'};
+my $httpsHostnames = $ENV{'HAPROXY_SERVER_HTTPSHOSTNAMES'};
+my @httpHostnames = split /,/, $httpHostnames;
+my @httpsHostnames = split /,/, $httpsHostnames;
 my $terminateTLS =  $ENV{'HAPROXY_TERMINATETLS'};
 my $nbProc =  $ENV{'HAPROXY_NBPROC'};
 
@@ -47,20 +49,23 @@ while ( my $inline = <FILEIN> ) {
 				# Output server lines for each web server, then
 				# add the line that was read after the server lines
 				my $cnt = 1;
-				foreach my $hostname (@serverHostnames) {
-					my $port;
-					if ( $filePort == 80 ) {
-						$port = $httpPort;
+				if ( $filePort == 80 ) {
+					foreach my $hostname (@httpHostnames) {
+						print FILEOUT "    server web"
+						  . $cnt	  . " $hostname "
+					  	. $endLine
+					  	. " maxconn $serverMaxConn " . "\n";
+						$cnt++;
 					}
-					else {
-						$port = $httpsPort;
+				}
+				else {
+					foreach my $hostname (@httpsHostnames) {
+						print FILEOUT "    server web"
+						  . $cnt	  . " $hostname "
+					  	. $endLine
+					  	. " maxconn $serverMaxConn " . "\n";
+						$cnt++;
 					}
-					print FILEOUT "    server web"
-					  . $cnt
-					  . " $hostname "
-					  . $endLine
-					  . " maxconn $serverMaxConn " . "\n";
-					$cnt++;
 				}
 
 				if ( $inline && !( $inline =~ /^\s*server\s/ ) ) {

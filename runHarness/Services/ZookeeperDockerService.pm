@@ -148,22 +148,8 @@ sub start {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	my $portMapRef = $self->host->dockerReload( $applog, $name );
+	$self->setExternalPortNumbers();
 
-	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
-
-		# For docker host networking, external ports are same as internal ports
-		$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
-		$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
-		$self->portMap->{"election"} = $self->internalPortMap->{"election"};
-	}
-	else {
-
-		# For bridged networking, ports get assigned at start time
-		$self->portMap->{"client"}   = $portMapRef->{ $self->internalPortMap->{"client"} };
-		$self->portMap->{"peer"}     = $portMapRef->{ $self->internalPortMap->{"peer"} };
-		$self->portMap->{"election"} = $portMapRef->{ $self->internalPortMap->{"election"} };
-	}
 	$self->registerPortsWithHost();
 
 	$self->host->startNscd();
@@ -239,75 +225,6 @@ sub setExternalPortNumbers {
 
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
-	my $hostname  = $self->host->hostName;
-	my $configDir = $self->getParamValue('configDir');
-	my $scpConnectString  = $self->host->scpConnectString;
-	my $scpHostString     = $self->host->scpHostString;
-	my $zookeeperRoot    = $self->getParamValue('zookeeperRoot');
-	my $zookeeperDataDir = $self->getParamValue("zookeeperDataDir");
-	my $name             = $self->getParamValue('dockerName');
-
-	my $logName = "$logPath/ConfigureZookeeperDocker-$hostname-$name.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-	
-	my $configFileName = "$configDir/zookeeper/zoo.cfg";
-	open( FILEIN,  $configFileName )        or die "Can't open file $configFileName: $!";
-	open( FILEOUT, ">/tmp/zoo-$name$suffix.cfg" ) or die "Can't open file /tmp/zoo-$name$suffix.cfg: $!";
-	while ( my $inline = <FILEIN> ) {
-
-		if ( $inline =~ /^\s*clientPort=/ ) {
-			print FILEOUT "clientPort=" . $self->internalPortMap->{"client"} . "\n";
-		} elsif ($inline =~ /^\s*dataDir=/ ) {
-			print FILEOUT "dataDir=$zookeeperDataDir\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-
-	}
-	
-	my $numZookeeperServers = $self->appInstance->getMaxNumOfServiceType("coordinationServer");
-	if ($numZookeeperServers > 1) {
-		# Add server info for a replicated config
-		print FILEOUT "initLimit=5\n";
-		print FILEOUT "syncLimit=2\n";
-		my $instanceNum = $self->getParamValue("instanceNum");
-		
-		my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
-		foreach my $zookeeperServer (@$zookeeperServersRef) {
-			my $id =  $zookeeperServer->getParamValue("instanceNum");
-			my $peerPort;
-			my $electionPort;
-			if ($instanceNum == $id) {	
-				$peerPort = $zookeeperServer->internalPortMap->{"peer"};
-				$electionPort = $zookeeperServer->internalPortMap->{"election"};			
-			} else {
-				$peerPort = $zookeeperServer->portMap->{"peer"};
-				$electionPort = $zookeeperServer->portMap->{"election"};
-			}
-			print FILEOUT "server." . $id . "=" . $zookeeperServer->host->hostName . ":" .
-								$peerPort . ":" .
-								$electionPort . "\n" ;
-		}
-		
-		open( MYIDFILE, ">/tmp/myid-$name$suffix" ) or die "Can't open file /tmp/myid-$name$suffix: $!";
-		print MYIDFILE "$instanceNum\n";
-		close MYIDFILE;
-		$self->host->dockerScpFileTo( $applog, $name, "/tmp/myid-$name$suffix", "$zookeeperDataDir/myid" );
-		
-	}	
-
-	close FILEIN;
-	close FILEOUT;
-
-
-	# Push the config file to the docker container
-	$self->host->dockerScpFileTo( $applog, $name, "/tmp/zoo-$name$suffix.cfg", "$zookeeperRoot/conf/zoo.cfg" );
-	
-	close $applog;
 
 }
 

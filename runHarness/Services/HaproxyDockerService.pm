@@ -97,7 +97,8 @@ override 'create' => sub {
 			$httpsHostnames .=  "$hostname:$httpsPort,";
 		}
 	}
-	chop($serverHostnames);
+	chop($httpHostnames);
+	chop($httpsHostnames);
 		
 	my $haproxyNbproc = 1;
 	if ($self->getParamValue('haproxyProcPerCpu') || $terminateTLS) {

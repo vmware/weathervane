@@ -10,10 +10,17 @@ my $maxConn         = $ENV{'HAPROXY_MAXCONN'};
 my $serverMaxConn   = $ENV{'HAPROXY_SERVER_MAXCONN'};
 my $serverHostnames = $ENV{'HAPROXY_SERVER_HOSTNAMES'};
 my @serverHostnames = split /,/, $serverHostnames;
+my $terminateTLS =  $ENV{'HAPROXY_TERMINATETLS'};
+my $nbProc =  $ENV{'HAPROXY_NBPROC'};
 
 print "configure haproxy. \n";
-open( FILEIN, "/root/haproxy/haproxy.cfg" )
-  or die "Can't open file /root/haproxy/haproxy.cfg: $!";
+
+my $configFileName = "/root/haproxy/haproxy.cfg";
+if ($terminateTLS) {
+	$configFileName = "/root/haproxy/haproxy.cfg.terminateTLS";
+}
+open( FILEIN, "$configFileName" )
+  or die "Can't open file $configFileName: $!";
 open( FILEOUT, ">/etc/haproxy/haproxy.cfg" )
   or die "Can't open file /etc/haproxy/haproxy.cfg: $!";
 while ( my $inline = <FILEIN> ) {
@@ -50,7 +57,7 @@ while ( my $inline = <FILEIN> ) {
 					}
 					print FILEOUT "    server web"
 					  . $cnt
-					  . " $hostname:$port"
+					  . " $hostname "
 					  . $endLine
 					  . " maxconn $serverMaxConn " . "\n";
 					$cnt++;
@@ -70,6 +77,9 @@ while ( my $inline = <FILEIN> ) {
 	elsif ( $inline =~ /maxconn/ ) {
 		print FILEOUT "    maxconn\t" . $maxConn . "\n";
 	}
+	elsif ( $inline =~ /nbproc/ ) {
+		print FILEOUT "    nbproc $nbProc\n";
+	}
 	elsif ( $inline =~ /bind\s+\*\:10080/ ) {
 		print FILEOUT "        bind *:" . $statsPort . "\n";
 	}
@@ -77,7 +87,11 @@ while ( my $inline = <FILEIN> ) {
 		print FILEOUT "        bind *:" . $httpPort . "\n";
 	}
 	elsif ( $inline =~ /bind\s+\*\:443/ ) {
-		print FILEOUT "        bind *:" . $httpsPort . "\n";
+		my $tlsTerminationString = "";
+		if ($terminateTLS) {
+			$tlsTerminationString = " ssl crt /etc/pki/tls/private/weathervane.pem";
+		}
+		print FILEOUT "        bind *:" . $httpsPort . "$tlsTerminationString\n";
 	}
 	elsif ( $inline =~ /^\s*listen.*ssh\s/ ) {
 

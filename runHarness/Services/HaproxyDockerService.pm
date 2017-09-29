@@ -77,17 +77,34 @@ override 'create' => sub {
 		$serverMaxConn = $self->getParamValue('haproxyAppServerMaxConn');
 	}
 	
+	my $terminateTLS = $self->getParamValue('haproxyTerminateTLS');
+	my $serverPortName = "https";
+	if ($terminateTLS) {
+		$serverPortName = "http";
+	}
 	my $serverHostnames = "";
 	if ( $numWebServers > 0 ) {
 		foreach my $webServer (@$webServersRef) {
-			$serverHostnames .= $self->getHostnameForUsedService($webServer) . ",";
+			my $port = $self->getPortNumberForUsedService($webServer,$serverPortName);
+			my $hostname = $self->getHostnameForUsedService($webServer);
+			$serverHostnames .=  "$hostname:$port,";
 		}
 	} elsif ( $numAppServers > 0 ) {
 		foreach my $appServer (@$appServersRef) {
-			$serverHostnames .= $self->getHostnameForUsedService($appServer) . ","
+			my $port = $self->getPortNumberForUsedService($appServer,$serverPortName);
+			my $hostname = $self->getHostnameForUsedService($appServer);
+			$serverHostnames .=  "$hostname:$port,";
 		}
 	}
 	chop($serverHostnames);
+		
+	my $haproxyNbproc = 1;
+	if ($self->getParamValue('haproxyProcPerCpu') || $terminateTLS) {
+		$haproxyNbproc            = $self->host->cpus;
+		if ($self->getParamValue('dockerCpus')) {
+			$haproxyNbproc = $self->getParamValue('dockerCpus');
+		}
+	}
 	
 	my %envVarMap;
 	$envVarMap{"HAPROXY_HTTP_PORT"} = $self->internalPortMap->{"http"};
@@ -96,6 +113,8 @@ override 'create' => sub {
 	$envVarMap{"HAPROXY_MAXCONN"} = $maxConn ;
 	$envVarMap{"HAPROXY_SERVER_MAXCONN"} = $serverMaxConn;
 	$envVarMap{"HAPROXY_SERVER_HOSTNAMES"} = "\"$serverHostnames\"";
+	$envVarMap{"HAPROXY_TERMINATETLS"} = $terminateTLS ;
+	$envVarMap{"HAPROXY_NBPROC"} = $haproxyNbproc;
 
 	# Create the container
 	my %portMap;

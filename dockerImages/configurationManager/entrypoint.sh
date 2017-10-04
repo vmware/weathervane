@@ -10,7 +10,7 @@ sigterm()
 
 trap 'sigterm' TERM
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+perl /updateResolveConf.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"

@@ -625,8 +625,9 @@ sub dockerGetExternalNetIP {
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
 	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
-
-	my $out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.$dockerNetName.IPAddress }}' $name 2>&1`;			
+	my $cmd = "$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.$dockerNetName.IPAddress }}' $name 2>&1";
+	$logger->debug("command: $cmd");
+	my $out = `$cmd`;
 	chomp($out);
 	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName, ipAddr = $out");
 	return $out;

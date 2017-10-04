@@ -606,18 +606,21 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
+		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
+		if ( $appServerCacheImpl eq 'ignite' ) {
 
-		my $copyOnRead = "false";
-		if ( $self->getParamValue('igniteCopyOnRead') ) {
-			$copyOnRead = "true";
+			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
+	
+			my $copyOnRead = "false";
+			if ( $self->getParamValue('igniteCopyOnRead') ) {
+				$copyOnRead = "true";
+			}
+			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
+
+			my $appServersRef = $self->getActiveServicesByType('appServer');
+			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
+			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 		}
-		$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-		my $appServersRef = $self->getActiveServicesByType('appServer');
-		my $app1Hostname  = $appServersRef->[0]->getIpAddr();
-		$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {

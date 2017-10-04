@@ -26,12 +26,16 @@ trap 'sigterm' TERM
 trap 'sigusr1' USR1
 trap 'sigusr2' USR2
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+echo "Update resolv.conf"
+perl /updateResolveConf.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+    echo "Configure postgresql.conf"
 	perl /configure.pl
+	
+	echo "start postgresql"
 	/pg-init.sh &
 fi
 

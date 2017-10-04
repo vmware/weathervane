@@ -36,7 +36,7 @@ trap 'sigterm' TERM
 trap 'sigusr1' USR1
 trap 'sigusr2' USR2
 
-echo "search weathervane" >> /etc/resolv.conf 
+perl /updateResolveConf.pl
 
 echo never > /sys/kernel/mm/transparent_hugepage/enabled
 echo never > /sys/kernel/mm/transparent_hugepage/defrag

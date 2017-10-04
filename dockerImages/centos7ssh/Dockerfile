@@ -6,8 +6,10 @@ COPY sysctl.conf /etc/sysctl.conf
 COPY limits.conf /etc/security/limits.conf
 COPY common-session /etc/pam.d/common-session
 COPY sudoers /etc/sudoers
+COPY updateResolveConf.pl /updateResolveConf.pl
 
 RUN \
+  chmod +x /updateResolveConf.pl && \
   yum -y install openssh-clients && \
   yum -y install sudo && \
   yum -y install iproute && \

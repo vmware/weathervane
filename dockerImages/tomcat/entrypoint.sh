@@ -19,7 +19,7 @@ sigusr1()
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+perl /updateResolveConf.pl
 
 rm -f /opt/apache-tomcat-auction1/logs/* 
 perl /configure.pl

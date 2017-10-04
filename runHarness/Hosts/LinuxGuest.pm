@@ -65,12 +65,15 @@ override 'initialize' => sub {
 
 override 'getCpuMemConfig' => sub {
 	my ($self) = @_;
+	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
 	my $hostname = $self->hostName();
 
+	$logger->debug("In getCpuMemConfig for $hostname");
 	# determine the CPU count and memory size
 	my $cpuInfo =
 `ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/cpuinfo 2>&1`;
 	my $numCpus = () = $cpuInfo =~ /processor\s+\:\s+\d/gi;
+	$logger->debug("In getCpuMemConfig for $hostname. numCpus = $numCpus");
 	$self->cpus($numCpus);
 
 	my $memInfo =
@@ -81,6 +84,7 @@ override 'getCpuMemConfig' => sub {
 	else {
 		$self->memKb(0);
 	}
+	$logger->debug("In getCpuMemConfig for $hostname. msmKb = ", $self->memKb);
 
 };
 
@@ -244,7 +248,9 @@ override 'configureDockerPinning' => sub {
 	my $console_logger = get_logger("Console");
 	my $pin            = $self->getParamValue('dockerHostPin');
 	my $pinMode        = $self->getParamValue('dockerHostPinMode');
+	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
 
+	$logger->debug("calling getCpuMemConfig for ", $self->hostName);	
 	$self->getCpuMemConfig();
 
 	if ( !$pin ) {

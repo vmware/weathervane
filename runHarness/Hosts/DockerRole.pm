@@ -315,6 +315,7 @@ sub dockerCreate {
 	my $imagesHashRef = $self->getParamValue('dockerServiceImages');
 	my $imageName = $imagesHashRef->{$impl};
 	my $namespace = $self->getParamValue('dockerNamespace');
+	my $isVicHost = 	$self->getParamValue('vicHost');
 	
 	my $netString = "";
 	if ((defined $dockerConfigHashRef->{"net"}) && ($dockerConfigHashRef->{"net"} ne "bridge")) {
@@ -362,11 +363,15 @@ sub dockerCreate {
 	}
 
 	my $cpusString = "";
+	my $cpuSetCpusString = "";
 	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
-		$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		if (!$isVicHost) {
+			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		} else {
+			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+		}
 	}
 
-	my $cpuSetCpusString = "";
 	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}
@@ -417,6 +422,7 @@ sub dockerRun {
 	my $imagesHashRef = $self->getParamValue('dockerServiceImages');
 	my $imageName = $imagesHashRef->{$impl};
 	my $namespace = $self->getParamValue('dockerNamespace');
+	my $isVicHost = 	$self->getParamValue('vicHost');
 	
 	my $netString = "";
 	if ((defined $dockerConfigHashRef->{"net"}) && ($dockerConfigHashRef->{"net"} ne "bridge")) {
@@ -458,17 +464,21 @@ sub dockerRun {
 		$envString .= " -e $envVar=$value ";
 	}
 
-	my $cpusString = "";
-	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
-		$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
-	}
-	
 	my $cpuSharesString = "";
 	if (defined $dockerConfigHashRef->{"cpu-shares"} && $dockerConfigHashRef->{"cpu-shares"}) {
 		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
 	}
 
+	my $cpusString = "";
 	my $cpuSetCpusString = "";
+	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+		if (!$isVicHost) {
+			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		} else {
+			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+		}
+	}
+
 	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}

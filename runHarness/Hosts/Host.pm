@@ -158,11 +158,6 @@ sub getCpuMemConfig {
 	my ($self) = @_;
 }
 
-sub configureDockerPinning {
-	my ($self) = @_;
-
-}
-
 sub stopStatsCollection {
 	my ($self) = @_;
 

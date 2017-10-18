@@ -139,10 +139,6 @@ sub run {
 		$self->setParamValue( 'powerOnVms',  0 );
 		$self->setParamValue( 'powerOffVms', 0 );
 	}
-
-	# Now configure docker pinning if requested on any host
-	$debug_logger->debug("configureDockerHostCpuPinning");
-	$self->configureDockerHostCpuPinning();
 	
 	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
 

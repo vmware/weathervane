@@ -1451,22 +1451,6 @@ $parameters{"dockerHostUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerHostPin"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "host",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"dockerHostPinMode"} = {
-	"type"      => "=s",
-	"default"   => "all",
-	"parent"    => "host",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerHostPort"} = {
 	"type"      => "=i",
 	"default"   => 2376,

@@ -81,7 +81,7 @@ override 'create' => sub {
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
 	my $hostDataDir = $self->getParamValue('postgresqlDataDir');
-	if ($host->getParamValue('postgresqlNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($host->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$hostDataDir = $self->getParamValue('postgresqlDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($applog, $hostDataDir)) {

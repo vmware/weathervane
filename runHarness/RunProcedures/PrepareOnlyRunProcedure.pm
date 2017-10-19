@@ -140,6 +140,9 @@ sub run {
 		$self->setParamValue( 'powerOffVms', 0 );
 	}
 	
+	# Now get the cpu and memory config of all hosts
+	$self->getCpuMemConfig();
+	
 	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
 
 	# Make sure that no previous Benchmark processes are still running

@@ -169,6 +169,18 @@ sub getRunProcedureImpl {
 	return $paramHashRef->{'runProcedure'};
 }
 
+# Tell the hosts to go get their CPU and memory configuration
+sub getCpuMemConfig {
+	my ($self)       = @_;
+	my $hostsRef     = $self->hostsRef;
+	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+
+	foreach my $host (@$hostsRef) {
+		$host->getCpuMemConfig();
+	}
+
+}
+
 sub killOldWorkloadDrivers {
 	my ($self) = @_;
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");

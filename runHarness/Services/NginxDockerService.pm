@@ -72,7 +72,7 @@ override 'create' => sub {
 			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
 		}
 	}	
-	$volumeMap{"/var/cache/nginx"} = $dataDir;
+#	$volumeMap{"/var/cache/nginx"} = $dataDir;
 		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();

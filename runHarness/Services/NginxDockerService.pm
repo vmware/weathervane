@@ -60,7 +60,7 @@ override 'create' => sub {
 	my %volumeMap;
 	my $instanceNumber = $self->getParamValue('instanceNum');
 	my $dataDir = "/mnt/cache/nginx$instanceNumber";
-	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($host->getParamValue('nginxUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('nginxCacheVolume') . $instanceNumber;
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($applog, $dataDir)) {

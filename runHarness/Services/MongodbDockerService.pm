@@ -160,7 +160,7 @@ sub createSingleMongodb {
 
 	my %volumeMap;
 	my $dataDir = $self->getParamValue('mongodbDataDir');
-	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($host->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
@@ -261,7 +261,7 @@ sub createShardedMongodb {
 				
 				my %volumeMap;
 				my $dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataDir");
-				if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+				if ($host->getParamValue('mongodbNamedVolumes') || $host->getParamValue('vicHost')) {
 					$dataDir = $self->getParamValue("mongodbC${curCfgSvr}DataVolume");
 					# use named volumes.  Create volume if it doesn't exist
 					if (!$host->dockerVolumeExists($dblog, $dataDir)) {
@@ -322,7 +322,7 @@ sub createShardedMongodb {
 	$logger->debug("Creating mongod for $name on $hostname");
 	my %volumeMap;
 	my $dataDir = $self->getParamValue('mongodbDataDir');
-	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($host->getParamValue('mongodbNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($dblog, $dataDir)) {
@@ -394,7 +394,7 @@ sub createReplicatedMongodb {
 
 	my %volumeMap;
 	my $dataDir = $self->getParamValue('mongodbDataDir');
-	if ($host->getParamValue('dockerHostUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($host->getParamValue('mongodbNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($dblog, $dataDir)) {

@@ -1443,14 +1443,6 @@ $parameters{"vicHost"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerHostUseNamedVolumes"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "host",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerHostPort"} = {
 	"type"      => "=i",
 	"default"   => 2376,
@@ -2209,6 +2201,14 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"nginxUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"nginxCacheVolume"} = {
 	"type"      => "=s",
 	"default"   => "nginxCache",
@@ -2725,6 +2725,14 @@ $parameters{"postgresqlDataDir"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"postgresqlUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"postgresqlDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlData",
@@ -2803,6 +2811,14 @@ $parameters{"mongodbDataDir"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
+};
+
+$parameters{"mongodbUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
 };
 
 $parameters{"mongodbDataVolume"} = {

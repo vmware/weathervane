@@ -36,7 +36,7 @@ sub usage {
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This must be provided if --private is used.\n";
-    print "If the list of image names is empty, then all images are built and pushed.";
+    print "If the list of image names is empty, then all images are built and pushed.\n";
 }
 
 my $help = '';
@@ -116,11 +116,16 @@ sub buildImage {
 }
 
 
+# Make sure that executables have been built
+if (!(-e "./dist/auction.war")) {
+	print "You must build the Weathervane executables before building the Docker images.\n";
+	print "See the Weathervane User's Guide for instructions on building the executables.\n";
+	exit;
+}
+
 my $cmdout;
 my $fileout;
 open( $fileout, ">buildDockerImages.log" ) or die "Can't open file buildDockerImages.log for writing: $!\n";
-
-# Make sure that executables have been built
 
 # Get the latest executables into the appropriate directories for the Docker images
 #nginx

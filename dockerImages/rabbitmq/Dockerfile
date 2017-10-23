@@ -1,4 +1,4 @@
-FROM namespace/centos7ssh:version
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 	
 COPY erlang.cookie /root/.erlang.cookie

@@ -1,4 +1,4 @@
-FROM namespace/centos7ssh:version
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY mongodb.repo /etc/yum.repos.d/mongo.repo

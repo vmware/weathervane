@@ -52,13 +52,97 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my $version = `cat version.txt`;
-chomp($version);
+my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationManager tomcat );
+if ($#ARGV > 0) {
+	@imageNames = @ARGV;
+}
 
 if ($help) {
 	usage();
 	exit;
 }
+
+sub runAndLog {
+	my ( $fileout, $cmd ) = @_;
+	print $fileout "COMMAND> $cmd\n";
+	open( CMD, "$cmd 2>&1 |" ) || die "Couldn't run command $cmd: $!\n";
+	while ( my $line = <CMD> ) {
+		print $fileout $line;
+	}
+	close CMD;
+}
+
+sub rewriteDockerfile {
+	my ( $dirName, $namespace, $version) = @_;
+	`mv $dirName/Dockerfile $dirName/Dockerfile.orig`;
+	open(my $filein, "$dirName/Dockerfile.orig") or die "Can't open file $dirName/Dockerfile.orig for reading: $!\n";
+	open(my $fileout, ">$dirName/Dockerfile") or die "Can't open file $dirName/Dockerfile for writing: $!\n";
+	while (my $inline = <$filein>) {
+		if ($inline =~ /^FROM/) {
+			print $fileout "FROM $namespace/weathervane-centos7:$version\n";
+		} else {
+			print $fileout $inline;
+		}
+	}
+	close $filein;
+	close $fileout
+}
+
+sub cleanupDockerfile {
+	my ( $dirName) = @_;
+	`mv $dirName/Dockerfile.orig $dirName/Dockerfile`;
+}
+
+sub buildImage {
+	my ($imageName, $buildArgsListRef, $fileout, $namespace, $version) = @_;
+	if ($imageName ne "centos7") {		
+		rewriteDockerfile("./dockerImages/$imageName", $namespace, $version);
+	}
+
+	my $buildArgs = "";
+	foreach my $buildArg (@$buildArgsListRef) {
+		$buildArgs .= " --build-arg $buildArg";
+	}
+
+	runAndLog($fileout, "docker build $buildArgs -t $namespace/weathervane-$imageName:$version ./dockerImages/$imageName");
+	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
+
+	if ($imageName ne "centos7") {		
+		cleanupDockerfile("./dockerImages/$imageName");
+	}
+	
+}
+
+
+my $cmdout;
+my $fileout;
+open( $fileout, ">buildDockerImages.log" ) or die "Can't open file buildDockerImages.log for writing: $!\n";
+
+# Make sure that executables have been built
+
+# Get the latest executables into the appropriate directories for the Docker images
+#nginx
+runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
+runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
+runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
+# configurationManager
+runAndLog($fileout, "rm -f ./dockerImages/configurationManager/auctionConfigManager.jar");
+runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationManager/auctionConfigManager.jar");
+# tomcat
+runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction");
+runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb");
+runAndLog($fileout, "cp ./dist/auction*.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
+runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction/");
+runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
+runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
+runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
+
+
+my $version = `cat version.txt`;
+chomp($version);
 
 my $namespace;
 if ($private) {
@@ -80,41 +164,6 @@ if ($private) {
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 
-sub runAndLog {
-	my ( $fileout, $cmd ) = @_;
-	print $fileout "COMMAND> $cmd\n";
-	open( CMD, "$cmd 2>&1 |" ) || die "Couldn't run command $cmd: $!\n";
-	while ( my $line = <CMD> ) {
-		print $fileout $line;
-	}
-	close CMD;
-}
-
-sub rewriteDockerfile {
-	my ( $dirName, $namespace, $version) = @_;
-	`mv $dirName/Dockerfile $dirName/Dockerfile.orig`;
-	open(my $filein, "$dirName/Dockerfile.orig") or die "Can't open file $dirName/Dockerfile.orig for reading: $!\n";
-	open(my $fileout, ">$dirName/Dockerfile") or die "Can't open file $dirName/Dockerfile for writing: $!\n";
-	while (my $inline = <$filein>) {
-		if ($inline =~ /^FROM/) {
-			print $fileout "FROM $namespace/centos7ssh:$version\n";
-		} else {
-			print $fileout $inline;
-		}
-	}
-	close $filein;
-	close $fileout
-}
-
-sub cleanupDockerfile {
-	my ( $dirName) = @_;
-	`mv $dirName/Dockerfile.orig $dirName/Dockerfile`;
-}
-
-my $cmdout;
-my $fileout;
-open( $fileout, ">buildDockerImages.log" ) or die "Can't open file buildDockerImages.log for writing: $!\n";
-
 if (!$private) {
 	print "Logging into Docker Hub.\n";
 	print $fileout "Logging into Docker Hub.\n";
@@ -127,88 +176,25 @@ if (!$private) {
 	print $fileout "result: $response\n";
 }
 
-print "Building and pushing centos7ssh image.\n";
-print $fileout "Building and pushing centos7ssh image.\n";
-runAndLog($fileout, "docker build -t $namespace/centos7ssh:$version ./dockerImages/centos7ssh");
-runAndLog($fileout, "docker push $namespace/centos7ssh:$version");
-
-print "Building and pushing haproxy image.\n";
-print $fileout "Building and pushing haproxy image.\n";
-rewriteDockerfile("./dockerImages/haproxy", $namespace, $version);
-runAndLog($fileout, "docker build -t $namespace/weathervane-haproxy:$version ./dockerImages/haproxy");
-runAndLog($fileout, "docker push $namespace/weathervane-haproxy:$version");
-cleanupDockerfile("./dockerImages/haproxy");
-
-print "Building and pushing mongodb image.\n";
-print $fileout "Building and pushing mongodb image.\n";
-rewriteDockerfile("./dockerImages/mongodb", $namespace, $version);
-runAndLog($fileout, "docker build -t $namespace/weathervane-mongodb:$version ./dockerImages/mongodb");
-runAndLog($fileout, "docker push $namespace/weathervane-mongodb:$version");
-cleanupDockerfile("./dockerImages/mongodb");
-
-print "Building and pushing nginx image.\n";
-print $fileout "Building and pushing nginx image.\n";
-rewriteDockerfile("./dockerImages/nginx", $namespace, $version);
-runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
-runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
-runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
-runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
-runAndLog($fileout, "docker build -t $namespace/weathervane-nginx:$version ./dockerImages/nginx");
-runAndLog($fileout, "docker push $namespace/weathervane-nginx:$version");
-cleanupDockerfile("./dockerImages/nginx");
-
-print "Building and pushing postgresql image.\n";
-print $fileout "Building and pushing postgresql image.\n";
-rewriteDockerfile("./dockerImages/postgresql", $namespace, $version);
-runAndLog($fileout, "docker build -t $namespace/weathervane-postgresql:$version ./dockerImages/postgresql");
-runAndLog($fileout, "docker push $namespace/weathervane-postgresql:$version");
-cleanupDockerfile("./dockerImages/postgresql");
-
-print "Building and pushing rabbitmq image.\n";
-print $fileout "Building and pushing rabbitmq image.\n";
-rewriteDockerfile("./dockerImages/rabbitmq", $namespace, $version);
-runAndLog($fileout, "docker build -t $namespace/weathervane-rabbitmq:$version ./dockerImages/rabbitmq");
-runAndLog($fileout, "docker push $namespace/weathervane-rabbitmq:$version");
-cleanupDockerfile("./dockerImages/rabbitmq");
-
-print "Building and pushing zookeeper image.\n";
-print $fileout "Building and pushing zookeeper image.\n";
-# Figure out the latest version of Zookeeper
-my $zookeeperGet = `curl -s http://www.us.apache.org/dist/zookeeper/stable/`;
-$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
-my $zookeeperVers = $1;
-rewriteDockerfile("./dockerImages/zookeeper", $namespace, $version);
-runAndLog($fileout, "docker build --build-arg ZOOKEEPER_VERSION=$zookeeperVers -t $namespace/weathervane-zookeeper:$version ./dockerImages/zookeeper");
-runAndLog($fileout, "docker push $namespace/weathervane-zookeeper:$version");
-cleanupDockerfile("./dockerImages/zookeeper");
-
-print "Building and pushing configurationManager image.\n";
-print $fileout "Building and pushing configurationManager image.\n";
-rewriteDockerfile("./dockerImages/configurationManager", $namespace, $version);
-runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationManager/auctionConfigManager.jar");
-runAndLog($fileout, "docker build -t $namespace/weathervane-cm:$version ./dockerImages/configurationManager");
-runAndLog($fileout, "docker push $namespace/weathervane-cm:$version");
-runAndLog($fileout, "rm -f ./dockerImages/configurationManager/auctionConfigManager.jar");
-cleanupDockerfile("./dockerImages/configurationManager");
-
-print "Building and pushing tomcat image.\n";
-print $fileout "Building and pushing tomcat image.\n";
-# Figure out the latest version of Tomcat 8.5
-my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
-$tomcat8get =~ />v8\.5\.(\d+)\//;
-my $tomcat8vers = $1;
-rewriteDockerfile("./dockerImages/tomcat", $namespace, $version);
-runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb");
-runAndLog($fileout, "cp ./dist/auction*.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
-runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction/");
-runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
-runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
-runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
-runAndLog($fileout, "docker build --build-arg TOMCAT_VERSION=$tomcat8vers -t $namespace/weathervane-tomcat:$version ./dockerImages/tomcat");
-runAndLog($fileout, "docker push $namespace/weathervane-tomcat:$version");
-cleanupDockerfile("./dockerImages/tomcat");
+foreach my $imageName (@imageNames) {
+	print "Building and pushing weathervane-$imageName image.\n";
+	print $fileout "Building and pushing weathervane-$imageName image.\n";
+	my @buildArgs;
+	
+	if ($imageName eq "zookeper") {
+		# Figure out the latest version of Zookeeper
+		my $zookeeperGet = `curl -s http://www.us.apache.org/dist/zookeeper/stable/`;
+		$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
+		my $zookeeperVers = $1;
+		push @buildArgs, "ZOOKEEPER_VERSION=$zookeeperVers";
+	} elsif ($imageName = "tomcat") {
+		my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
+		$tomcat8get =~ />v8\.5\.(\d+)\//;
+		my $tomcat8vers = $1;
+		push @buildArgs, "TOMCAT_VERSION=$tomcat8vers";		
+	}
+	
+	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version);	
+}
 
 1;

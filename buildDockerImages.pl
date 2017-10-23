@@ -22,6 +22,7 @@ use strict;
 use Getopt::Long;
 
 sub usage {
+	print "Usage: ./buildDockerImages.pl [options] [imageNames]\n";
 	print "This script builds the Weathervane docker images and pushes them to either\n";
 	print "a Docker Hub account or a private registry.\n";
     print " Options:\n";
@@ -35,6 +36,7 @@ sub usage {
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This must be provided if --private is used.\n";
+    print "If the list of image names is empty, then all images are built and pushed.";
 }
 
 my $help = '';
@@ -52,8 +54,8 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationManager tomcat );
-if ($#ARGV > 0) {
+my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationManager tomcat);
+if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
 

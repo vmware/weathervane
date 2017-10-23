@@ -12,6 +12,7 @@ COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 COPY dumpStats.pl /dumpStats.pl
 COPY postgresql.conf /postgresql.conf
+COPY clearAfterStart.sh /clearAfterStart.sh
 
 RUN mkdir -p /mnt/dbLogs/postgresql && \
 	mkdir -p /mnt/dbData/postgresql && \
@@ -22,6 +23,7 @@ RUN mkdir -p /mnt/dbLogs/postgresql && \
 	yum install -y postgresql${PG_MAJOR_PKG}-server && \
 	chmod 777 /pg-init.sh && \
 	chmod 777 /entrypoint.sh && \
+	chmod 777 /clearAfterStart.sh && \
   	yum -y clean all 
   	
 	

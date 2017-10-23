@@ -212,7 +212,7 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From PortgreSQL\n";
 
-	$self->host->dockerKill("USR1", $applog, $name);
+	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
 
 	close $applog;
 
@@ -287,7 +287,7 @@ sub stopStatsCollection {
 	my $applog;
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Getting end of steady-state stats from PortgreSQL\n";
-	$self->host->dockerKill("USR2", $applog, $name);
+	$self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
 
 	close $applog;
 
@@ -307,7 +307,7 @@ sub startStatsCollection {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 
 	print $applog "Getting start of steady-state stats from PortgreSQL\n";
-	$self->host->dockerKill("USR2", $applog, $name);
+	$self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
 
 	close $applog;
 }

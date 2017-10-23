@@ -8,23 +8,7 @@ sigterm()
    exit 0
 }
 
-sigusr1()
-{
-   echo "signal USR1 received.  Clearing auction database"
-   psql -p ${POSTGRESPORT} -U auction -d postgres -f /dbScripts/auction_postgresql_database.sql
-   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_tables.sql
-   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_constraints.sql
-   psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql
-}
-
-sigusr2()
-{
-   echo "signal USR2 received. Dumping postgresql stats to stdout."
-	perl /dumpStats.pl
-}
 trap 'sigterm' TERM
-trap 'sigusr1' USR1
-trap 'sigusr2' USR2
 
 echo "Update resolv.conf"
 perl /updateResolveConf.pl

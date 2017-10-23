@@ -1,4 +1,4 @@
-FROM namespace/centos7ssh:version
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 ENV PG_MAJOR 9.3

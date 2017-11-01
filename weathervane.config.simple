@@ -1,7 +1,7 @@
 
 {
-#"users" : 300,
-#"maxUsers" : 300,
+#"users" : 1000,
+#"maxUsers" : 1000,
 
 "description" : "Simple Weathervane Config.",
 "runLength" : "medium",

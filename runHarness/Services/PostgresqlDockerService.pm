@@ -265,15 +265,6 @@ sub configure {
 
 }
 
-sub isBackupAvailable {
-	my ( $self, $backupDirPath, $applog ) = @_;
-	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $name        = $self->getParamValue('dockerName');
-
-	# The postgresqlDocker does not currently support backups
-	return 0;
-}
-
 sub stopStatsCollection {
 	my ($self)      = @_;
 	my $hostname    = $self->host->hostName;

@@ -169,24 +169,12 @@ sub loadData {
 	die "Can only loadData for a concrete sub-class of DataManager";
 }
 
-sub createBackup {
-	die "Can only createBackup for a concrete sub-class of DataManager";
-}
-
-sub restoreBackup {
-	die "Can only restoreBackup for a concrete sub-class of DataManager";
-}
-
 sub prepareData {
 	die "Can only prepareData for a concrete sub-class of DataManager";
 }
 
 sub isDataLoaded {
 	die "Can only check isDataLoaded for a concrete sub-class of DataManager";
-}
-
-sub isBackupAvailable {
-	die "Can only check isBackupAvailable for a concrete sub-class of DataManager";
 }
 
 sub toString {

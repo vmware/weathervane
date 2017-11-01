@@ -16,7 +16,6 @@ COPY clearAfterStart.sh /clearAfterStart.sh
 
 RUN mkdir -p /mnt/dbLogs/postgresql && \
 	mkdir -p /mnt/dbData/postgresql && \
-	mkdir -p /mnt/dbBackup/postgresql && \
 	echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo && \
 	yum install -y http://yum.postgresql.org/${PG_MAJOR}/redhat/rhel-7-x86_64/pgdg-redhat${PG_MAJOR_PKG}-${PG_MAJOR}-3.noarch.rpm && \
 	yum install -y postgresql${PG_MAJOR_PKG} && \

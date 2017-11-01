@@ -1080,23 +1080,6 @@ sub configure {
 
 }
 
-sub isBackupAvailable {
-	my ( $self, $backupDirPath, $applog ) = @_;
-
-	my $sshConnectString = $self->host->sshConnectString;
-
-	my $chkOut = `$sshConnectString \"[ -d $backupDirPath ] && echo 'found'\"`;
-	if ( !( $chkOut =~ /found/ ) ) {
-		return 0;
-	}
-	$chkOut = `$sshConnectString \"[ \\\"$(ls -A $backupDirPath)\\\" ] && echo \\\"Full\\\" || echo \\\"Empty\\\"\"`;
-	if ( $chkOut =~ /Empty/ ) {
-		return 0;
-	}
-	return 1;
-
-}
-
 sub stopStatsCollection {
 	my ($self) = @_;
 

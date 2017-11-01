@@ -130,8 +130,6 @@
 "logLevel" : 4,
 "redeploy" : true,
 
-"backup" : false,
-"rebackup" : false,
 "reloadDb" : false,
  
 "powerOnVms" : true,

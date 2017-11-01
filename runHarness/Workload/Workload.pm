@@ -819,13 +819,7 @@ sub getWorkloadSummary {
 			$prefix = "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
 		}
 
-		my $scale = $appInstance->getParamValue('scale');
-		if ($scale && ($scale > -1)) {
-			$csv{"dbScale"} = $scale;
-		}
-		else {
-			$csv{"maxUsers"} = $appInstance->getUsers();
-		}
+		$csv{"maxUsers"} = $appInstance->getUsers();
 
 	}
 

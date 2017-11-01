@@ -127,7 +127,6 @@ DEFAULT CHARACTER SET = latin1;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `auction`.`dbbenchmarkinfo` (
   `id` BIGINT(20) NOT NULL,
-  `scale` BIGINT(20) DEFAULT NULL,
   `maxusers` BIGINT(20) DEFAULT NULL,
   `maxduration` BIGINT(20) DEFAULT NULL,
   `numnosqlshards` BIGINT(20) DEFAULT NULL,

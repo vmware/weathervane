@@ -362,7 +362,7 @@ public class ImageStoreFacadeFilesystemImpl extends ImageStoreFacadeBaseImpl {
 	}
 
 	@Override
-	public void setScale(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
+	public void setBenchmarkInfo(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
 		imageStoreBenchmarkInfo.setId("0");
 
 		/* save the scale in a file */
@@ -383,7 +383,7 @@ public class ImageStoreFacadeFilesystemImpl extends ImageStoreFacadeBaseImpl {
 	}
 
 	@Override
-	public ImageStoreBenchmarkInfo getScale() {
+	public ImageStoreBenchmarkInfo getBenchmarkInfo() {
 		/* read the scale from a file */
 		String fileName = "ImageStoreBenchmarkInfo.json";
 		File outFile = new File(baseDirectory, fileName);

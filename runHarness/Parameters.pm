@@ -1989,14 +1989,6 @@ $parameters{"dbLoaderHeap"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"scale"} = {
-	"type"      => "=i",
-	"default"   => -1,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"useThinkTime"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

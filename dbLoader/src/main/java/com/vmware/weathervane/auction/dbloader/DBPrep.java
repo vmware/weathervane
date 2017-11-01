@@ -39,8 +39,8 @@ import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
 import com.vmware.weathervane.auction.data.dao.ItemDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
-import com.vmware.weathervane.auction.data.imageStore.NoScaleException;
-import com.vmware.weathervane.auction.data.imageStore.NoScaleNeededException;
+import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoException;
+import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoNeededException;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.DbBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
@@ -52,7 +52,6 @@ import com.vmware.weathervane.auction.data.repository.NosqlBenchmarkInfoReposito
  *
  */
 public class DBPrep {
-	private static String scaleDefault = "0";
 
 	private static String numThreadsDefault = "30";
 	private static String maxUsersDefault = "120";
@@ -80,8 +79,6 @@ public class DBPrep {
 
 	public static void main(String[] args) throws InterruptedException, IOException, JSONException {
 
-		Option s = new Option("s", "scale", true,
-				"Benchmark scale level. Controls the number of users and historical and future auctions loaded.");
 		Option u = new Option("u", "users", true,
 				"Number of active users to be supported in this run.");
 		Option m = new Option("m", "shards", true,
@@ -89,7 +86,7 @@ public class DBPrep {
 		Option p = new Option("p", "replicas", true,
 				"Number of NoSQL replicas in the configuration. This is used only for storing in the benchmarkInfo");
 		Option c = new Option("c", "check", false,
-				"Only check whether the database is loaded at the proper scale and then exit.");
+				"Only check whether the database is loaded with the proper number of users and then exit.");
 		Option a = new Option("a", "auctions", true,
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);
@@ -98,7 +95,6 @@ public class DBPrep {
 				"Max duration in seconds to be supported by the data.");
 
 		Options cliOptions = new Options();
-		cliOptions.addOption(s);
 		cliOptions.addOption(u);
 		cliOptions.addOption(m);
 		cliOptions.addOption(p);
@@ -119,15 +115,6 @@ public class DBPrep {
 
 		String auctionsString = cliCmd.getOptionValue('a');
 		String numThreadsString = cliCmd.getOptionValue('t', numThreadsDefault);
-
-		String scaleString = "";
-		int scale = -1;
-		boolean useScale = false;
-		if (cliCmd.hasOption('s')) {
-			scaleString = cliCmd.getOptionValue('s');
-			scale = Integer.valueOf(scaleString);
-			useScale = true;
-		}
 
 		String usersString = cliCmd.getOptionValue('u', maxUsersDefault);
 		int users = Integer.valueOf(usersString);
@@ -178,7 +165,7 @@ public class DBPrep {
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
 
 		/*
-		 * Make sure that database is loaded at correct scale
+		 * Make sure that database is loaded at correctly
 		 */
 		logger.debug("Checking whether database has benchmark info");
 		List<DbBenchmarkInfo> dbBenchmarkInfoList = dbBenchmarkInfoDao.getAll();
@@ -189,23 +176,14 @@ public class DBPrep {
 		}
 
 		DbBenchmarkInfo dbBenchmarkInfo = dbBenchmarkInfoList.get(0);
-		logger.info("Got DB benchmarkInfo: " + dbBenchmarkInfo + ", scale = " + scale);
+		logger.info("Got DB benchmarkInfo: " + dbBenchmarkInfo);
 		try {
-			if (useScale) {
-				if (!dbBenchmarkInfo.getScale().equals(scale)) {
-					throw new RuntimeException(
-							"Scale in database does not match desired scale.  Needed " + scale
-									+ ", Found " + dbBenchmarkInfo.getScale()
-									+ ". Make sure that correct data is loaded.");
-				}
-			} else {
-				long infoMaxUsers = dbBenchmarkInfo.getMaxusers();
-				if (infoMaxUsers < users) {
-					throw new RuntimeException(
-							"MaxUsers supported by database does not match desired number of users   Users =  "
-									+ users + ", Found " + infoMaxUsers
-									+ ". Make sure that correct data is loaded.");
-				}
+			long infoMaxUsers = dbBenchmarkInfo.getMaxusers();
+			if (infoMaxUsers < users) {
+				throw new RuntimeException(
+						"MaxUsers supported by database does not match desired number of users   Users =  "
+								+ users + ", Found " + infoMaxUsers
+								+ ". Make sure that correct data is loaded.");
 			}
 			if ((maxDuration > 0) && (dbBenchmarkInfo.getMaxduration() < maxDuration)) {
 				throw new RuntimeException(
@@ -215,7 +193,7 @@ public class DBPrep {
 			}
 			if (!dbBenchmarkInfo.getImagestoretype().equals(imageStoreType)) {
 				throw new RuntimeException(
-						"ImageStoreType in database does not match desired scale. Needed "
+						"ImageStoreType in database does not match desired type. Needed "
 								+ imageStoreType + ", Found " + dbBenchmarkInfo.getImagestoretype()
 								+ ", Make sure that correct data is loaded.");
 			}
@@ -237,7 +215,7 @@ public class DBPrep {
 		}
 
 		/*
-		 * Make sure that NoSQL store is loaded at correct scale
+		 * Make sure that NoSQL store is loaded at correctly
 		 */
 		logger.debug("Checking whether NoSQL Data-Store has benchmark info");
 		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = nosqlBenchmarkInfoRepository.findAll();
@@ -248,25 +226,16 @@ public class DBPrep {
 		}
 
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = nosqlBenchmarkInfoList.get(0);
-		logger.info("Got NoSQL benchmarkInfo: " + nosqlBenchmarkInfo + ", scale = " + scale);
-		if (useScale) {
-			if (!nosqlBenchmarkInfo.getScale().equals(scale)) {
-				imageStore.stopServiceThreads();
-				throw new RuntimeException(
-						"Scale in NoSQL datastore does not match desired scale.  Needed " + scale
-								+ ", Found " + nosqlBenchmarkInfo.getScale()
-								+ ". Make sure that correct data is loaded.");
-			}
-		} else {
-			long infoMaxUsers = nosqlBenchmarkInfo.getMaxusers();
-			if (infoMaxUsers < users) {
-				imageStore.stopServiceThreads();
-				throw new RuntimeException(
-						"MaxUsers supported by NoSQL datastore does not match desired number of users   Users =  "
-								+ users + ", Found " + infoMaxUsers
-								+ ". Make sure that correct data is loaded.");
-			}
+		logger.info("Got NoSQL benchmarkInfo: " + nosqlBenchmarkInfo );
+		long infoMaxUsers = nosqlBenchmarkInfo.getMaxusers();
+		if (infoMaxUsers < users) {
+			imageStore.stopServiceThreads();
+			throw new RuntimeException(
+					"MaxUsers supported by NoSQL datastore does not match desired number of users   Users =  "
+							+ users + ", Found " + infoMaxUsers
+							+ ". Make sure that correct data is loaded.");
 		}
+		
 		if (!nosqlBenchmarkInfo.getNumShards().equals(numNosqlShards)) {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
@@ -286,34 +255,24 @@ public class DBPrep {
 		if (!nosqlBenchmarkInfo.getImageStoreType().equals(imageStoreType)) {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
-					"ImageStoreType in database does not match desired scale. Needed "
+					"ImageStoreType in database does not match desired type. Needed "
 							+ imageStoreType + ", Found " + nosqlBenchmarkInfo.getImageStoreType()
 							+ ", Make sure that correct data is loaded.");
 		}
 
 		/*
-		 * Make sure that the image store is loaded at correct scale
+		 * Make sure that the image store is loaded at correctly
 		 */
 		ImageStoreBenchmarkInfo imageStoreBenchmarkInfo = null;
 		try {
-			imageStoreBenchmarkInfo = imageStore.getScale();
-			if (useScale) {
-				if (!imageStoreBenchmarkInfo.getScale().equals(scale)) {
-					imageStore.stopServiceThreads();
-					throw new RuntimeException(
-							"Scale in imageStore does not match desired scale.  Needed " + scale
-									+ ", Found " + nosqlBenchmarkInfo.getScale()
-									+ ". Make sure that correct data is loaded.");
-				}
-			} else {
-				long infoMaxUsers = imageStoreBenchmarkInfo.getMaxusers();
-				if (infoMaxUsers < users) {
-					imageStore.stopServiceThreads();
-					throw new RuntimeException(
-							"MaxUsers supported by imageStore does not match desired number of users   Users =  "
-									+ users + ", Found " + infoMaxUsers
-									+ ". Make sure that correct data is loaded.");
-				}
+			imageStoreBenchmarkInfo = imageStore.getBenchmarkInfo();
+			infoMaxUsers = imageStoreBenchmarkInfo.getMaxusers();
+			if (infoMaxUsers < users) {
+				imageStore.stopServiceThreads();
+				throw new RuntimeException(
+						"MaxUsers supported by imageStore does not match desired number of users   Users =  "
+								+ users + ", Found " + infoMaxUsers
+								+ ". Make sure that correct data is loaded.");
 			}
 			if (!imageStoreBenchmarkInfo.getImageStoreType().equals(imageStoreType)) {
 				imageStore.stopServiceThreads();
@@ -324,18 +283,18 @@ public class DBPrep {
 								+ ", Make sure that correct data is loaded.");
 			}
 
-		} catch (NoScaleException e) {
+		} catch (NoBenchmarkInfoException e) {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
-					"No scale stored in imageStore.  Make sure that correct data is loaded.");
-		} catch (NoScaleNeededException e) {
-			// Some imageStore types always have the proper scale
-			logger.info("Got a NoScaleNeeded exception from the imageStore.  Continuing");
+					"No benchmark info stored in imageStore.  Make sure that correct data is loaded.");
+		} catch (NoBenchmarkInfoNeededException e) {
+			// Some imageStore types always have the proper load
+			logger.info("Got a NoBenchmarkInfoNeededException exception from the imageStore.  Continuing");
 		}
 
-		// If only wanted to check for loaded scale, then return here
+		// If only wanted to check for loaded data, then return here
 		if (cliCmd.hasOption("c")) {
-			logger.info("Benchmark is loaded at scale " + scale + ". Exiting cleanly.");
+			logger.info("Benchmark is loaded correctly. Exiting cleanly.");
 			imageStore.stopServiceThreads();
 			return;
 		}

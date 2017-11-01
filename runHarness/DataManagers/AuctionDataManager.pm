@@ -42,12 +42,6 @@ has 'dbLoaderClasspath' => (
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
 
-# There are enough users and auctions in the database to
-# support running each scale at up to 2x the officially
-# designated cut-off
-my $maxUsersMultiplier = 2;
-my @scaleLevelMaxUsers = ( 125.0, 25000.0, 50000.0, 100000.0, 200000.0 );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -232,11 +226,6 @@ sub prepareData {
 	$springProfilesActive .= ",dbprep";
 	my $dbLoaderClasspath = $self->dbLoaderClasspath;
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
 	# if the number of auctions wasn't explicitly set, determine based on
 	# the usersPerAuctionScaleFactor
 	my $auctions = $self->getParamValue('auctions');
@@ -313,13 +302,7 @@ sub prepareData {
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 	$dbPrepOptions .= " -f " . max( $maxDuration, $totalTime ) . " ";
-
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
+	$dbPrepOptions .= " -u " . $users . " ";
 
 	my $heap             = $self->getParamValue('dbLoaderHeap');
 	my $sshConnectString = $self->host->sshConnectString;
@@ -705,23 +688,13 @@ sub loadData {
 		return 0;
 	  };
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
 	my $maxUsers = $self->getParamValue('maxUsers');
 	if ( $users > $maxUsers ) {
 		$maxUsers = $users;
 	}
 
-	if ( $scale >= 0 ) {
-		$console_logger->info( "Workload $workloadNum, appInstance $appInstanceNum: Loading data at scale $scale" );
-	}
-	else {
-		$console_logger->info(
-			"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
-	}
+	$console_logger->info(
+		"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
 
 	# if the number of auctions wasn't explicitly set, determine based on
 	# the usersPerAuctionScaleFactor
@@ -945,12 +918,7 @@ sub loadData {
 	# Load the data
 	my $dbScriptDir     = $self->getParamValue('dbScriptDir');
 	my $dbLoaderOptions = "-d $dbScriptDir/items.json -t " . $self->getParamValue('dbLoaderThreads');
-	if ( $scale >= 0 ) {
-		$dbLoaderOptions .= " -s $scale ";
-	}
-	else {
-		$dbLoaderOptions .= " -u $maxUsers ";
-	}
+	$dbLoaderOptions .= " -u $maxUsers ";
 
 	$dbLoaderOptions .= " -m " . $appInstance->numNosqlShards . " ";
 	$dbLoaderOptions .= " -p " . $appInstance->numNosqlReplicas . " ";
@@ -1091,7 +1059,7 @@ sub loadData {
 
 	if ( !$isDataLoaded ) {
 		$console_logger->error(
-			"Data is still not loaded at proper scale.  Check the logs of the data services for errors.\n" );
+			"Data is still not loaded properly.  Check the logs of the data services for errors.\n" );
 		return 0;
 	}
 	return 1;
@@ -1131,31 +1099,16 @@ sub createBackup {
 
 	my $nosqlServersRef = $self -appInstance->getActiveServicesByType('nosqlServer');
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
 	my $maxUsers = $self->maxUsers;
 
 	my $backupPathNum;
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-		$console_logger->info( "Creating backup of data at scale $scale for the "
-			  . $self->db
-			  . " database and "
-			  . $self->imageStoreType
-			  . " imageStore" );
-	}
-	else {
-		$backupPathNum = $maxUsers;
+	$backupPathNum = $maxUsers;
 
-		$console_logger->info( "Creating backup of data for a maximum of $maxUsers users for the "
-			  . $self->db
-			  . " database and "
-			  . $self->imageStoreType
-			  . " imageStore" );
-	}
+	$console_logger->info( "Creating backup of data for a maximum of $maxUsers users for the "
+		  . $self->db
+		  . " database and "
+		  . $self->imageStoreType
+		  . " imageStore" );
 
 	my $backupDirPath = "$backupDir/$backupPathNum";
 	foreach my $dbServer (@$dbServersRef) {
@@ -1266,26 +1219,14 @@ sub restoreBackup {
 	$appInstance->cleanupDataServices();
 	$appInstance->removeDataServices($logPath);
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
 	my $maxUsers = $self->maxUsers;
 
 	my $runLog = $self->runLog;
 	my $backupPathNum;
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-		$console_logger->info(
-			"Restoring backup of data at scale $scale for " . $self->imageStoreType . " imageStore" );
-	}
-	else {
-		$backupPathNum = $maxUsers;
-		$console_logger->info(
-			"Restoring backup of data for $maxUsers max users and  " . $self->imageStoreType . " imageStore" );
-	}
-
+	$backupPathNum = $maxUsers;
+	$console_logger->info(
+		"Restoring backup of data for $maxUsers max users and  " . $self->imageStoreType . " imageStore" );
+	
 	my $cmdout;
 	my $backupDirPath = "$backupDir/$backupPathNum";
 	foreach my $dbServer (@$dbServersRef) {
@@ -1386,10 +1327,6 @@ sub isDataLoaded {
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $hostname = $self->host->hostName;
-	my $scale    = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $applog;
@@ -1411,13 +1348,7 @@ sub isDataLoaded {
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 	$dbPrepOptions .= " -f " . max( $maxDuration, $totalTime ) . " ";
-
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
+	$dbPrepOptions .= " -u " . $users . " ";
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 	$springProfilesActive .= ",dbprep";
@@ -1544,19 +1475,9 @@ sub isBackupAvailable {
 		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
 	}
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
 	my $backupPathNum;
 	my $maxUsers = $self->getParamValue('maxUsers');
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-	}
-	else {
-		$backupPathNum = $maxUsers;
-	}
+	$backupPathNum = $maxUsers;
 
 	# Check for relational db backup at correct scale
 	my $backupDirPath = "$backupDir/$backupPathNum";
@@ -1618,11 +1539,6 @@ sub cleanData {
 	$console_logger->info(
 		"Cleaning and compacting storage on all data services.  This can take a long time after large runs." );
 	$logger->debug("cleanData.  user = $users, logPath = $logPath");
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
 
 	# Not preparing any auctions, just cleaning up
 	my $auctions = 0;
@@ -1702,12 +1618,7 @@ sub cleanData {
 	my $steadyState = $self->getParamValue('steadyState');
 	$dbPrepOptions .= " -f " . max( $maxDuration, $steadyState ) . " ";
 
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
+	$dbPrepOptions .= " -u " . $users . " ";
 
 	my $heap             = $self->getParamValue('dbLoaderHeap');
 	my $sshConnectString = $self->host->sshConnectString;

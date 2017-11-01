@@ -24,13 +24,13 @@ package com.vmware.weathervane.auction.data.imageStore;
  * @author Hal
  *
  */
-public class NoScaleException extends Exception {
+public class NoBenchmarkInfoNeededException extends Exception {
 
-	public NoScaleException() {
+	public NoBenchmarkInfoNeededException() {
 		super();
 	}
 	
-	public NoScaleException(String msg) {
+	public NoBenchmarkInfoNeededException(String msg) {
 		super(msg);
 	}
 

@@ -44,16 +44,6 @@ has 'reloadDb' => (
 	isa => 'Bool',
 );
 
-has 'backup' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
-has 'rebackup' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
 has 'isPowerControl' => (
 	is  => 'rw',
 	isa => 'Bool',

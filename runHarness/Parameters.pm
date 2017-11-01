@@ -1223,22 +1223,6 @@ $parameters{"redeploy"} = {
 	"usageText" => "",
 	"showUsage" => 1,
 };
-
-$parameters{"backup"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"rebackup"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 1,
-};
 $parameters{"reloadDb"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -2677,14 +2661,6 @@ $parameters{"keepalivedServerRoot"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mysqlBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbBackup/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"mysqlDataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbData/mysql",
@@ -2696,14 +2672,6 @@ $parameters{"mysqlDataDir"} = {
 $parameters{"mysqlLogDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbLogs/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbBackup/postgresql",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2785,14 +2753,6 @@ $parameters{"postgresqlServiceName"} = {
 	"type"      => "=s",
 	"default"   => "postgresql-9.3",
 	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoBackup",
-	"parent"    => "nosqlServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2915,14 +2875,6 @@ $parameters{"imageStoreDir"} = {
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the location of the directory in which images are stored when the\n\timageStore type is filesystem.   This is the \n\tdirectory that is exported by NFS and mounted by other VMs.",
-	"showUsage" => 0,
-};
-
-$parameters{"imageStoreBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/imageStoreBackup",
-	"parent"    => "appInstance",
-	"usageText" => "This is the directory in which backups of the filesystem-based imageStore are saved.",
 	"showUsage" => 0,
 };
 

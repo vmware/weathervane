@@ -45,14 +45,6 @@ my $defaultUsersPerAuctionScaleFactor = 15.0;
 override 'initialize' => sub {
 	my ($self) = @_;
 
-	# get the imageStore type for use when creating directory
-	# hierarchy for backups.  For the purposes of backups,
-	# filesystemApp is the same as filesystem
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $imageStoreType eq "filesystemApp" ) {
-		$self->setParamValue( 'imageStoreType', 'filesystem' );
-	}
-
 	super();
 
 	my $weathervaneHome  = $self->getParamValue('weathervaneHome');
@@ -117,38 +109,12 @@ sub prepareData {
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->isBackupAvailable( $users, $logPath ) ) {
-
-				$console_logger->info( ": Backup is available at the proper scale for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Restoring backup.\n" );
-
-				# There is a backup, so use it
-				$appInstance->stopDataServices($logPath);
-				$appInstance->unRegisterPortNumbers();
-				$appInstance->cleanupDataServices();
-				$appInstance->removeDataServices($logPath);
-				$retVal = $self->restoreBackup( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-
-				$appInstance->configureAndStartDataServices( $logPath, $users );
-				# Make sure that the services know their external port numbers
-				$self->appInstance->setExternalPortNumbers();
-
-				# Make sure that all of the data services are up
-				my $allUp = $appInstance->isUpDataServices($logPath);
-				if ( !$allUp ) {
-					$console_logger->error( "Couldn't bring up all data services for appInstance "
-						  . "$appInstanceNum of workload $workloadNum." );
-					return 0;
-				}
-
-			}
-			elsif ( $self->getParamValue('loadDb') ) {
+			if ( $self->getParamValue('loadDb') ) {
 				$console_logger->info(
-					    "Backup is not available at the proper scale for $users users for appInstance "
+					    "Data is not loaded for $users users for appInstance "
 					  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
-				# There is no backup, so load the data
+				# Load the data
 				$appInstance->stopDataServices($logPath);
 				$appInstance->unRegisterPortNumbers();
 				$appInstance->cleanupDataServices();
@@ -179,8 +145,8 @@ sub prepareData {
 
 			}
 			else {
-				$console_logger->error( "Data not loaded at the proper scale for $users users  for appInstance "
-					  . "$appInstanceNum of workload $workloadNum and no backup available. To load data, run again with loadDb=true.  Exiting.\n"
+				$console_logger->error( "Data not loaded for $users users for appInstance "
+					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
 				);
 				return 0;
 
@@ -194,32 +160,6 @@ sub prepareData {
 			$self->cleanData( $users, $logPath );
 
 		}
-	}
-
-	if ( $self->getParamValue('rebackup')
-		|| ( $loadedData && $self->getParamValue('backup') ) )
-	{
-
-		$appInstance->stopDataServices($logPath);
-		$appInstance->unRegisterPortNumbers();
-		$appInstance->cleanupDataServices();
-		$appInstance->removeDataServices($logPath);
-		$retVal = $self->createBackup( $users, $logPath );
-		if ( !$retVal ) { return 0; }
-		$appInstance->configureAndStartDataServices( $logPath, $users );
-		# Make sure that the services know their external port numbers
-		$self->appInstance->setExternalPortNumbers();
-
-		# Make sure that all of the data services are up
-		my $allUp = $appInstance->isUpDataServices($logPath);
-		if ( !$allUp ) {
-			$console_logger->error(
-				"Couldn't bring up all data services for appInstance " . "$appInstanceNum of workload $workloadNum." );
-			return 0;
-		}
-
-		# clear rebackup so we don't backup twice
-		$self->setParamValue( 'rebackup', 0 );
 	}
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
@@ -1065,258 +1005,6 @@ sub loadData {
 	return 1;
 }
 
-sub createBackup {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug("createBackup for workload $workloadNum, appInstance $appInstanceNum");
-
-	my $backupDir;
-	my $dataDir;
-	my $logDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('postgresqlDataDir');
-		$logDir    = $self->getParamValue('postgresqlLogDir');
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('mysqlDataDir');
-		$logDir    = $self->getParamValue('mysqlLogDir');
-	}
-
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-	my $cmdout;
-	my $appInstance = $self->appInstance;
-
-	my $nosqlServersRef = $self -appInstance->getActiveServicesByType('nosqlServer');
-
-	my $maxUsers = $self->maxUsers;
-
-	my $backupPathNum;
-	$backupPathNum = $maxUsers;
-
-	$console_logger->info( "Creating backup of data for a maximum of $maxUsers users for the "
-		  . $self->db
-		  . " database and "
-		  . $self->imageStoreType
-		  . " imageStore" );
-
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		my $sshConnectString = $dbServer->host->sshConnectString;
-		$console_logger->info( "Backing up the database on " . $dbServer->host->hostName );
-
-		# Make sure the backup directory exists
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/data\"`;
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/logs\"`;
-
-		# Clear out any old backups
-		$cmdout = `$sshConnectString \"find $backupDirPath/logs/* -delete 2>&1\"`;
-		$cmdout = `$sshConnectString \"find $backupDirPath/data/* -delete 2>&1\"`;
-
-		# Copy the data to the backup storage
-		$cmdout = `$sshConnectString \"cp -r $dataDir/* $backupDirPath/data/.\"`;
-
-		$cmdout = `$sshConnectString \"cp -r $logDir/* $backupDirPath/logs/.\"`;
-	}
-
-	my $numShards   = $appInstance->numNosqlShards;
-	my $numReplicas = $appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		$console_logger->info( "Backing up the NoSQL data-store on " . $nosqlServer->host->hostName );
-
-		my $sshConnectString = $nosqlServer->host->sshConnectString;
-
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/mongod\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/mongod/* -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r $mongodbDataDir/* $backupDirPath/mongod/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr1 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr1 $backupDirPath/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr2 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr2 $backupDirPath/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr3 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr3 $backupDirPath/.\"`;
-
-	}
-
-	# If the imageStore type is filesystem, then backup the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreDataDir   = $self->getParamValue('imageStoreDir');
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-			$cmdout = `$sshConnectString \"mkdir -p $backupDirPath\"`;
-
-			# Clean any old backup at this scale
-			$console_logger->info( "Clearing out the old filesystem backup on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"find $backupDirPath/* -delete 2>&1\"`;
-
-			$cmdout = `$sshConnectString \"mkdir -p $backupDirPath\"`;
-			$console_logger->info( "Backing up the filesystem contents on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"cp -r $imageStoreDataDir/* $backupDirPath/.\"`;
-
-		}
-	}
-
-}
-
-sub restoreBackup {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug("restoreBackup for workload $workloadNum, appInstance $appInstanceNum");
-
-	my $backupDir;
-	my $dataDir;
-	my $logDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('postgresqlDataDir');
-		$logDir    = $self->getParamValue('postgresqlLogDir');
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('mysqlDataDir');
-		$logDir    = $self->getParamValue('mysqlLogDir');
-	}
-
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-
-	# Stop the data services before restoring backup
-	my $appInstance = $self->appInstance;
-	$appInstance->stopDataServices($logPath);
-	$appInstance->unRegisterPortNumbers();
-	$appInstance->cleanupDataServices();
-	$appInstance->removeDataServices($logPath);
-
-	my $maxUsers = $self->maxUsers;
-
-	my $runLog = $self->runLog;
-	my $backupPathNum;
-	$backupPathNum = $maxUsers;
-	$console_logger->info(
-		"Restoring backup of data for $maxUsers max users and  " . $self->imageStoreType . " imageStore" );
-	
-	my $cmdout;
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		my $sshConnectString = $dbServer->host->sshConnectString;
-
-		$console_logger->info( "Restoring the database on " . $dbServer->host->hostName );
-
-		my $cmdOut;
-		$cmdOut = `$sshConnectString \"find $dataDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find $logDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/data/* $dataDir/. 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/logs/* $logDir/. 2>&1\"`;
-
-		if ( $db eq 'mysql' ) {
-			$cmdOut = `$sshConnectString \"chown -R mysql:mysql $logDir 2>&1\"`;
-
-			$cmdOut = `$sshConnectString \"chown -R mysql:mysql $dataDir 2>&1\"`;
-		}
-		elsif ( $db eq "postgresql" ) {
-			$cmdOut = `$sshConnectString \"chown -R postgres:users $logDir 2>&1\"`;
-
-			$cmdOut = `$sshConnectString \"chown -R postgres:users $dataDir 2>&1\"`;
-		}
-		else {
-			$console_logger->error("The database must be \"mysql\" or \"postgresql\"");
-			return 0;
-		}
-
-	}
-
-	my $numShards   = $appInstance->numNosqlShards;
-	my $numReplicas = $appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		my $sshConnectString = $nosqlServer->host->sshConnectString;
-
-		my $cmdOut;
-		$console_logger->info( "Restoring the NoSQL data-store on " . $nosqlServer->host->hostName );
-
-		$cmdOut = `$sshConnectString \"find $mongodbDataDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/mongod/* $mongodbDataDir/. 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"chown -R mongod:mongod $mongodbDataDir -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr1 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr1 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr2 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr2 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr3 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr3 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"chown -R mongod:mongod /var/lib/mongo 2>&1\"`;
-	}
-
-	# If the imageStore type is filesystem, then restore the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreDataDir   = $self->getParamValue('imageStoreDir');
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-
-			# Clean any old backup at this scale
-			$console_logger->info( "Clearing out the old filesystem contents on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"find $imageStoreDataDir/* -delete 2>&1\"`;
-
-			$console_logger->info( "Restoring the filesystem on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"cp -r $backupDirPath/* $imageStoreDataDir/. 2>&1\"`;
-
-		}
-	}
-
-	# Restart the data services
-	$appInstance->configureAndStartDataServices( $logPath, $users );
-	# Make sure that the services know their external port numbers
-	$self->appInstance->setExternalPortNumbers();
-	return 1;
-}
-
 sub isDataLoaded {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
@@ -1448,78 +1136,6 @@ sub waitForMongodbReplicaSync {
 			}
 		}
 	}
-}
-
-sub isBackupAvailable {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug( "isBackupAvailable for workload $workloadNum, appInstance $appInstanceNum" );
-
-	my $logName = "$logPath/isBackupAvailable-W${workloadNum}I${appInstanceNum}.log";
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	my $backupDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-	}
-
-	my $backupPathNum;
-	my $maxUsers = $self->getParamValue('maxUsers');
-	$backupPathNum = $maxUsers;
-
-	# Check for relational db backup at correct scale
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		if ( !$dbServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-			close $applog;
-			return 0;
-		}
-	}
-
-	# Check for mongodb db backup at correct scale
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $numShards        = $self->appInstance->numNosqlShards;
-	my $numReplicas      = $self->appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		if ( !$nosqlServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-			close $applog;
-			return 0;
-		}
-	}
-
-	# If the imageStore type is filesystem, check for backup at correct scale
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			if ( !$fileServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-				close $applog;
-				return 0;
-			}
-
-		}
-	}
-
-	close $applog;
-	return 1;
-
 }
 
 sub cleanData {

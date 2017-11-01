@@ -1254,15 +1254,6 @@ sub isRunning {
 
 }
 
-sub isBackupAvailable {
-	my ( $self, $backupDirPath, $applog ) = @_;
-	my $name        = $self->getParamValue('dockerName');
-
-	# Backups are not supported when running with docker
-	return 0;
-
-}
-
 sub stopStatsCollection {
 	my ($self) = @_;
 

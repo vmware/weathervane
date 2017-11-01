@@ -30,8 +30,6 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 	private ObjectId id;
 	
 	private Long maxusers;
-
-	private Long scale;
 		
 	private Integer numShards;
 	
@@ -51,14 +49,6 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 	public void setId(ObjectId id) {
 		this.id = id;
 	}
-
-	public Long getScale() {
-		return scale;
-	}
-
-	public void setScale(Long scale) {
-		this.scale = scale;
-	}
 	
 	public String getImageStoreType() {
 		return imageStoreType;
@@ -70,8 +60,7 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 
 	@Override
 	public String toString() {
-		return "NosqlBenchmarkInfo. scale = " + scale.toString()
-				+ ", maxusers = " + maxusers 
+		return "NosqlBenchmarkInfo.  maxusers = " + maxusers 
 				+ ", numShards = " + numShards
 				+ ", numReplicas = " + numReplicas
 				+ ", imageStoreType = " + imageStoreType;

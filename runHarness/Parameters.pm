@@ -1061,7 +1061,7 @@ $parameters{"interactive"} = {
 
 $parameters{"users"} = {
 	"type"    => "=s",
-	"default" => "300",
+	"default" => "1000",
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the number of simulated users to use for a run.\n\tThe number of simulated users is the primary metric of load for the Weathervane benchmark.",
@@ -1070,7 +1070,7 @@ $parameters{"users"} = {
 
 $parameters{"maxUsers"} = {
 	"type"    => "=i",
-	"default" => 300,
+	"default" => 1000,
 	"parent"  => "dataManager",
 	"usageText" =>
 "This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load.\n",

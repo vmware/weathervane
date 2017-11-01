@@ -29,8 +29,6 @@ public class ImageStoreBenchmarkInfo implements Serializable, DomainObject {
 	private String id;
 	
 	private Long maxusers;
-
-	private Long scale;
 		
 	private String imageStoreType;
 
@@ -46,14 +44,6 @@ public class ImageStoreBenchmarkInfo implements Serializable, DomainObject {
 	public void setId(String id) {
 		this.id = id;
 	}
-
-	public Long getScale() {
-		return scale;
-	}
-
-	public void setScale(Long scale) {
-		this.scale = scale;
-	}
 	
 	public String getImageStoreType() {
 		return imageStoreType;
@@ -65,7 +55,7 @@ public class ImageStoreBenchmarkInfo implements Serializable, DomainObject {
 
 	@Override
 	public String toString() {
-		return "ImageStoreBenchmarkInfo. scale = " + scale.toString();
+		return "ImageStoreBenchmarkInfo.  ";
 	}
 
 	public Long getMaxusers() {

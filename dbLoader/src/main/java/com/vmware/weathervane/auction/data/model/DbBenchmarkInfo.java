@@ -37,8 +37,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	
 	private Long maxduration;
 	
-	private Long scale;
-
 	private Long numnosqlshards;
 	
 	private Long numnosqlreplicas;
@@ -58,14 +56,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	public void setId(Long id) {
 		this.id = id;
 	}
-
-	public Long getScale() {
-		return scale;
-	}
-
-	public void setScale(Long scale) {
-		this.scale = scale;
-	}
 	
 	public String getImagestoretype() {
 		return imagestoretype;
@@ -77,7 +67,7 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	
 	@Override
 	public String toString() {
-		return "DbBenchmarkInfo. scale = " + scale.toString();
+		return "DbBenchmarkInfo. ";
 	}
 
 	public Long getMaxusers() {

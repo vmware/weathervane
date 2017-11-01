@@ -56,7 +56,6 @@ public class DBLoader {
 	private static String numThreadsDefault = "30";
 	private static String itemFileDefault = "items.json";
 	private static String creditLimitDefault = "1000000";
-	private static String scaleDefault = "0";
 	private static String maxDurationDefault = "0";
 	private static String maxUsersDefault = "120";
 	private static String numNosqlShardsDefault = "0";
@@ -74,8 +73,6 @@ public class DBLoader {
 
 	private static ImageStoreFacade imageStore;
 
-	private static List<DbLoadParams> loadScaleList;
-
 	private static List<List<ImagesHolder>> allItemImages = new ArrayList<List<ImagesHolder>>();
 
 	private static final Logger logger = LoggerFactory.getLogger(DBLoader.class);
@@ -91,8 +88,6 @@ public class DBLoader {
 		Option c = new Option("c", "credit", true, "Credit limit to assign to users");
 		Option t = new Option("t", "threads", true, "Number of threads for dbLoader");
 		Option d = new Option("d", "descriptions", true, "File containing the item descriptions.");
-		Option s = new Option("s", "scale", true,
-				"Benchmark scale level. Controls the number of users and historical and future auctions loaded.");
 		Option u = new Option("u", "users", true,
 				"Max number of active users to be supported by the this data load.");
 		Option m = new Option("m", "shards", true,
@@ -116,7 +111,6 @@ public class DBLoader {
 		cliOptions.addOption(c);
 		cliOptions.addOption(t);
 		cliOptions.addOption(d);
-		cliOptions.addOption(s);
 		cliOptions.addOption(u);
 		cliOptions.addOption(m);
 		cliOptions.addOption(p);
@@ -141,15 +135,6 @@ public class DBLoader {
 		String numThreadsString = cliCmd.getOptionValue('t', numThreadsDefault);
 
 		String itemFileName = cliCmd.getOptionValue('d', itemFileDefault);
-
-		String scaleString = "";
-		int scale = -1;
-		boolean useScale = false;
-		if (cliCmd.hasOption('s')) {
-			scaleString = cliCmd.getOptionValue('s');
-			scale = Integer.valueOf(scaleString);
-			useScale = true;
-		}
 
 		String maxUsersString = cliCmd.getOptionValue('u', maxUsersDefault);
 		int maxUsers = Integer.valueOf(maxUsersString);
@@ -210,19 +195,8 @@ public class DBLoader {
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
 
 		DbLoadParams theLoadParams = null;
-		if (useScale) {
-			loadScaleList = (List<DbLoadParams>) context.getBean("loadScaleList");
-			int numScales = loadScaleList.size() - 1;
-			if ((scale < 0) || (scale > numScales)) {
-				System.err.println("The scale level (--scale or -s) must be between 0 and "
-						+ numScales + ". " + messageString);
-				System.exit(1);
-			}
-			theLoadParams = loadScaleList.get(scale);
-		} else {
-			theLoadParams = (DbLoadParams) context.getBean("perUserScale");
-			theLoadParams.setTotalUsers(maxUsers * theLoadParams.getUsersScaleFactor());
-		}
+		theLoadParams = (DbLoadParams) context.getBean("perUserScale");
+		theLoadParams.setTotalUsers(maxUsers * theLoadParams.getUsersScaleFactor());
 		
 		if (maxDuration > 0) {
 			theLoadParams.setItemsPerCurrentAuction((int) Math.ceil(8 + (maxDuration / itemDuration)));
@@ -265,7 +239,7 @@ public class DBLoader {
 
 		/*
 		 * Parameters related to the max number of possible current auctions at
-		 * this scale.
+		 * this number of users.
 		 */
 		long maxActiveUsers = (long) Math.ceil(theLoadSpec.getTotalUsers()
 				/ (1.0 * theLoadParams.getUsersScaleFactor()));
@@ -713,7 +687,7 @@ public class DBLoader {
 		/*
 		 * Save information about this benchmark load in the data services
 		 */
-		dbLoaderDao.saveBenchmarkInfo(maxUsers, scale, numNosqlShards, numNosqlReplicas, imageStoreType, maxDuration);
+		dbLoaderDao.saveBenchmarkInfo(maxUsers, numNosqlShards, numNosqlReplicas, imageStoreType, maxDuration);
 		
 		fixedTimeOffsetDao.deleteAll();
 

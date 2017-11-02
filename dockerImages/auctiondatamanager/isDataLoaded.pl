@@ -24,7 +24,6 @@ print "Running: $cmdString\n";
 
 my $cmdOut = `$cmdString`;
 print "cmdOut = $cmdOut, \$? = $?\n";
-
 if ($?) {
 	exit 0;
 }

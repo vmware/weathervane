@@ -149,10 +149,10 @@ runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomca
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
 
 # data manager
-runAndLog($fileout, "rm -f ./dockerImages/auctionDataManager/dbLoader.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/auctionDataManager/dbLoaderLibs");
-runAndLog($fileout, "cp ./dist/dbLoader.jar ./dockerImages/auctionDataManager/dbLoader.jar");
-runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctionDataManager/dbLoaderLibs");
+runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+runAndLog($fileout, "cp ./dist/dbLoader.jar ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctiondatamanager/dbLoaderLibs");
 
 my $version = `cat version.txt`;
 chomp($version);

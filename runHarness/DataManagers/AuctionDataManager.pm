@@ -99,7 +99,7 @@ sub prepareData {
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
-		# Either need to or have been asked to load the data
+		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
 		$loadedData = 1;

@@ -12,15 +12,6 @@ trap 'sigterm' TERM
 
 perl /updateResolveConf.pl
 
-if [ $# -gt 0 ]; then
-	eval "$* &"
-else
-	java -jar ${JVMOPTS} -DWA=W${WORKLOADNUM}I${APPINSTANCENUM} /auctionConfigManager.jar --port=${PORT}
-fi
-
-pid="$!"
-
-
 if [ ! -e "/fifo" ]; then
 	mkfifo /fifo || exit
 fi

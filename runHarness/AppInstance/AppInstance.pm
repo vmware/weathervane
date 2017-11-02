@@ -842,7 +842,7 @@ sub getFindMaxInfoString {
 	return $returnString;
 }
 
-sub pretouchData {
+
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(

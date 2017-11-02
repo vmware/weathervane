@@ -393,38 +393,6 @@ sub configureAndStartDataServices {
 	}
 }
 
-sub startInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startInfrastructureServices($setupLogDir);
-	}
-}
-
-sub startFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startFrontendServices($setupLogDir);
-	}
-}
-
-sub startBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startBackendServices($setupLogDir);
-	}
-}
-
-sub startDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startDataServices($setupLogDir);
-	}
-}
-
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	my $workloadsRef = $self->workloadsRef;

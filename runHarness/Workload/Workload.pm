@@ -226,30 +226,6 @@ sub startInfrastructureServices {
 	}
 }
 
-sub startFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->startFrontendServices($setupLogDir);
-	}
-}
-
-sub startBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->startBackendServices($setupLogDir);
-	}
-}
-
-sub startDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->startDataServices($setupLogDir);
-	}
-}
-
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	return callMethodOnObjectsParallel1( 'pretouchData', $self->appInstancesRef, $setupLogDir );		

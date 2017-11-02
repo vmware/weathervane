@@ -5,6 +5,7 @@ COPY entrypoint.sh /entrypoint.sh
 COPY dbLoader.jar /dbLoader.jar
 COPY dbLoaderLibs /dbLoaderLibs
 COPY isDataLoaded.pl /isDataLoaded.pl
+COPY images /images
 	
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

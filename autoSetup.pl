@@ -103,6 +103,13 @@ print "Performing autoSetup for a $os host.\n";
 print $fileout "Performing autoSetup for a $os host.\n";
 runAndLog( $fileout, "setenforce 0" );
 
+print "Installing Java\n";
+runAndLog( $fileout, "yum install -y java-1.8.0-openjdk" );
+runAndLog( $fileout, "yum install -y java-1.8.0-openjdk-devel" );
+
+print "Building Weathervane executables\n";
+runAndLog( $fileout, "./gradlew clean release" );
+
 print "Removing Network Manager if installed.\n";
 print $fileout "Removing Network Manager if installed.\n";
 runAndLog( $fileout, "systemctl disable NetworkManager" );
@@ -268,10 +275,6 @@ runAndLog( $fileout, "echo \"#LABEL=mongoData  /mnt/mongoData ext4 defaults 1 1\
 runAndLog( $fileout, "echo \"#LABEL=mongoBackup  /mnt/mongoBackup ext4 defaults 1 1\" >>  /etc/fstab" );
 runAndLog( $fileout, "echo \"#LABEL=imageStore  /mnt/imageStore ext4 defaults 1 1\" >>  /etc/fstab" );
 runAndLog( $fileout, "echo \"#LABEL=zookeeper  /mnt/zookeeper ext4 defaults 1 1\" >>  /etc/fstab" );
-
-print "Installing Java\n";
-runAndLog( $fileout, "yum install -y java-1.8.0-openjdk" );
-runAndLog( $fileout, "yum install -y java-1.8.0-openjdk-devel" );
 
 print "Fetching and installing Zookeeper\n";
 print $fileout "Fetching and installing Zookeeper\n";

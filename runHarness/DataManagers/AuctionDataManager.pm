@@ -79,7 +79,7 @@ sub prepareData {
 	if ($reloadDb) {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
-	$appInstance->configureAndStartDataServices($logPath);
+	$appInstance->startServices("data", $logPath);
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();
 	sleep(10);
@@ -120,7 +120,7 @@ sub prepareData {
 				$appInstance->cleanupDataServices();
 				$appInstance->removeDataServices($logPath);
 				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->configureAndStartDataServices( $logPath, $users );
+				$appInstance->startServices("data", $logPath);
 				# Make sure that the services know their external port numbers
 				$self->appInstance->setExternalPortNumbers();
 

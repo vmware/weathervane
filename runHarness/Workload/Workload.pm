@@ -186,46 +186,6 @@ sub getFindMaxInfoString {
 	return $returnString;
 }
 
-sub configureAndStartInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->configureAndStartInfrastructureServices($setupLogDir);
-	}
-}
-
-sub configureAndStartFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->configureAndStartFrontendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->configureAndStartBackendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->configureAndStartDataServices($setupLogDir);
-	}
-}
-
-sub startInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->startInfrastructureServices($setupLogDir);
-	}
-}
-
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	return callMethodOnObjectsParallel1( 'pretouchData', $self->appInstancesRef, $setupLogDir );		
@@ -321,82 +281,32 @@ sub clearResults {
 	return $self->primaryDriver->clearResults();
 }
 
-sub stopInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjects1( 'stopInfrastructureServices', $self->appInstancesRef, $setupLogDir );
+
+sub startServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		$appInstance->startServices($serviceTier, $setupLogDir);
+	}
 }
 
-sub stopFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjects1( 'stopFrontendServices', $self->appInstancesRef, $setupLogDir );
+sub stopServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		$appInstance->stopServices($serviceTier, $setupLogDir);
+	}
 }
 
-sub stopBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjects1( 'stopBackendServices', $self->appInstancesRef, $setupLogDir );
-}
-
-sub stopDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjects1( 'stopDataServices', $self->appInstancesRef, $setupLogDir );
-}
-
-sub removeInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
+sub removeServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger         = get_logger("Weathervane::Workload::Workload");
-	$logger->debug("removing infrastructure services with log dir $setupLogDir");
+	$logger->debug("removing $serviceTier services with log dir $setupLogDir");
 	
 	my $appInstancesRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
-		$appInstance->removeInfrastructureServices($setupLogDir);
+		$appInstance->removeServices($serviceTier, $setupLogDir);
 	}
-}
-
-sub removeFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger         = get_logger("Weathervane::Workload::Workload");
-	$logger->debug("removing frontend services with log dir $setupLogDir");
-	
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->removeFrontendServices($setupLogDir);
-	}
-}
-
-sub removeBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->removeBackendServices($setupLogDir);
-	}
-}
-
-sub removeDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->removeDataServices($setupLogDir);
-	}
-}
-
-sub createInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createInfrastructureServices', $self->appInstancesRef, $setupLogDir );
-}
-
-sub createFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createFrontendServices', $self->appInstancesRef, $setupLogDir );
-}
-
-sub createBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createBackendServices', $self->appInstancesRef, $setupLogDir );
-}
-
-sub createDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createDataServices', $self->appInstancesRef, $setupLogDir );
 }
 
 sub clearDataServicesBeforeStart {
@@ -419,26 +329,6 @@ sub configureWorkloadDriver {
 	}
 
 	$workloadDriver->configure( $self->appInstancesRef, $suffix );
-}
-
-sub configureInfrastructureServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureInfrastructureServices', $self->appInstancesRef );
-}
-
-sub configureFrontendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureFrontendServices', $self->appInstancesRef );
-}
-
-sub configureBackendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureBackendServices', $self->appInstancesRef );
-}
-
-sub configureDataServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureDataServices', $self->appInstancesRef );
 }
 
 sub cleanStatsFiles {

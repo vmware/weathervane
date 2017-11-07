@@ -192,7 +192,7 @@ sub run {
 
 	## start all of the backend services.  Data services should be up.
 	$console_logger->info("Starting data services");
-	$self->configureAndStartDataServices( $setupLogDir );
+	$self->startServices( "data", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 	sleep 30;
@@ -201,17 +201,17 @@ sub run {
 	$self->pretouchData($setupLogDir);
 
 	$console_logger->info("Starting backend services");
-	$self->configureAndStartBackendServices( $setupLogDir );
+	$self->startServices( "backend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	$console_logger->info("Starting frontend services");
-	$self->configureAndStartFrontendServices( $setupLogDir );
+	$self->startServices( "frontend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	$console_logger->info("Starting infrastructure services");
-	$self->configureAndStartInfrastructureServices( $setupLogDir );
+	$self->startServices( "infrastructure", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 

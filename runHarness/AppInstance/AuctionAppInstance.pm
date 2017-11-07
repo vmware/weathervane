@@ -165,7 +165,8 @@ override 'checkConfig' => sub {
 	# First make sure that any configPaths specified didn't ask for more services
 	# than the user specified
 	my $impl         = $self->getParamValue('workloadImpl');
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypes =  $serviceTiersHashRef->{"infrastructure"};
 	foreach my $serviceType (@$serviceTypes) {
 		if ( $self->getMaxNumOfServiceType($serviceType) < $self->getTotalNumOfServiceType($serviceType) ) {
 			$console_logger->error(

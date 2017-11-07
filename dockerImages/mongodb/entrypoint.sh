@@ -40,6 +40,7 @@ cmd=$*
 numArgs=$#
 
 if [ $CLEARBEFORESTART -eq 1 ]; then
+  echo "Clearing old MongoDB data"
   find /mnt/mongoData/* -delete
   find /mnt/mongoC1Data/* -delete
   find /mnt/mongoC2Data/* -delete

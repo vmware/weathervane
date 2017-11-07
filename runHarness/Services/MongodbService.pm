@@ -112,7 +112,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $appInstance = $self->appInstance;
 
@@ -389,7 +389,7 @@ sub stopSingleMongodb {
 	close $dblog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger      = get_logger("Weathervane::Services::MongodbService");
 	my $appInstance = $self->appInstance;

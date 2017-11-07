@@ -115,7 +115,7 @@ override 'create' => sub {
 	close $applog;
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 	
@@ -136,7 +136,7 @@ sub stop {
 	
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $hostname         = $self->host->hostName;
 	my $name             = $self->getParamValue('dockerName');

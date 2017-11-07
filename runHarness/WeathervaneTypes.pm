@@ -31,11 +31,6 @@ our %serviceTypes = (
 	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'appServer'], 
 );
 
-# valid service tiers
-our %serviceTiers = ( 
-	'auction' => ['infrastructure', 'data', 'backend', 'frontend'], 
-);
-
 # services that can be run on docker
 our %dockerServiceTypes = ( 
 	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'coordinationServer', 'configurationManager'], 

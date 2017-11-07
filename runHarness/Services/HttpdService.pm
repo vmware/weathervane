@@ -39,7 +39,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;
@@ -85,7 +85,7 @@ sub start {
 
 }
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::HttpdService");
 	$logger->debug("stop HttpdService");

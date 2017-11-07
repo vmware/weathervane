@@ -73,7 +73,9 @@ sub prepareData {
 	my $retVal         = 0;
 
 	$console_logger->info(
-		"Configuring and starting data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n" );
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+	$logger->debug("prepareData users = $users, logPath = $logPath");
+
 
 	# The data services must be started for checking whether the data is loaded
 	if ($reloadDb) {
@@ -115,10 +117,8 @@ sub prepareData {
 					  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
 				# Load the data
-				$appInstance->stopDataServices($logPath);
+				$appInstance->stopServices("data", $logPath);
 				$appInstance->unRegisterPortNumbers();
-				$appInstance->cleanupDataServices();
-				$appInstance->removeDataServices($logPath);
 				$appInstance->clearDataServicesBeforeStart($logPath);
 				$appInstance->startServices("data", $logPath);
 				# Make sure that the services know their external port numbers
@@ -265,8 +265,7 @@ sub prepareData {
 
 	# stop the data services. They must be started in the main process
 	# so that the port numbers are available
-	$appInstance->stopDataServices($logPath);
-	$appInstance->removeDataServices($logPath);
+	$appInstance->stopServices("data", $logPath);
 	$appInstance->unRegisterPortNumbers();
 
 	close $logHandle;

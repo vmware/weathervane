@@ -38,7 +38,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	$logger->debug("stop PostgresqlService");
@@ -69,7 +69,7 @@ sub stop {
 	close $dblog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger      = get_logger("Weathervane::Services::PostgresqlService");
 	my $serviceType = $self->getParamValue('serviceType');

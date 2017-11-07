@@ -260,6 +260,43 @@ sub getIpAddr {
 	return $self->host->ipAddr;
 }
 
+sub start {
+	my ($self, $serviceType, $users, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Service::Service");
+	$logger->debug(
+		"start serviceType $serviceType, Workload ",
+		$self->getParamValue('workloadNum'),
+		", appInstance ",
+		$self->getParamValue('instanceNum')
+	);
+
+	my $impl   = $self->appInstance->getParamValue('workloadImpl');
+	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+
+	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
+	my $servicesRef = $self->getActiveServicesByType($serviceType);
+
+	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
+		foreach my $service (@$servicesRef) {
+			$logger->debug( "Create " . $service->getDockerName() . "\n" );
+			$service->create($logPath);
+		}
+	}
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Configure " . $service->getDockerName() . "\n" );
+		$service->configure( $logPath, $users, $suffix );
+	}
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Start " . $service->getDockerName() . "\n" );
+		$service->start($logPath);
+	}
+
+	sleep 15;
+	
+}
+
 sub create {
 	my ($self, $logPath)            = @_;
 	my $useVirtualIp     = $self->getParamValue('useVirtualIp');

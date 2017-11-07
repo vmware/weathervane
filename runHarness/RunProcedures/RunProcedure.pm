@@ -356,41 +356,9 @@ sub prepareData {
 	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->workloadsRef, $setupLogDir );
 }
 
-sub configureAndStartInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartInfrastructureServices($setupLogDir);
-	}
-}
-
 sub sanityCheckServices {
 	my ( $self, $cleanupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'sanityCheckServices', $self->workloadsRef, $cleanupLogDir );
-}
-
-sub configureAndStartFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartFrontendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartBackendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartDataServices($setupLogDir);
-	}
 }
 
 sub pretouchData {
@@ -445,100 +413,27 @@ sub clearResults {
 	}
 }
 
-sub stopInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopInfrastructureServices', $self->workloadsRef, $setupLogDir );
+sub startServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		$workload->startServices($serviceTier, $setupLogDir);
+	}
 }
 
-sub stopFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopFrontendServices', $self->workloadsRef, $setupLogDir );
+sub stopServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
 }
 
-sub stopBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopBackendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub stopDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopDataServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub removeInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
+sub removeServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	$logger->debug("removing infrastructure services with log dir $setupLogDir");
+	$logger->debug("removing $serviceTier services with log dir $setupLogDir");
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
-		$workload->removeInfrastructureServices($setupLogDir);
+		$workload->removeServices($setupLogDir);
 	}
-}
-
-sub removeFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	$logger->debug("removing frontend services with log dir $setupLogDir");
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->removeFrontendServices($setupLogDir);
-	}
-}
-
-sub removeBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->removeBackendServices($setupLogDir);
-	}
-}
-
-sub removeDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->removeDataServices($setupLogDir);
-	}
-}
-
-sub createInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createInfrastructureServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createFrontendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createBackendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createDataServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub configureInfrastructureServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureInfrastructureServices', $self->workloadsRef );
-}
-
-sub configureFrontendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureFrontendServices', $self->workloadsRef );
-}
-
-sub configureBackendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureBackendServices', $self->workloadsRef );
-}
-
-sub configureDataServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureDataServices', $self->workloadsRef );
 }
 
 sub cleanupAfterFailure {

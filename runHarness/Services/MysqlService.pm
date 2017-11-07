@@ -39,7 +39,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;
@@ -64,7 +64,7 @@ sub stop {
 	close $dblog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;

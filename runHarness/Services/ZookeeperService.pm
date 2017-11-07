@@ -42,7 +42,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperServer");
 	$logger->debug("stop ZookeeperServer");
@@ -87,7 +87,7 @@ sub stop {
 	close $applog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;

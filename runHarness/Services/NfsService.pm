@@ -40,7 +40,7 @@ override 'initialize' => sub {
 
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $scpConnectString = $self->host->scpConnectString;
@@ -138,7 +138,7 @@ sub stop {
 
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 

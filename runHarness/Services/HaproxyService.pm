@@ -40,7 +40,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;
@@ -77,7 +77,7 @@ sub start {
 	close $applog;
 }
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::HaproxyService");
 	$logger->debug("stop HaproxyService");

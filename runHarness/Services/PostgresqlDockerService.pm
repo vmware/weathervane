@@ -39,7 +39,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;
@@ -147,8 +147,9 @@ override 'create' => sub {
 	close $applog;
 };
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $hostname         = $self->host->hostName;
 	my $name             = $self->getParamValue('dockerName');
 	my $time     = `date +%H:%M`;
@@ -197,12 +198,19 @@ override 'remove' => sub {
 };
 
 sub clearDataBeforeStart {
+	my ( $self, $logPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
+	my $name        = $self->getParamValue('dockerName');
+	$logger->debug("clearDataBeforeStart for $name");
 }
 
 sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $hostname    = $self->host->hostName;
 	my $name        = $self->getParamValue('dockerName');
+
+	$logger->debug("clearDataAfterStart for $name");
 
 	my $time     = `date +%H:%M`;
 	chomp($time);

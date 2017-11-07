@@ -160,20 +160,21 @@ override 'run' => sub {
 	$self->getStatsFiles();
 
 	my $sanityPassed = 1;
+
+	## get the logs
+	$self->getLogFiles();
+
 	if ( $self->getParamValue('stopServices') ) {
-		## stop the services
-		$self->stopFrontendServices($cleanupLogDir);
-		$self->stopBackendServices($cleanupLogDir);
 
 		# cleanup the databases
 		$self->cleanData($cleanupLogDir);
 
-		$self->stopDataServices($cleanupLogDir);
-		$self->stopInfrastructureServices($cleanupLogDir);
-		$self->unRegisterPortNumbers();
+		## stop the services
+		my @tiers = qw(frontend backend data infrastructure);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 
-		## get the logs
-		$self->getLogFiles();
+		$debug_logger->debug("Unregister port numbers");
+		$self->unRegisterPortNumbers();
 
 		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
@@ -188,12 +189,9 @@ override 'run' => sub {
 		$self->removeBackendServices($cleanupLogDir);
 		$self->removeDataServices($cleanupLogDir);
 		$self->removeInfrastructureServices($cleanupLogDir);
+
 		# clean up old logs and stats
 		$self->cleanup();
-	}
-	else {
-		## get the logs
-		$self->getLogFiles();
 	}
 
 	# Put a file in the output/seqnum directory with the run name

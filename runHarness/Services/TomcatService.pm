@@ -51,7 +51,7 @@ sub setMongosDocker {
 	$self->mongosDocker($mongosDockerName);
 }
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatService");
 	$logger->debug("stop TomcatService");
@@ -92,7 +92,7 @@ sub stop {
 
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;

@@ -365,13 +365,13 @@ sub workloadRunning {
 	}
 }
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ElasticityService");
 	$logger->debug("stop ElasticityService");
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ElasticityService");
 	$logger->debug("start ElasticityService");

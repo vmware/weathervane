@@ -841,8 +841,7 @@ sub getFindMaxInfoString {
 	$returnString .= " MinRateStep = " . $self->minRateStep . "\n";
 	return $returnString;
 }
-
-
+sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
@@ -946,13 +945,7 @@ sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users  = $self->users;
-	$logger->debug(
-		"startServices for serviceTier $serviceTier, workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
+	my $impl         = $self->getParamValue('workloadImpl');
 
 	# If in interactive mode, then configure services for maxUsers load
 	my $interactive = $self->getParamValue('interactive');
@@ -961,9 +954,19 @@ sub startServices {
 		$users = $maxUsers;
 	}
 
-	my $impl         = $self->getParamValue('workloadImpl');
+	$logger->debug(
+		"startServices for serviceTier $serviceTier, workload ",
+		$self->getParamValue('workloadNum'),
+		", appInstance ",
+		$self->getParamValue('appInstanceNum'),
+		", impl = $impl", 
+		" users = $users",
+		" setupLogDir = $setupLogDir"
+	);
+
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
+	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
@@ -981,24 +984,22 @@ sub stopServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"stopServices for serviceTier $serviceTier, workload ",
+	$logger->debug("stopServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
 		", appInstance ",
 		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
+		", impl = $impl"	);
+
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
-	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
-	
-	foreach my $serviceType ( reverse @$serviceTypes ) {
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};	
+	foreach my $serviceType ( reverse @$serviceTypesRef ) {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for starting the 
+			# Use the first instance of the service for stopping the 
 			# service instances
 			my $serviceRef = $servicesRef->[0];
 			if ( $serviceRef->isReachable() ) {
-				$logger->debug( "stop " . $service->getDockerName() . "\n" );
+				$logger->debug( "stop " . $serviceRef->getDockerName() . "\n" );
 				$serviceRef->stop($serviceType, $setupLogDir);
 			}
 		} else {
@@ -1016,14 +1017,14 @@ sub removeServices {
 	$logger->debug("removing $serviceTier services with log dir $setupLogDir");
 
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
-	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	foreach my $serviceType ( reverse @$serviceTypesRef ) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for starting the 
+			# Use the first instance of the service for removing the 
 			# service instances
 			my $serviceRef = $servicesRef->[0];
-			$serviceRef->remove($serviceType, $setupLogDir);
+			$serviceRef->remove($setupLogDir);
 		} else {
 			next;
 		}
@@ -1053,7 +1054,7 @@ sub isUp {
 	my $frontendServiceTypes       = $serviceTiersHashRef->{"frontend"};
 	my $infrastructureServiceTypes = $serviceTiersHashRef->{"infrastructure"};
 
-	foreach my $serviceType ( @$dataServiceTypes, @$backendServiceTypes, @$frontendServiceTypes ) {
+	foreach my $serviceType ( @$dataServiceTypes, @$backendServiceTypes, @$frontendServiceTypes, @$infrastructureServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$isUp = $service->isUp($log);
@@ -1101,7 +1102,8 @@ sub isUpDataServices {
 	open( $log, " > $logName " ) or die " Error opening $logName: $!";
 
 	my $isUp;
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 
 	do {
 		sleep 30;
@@ -1149,7 +1151,8 @@ sub clearDataServicesBeforeStart {
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -1175,7 +1178,8 @@ sub clearDataServicesAfterStart {
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -1205,7 +1209,8 @@ sub cleanDataServiceStatsFiles {
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 
 		my $impl             = $self->getParamValue('workloadImpl');
-		my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+		my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+		my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 		foreach my $serviceType (@$dataServiceTypes) {
 			my $servicesRef = $self->getActiveServicesByType($serviceType);
 			foreach my $service (@$servicesRef) {
@@ -1251,7 +1256,8 @@ sub cleanDataServiceLogFiles {
 
 	# clean log files on services
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -1602,11 +1608,13 @@ sub cleanData {
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $users = $self->users;
 	$logger->debug(
 		"prepareData for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum')
+		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		", users ",            $users,
+		", logDir ",            $setupLogDir
 	);
-	my $users = $self->users;
 
 	return $self->dataManager->prepareData( $users, $setupLogDir );
 }

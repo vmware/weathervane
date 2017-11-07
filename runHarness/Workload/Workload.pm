@@ -293,9 +293,9 @@ sub startServices {
 sub stopServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->stopServices($serviceTier, $setupLogDir);
-	}
+	
+	callMethodOnObjectsParallel2( 'stopServices', $self->appInstancesRef, $serviceTier, $setupLogDir );
+	
 }
 
 sub removeServices {
@@ -358,19 +358,6 @@ sub cleanStatsFiles {
 
 	if ( $logLevel >= 3 ) {
 
-		$pid = fork();
-		if ( !defined $pid ) {
-			$logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			callMethodOnObjectsParallel( 'cleanStatsFiles', $self->appInstancesRef );
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
 		# Start stops collection on workload driver
 		$logger->debug(": CleanStatsFiles for workload drivers\n");
 		$pid = fork();
@@ -401,19 +388,6 @@ sub cleanLogFiles {
 	$logger->debug(": CleanLogFiles\n");
 
 	my $workloadDriver = $self->primaryDriver;
-
-	$pid = fork();
-	if ( !defined $pid ) {
-		$logger->error("Couldn't fork a process: $!");
-		exit(-1);
-	}
-	elsif ( $pid == 0 ) {
-		callMethodOnObjectsParallel( 'cleanLogFiles', $self->appInstancesRef );
-		exit;
-	}
-	else {
-		push @pids, $pid;
-	}
 
 	# clean log files on workload driver
 	$pid = fork();

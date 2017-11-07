@@ -353,6 +353,8 @@ sub cleanData {
 
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("prepareData with logDir $setupLogDir");
 	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->workloadsRef, $setupLogDir );
 }
 
@@ -360,7 +362,6 @@ sub sanityCheckServices {
 	my ( $self, $cleanupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'sanityCheckServices', $self->workloadsRef, $cleanupLogDir );
 }
-
 
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
@@ -416,6 +417,10 @@ sub clearResults {
 
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	
+	$logger->debug("startServices for serviceTier $serviceTier with logDir $setupLogDir");
+	
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
 		$workload->startServices($serviceTier, $setupLogDir);
@@ -424,16 +429,19 @@ sub startServices {
 
 sub stopServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("stopServices for serviceTier $serviceTier with logDir $setupLogDir");
+	
 	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
 }
 
 sub removeServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	$logger->debug("removing $serviceTier services with log dir $setupLogDir");
+	$logger->debug("removeServices removing $serviceTier services with log dir $setupLogDir");
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
-		$workload->removeServices($setupLogDir);
+		$workload->removeServices($serviceTier, $setupLogDir);
 	}
 }
 
@@ -599,6 +607,15 @@ sub getStatsFiles {
 
 }
 
+sub cleanup {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+
+	$self->cleanStatsFiles();
+	$self->cleanLogFiles();
+
+}
+
 sub cleanStatsFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -629,7 +646,7 @@ sub cleanStatsFiles {
 
 	if ( $logLevel >= 4 ) {
 
-		# Start stops collection on virtual infrastructure
+		# Clean stats files on virtual infrastructure
 		$pid = fork();
 		if ( !defined $pid ) {
 			$logger->error("Couldn't fork a process: $!");
@@ -645,6 +662,7 @@ sub cleanStatsFiles {
 		}
 	}
 
+	# Clean stats files from workload driver.  Stats files for services are cleaned in service stop
 	$pid = fork();
 	if ( !defined $pid ) {
 		$logger->error("Couldn't fork a process: $!");
@@ -652,6 +670,64 @@ sub cleanStatsFiles {
 	}
 	elsif ( $pid == 0 ) {
 		callMethodOnObjectsParallel( 'cleanStatsFiles', $self->workloadsRef );
+		exit;
+	}
+	else {
+		push @pids, $pid;
+	}
+
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+	}
+
+}
+
+sub cleanLogFiles {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	my $pid;
+	my @pids;
+	$logger->debug(": CleanLogFiles\n");
+
+	my $hostsRef = $self->hostsRef;
+	foreach my $host (@$hostsRef) {
+		$pid = fork();
+		if ( !defined $pid ) {
+			$logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}
+		elsif ( $pid == 0 ) {
+			$host->cleanLogFiles();
+			exit;
+		}
+		else {
+			push @pids, $pid;
+		}
+	}
+
+	# clean log files on virtual infrastructure
+	$pid = fork();
+	if ( !defined $pid ) {
+		$logger->error("Couldn't fork a process: $!");
+		exit(-1);
+	}
+	elsif ( $pid == 0 ) {
+		my $virtualInfrastructure = $self->virtualInfrastructure;
+		$virtualInfrastructure->cleanLogFiles();
+		exit;
+	}
+	else {
+		push @pids, $pid;
+	}
+
+	# Clean logs from workload driver.  Service logs are cleaned in service stop
+	$pid = fork();
+	if ( !defined $pid ) {
+		$logger->error("Couldn't fork a process: $!");
+		exit(-1);
+	}
+	elsif ( $pid == 0 ) {
+		callMethodOnObjectsParallel( 'cleanLogFiles', $self->workloadsRef );
 		exit;
 	}
 	else {
@@ -739,63 +815,6 @@ sub getLogFiles {
 		else {
 			push @pids, $pid;
 		}
-	}
-
-	foreach $pid (@pids) {
-		waitpid $pid, 0;
-	}
-
-}
-
-sub cleanLogFiles {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $pid;
-	my @pids;
-	$logger->debug(": CleanLogFiles\n");
-
-	my $hostsRef = $self->hostsRef;
-	foreach my $host (@$hostsRef) {
-		$pid = fork();
-		if ( !defined $pid ) {
-			$logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$host->cleanLogFiles();
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-	}
-
-	# clean log files on virtual infrastructure
-	$pid = fork();
-	if ( !defined $pid ) {
-		$logger->error("Couldn't fork a process: $!");
-		exit(-1);
-	}
-	elsif ( $pid == 0 ) {
-		my $virtualInfrastructure = $self->virtualInfrastructure;
-		$virtualInfrastructure->cleanLogFiles();
-		exit;
-	}
-	else {
-		push @pids, $pid;
-	}
-
-	$pid = fork();
-	if ( !defined $pid ) {
-		$logger->error("Couldn't fork a process: $!");
-		exit(-1);
-	}
-	elsif ( $pid == 0 ) {
-		callMethodOnObjectsParallel( 'cleanLogFiles', $self->workloadsRef );
-		exit;
-	}
-	else {
-		push @pids, $pid;
 	}
 
 	foreach $pid (@pids) {
@@ -1147,15 +1166,6 @@ sub doPowerControl {
 		$console_logger->info(": Sleeping for 3 minutes to allow all VMs to start\n");
 		sleep 180;
 	}
-}
-
-sub cleanup {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-
-	$self->cleanStatsFiles();
-	$self->cleanLogFiles();
-
 }
 
 sub run {

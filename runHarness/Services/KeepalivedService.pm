@@ -60,7 +60,7 @@ override 'useDocker' => sub {
 	return 0;
 };
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $hostname         = $self->host->hostName;
@@ -92,7 +92,7 @@ sub start {
 	close $applog;
 }
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::KeepalivedService");
 	$logger->debug("stop KeepalivedService");

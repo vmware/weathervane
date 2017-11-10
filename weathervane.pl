@@ -97,13 +97,6 @@ sub createHost {
 	return \@retVal;
 }
 
-# make sure that JAVA_HOME is defined
-my $javaHome         = $ENV{'JAVA_HOME'};
-if ( !( defined $javaHome ) ) {
-	$console_logger->warn("The environment variable JAVA_HOME must be defined in order for Weathervane to run.");
-	return 0;
-}
-
 # read in the command-line options
 my %paramCommandLine = ();
 my @paramStrings     = ();
@@ -309,6 +302,14 @@ if ( $rampDown eq "" ) {
 setParamValue( $paramsHashRef, "rampUp",      $rampUp );
 setParamValue( $paramsHashRef, "steadyState", $steadyState );
 setParamValue( $paramsHashRef, "rampDown",    $rampDown );
+
+
+# make sure that JAVA_HOME is defined
+my $javaHome         = $ENV{'JAVA_HOME'};
+if ( !( defined $javaHome ) ) {
+	$console_logger->warn("The environment variable JAVA_HOME must be defined in order for Weathervane to run.");
+	return 0;
+}
 
 # Check for a request for the help text
 my $help = getParamValue( $paramsHashRef, "help" );

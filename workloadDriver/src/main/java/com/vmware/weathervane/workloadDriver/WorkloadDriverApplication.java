@@ -31,7 +31,6 @@ public class WorkloadDriverApplication implements ApplicationRunner {
 	
 	public static void main(String[] args) throws IOException, JSONException, InterruptedException {
 		SpringApplication.run(WorkloadDriverApplication.class, args);
-		
 	}
 
 	@Override

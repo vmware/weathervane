@@ -94,10 +94,6 @@ sub start {
 	# Force a vacuum and a checkpoint
 	$self->doVacuum($dblog);
 
-	
-	# Force a vacuum and a checkpoint
-	$self->doVacuum($dblog);
-
 	$self->registerPortsWithHost();
 	$self->host->startNscd();
 

@@ -194,7 +194,7 @@ foreach my $imageName (@imageNames) {
 		$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
 		my $zookeeperVers = $1;
 		push @buildArgs, "ZOOKEEPER_VERSION=$zookeeperVers";
-	} elsif ($imageName = "tomcat") {
+	} elsif ($imageName eq "tomcat") {
 		my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
 		$tomcat8get =~ />v8\.5\.(\d+)\//;
 		my $tomcat8vers = $1;

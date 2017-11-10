@@ -97,6 +97,13 @@ sub createHost {
 	return \@retVal;
 }
 
+# make sure that JAVA_HOME is defined
+my $javaHome         = $ENV{'JAVA_HOME'};
+if ( !( defined $javaHome ) ) {
+	$console_logger->warn("The environment variable JAVA_HOME must be defined in order for Weathervane to run.");
+	return 0;
+}
+
 # read in the command-line options
 my %paramCommandLine = ();
 my @paramStrings     = ();

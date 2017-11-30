@@ -20,7 +20,7 @@ use WeathervaneTypes;
 use RunResults::RunResult;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1);
 
 use Parameters qw(getParamValue setParamValue);
 
@@ -129,9 +129,8 @@ sub run {
 		$self->setParamValue( 'powerOffVms', 0 );
 	}
 
-	# Now configure docker pinning if requested on any host
-	$debug_logger->debug("configureDockerHostCpuPinning");
-	$self->configureDockerHostCpuPinning();
+	# Now get the cpu and memory config of all hosts
+	$self->getCpuMemConfig();
 	
 	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
 
@@ -140,30 +139,26 @@ sub run {
 	$self->killOldWorkloadDrivers();
 
 	$debug_logger->debug("stop services");
-	my @methods = qw(stopFrontendServices stopBackendServices stopDataServices);
-	callMethodsOnObjectParallel1( \@methods, $self, $setupLogDir );
+	my @tiers = qw(frontend backend data infrastructure);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
+
 	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
 	
-	$debug_logger->debug("cleanup");
+	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
 	$self->cleanup();
 
 	# Get rid of old results from previous run
 	$debug_logger->debug("clear results");
 	$self->clearResults();
 
-	# Remove the services if they are dockerized
-	$debug_logger->debug("Remove services");
-	@methods = qw(removeFrontendServices removeBackendServices removeDataServices);
-	callMethodsOnObjectParallel1( \@methods, $self, $setupLogDir );
-
 	# redeploy artifacts if selected
 	if ( $self->getParamValue('redeploy') ) {
 		$console_logger->info("Redeploying artifacts for application and workload-driver nodes");
-		callMethodOnObjectsParallel1( 'redeploy', $self->workloadsRef, $setupLogDir );
+		callMethodOnObjectsParallel2( 'redeploy', $self->workloadsRef, $setupLogDir, $self->hostsRef );
 		$self->setParamValue( 'redeploy', 0 );
 	}
-	
+		
 	# Make sure time is synced on all hosts
 	$debug_logger->debug("Sync time");
 	$self->syncTime();

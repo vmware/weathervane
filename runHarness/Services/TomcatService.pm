@@ -71,6 +71,20 @@ sub stopInstance {
 	print $applog "Checking whether Tomcat is already up on $hostname\n";
 	if ( $self->isRunning($applog) ) {
 
+		# Send a prepare to stop message to the app server
+		my $hostname = $self->host->hostName;
+		my $port     = $self->portMap->{"http"};
+		if (!(defined $port)) {
+			$port  = $self->internalPortMap->{"http"};
+		}
+		$logger->debug("Sending prepareForShutdown: curl -s http://$hostname:$port/auction/live/auction/prepareForShutdown");
+		print $applog "curl -s http://$hostname:$port/auction/live/auction/prepareForShutdown\n";
+		my $response = `curl -s http://$hostname:$port/auction/live/auction/prepareForShutdown`;
+		$logger->debug("Response: $response");
+		print $applog "$response\n";		
+
+		sleep 15;
+
 		# The server is running
 		print $applog "Stopping Tomcat on $hostname\n";
 		print $applog
@@ -133,6 +147,9 @@ sub isUp {
 	my ( $self, $applog ) = @_;
 	my $hostname = $self->host->hostName;
 	my $port     = $self->portMap->{"http"};
+	if (!(defined $port)) {
+		$port  = $self->internalPortMap->{"http"};
+	}
 
 	my $response = `curl -s http://$hostname:$port/auction/healthCheck`;
 	print $applog "curl -s http://$hostname:$port/auction/healthCheck\n";

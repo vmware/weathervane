@@ -346,6 +346,8 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 			 * leave all groups
 			 */
 			groupMembershipService.cleanUp();
+			
+			this.releaseGetNextBid();
 		}
 	}
 

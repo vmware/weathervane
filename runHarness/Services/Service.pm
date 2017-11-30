@@ -339,7 +339,7 @@ sub start {
 		$logger->debug( "Start " . $service->getDockerName() . "\n" );
 		$service->startInstance($logPath);
 	}
-
+	
 	sleep 15;
 	
 }

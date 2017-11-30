@@ -22,7 +22,8 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger :levels);
 use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsParallel1 callMethodsOnObjectParallel
   callMethodsOnObjectParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3);
+  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
+  callMethodOnObjectsParamListParallel1);
 use Instance;
 use Utils qw(getIpAddresses getIpAddress);
 
@@ -459,26 +460,18 @@ sub cleanupAfterFailure {
 		`mkdir -p $cleanupLogDir`;
 	}
 
-	## stop the services
-	$self->stopInfrastructureServices($cleanupLogDir);
-	$self->stopFrontendServices($cleanupLogDir);
-	$self->stopBackendServices($cleanupLogDir);
-	$self->stopDataServices($cleanupLogDir);
-
 	## get the logs
 	$self->getLogFiles();
 
 	## get the config files
 	$self->getConfigFiles();
 
+	## stop the services
+	my @tiers = qw(frontend backend data infrastructure);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
+
 	# clean up old logs and stats
 	$self->cleanup();
-
-	# Remove the services if they are dockerized
-	$self->removeInfrastructureServices($cleanupLogDir);
-	$self->removeFrontendServices($cleanupLogDir);
-	$self->removeBackendServices($cleanupLogDir);
-	$self->removeDataServices($cleanupLogDir);
 
 	my $resultsDir = "$outputDir/$seqnum";
 	`mkdir -p $resultsDir`;

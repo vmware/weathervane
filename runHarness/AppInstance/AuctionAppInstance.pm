@@ -64,42 +64,6 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-## numShardsProcessed is used to keep track of how many
-# mongodbService instances have already been
-# started/stopped/etc.  This is needed when deciding
-# who should start the config servers and mongos
-# instances
-has 'numShardsProcessed' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numShardsProcessed',
-	predicate => 'has_numShardsProcessed',
-);
-
-# This holds the string describing the hostname;port
-# pairs for the config servers that is used when
-# starting the mongos instances.
-has 'configDbString' => (
-	is        => 'rw',
-	isa       => 'Str',
-	clearer   => 'clear_configDbString',
-	predicate => 'has_configDbString',
-);
-
-has 'numNosqlShards' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numNosqlShards',
-	predicate => 'has_numNosqlShards',
-);
-
-has 'numNosqlReplicas' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numNosqlReplicas',
-	predicate => 'has_numNosqlReplicas',
-);
-
 # AppInstance variables for keepalived
 has 'wwwIpAddrs' => (
 	is        => 'rw',

@@ -76,9 +76,10 @@ sub prepareData {
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 
-
-	# The data services must be started for checking whether the data is loaded
+	# Start the data services
 	if ($reloadDb) {
+		# Avoid an extra stop/start cycle for the data services since we know
+		# we are reloading the data
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	$appInstance->startServices("data", $logPath);
@@ -97,6 +98,12 @@ sub prepareData {
 	}
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
 
+	# Calculate the values for the environment variables used by the auctiondatamanager container
+	my %envVarMap;
+	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');
+	
+
+		
 	my $loadedData = 0;
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
@@ -178,6 +185,7 @@ sub prepareData {
 
 	my $dbServersRef    = $self->appInstance->getActiveServicesByType('dbServer');
 	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlService = $nosqlServersRef->[0];
 
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
@@ -201,20 +209,21 @@ sub prepareData {
 	print $logHandle "Preparing auctions to be active in current run\n";
 	my $nosqlHostname;
 	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
+	if ( $nosqlService->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
 		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
-
-		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$nosqlHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
 	}
 
 	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
+	if ( $nosqlService->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService = $nosqlServersRef->[$i];
 			$nosqlHostname = $nosqlService->getIpAddr();
@@ -235,8 +244,8 @@ sub prepareData {
 	}
 
 	my $dbPrepOptions = " -a $auctions ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
+	$dbPrepOptions .= " -m " . $nosqlService->numNosqlShards . " ";
+	$dbPrepOptions .= " -p " . $nosqlService->numNosqlReplicas . " ";
 
 	my $maxDuration = $self->getParamValue('maxDuration');
 	my $totalTime =
@@ -256,8 +265,8 @@ sub prepareData {
 		return 0;
 	}
 
-	if (   ( $self->appInstance->numNosqlReplicas > 0 )
-		&& ( $self->appInstance->numNosqlShards == 0 ) )
+	if (   ( $nosqlService->numNosqlReplicas > 0 )
+		&& ( $nosqlService->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $logHandle );
@@ -642,225 +651,16 @@ sub loadData {
 		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 	}
 
-	my $nosqlServersRef = $appInstance->getActiveServicesByType('nosqlServer');
-	my $cmdout;
-	my $replicaMasterHostname = "";
-	my $replicaMasterPort = "";
-	if (   ( $appInstance->numNosqlShards > 0 )
-		&& ( $appInstance->numNosqlReplicas > 0 ) )
-	{
-		$console_logger->( "Loading data in sharded and replicated mongo is not supported yet" );
-		return 0;
-	}
-	elsif ( $appInstance->numNosqlShards > 0 ) {
-		print $applog "Sharding MongoDB\n";
-		my $localPort = $self->portMap->{'mongos'};
-		my $cmdString;
-
-		# Add the shards to the database
-		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
-			my $port     = $nosqlServer->portMap->{'mongod'};
-			print $applog "Add $hostname as shard.\n";
-			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))'";
-			my $cmdout = `$sshConnectString \"$cmdString\"`;
-			print $applog "$sshConnectString \"$cmdString\"\n";
-			print $applog $cmdout;
-		}
-
-		# enable sharding for the databases
-
-		print $applog "Enabling sharding for auction database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auction\\\"))'";
-		my $cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for bid database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"bid\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for attendanceRecord database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"attendanceRecord\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for imageInfo database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"imageInfo\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionFullImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionFullImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionPreviewImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionPreviewImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionThumbnailImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionThumbnailImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# Create indexes for collections
-		print $applog "Adding hashed index for userId in attendanceRecord Collection.\n";
-		$cmdString =
-"mongo --port $localPort attendanceRecord --eval 'printjson(db.attendanceRecord.ensureIndex({userId : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for bidderId in bid Collection.\n";
-		$cmdString = "mongo --port $localPort bid --eval 'printjson(db.bid.ensureIndex({bidderId : \\\"hashed\\\"}))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for entityid in imageInfo Collection.\n";
-		$cmdString =
-		  "mongo --port $localPort imageInfo --eval 'printjson(db.imageInfo.ensureIndex({entityid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imageFull Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionFullImages --eval 'printjson(db.imageFull.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imagePreview Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionPreviewImages --eval 'printjson(db.imagePreview.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imageThumbnail Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionThumbnailImages --eval 'printjson(db.imageThumbnail.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# shard the collections
-		print $applog "Sharding attendanceRecord collection on hashed userId.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"attendanceRecord.attendanceRecord\\\", {\\\"userId\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding bid collection on hashed bidderId.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"bid.bid\\\",{\\\"bidderId\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageInfo collection on hashed entityid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"imageInfo.imageInfo\\\",{\\\"entityid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageFull collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionFullImages.imageFull\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imagePreview collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionPreviewImages.imagePreview\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageThumbnail collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionThumbnailImages.imageThumbnail\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# disable the balancer
-		print $applog "Disabling the balancer.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.setBalancerState(false))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-	}
-	elsif ( $appInstance->numNosqlReplicas > 0 ) {
-		$logger->debug("Creating the MongoDB Replica Set");
-		print $applog "Creating the MongoDB Replica Set\n";
-		my $cmdString;
-		
-		# Create the replica set
-		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
-			my $port     = $nosqlServer->portMap->{'mongod'};
-			if ( $replicaMasterHostname eq "" ) {
-				$replicaMasterHostname = $hostname;
-				$replicaMasterPort = $port;
-
-				# Initiate replica set
-				print $applog "Add $hostname as replica primary.\n";
-				my $replicaName      = "auction" . $nosqlServer->shardNum;
-				my $replicaConfig = "{_id : \"$replicaName\", members: [ { _id : 0, host : \"$replicaMasterHostname:$replicaMasterPort\" } ],}";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.initiate($replicaConfig))'";				
-				$logger->debug("Add $hostname as replica primary: $cmdString");
-				$cmdout = `$cmdString`;
-				$logger->debug("Add $hostname as replica primary result : $cmdout");
-				print $applog $cmdout;
-
-				print $applog "rs.status() : \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() : \n$cmdout");
-				print $applog $cmdout;
-
-				sleep(30);
-
-				print $applog "rs.status() after 30s: \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() after 30s : \n$cmdout");
-				print $applog $cmdout;
-
-				sleep(30);
-
-				print $applog "rs.status() after 60s: \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() after 60s : \n$cmdout");
-				print $applog $cmdout;
-
-			}
-			else {
-				print $applog "Add $hostname as replica secondary.\n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $replicaMasterPort --eval 'printjson(rs.add(\"$hostname:$port\"))'";
-				$logger->debug("Add $hostname as replica secondary: $cmdString");
-				$cmdout = `$cmdString`;
-				$logger->debug("Add $hostname as replica secondary result : $cmdout");
-				print $applog $cmdout;
-
-				print $applog "rs.status() : \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $replicaMasterPort --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() : \n$cmdout");
-				print $applog $cmdout;
-
-			}
-		}
-
-	}
 
 	# Load the data
 	my $dbScriptDir     = $self->getParamValue('dbScriptDir');
 	my $dbLoaderOptions = "-d $dbScriptDir/items.json -t " . $self->getParamValue('dbLoaderThreads');
 	$dbLoaderOptions .= " -u $maxUsers ";
 
-	$dbLoaderOptions .= " -m " . $appInstance->numNosqlShards . " ";
-	$dbLoaderOptions .= " -p " . $appInstance->numNosqlReplicas . " ";
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlService = $nosqlServersRef->[0];
+	$dbLoaderOptions .= " -m " . $nosqlService->numNosqlShards . " ";
+	$dbLoaderOptions .= " -p " . $nosqlService->numNosqlReplicas . " ";
 
 	my $maxDuration = $self->getParamValue('maxDuration');
 	my $totalTime =
@@ -886,33 +686,32 @@ sub loadData {
 
 	my $nosqlHostname;
 	my $mongodbPort;
-	if ( $appInstance->numNosqlShards == 0 ) {
+	if ( $nosqlService->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
 		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
-
-		# The mongos will be running on the data manager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$nosqlHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
 	}
 
 	my $mongodbReplicaSet = "";
-	if ( $appInstance->numNosqlReplicas > 0 ) {
-		for ( my $i = 0 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService  = $nosqlServersRef->[$i];
-			my $nosqlHostname = $nosqlService->getIpAddr();
-			my $replicaPort;
-			if ($nosqlHostname eq $replicaMasterHostname) {
-				$replicaPort = $nosqlService->internalPortMap->{'mongod'};
-				print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is primary ($replicaMasterHostname), using port $replicaPort.\n";
-				$mongodbReplicaSet .= "$nosqlHostname:$replicaPort";
-			} else {
-				$replicaPort = $nosqlService->portMap->{'mongod'};
-				print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is secondary, using port $replicaPort.\n";
-				$mongodbReplicaSet .= ",$nosqlHostname:$replicaPort";
-			}
+	for ( my $i = 0 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
+		my $nosqlService  = $nosqlServersRef->[$i];
+		my $nosqlHostname = $nosqlService->getIpAddr();
+		my $replicaPort;
+		if ($i == 0) {
+			$replicaPort = $nosqlService->internalPortMap->{'mongod'};
+			print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is primary ($nosqlHostname), using port $replicaPort.\n";
+			$mongodbReplicaSet .= "$nosqlHostname:$replicaPort";
+		} else {
+			$replicaPort = $nosqlService->portMap->{'mongod'};
+			print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is secondary, using port $replicaPort.\n";
+			$mongodbReplicaSet .= ",$nosqlHostname:$replicaPort";
 		}
 	}
 
@@ -981,8 +780,8 @@ sub loadData {
 		close $driver;
 	}
 	
-	if (   ( $appInstance->numNosqlReplicas > 0 )
-		&& ( $appInstance->numNosqlShards == 0 ) )
+	if (   ( $nosqlService->numNosqlReplicas > 0 )
+		&& ( $nosqlService->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $applog );
@@ -1027,9 +826,12 @@ sub isDataLoaded {
 		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 	}
 
+	my $nosqlServicesRef = $self->appInstance->getActiveServicesByType("nosqlServer");
+	my $nosqlService = $nosqlServicesRef->[0];
+
 	my $dbPrepOptions = " -a $auctions -c ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
+	$dbPrepOptions .= " -m " . $nosqlService->numNosqlShards . " ";
+	$dbPrepOptions .= " -p " . $nosqlService->numNosqlReplicas . " ";
 
 	my $maxDuration = $self->getParamValue('maxDuration');
 	my $totalTime =
@@ -1042,23 +844,22 @@ sub isDataLoaded {
 
 	my $dbLoaderClasspath = $self->dbLoaderClasspath;
 
-	my $nosqlServicesRef = $self->appInstance->getActiveServicesByType("nosqlServer");
 	my $nosqlHostname;
 	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
-		my $nosqlService = $nosqlServicesRef->[0];
+	if ( $nosqlService->numNosqlShards == 0 ) {
 		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
-
-		# The mongos will be running on the datManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$nosqlHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
 	}
 
 	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
+	if ( $nosqlService->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
 			my $nosqlService  = $nosqlServicesRef->[$i];
 			my $nosqlHostname = $nosqlService->getIpAddr();
@@ -1092,50 +893,6 @@ sub isDataLoaded {
 
 }
 
-sub waitForMongodbReplicaSync {
-	my ( $self, $runLog ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug( "waitFormongodbReplicaSync for workload $workloadNum, appInstance $appInstanceNum" );
-
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServer      = $nosqlServersRef->[0];
-	my $nosqlHostname    = $nosqlServer->getIpAddr();
-	my $port             = $nosqlServer->portMap->{'mongod'};
-	my $sshConnectString = $self->host->sshConnectString;
-	my $inSync           = 0;
-	while ( !$inSync ) {
-		sleep 30;
-
-		my $time1 = -1;
-		my $time2 = -1;
-		$inSync = 1;
-		print $runLog "Checking MongoDB Replica Sync.  rs.status: \n";
-		my $cmdString = "mongo --host $nosqlHostname --port $port --eval 'printjson(rs.status())'";
-		my $cmdout = `$cmdString`;
-		print $runLog $cmdout;
-
-		my @lines = split /\n/, $cmdout;
-
-		# Parse rs.status to see if timestamp is same on primary and secondaries
-		foreach my $line (@lines) {
-			if ( $line =~ /\"optime\"\s*:\s*Timestamp\((\d+)\,\s*(\d+)/ ) {
-				if ( $time1 == -1 ) {
-					$time1 = $1;
-					$time2 = $2;
-				}
-				elsif ( ( $time1 != $1 ) || ( $time2 != $2 ) ) {
-					print $runLog "Not yet in sync\n";
-					$inSync = 0;
-					last;
-				}
-			}
-		}
-	}
-}
 
 sub cleanData {
 	my ( $self, $users, $logPath ) = @_;
@@ -1160,6 +917,7 @@ sub cleanData {
 
 	my $dbServersRef    = $self->appInstance->getActiveServicesByType('dbServer');
 	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlService = $nosqlServersRef->[0];
 
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
@@ -1192,20 +950,22 @@ sub cleanData {
 	print $logHandle "Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n";
 	my $nosqlHostname;
 	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
+	if ( $nosqlService->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
 		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
 
-		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$nosqlHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
 	}
 
 	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
+	if ( $nosqlService->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService = $nosqlServersRef->[$i];
 			$nosqlHostname = $nosqlService->getIpAddr();
@@ -1226,8 +986,8 @@ sub cleanData {
 	}
 
 	my $dbPrepOptions = " -a $auctions ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
+	$dbPrepOptions .= " -m " . $nosqlService->numNosqlShards . " ";
+	$dbPrepOptions .= " -p " . $nosqlService->numNosqlReplicas . " ";
 
 	my $maxDuration = $self->getParamValue('maxDuration');
 	my $steadyState = $self->getParamValue('steadyState');
@@ -1260,8 +1020,8 @@ sub cleanData {
 		return 0;
 	}
 
-	if (   ( $self->appInstance->numNosqlReplicas > 0 )
-		&& ( $self->appInstance->numNosqlShards == 0 ) )
+	if (   ( $nosqlService->numNosqlReplicas > 0 )
+		&& ( $nosqlService->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $logHandle );

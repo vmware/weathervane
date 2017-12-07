@@ -100,9 +100,64 @@ sub prepareData {
 
 	# Calculate the values for the environment variables used by the auctiondatamanager container
 	my %envVarMap;
-	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');
+	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
+	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
+	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
+	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
+
+	my $maxDuration = $self->getParamValue('maxDuration');
+	my $totalTime =
+	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
+	$envVarMap{"MAXDURATION"} = max( $maxDuration, $totalTime );
+
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServerRef = $nosqlServersRef->[0];
+	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
+	$envVarMap{"NUMNOSQLSHARDS"} = $numNosqlShards;
+	
+	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
+	$envVarMap{"NUMNOSQLREPLICAS"} = $numNosqlReplicas;
+	
+	my $mongodbHostname;
+	my $mongodbPort;
+	if ( $nosqlService->numNosqlShards == 0 ) {
+		$mongodbHostname = $nosqlService->getIpAddr();
+		$mongodbPort   = $nosqlService->portMap->{'mongod'};
+	}
+	else {
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$mongodbHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
+	}
+
+	my $mongodbReplicaSet = "$mongodbHostname:$mongodbPort";
+	if ( $nosqlService->numNosqlReplicas > 0 ) {
+		for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
+			my $nosqlService  = $nosqlServicesRef->[$i];
+			my $mongodbHostname = $nosqlService->getIpAddr();
+			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
+			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
+		}
+	}
+	$envVarMap{"MONGODBHOSTNAME"} = $mongodbHostname;
+	$envVarMap{"MONGODBPORT"} = $mongodbPort;
+	$envVarMap{"MONGODBREPLICASET"} = $mongodbReplicaSet;
 	
 
+	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbService     = $dbServicesRef->[0];
+	my $dbHostname    = $dbService->getIpAddr();
+	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
+	$envVarMap{"DBHOSTNAME"} = $dbHostname;
+	$envVarMap{"DBPORT"} = $dbPort;
+	
+	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+	$envVarMap{"SPRINGPROFILESACTIVE"} = $springProfilesActive;
+	
+	# Start the  auctiondatamanager container
+	
 		
 	my $loadedData = 0;
 	if ($reloadDb) {

@@ -652,7 +652,7 @@ sub configure {
 					print FILEOUT "    dbPath: \"" . $nosqlServer->getParamValue('mongodbDataDir') . "\"\n";
 				}
 				elsif ( $inline =~ /replSetName:/ ) {
-					print FILEOUT "    replSetName: auction$suffix\n";
+					print FILEOUT "    replSetName: \"auction$suffix\"\n";
 				}
 				else {
 					print FILEOUT $inline;

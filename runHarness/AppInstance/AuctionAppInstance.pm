@@ -285,7 +285,7 @@ override 'redeploy' => sub {
 			$service->pullDockerImage($logfile);
 		}
 	}
-
+	
 	# Figure out if mongodb is using docker, and if so pull docker images
 	# to app servers and data manager
 	my $nosqlServicesRef = $self->getAllServicesByType('nosqlServer');
@@ -309,6 +309,9 @@ override 'redeploy' => sub {
 		$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
 	}
 
+	# Pull the datamanager image
+	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
+	
 	# Redeploy the dataManager files
 	my $localHostname = `hostname`; 
 	my $localIpsRef = Utils::getIpAddresses($localHostname);

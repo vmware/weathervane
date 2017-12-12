@@ -558,6 +558,20 @@ sub dockerGetLogs {
 	return "";
 }
 
+sub dockerFollowLogs {
+	my ( $self, $logFileHandle, $name, $outFile ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	$logger->debug("dockerFollowLogs name = $name, outfile = $outFile, dockerHostString = $dockerHostString");
+	
+	if ($self->dockerExists($logFileHandle, $name)) {
+		my $out = `$dockerHostString docker logs --follow $name 2>&1 > $outFile`;
+		return $out;
+	}
+	return "";
+}
+
 sub dockerVolumeCreate {
 	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
 	print $logFileHandle "dockerVolumeCreate $volumeName\n";

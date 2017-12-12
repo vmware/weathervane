@@ -183,11 +183,11 @@ sub getCpuMemConfig {
 }
 
 sub killOldWorkloadDrivers {
-	my ($self) = @_;
+	my ($self, $setupLogDir) = @_;
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug(": Stopping old workload drivers.");
 
-	callMethodOnObjectsParallel( 'killOldWorkloadDrivers', $self->workloadsRef );
+	callMethodOnObjectsParallel1( 'killOldWorkloadDrivers', $self->workloadsRef, $setupLogDir );
 }
 
 sub initializeWorkloads {

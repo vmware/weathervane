@@ -136,7 +136,7 @@ sub run {
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
-	$self->killOldWorkloadDrivers();
+	$self->killOldWorkloadDrivers($setupLogDir);
 
 	$debug_logger->debug("stop services");
 	my @tiers = qw(frontend backend data infrastructure);

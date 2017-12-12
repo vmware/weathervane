@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
+my @imageNames = qw(centos7 auctiondatamanager auctionworkloaddriver haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -147,6 +147,12 @@ runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-a
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
 runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
+
+# workload driver
+runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+runAndLog($fileout, "cp ./dist/workloadDriver.jar ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "cp -r ./dist/workloadDriverLibs ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
 
 # data manager
 runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");

@@ -81,7 +81,7 @@ override 'run' => sub {
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
-	$self->killOldWorkloadDrivers();
+	$self->killOldWorkloadDrivers("/tmp");
 
 	# Now get the cpu and memory config of all hosts
 	$self->getCpuMemConfig();

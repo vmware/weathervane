@@ -809,45 +809,41 @@ override 'redeploy' => sub {
 		}
 	}
 
-	# Future: When workload driver is dockerized, need to update the docker image here
+	# Update the docker image here
+	$self->host->dockerPull( $logfile, "auctionworkloaddriver");
+	foreach my $server (@$secondariesRef) {
+		$server->host->dockerPull( $logfile, "auctionworkloaddriver");	
+	}
 
 };
 
 sub killOld {
-	my ($self)           = @_;
+	my ($self, $setupLogDir)           = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $sshConnectString = $self->host->sshConnectString;
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $console_logger = get_logger("Console");
 
+	my $logName = "$setupLogDir/killOld$workloadNum.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	# Create a list of all of the workloadDriver nodes including the primary
+	my $driversRef     = [];
 	my $secondariesRef = $self->secondaries;
-	my $hostname       = $self->host->hostName;
-	$logger->debug("killOld");
-	my $cmdOut = `$sshConnectString jps`;
-	$logger->debug("killOld: jps output: $cmdOut");
-	my @cmdOut = split /\n/, $cmdOut;
-	foreach $cmdOut (@cmdOut) {
-		$logger->debug("killOld: jps output line: $cmdOut");
-		if ( $cmdOut =~ /^(\d+)\s+WorkloadDriverApplication/ ) {
-			$logger->debug("killOld: killing pid $1");
-			`ssh  -o 'StrictHostKeyChecking no'  root\@$hostname kill -9 $1`;
-		}
-	}
-
-	# Make sure that no previous Benchmark processes are still running
 	foreach my $secondary (@$secondariesRef) {
-		my $hostname = $secondary->host->hostName;
+		push @$driversRef, $secondary;
+	}
+	push @$driversRef, $self;
 
-		$cmdOut = `ssh  -o 'StrictHostKeyChecking no'  root\@$hostname jps`;
-		$logger->debug("killOld: secondary $hostname jps output: $cmdOut");
-		@cmdOut = split /\n/, $cmdOut;
-		foreach $cmdOut (@cmdOut) {
-			$logger->debug("killOld: secondary $hostname jps output line: $cmdOut");
-			if ( $cmdOut =~ /^(\d+)\s+WorkloadDriverApplication/ ) {
-				$logger->debug("killOld: secondary $hostname jps killing pid $1");
-				`ssh  -o 'StrictHostKeyChecking no'  root\@$hostname kill -9 $1 2>&1`;
-			}
-		}
+	# Now stop and remove all of the driver containers
+	foreach my $driver (@$driversRef) {
+		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
 	}
 
+	close $logHandle;
 }
 
 sub clearResults {
@@ -867,27 +863,30 @@ sub clearResults {
 	$self->proportion(   {} );
 }
 
-sub initializeRun {
-	my ( $self, $runNum, $logDir, $suffix ) = @_;
-	my $console_logger = get_logger("Console");
+
+sub startAuctionWorkloadDriverContainer {
+	my ( $self, $driver, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	$self->suffix($suffix);
+	my $workloadNum    = $driver->getParamValue('workloadNum');
+	my $name        = $driver->getParamValue('dockerName');
+		
+	$driver->host->dockerStopAndRemove( $applog, $name );
 
-	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
-	my $weathervaneWorkloadHome = $self->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	# Calculate the values for the environment variables used by the auctiondatamanager container
+	my $weathervaneWorkloadHome = $driver->getParamValue('workloadDriverDir');
+	my $workloadProfileHome     = $driver->getParamValue('workloadProfileDir');
 
-	my $driverThreads                       = $self->getParamValue('driverThreads');
-	my $driverHttpThreads                   = $self->getParamValue('driverHttpThreads');
-	my $maxConnPerUser                      = $self->getParamValue('driverMaxConnPerUser');
+	my $driverThreads                       = $driver->getParamValue('driverThreads');
+	my $driverHttpThreads                   = $driver->getParamValue('driverHttpThreads');
+	my $maxConnPerUser                      = $driver->getParamValue('driverMaxConnPerUser');
 
-	my $port = $self->portMap->{'http'};
+	my $port = $driver->portMap->{'http'};
 
-	if ( $self->getParamValue('logLevel') >= 3 ) {
+	my $driverJvmOpts           = $driver->getParamValue('driverJvmOpts');
+	if ( $driver->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
 	}
-	if ( $self->getParamValue('driverEnableJprofiler') ) {
+	if ( $driver->getParamValue('driverEnableJprofiler') ) {
 		$driverJvmOpts .=
 		  "  -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m ";
 	}
@@ -901,9 +900,86 @@ sub initializeRun {
 	if ( $driverThreads > 0 ) {
 		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
 	}
+	my %envVarMap;
+	$envVarMap{"PORT"} = $port;	
+	$envVarMap{"JVMOPTS"} = "\"$driverJvmOpts\"";	
+	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
+	
+	# Start the  auctionworkloaddriver container
+	my %volumeMap;
+	my %portMap;
+	my $directMap = 0;
+	my $cmd        = "";
+	my $entryPoint = "";
+	my $dockerConfigHashRef = {};	
+	$dockerConfigHashRef->{'net'} = "host";
 
-	my $driverClasspath =
-" $weathervaneWorkloadHome/workloadDriver.jar:$weathervaneWorkloadHome/workloadDriverLibs/*:$weathervaneWorkloadHome/workloadDriverLibs/";
+	if ($driver->getParamValue('dockerCpus')) {
+		$dockerConfigHashRef->{'cpus'} = $driver->getParamValue('dockerCpus');
+	}
+	if ($driver->getParamValue('dockerCpuShares')) {
+		$dockerConfigHashRef->{'cpu-shares'} = $driver->getParamValue('dockerCpuShares');
+	} 
+	if ($driver->getParamValue('dockerCpuSetCpus') ne "unset") {
+		$dockerConfigHashRef->{'cpuset-cpus'} = $driver->getParamValue('dockerCpuSetCpus');
+		
+		if ($driver->getParamValue('dockerCpus') == 0) {
+			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
+			# set dockerCpus accordingly so that services can know how many CPUs the 
+			# container has when configuring
+			my $numCpus = 0;
+			my @cpuGroups = split(/,/, $driver->getParamValue('dockerCpuSetCpus'));
+			foreach my $cpuGroup (@cpuGroups) {
+				if ($cpuGroup =~ /-/) {
+					# This cpu group is a range
+					my @rangeEnds = split(/-/,$cpuGroup);
+					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
+				} else {
+					$numCpus++;
+				}
+			}
+			$driver->setParamValue('dockerCpus', $numCpus);
+		}
+	}
+	if ($driver->getParamValue('dockerCpuSetMems') ne "unset") {
+		$dockerConfigHashRef->{'cpuset-mems'} = $driver->getParamValue('dockerCpuSetMems');
+	}
+	if ($driver->getParamValue('dockerMemory')) {
+		$dockerConfigHashRef->{'memory'} = $driver->getParamValue('dockerMemory');
+	}
+	if ($driver->getParamValue('dockerMemorySwap')) {
+		$dockerConfigHashRef->{'memory-swap'} = $driver->getParamValue('dockerMemorySwap');
+	}	
+	$driver->host->dockerRun(
+		$applog, $name,
+		"auctionworkloaddriver", $directMap, \%portMap, \%volumeMap, \%envVarMap, $dockerConfigHashRef,
+		$entryPoint, $cmd, 1
+	);
+}
+
+sub stopAuctionWorkloadDriverContainer {
+	my ( $self, $applog, $driver ) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $name        = $driver->getParamValue('dockerName');
+
+	$driver->host->dockerStopAndRemove( $applog, $name );
+
+}
+
+sub initializeRun {
+	my ( $self, $runNum, $logDir, $suffix ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$self->suffix($suffix);
+	my $port = $self->portMap->{'http'};
+	my $workloadNum    = $self->getParamValue('workloadNum');
+
+	my $logName = "$logDir/InitializeRun$suffix.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
 
 	# Create a list of all of the workloadDriver nodes including the primary
 	my $driversRef     = [];
@@ -917,26 +993,24 @@ sub initializeRun {
 
 	# Start the driver on all of the secondaries
 	foreach my $secondary (@$secondariesRef) {
-		my $sshConnectString = $secondary->host->sshConnectString;
-		my $hostname         = $secondary->host->hostName;
 		my $pid              = fork();
 		if ( $pid == 0 ) {
-			my $cmdString =
-"$sshConnectString \"java $driverJvmOpts -DwkldNum=$workloadNum -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run_$hostname$suffix.log\" > $logDir/run_$hostname$suffix.log 2>&1";
-			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname: $cmdString");
-			`$cmdString`;
+			my $hostname = $secondary->host->hostName;
+			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
+			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
+			my $secondaryName        = $secondary->getParamValue('dockerName');
+			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
 			exit;
 		}
 	}
 
 	# start the primary
 	my $pid              = fork();
-	my $sshConnectString = $self->host->sshConnectString;
 	if ( $pid == 0 ) {
-		my $cmdString =
-"$sshConnectString \"java $driverJvmOpts -DwkldNum=$workloadNum -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run$suffix.log\" > $logDir/run$suffix.log 2>&1 ";
-		$logger->debug("Running primary driver for workload $workloadNum: $cmdString");
-		`$cmdString`;
+		$logger->debug("Starting primary driver for workload $workloadNum");
+		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
+		my $name        = $self->getParamValue('dockerName');
+		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
 		exit;
 	}
 
@@ -1061,6 +1135,7 @@ sub initializeRun {
 		}
 	}
 
+	close $logHandle;
 	return 1;
 }
 
@@ -1074,6 +1149,14 @@ sub startRun {
 	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
 	my $workloadNum             = $self->getParamValue('workloadNum');
 
+	my $logName = "$logDir/StartRun$suffix.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+
 	# Create a list of all of the workloadDriver nodes including the primary
 	my $driversRef     = [];
 	my $secondariesRef = $self->secondaries;
@@ -1084,25 +1167,11 @@ sub startRun {
 
 	my $port = $self->portMap->{'http'};
 
-	# get the pid of the java process
-	my $sshConnectString = $self->host->sshConnectString;
-	my $pid;
-	my $out = `$sshConnectString ps x`;
-	$logger->debug("Looking for pid of driver$suffix: $out");
-	if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-DwkldNum=$workloadNum.*WorkloadDriverApplication/m ) {
-		$pid = $1;
-		$logger->debug("Found pid $pid for workload driver$suffix");
-	}
-	else {
-		$logger->error("Can't find pid for workload driver$suffix");
-		return 0;
-	}
-
 	# open a pipe to follow progress
-	my $pipeString = "$sshConnectString \"tail -f --pid=$pid /tmp/run$suffix.log\" |";
+	my $pipeString = "tail -f $logDir/run$suffix.log |";
 	$logger->debug("Command to follow workload progress: $pipeString");
-	open my $driverPipe, "$pipeString"
-	  or die "Can't fork to follow driver at /tmp/run$suffix.log : $!";
+	my $pipePid = open my $driverPipe, "$pipeString"
+	  or die "Can't fork to follow driver at $logDir/run$suffix.log : $!";
 
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
@@ -1174,7 +1243,8 @@ sub startRun {
 	}
 	my $nextIsRampup = 0;
 	my $startTime    = time();
-	while ( my $inline = <$driverPipe> ) {
+	my $inline;
+	while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
 		if ( $inline =~ /^\|/ ) {
 			if ( $self->getParamValue('showPeriodicOutput') ) {
 				print $periodicOutputId . $inline;
@@ -1305,18 +1375,28 @@ sub startRun {
 					return 0;
 				}
 			}
-			last;
+			
+			# Now stop and remove all of the driver containers
+			foreach my $driver (@$driversRef) {
+				$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
+			}
+			
+			kill(9, $pipePid);
+			close $driverPipe;
+			$logger->debug("Closed driverPipe.  driverPipe->opened = " . $driverPipe->opened());
 		}
 
 	}
-	close $driverPipe;
 
 	foreach my $driver (@$driversRef) {
 		$driver->unRegisterPortsWithHost();
 	}
 
+	close $logHandle;
+
 	my $impl = $self->getParamValue('workloadImpl');
 	$console_logger->info("Workload $workloadNum: $impl finished");
+
 	return 1;
 }
 

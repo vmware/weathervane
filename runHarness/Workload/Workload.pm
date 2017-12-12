@@ -74,9 +74,9 @@ sub setAppInstances {
 }
 
 sub killOldWorkloadDrivers {
-	my ($self) = @_;
+	my ($self, $setupLogDir) = @_;
 
-	$self->primaryDriver->killOld();
+	$self->primaryDriver->killOld($setupLogDir);
 
 }
 

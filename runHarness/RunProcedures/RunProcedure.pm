@@ -1389,7 +1389,7 @@ sub checkVersions {
 	my $allSame = 1;
 	foreach my $host ( @{ $self->hostsRef } ) {
 
-		if (!$host->isNonDocker()) {
+		if (!$host->isNonDocker() || $host->vicHost) {
 			next;
 		}
 

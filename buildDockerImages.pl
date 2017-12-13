@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationManager tomcat);
+my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -134,8 +134,8 @@ runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
 runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
 runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
 # configurationManager
-runAndLog($fileout, "rm -f ./dockerImages/configurationManager/auctionConfigManager.jar");
-runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationManager/auctionConfigManager.jar");
+runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
+runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationmanager/auctionConfigManager.jar");
 # tomcat
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");

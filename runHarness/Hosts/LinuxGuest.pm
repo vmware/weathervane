@@ -132,24 +132,6 @@ sub stopNscd {
 		$self->hostName, " returned ", $cmdOut );
 }
 
-sub restartNtp {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Hosts::LinuxGuest");
-	$logger->debug( "Updating the time sync for host ", $self->hostName );
-	my $sshConnectString = $self->sshConnectString;
-	my $scpConnectString = $self->scpConnectString;
-	my $scpHostString    = $self->scpHostString;
-
-	if ( $self->getParamValue('harnessHostNtpServer') ) {
-
-		# Copy the ntp.conf to each host
-`$scpConnectString /tmp/ntp.conf root\@$scpHostString:/etc/ntp.conf 2>&1`;
-	}
-
-	my $out = `$sshConnectString service ntpd restart 2>&1`;
-	$logger->debug( "Restarted ntpd on ", $self->hostName, ", output: $out" );
-}
-
 sub openPortNumber {
 	my ( $self, $portNumber ) = @_;
 	my $logger           = get_logger("Weathervane::Hosts::LinuxGuest");

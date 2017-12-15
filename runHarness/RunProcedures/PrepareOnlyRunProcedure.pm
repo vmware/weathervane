@@ -170,13 +170,7 @@ sub run {
 	
 	# Copy the version file into the output directory
 	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-	
-	# Make sure time is synced on all hosts
-	if ( $self->getParamValue('restartNtp') ) {
-		$debug_logger->debug("Sync time");
-		$self->syncTime();
-	}	
-	
+		
 	# Prepare the data for this run and start the data services
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);

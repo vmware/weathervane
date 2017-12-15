@@ -87,10 +87,6 @@ override 'unRegisterPortNumber' => sub {
 
 };
 
-sub restartNtp {
-	my ($self) = @_;
-}
-
 sub startNscd {
 	my ($self)           = @_;
 }

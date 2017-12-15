@@ -1190,59 +1190,6 @@ sub getNextRunInfo {
 	return $returnString;
 }
 
-# Sync time to the time on the host which is running the script
-sub syncTime {
-	my ($self)         = @_;
-	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $console_logger = get_logger("Console");
-
-	my $hostname = `hostname`;
-	chomp($hostname);
-	my $ipAddrsRef = getIpAddresses($hostname);
-
-	# Make sure that ntpd is running on this host
-	my $out = `service ntpd status 2>&1`;
-	if ( !( $out =~ /Active:\sactive/ ) && !( $out =~ /is running/ ) ) {
-
-		# try to start ntpd
-		$logger->debug("ntpd is not running on $hostname, starting");
-		$out = `service ntpd start 2>&1`;
-		$out = `service ntpd status 2>&1`;
-		if ( !( $out =~ /Active:\sactive/ ) && !( $out =~ /is running/ ) ) {
-			$console_logger->debug("Could not start ntpd on $hostname, exiting.");
-			exit(-1);
-		}
-	}
-
-	# Create an ntp.conf that uses this host as the server
-	open( FILEIN,  "/etc/ntp.conf" )  or die "Error opening/etc/ntp.conf:$!";
-	open( FILEOUT, ">/tmp/ntp.conf" ) or die "Error opening /tmp/ntp.conf:$!";
-	print FILEOUT "server $hostname iburst\n";
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /^\s*server\s/ ) {
-			next;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	foreach my $host ( @{ $self->hostsRef } ) {
-		if ( $host->ipAddr ~~ @$ipAddrsRef ) {
-
-			# Don't sync this host to itself
-			$logger->debug( "Skipping syncing ", $host->hostName, " to itself." );
-			next;
-		}
-
-		$host->restartNtp();
-
-	}
-
-}
-
 sub checkVersions {
 	my ($self)          = @_;
 	my $logger          = get_logger("Weathervane::RunProcedures::RunProcedure");

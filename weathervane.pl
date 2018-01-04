@@ -99,9 +99,9 @@ if (!(-f $configFile)) {
 }
 # If the configFile does not reference a file with an absolute path, 
 # then make it an absolute path relative to the local dir
+my $pwd = `pwd`;
+chomp($pwd);
 if (!($configFile =~ /\//)) {
-	my $pwd = `pwd`;
-	chomp($pwd);
 	$configFile = "$pwd/$configFile";	
 }
 
@@ -114,8 +114,6 @@ if (!(-d $outputDir)) {
 # If the outputDir does not reference a directory with an absolute path, 
 # then make it an absolute path relative to the local dir
 if (!($outputDir =~ /\//)) {
-	my $pwd = `pwd`;
-	chomp($pwd);
 	$outputDir = "$pwd/$outputDir";	
 }
 
@@ -128,10 +126,10 @@ if (!(-d $tmpDir)) {
 # If the tmpDir does not reference a directory with an absolute path, 
 # then make it an absolute path relative to the local dir
 if (!($tmpDir =~ /\//)) {
-	my $pwd = `pwd`;
-	chomp($pwd);
 	$tmpDir = "$pwd/$tmpDir";	
 }
+
+my $resultsFile = "$pwd/weathervaneResults.csv";
 
 if (!$dockerNamespace) {
 	die "You must provide a namespace for the Docker images using the --dockerNamespace parameter."
@@ -141,7 +139,7 @@ if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
-my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane  -v $configFile:/root/weathervane/weathervane.config  -v $dotKubeDir:/root/.kube -v $tmpDir:/root/weathervane/tmpLog -v $outputDir:/root/weathervane/output $dockerNamespace/weathervane-runharness:$version";
+my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane  -v $configFile:/root/weathervane/weathervane.config  -v $resultsFile:/root/weathervane/weathervaneResults.csv  -v $dotKubeDir:/root/.kube -v $tmpDir:/root/weathervane/tmpLog -v $outputDir:/root/weathervane/output $dockerNamespace/weathervane-runharness:$version";
 my $dockerId = `$cmdString`;
 
 my $pipeString = "docker logs --follow weathervane |";

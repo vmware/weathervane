@@ -26,6 +26,7 @@ my $configFile = 'weathervane.config';
 my $version = '1.1.0';
 my $outputDir = 'output';
 my $tmpDir = 'tmpLog';
+my $dotKubeDir = '/root/.kube';
 my $dockerNamespace = '';
 
 GetOptions(	'accept=s' => \$accept,
@@ -33,6 +34,7 @@ GetOptions(	'accept=s' => \$accept,
 			'version=s' => \$version,
 			'output=s' => \$outputDir,
 			'tmpDir=s' => \$tmpDir,
+			'dotKubeDir=s' => \$dotKubeDir,
 			'dockerNamespace=s' => \$dockerNamespace,
 		);
 		
@@ -139,7 +141,7 @@ if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
-my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane  -v $configFile:/root/weathervane/weathervane.config -v $tmpDir:/root/weathervane/tmpLog -v $outputDir:/root/weathervane/output $dockerNamespace/weathervane-runharness:$version";
+my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane  -v $configFile:/root/weathervane/weathervane.config  -v $dotKubeDir:/root/.kube -v $tmpDir:/root/weathervane/tmpLog -v $outputDir:/root/weathervane/output $dockerNamespace/weathervane-runharness:$version";
 my $dockerId = `$cmdString`;
 
 my $pipeString = "docker logs --follow weathervane |";

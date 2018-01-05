@@ -51,6 +51,12 @@ has 'hostsRef' => (
 	default => sub { [] },
 );
 
+has 'clustersRef' => (
+	is      => 'rw',
+	isa     => 'ArrayRef',
+	default => sub { [] },
+);
+
 has 'workloadsRef' => (
 	is      => 'rw',
 	default => sub { [] },
@@ -147,6 +153,17 @@ sub addHost {
 	my ( $self, $host ) = @_;
 	my $hostsRef = $self->hostsRef;
 	push @$hostsRef, $host;
+}
+
+sub setClusters {
+	my ( $self, $clustersRef ) = @_;
+	$self->clustersRef($clustersRef);
+}
+
+sub addCluster {
+	my ( $self, $cluster ) = @_;
+	my $clustersRef = $self->clustersRef;
+	push @$clustersRef, $cluster;
 }
 
 sub removeHost {

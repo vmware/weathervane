@@ -21,7 +21,6 @@ use RunProcedures::RunProcedure;
 use Factories::RunProcedureFactory;
 use WorkloadDrivers::WorkloadDriver;
 use DataManagers::DataManager;
-use Hosts::Host;
 use Instance;
 use Log::Log4perl qw(get_logger);
 

@@ -19,6 +19,7 @@ use Parameters qw(getParamValue);
 use Instance;
 use Log::Log4perl qw(get_logger);
 use MooseX::ClassAttribute;
+use ComputeResources::ComputeResource;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -37,7 +38,7 @@ has 'description' => (
 
 has 'host' => (
 	is  => 'rw',
-	isa => 'Host',
+	isa => 'ComputeResource',
 );
 
 

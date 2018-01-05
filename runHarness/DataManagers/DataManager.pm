@@ -20,7 +20,7 @@ use RunProcedures::RunProcedure;
 use Factories::RunProcedureFactory;
 use WorkloadDrivers::WorkloadDriver;
 use Factories::WorkloadDriverFactory;
-use Hosts::Host;
+use ComputeResources::ComputeResource;
 use Instance;
 use Log::Log4perl qw(get_logger);
 
@@ -50,7 +50,7 @@ has 'workloadDriver' => (
 
 has 'host' => (
 	is  => 'rw',
-	isa => 'Host',
+	isa => 'ComputeResource',
 );
 
 # internalPortMap: A map from a name for a port (e.g. http) to

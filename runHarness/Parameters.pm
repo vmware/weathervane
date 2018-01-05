@@ -720,6 +720,14 @@ $parameters{"host"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"cluster"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -795,6 +803,15 @@ $parameters{"appInstances"} = {
 	"default"   => [],
 	"parent"    => "workload",
 	"isa"       => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"clusters"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "cluster",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1314,6 +1331,14 @@ $parameters{"stopStatsScript"} = {
 	"default"   => '',
 	"parent"    => "runProc",
 	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"clusterType"} = {
+	"type"      => "=s",
+	"default"   => "kubernetes",
+	"parent"    => "cluster",
+	"usageText" => "This is the type of the cluster. Allowed values: kubernetes",
 	"showUsage" => 1,
 };
 

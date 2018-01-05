@@ -11,7 +11,7 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package Host;
+package ComputeResource;
 
 use Moose;
 use MooseX::Storage;
@@ -27,101 +27,15 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
 
-has 'hostName' => (
-	is  => 'rw',
-	isa => 'Str',
-);
 
-has 'ipAddr' => (
-	is      => 'rw',
-	isa     => 'Str',
-	builder => '_get_ipAddr',
-	lazy    => 1,
-);
-
-has 'cpus' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
-has 'memKb' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
-has 'supportsPowerControl' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-has 'isGuest' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-# This will be set to true if host is running any non-dockerized service
-has 'isNonDocker' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-has 'sshConnectString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'scpConnectString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'scpHostString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'tmpStoragePath' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "/tmp",
-);
-
-has 'paramHashRef' => (
-	is      => 'rw',
-	isa     => 'HashRef',
-	default => sub { {} },
-);
-
-has 'runLog' => ( is => 'rw', );
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $console_logger = get_logger("Console");
 	
-	my $hostname = $self->getParamValue('hostName');
-	if (!$hostname) {
-		$console_logger->error("Must specify a hostname for all host instances.");
-		exit(-1);
-	}
-
-	$self->hostName($hostname);
-
-	$self->sshConnectString( "ssh -o 'StrictHostKeyChecking no' root\@" . $hostname . " " );
-	$self->scpConnectString("scp -o 'StrictHostKeyChecking no'");
-	$self->scpHostString( $hostname );
-
 	super();
 
 };
-
-sub _get_ipAddr {
-	my ($self) = @_;
-
-	return getIpAddress($self->hostName);
-}
 
 sub registerService {
 	my ($self, $serviceRef) = @_;
@@ -129,33 +43,6 @@ sub registerService {
 	
 	$console_logger->error("registerService called on a Host object that does not support that method.");
 	exit(-1);	
-}
-
-# Services use this method to notify the host that they are using 
-# a particular port number
-sub registerPortNumber {
-	my ($self, $portNumber) = @_;
-	my $console_logger = get_logger("Console");
-	
-	$console_logger->error("registerPortNumber called on a Host object that does not support that method.");
-	exit(-1);
-}
-
-sub unRegisterPortNumber {
-	my ($self, $portNumber) = @_;
-	my $console_logger = get_logger("Console");
-	
-	$console_logger->error("unRegisterPortNumber called on a Host object that does not support that method.");
-	exit(-1);
-}
-
-sub getDockerServiceImages {
-	my ($self) = @_;
-	return $self->getParamValue('dockerServiceImages');
-}
-
-sub getCpuMemConfig {
-	my ($self) = @_;
 }
 
 sub stopStatsCollection {
@@ -180,7 +67,7 @@ sub getConfigFiles {
 
 sub cleanLogFiles {
 	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Hosts::Host");
+	my $logger = get_logger("Weathervane::ComputeResources::ComputeResource");
 	$logger->debug("cleanLogFiles host = ", $self->hostName);
 
 }
@@ -212,20 +99,6 @@ sub getStatsSummary {
 	return \%csv;
 }
 
-#-------------------------------
-# Two hosts are equal if they have the same IP address
-#-------------------------------
-sub equals {
-	my ( $this, $that ) = @_;
-
-	return $this->ipAddr() eq $that->ipAddr;
-}
-
-sub toString {
-	my ($self) = @_;
-
-	return "Host name = " . $self->hostName . ", IP Address = " . $self->ipAddr;
-}
 __PACKAGE__->meta->make_immutable;
 
 1;

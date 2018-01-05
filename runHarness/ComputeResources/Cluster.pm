@@ -11,63 +11,54 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package GuestHost;
+package Cluster;
 
 use Moose;
 use MooseX::Storage;
-use ComputeResources::Host;
-use VirtualInfrastructures::VirtualInfrastructure;
-use WeathervaneTypes;
+use Parameters qw(getParamValue);
+use Instance;
+use Log::Log4perl qw(get_logger);
+use Utils qw(getIpAddresses getIpAddress);
+use ComputeResources::ComputeResource;
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'Host';
+extends 'ComputeResource';
 
-has 'vmName' => (
+has 'clusterName' => (
 	is  => 'rw',
 	isa => 'Str',
-	predicate => 'has_vmName',
 );
 
-has 'possibleVmNamesRef' => (
+has 'servicesRef' => (
 	is      => 'rw',
 	default => sub { [] },
-	isa     => 'ArrayRef[Str]',
-);
-
-has 'serviceType' => (
-	is  => 'rw',
-	isa => 'ServiceType',
-);
-
-has 'osType' => (
-	is  => 'rw',
-	isa => 'Str',
+	isa     => 'ArrayRef[Service]',
 );
 
 override 'initialize' => sub {
-	my ( $self, $paramHashRef ) = @_;
+	my ( $self ) = @_;
+	my $console_logger = get_logger("Console");
 	
-	# A GuestHost supports power control
-	$self->supportsPowerControl(1);
-	$self->isGuest(1);
-	
+	my $clusterName = $self->getParamValue('clusterName');
+	if (!$clusterName) {
+		$console_logger->error("Must specify a clusterName for all cluster instances.");
+		exit(-1);
+	}
+
+	$self->clusterName($clusterName);
+
 	super();
+
 };
 
-sub addVmName {
-	my ( $self, $vmName ) = @_;
-	my $possibleVmNamesRef = $self->possibleVmNamesRef;
-	push @$possibleVmNamesRef, $vmName;
-}
+sub toString {
+	my ($self) = @_;
 
-sub setVmName {
-	my ( $self, $vmName ) = @_;
-	$self->vmName($vmName);	
+	return "Cluster name = " . $self->clusterName;
 }
-
 __PACKAGE__->meta->make_immutable;
 
 1;

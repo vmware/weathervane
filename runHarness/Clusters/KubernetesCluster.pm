@@ -11,62 +11,47 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package GuestHost;
+package KubernetesCluster;
 
 use Moose;
 use MooseX::Storage;
-use ComputeResources::Host;
+use ComputeResources::Cluster;
 use VirtualInfrastructures::VirtualInfrastructure;
 use WeathervaneTypes;
+use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'Host';
-
-has 'vmName' => (
-	is  => 'rw',
-	isa => 'Str',
-	predicate => 'has_vmName',
-);
-
-has 'possibleVmNamesRef' => (
-	is      => 'rw',
-	default => sub { [] },
-	isa     => 'ArrayRef[Str]',
-);
-
-has 'serviceType' => (
-	is  => 'rw',
-	isa => 'ServiceType',
-);
-
-has 'osType' => (
-	is  => 'rw',
-	isa => 'Str',
-);
+extends 'Cluster';
 
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-	
-	# A GuestHost supports power control
-	$self->supportsPowerControl(1);
-	$self->isGuest(1);
-	
+		
 	super();
 };
 
-sub addVmName {
-	my ( $self, $vmName ) = @_;
-	my $possibleVmNamesRef = $self->possibleVmNamesRef;
-	push @$possibleVmNamesRef, $vmName;
-}
+override 'registerService' => sub {
+	my ( $self, $serviceRef ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $servicesRef    = $self->servicesRef;
 
-sub setVmName {
-	my ( $self, $vmName ) = @_;
-	$self->vmName($vmName);	
-}
+	my $dockerName = $serviceRef->getDockerName();
+	$logger->debug( "Registering service $dockerName with cluster ",
+		$self->clusterName );
+
+	if ( $serviceRef->useDocker() ) {
+			$console_logger->error( "Service $dockerName running on cluster ",
+				$self->clusterName, " should not have useDocker set to true." );
+			exit(-1);
+	}
+
+	push @$servicesRef, $serviceRef;
+
+};
+
 
 __PACKAGE__->meta->make_immutable;
 

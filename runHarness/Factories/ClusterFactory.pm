@@ -11,61 +11,37 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package GuestHost;
+package ClusterFactory;
 
 use Moose;
 use MooseX::Storage;
-use ComputeResources::Host;
-use VirtualInfrastructures::VirtualInfrastructure;
-use WeathervaneTypes;
+use MooseX::ClassAttribute;
+use Moose::Util qw( apply_all_roles );
+use Clusters::KubernetesCluster;
+use Parameters qw(getParamValue);
+use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'Host';
-
-has 'vmName' => (
-	is  => 'rw',
-	isa => 'Str',
-	predicate => 'has_vmName',
-);
-
-has 'possibleVmNamesRef' => (
-	is      => 'rw',
-	default => sub { [] },
-	isa     => 'ArrayRef[Str]',
-);
-
-has 'serviceType' => (
-	is  => 'rw',
-	isa => 'ServiceType',
-);
-
-has 'osType' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-override 'initialize' => sub {
-	my ( $self, $paramHashRef ) = @_;
+sub getCluster {
+	my ( $self, $paramsHashRef ) = @_;
+	my $logger = get_logger("Weathervane::Factories::HostFactory");
+	my $cluster;	
+	my $clusterName = $paramsHashRef->{'clusterName'};
+	my $clusterType = $paramsHashRef->{'clusterType'};
 	
-	# A GuestHost supports power control
-	$self->supportsPowerControl(1);
-	$self->isGuest(1);
-	
-	super();
-};
+	if ( $clusterType eq "kubernetes" ) {
+		$logger->debug("Creating a Kubernetes cluster with name $clusterName");
+		$cluster = KubernetesCluster->new(
+				'paramHashRef' => $paramsHashRef,);
+	} else {
+		die "No matching cluster type $clusterType available to ClusterFactory";
+	}
 
-sub addVmName {
-	my ( $self, $vmName ) = @_;
-	my $possibleVmNamesRef = $self->possibleVmNamesRef;
-	push @$possibleVmNamesRef, $vmName;
-}
-
-sub setVmName {
-	my ( $self, $vmName ) = @_;
-	$self->vmName($vmName);	
+	$cluster->initialize();
+	return $cluster;
 }
 
 __PACKAGE__->meta->make_immutable;

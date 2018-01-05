@@ -35,6 +35,7 @@ use lib '/root/weathervane/runHarness';
 
 use Factories::ServiceFactory;
 use Factories::HostFactory;
+use Factories::ClusterFactory;
 use Factories::VIFactory;
 use Factories::RunManagerFactory;
 use Factories::DataManagerFactory;
@@ -94,6 +95,75 @@ sub createHost {
 	my @retVal = ($createdNew, $host);
 
 	return \@retVal;
+}
+
+
+sub createCluster {
+	my ( $clusterParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef ) = @_;
+	my $weathervane_logger = get_logger("Weathervane");
+	my $console_logger     = get_logger("Console");
+
+	if ( ( !exists $clusterParamHashRef->{'clusterName'} ) || ( !defined $clusterParamHashRef->{'clusterName'} ) ) {
+		$console_logger->error("Clusters defined under the clusters keyword must define a clusterName");
+		exit(-1);
+	}
+	my $clusterName = $clusterParamHashRef->{'clusterName'};
+	$weathervane_logger->debug("Creating cluster for cluster $clusterName\n");
+
+	my $cluster = 0;
+	my $createdNew = 0;
+	if ( exists $clusterNameToClusterHashRef->{$clusterName} ) {
+		$cluster = $clusterNameToClusterHashRef->{$clusterName}
+	}
+	else {
+		$createdNew = 1;
+		$cluster = ClusterFactory->getCluster($clusterParamHashRef);
+		$runProcedure->addCluster($cluster);
+		$clusterNameToClusterHashRef->{$clusterName} = $cluster;
+	}
+
+	if ($instance) {
+		$instance->setHost($cluster);
+	}
+
+	my @retVal = ($createdNew, $cluster);
+
+	return \@retVal;
+}
+
+sub createComputeResource {
+	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef, $useAllSuffixes, $isNonDocker) = @_;
+	my $weathervane_logger = get_logger("Weathervane");
+
+	my $json = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+	$json = $json->max_depth(4096);
+
+	$weathervane_logger->debug("createComputeResource  ");
+	
+	my $retArrayRef;
+	if ($instanceParamHashRef->{"clusterName"}) {
+		my $clusterParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
+			"clusters", $useAllSuffixes );
+		$weathervane_logger->debug( "For cluster ", $instanceParamHashRef->{'clusterName'}, " the Param hash ref is:" );
+		my $tmp = $json->encode($clusterParamHashRef);
+		$weathervane_logger->debug($tmp);
+		$retArrayRef = createCluster( $clusterParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef );		
+	} else {
+		my $hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
+			"hosts", $useAllSuffixes );
+		$weathervane_logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
+		my $tmp = $json->encode($hostParamHashRef);
+		$weathervane_logger->debug($tmp);
+		$retArrayRef = createHost( $hostParamHashRef, $runProcedure, $instance, $ipToHostHashRef );
+
+		my ($createdNew, $host) = @$retArrayRef;
+		$host->isNonDocker($isNonDocker);
+	}
+	
+	return $retArrayRef;
+	
 }
 
 # read in the command-line options
@@ -312,19 +382,6 @@ my $paramsAsRun = \%$paramsHashRef;
 my $runLog;
 open( $runLog, ">>$weathervaneHome/console.log" ) || die "Error opening $weathervaneHome/console.log:$!";
 
-# Build the configuration file that is used to collect all of the information that is needed so
-# that the workloadDriver can decide whether the configuration is legal for
-
-# The list of host objects
-my @hosts = ();
-
-# A list of all active services
-my @services = ();
-
-# A hash from each service type to a list of the active services
-# implementing that type
-my %servicesByType = ();
-
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($paramsHashRef);
 	$logger->debug( "The paramsHashRef after command-line and configfile is :\n" . $tmp );
@@ -370,6 +427,25 @@ foreach my $paramHashRef (@$hostsParamHashRefs) {
 	if ( !$createdNew ) {
 		$console_logger->warn( "Warning: Have defined multiple host instances in the host block which point "
 			  . "to the same IP address.\nOnly the parameters for the first such host will be used." );
+	}
+}
+
+# Get the parameters for the clusters that are explicitly defined in
+# The configuration parameters
+my %clusterNameToClusterHash;
+$instancesListRef = $runProcedureParamHashRef->{"clusters"};
+my $clustersParamHashRefs =
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "clusters", 1,
+	$runProcedureParamHashRef->{'useAllSuffixes'} );
+foreach my $paramHashRef (@$clustersParamHashRefs) {
+	$logger->debug( "For cluster ", $paramHashRef->{'clusterName'}, " the Param hash ref is:" );
+	my $tmp = $json->encode($paramHashRef);
+	$logger->debug($tmp);
+	my $retArrayRef = createCluster( $paramHashRef, $runProcedure, 0, \%clusterNameToClusterHash );
+	my ($createdNew, $host) = @$retArrayRef;
+	if ( !$createdNew ) {
+		$console_logger->error( "Error: Have defined multiple cluster instances in the cluster block with the same clusterName. This is not allowed." );
+		exit 1;
 	}
 }
 
@@ -490,16 +566,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# Create the primary workload driver
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef);
 
-	# Create the host for the primary driver
-	my $hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $primaryDriverParamHashRef,
-		"hosts", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-	$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-	my $tmp = $json->encode($hostParamHashRef);
-	$logger->debug($tmp);
-	my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $workloadDriver, \%ipToHostHash );
-	my ($createdNew, $host) = @$retArrayRef;
-	# The workload driver is always non-Docker
-	$host->isNonDocker(1);
+	# Create the computeResource for the primary driver
+	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1 );
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
@@ -524,15 +592,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef);
 
 		# Create the host for the secondary driver
-		$hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $secondaryDriverParamHashRef,
-			"hosts", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-		$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-		$tmp = $json->encode($hostParamHashRef);
-		$logger->debug($tmp);
-		my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $secondary, \%ipToHostHash );
-		my ($createdNew, $host) = @$retArrayRef;
-		# The workload driver is always non-Docker
-		$host->isNonDocker(1);
+		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1 );
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -601,18 +661,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances,
 					$appInstance, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
 				push @services, $service;
-
-				# Create the host for the service
-				$hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef,
-					$svcInstanceParamHashRef, "hosts", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-				$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-				$tmp = $json->encode($hostParamHashRef);
-				$logger->debug($tmp);
-				my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
-				my ($createdNew, $host) = @$retArrayRef;
-				if (!$service->getParamValue('useDocker')) {
-					$host->isNonDocker(1);
-				}
+				# Create the ComputeResource for the service
+				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, !$service->getParamValue('useDocker') );
+				
 				$svcNum++;
 			}
 
@@ -676,17 +727,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					$appInstance, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
 				push @services, $service;
 
-				# Create the host for the service
-				$hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef,
-					$svcInstanceParamHashRef, "hosts", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-				$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-				$tmp = $json->encode($hostParamHashRef);
-				$logger->debug($tmp);
-				my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $service, \%ipToHostHash );
-				my ($createdNew, $host) = @$retArrayRef;
-				if (!$service->getParamValue('useDocker')) {
-					$host->isNonDocker(1);
-				}
+				# Create the ComputeResource for the service
+				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, !$service->getParamValue('useDocker') );
 
 				$svcNum++;
 			}
@@ -716,16 +758,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$appInstance->setDataManager($dataManager);
 		$dataManager->setWorkloadDriver($workloadDriver);
 
-		# Create the host for the dataManager
-		$hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $dataManagerParamHashRef,
-			"hosts", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-		$logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-		$tmp = $json->encode($hostParamHashRef);
-		$logger->debug($tmp);
-		my $retArrayRef = createHost( $hostParamHashRef, $runProcedure, $dataManager, \%ipToHostHash );
-		my ($createdNew, $host) = @$retArrayRef;
-		# data manager is always non-Docker
-		$host->isNonDocker(1);
+		# Create the ComputeResource for the dataManager
+		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1);
 
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 

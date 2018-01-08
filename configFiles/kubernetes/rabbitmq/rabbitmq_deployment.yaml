@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: rabbitmq
+      labels:
+        app: auction
+        tier: msg
+        impl: rabbitmq
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-rabbitmq:1.1.0
+        name: rabbitmq
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: rabbitmq-config
+        ports: 
+        - containerPort: 5672
+          name: nodeport
+          protocol: TCP
+        - containerPort: 25672
+          name: peerport
+          protocol: TCP

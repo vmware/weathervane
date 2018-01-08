@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongod-config
+data: 
+  CLEARBEFORESTART: "0"
+  MONGODPORT: "27017"
+  NUMSHARDS: "1"
+  NUMREPLICAS: "0"
+  ISCFGSVR: "0"
+  ISMONGOS: "0"

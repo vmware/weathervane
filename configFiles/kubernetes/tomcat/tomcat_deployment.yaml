@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tomcat
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: tomcat
+      labels:
+        app: auction
+        tier: app
+        impl: tomcat
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-tomcat:1.1.0
+        name: tomcat
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: tomcat-config
+        ports: 
+        - containerPort: 8080
+          name: httpport
+          protocol: TCP
+        - containerPort: 8443
+          name: httpsport
+          protocol: TCP

@@ -1,0 +1,32 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+spec:
+  serviceName: zookeeper
+  replicas: 1
+  template:
+    metadata:
+      name: zookeeper
+      labels:
+        app: auction
+        tier: cs
+        impl: zookeeper
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-zookeeper:1.1.0
+        name: zookeeper
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: zookeeper-config
+        ports: 
+        - containerPort: 2181
+          name: clientport
+          protocol: TCP
+        - containerPort: 2888
+          name: peerport
+          protocol: TCP
+        - containerPort: 3888
+          name: electionport
+          protocol: TCP

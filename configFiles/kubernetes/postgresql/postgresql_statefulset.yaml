@@ -1,0 +1,50 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: postgresql
+spec:
+  serviceName: postgresql
+  replicas: 1
+  template:
+    metadata:
+      name: postgresql
+      labels:
+        app: auction
+        tier: db
+        impl: postgresql
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-postgresql:1.1.0
+        name: postgresql
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: postgresql-config
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /mnt/dbData/postgresql
+        - name: postgresql-logs
+          mountPath: /mnt/dbLogs/postgresql
+        ports: 
+        - containerPort: 5432
+          name: postgresqlport
+          protocol: TCP
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+    spec:
+      resources: 
+        requests:
+          storage: 20Gi
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: fast
+  - metadata:
+      name: postgresql-logs
+    spec:
+      resources: 
+        requests:
+          storage: 20Gi
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: fast

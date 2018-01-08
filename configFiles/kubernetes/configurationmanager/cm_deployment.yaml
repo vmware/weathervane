@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cm
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cm
+      labels:
+        app: auction
+        tier: cm
+        impl: WebConfig
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-cm:1.1.0
+        name: cm
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: cm-config
+        ports: 
+        - containerPort: 8888
+          name: cmport
+          protocol: TCP

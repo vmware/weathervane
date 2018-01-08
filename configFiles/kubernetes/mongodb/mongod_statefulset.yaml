@@ -1,0 +1,39 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: mongod
+spec:
+  serviceName: mongo
+  replicas: 1
+  template:
+    metadata:
+      name: mongod
+      labels:
+        app: auction
+        tier: nosql
+        impl: mongod
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-mongodb:1.1.0
+        name: mongod
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: mongod-config
+        volumeMounts:
+        - name: mongod-data
+          mountPath: /mnt/mongoData
+        ports: 
+        - containerPort: 27017 
+          name: mongodport
+          protocol: TCP
+  volumeClaimTemplates:
+  - metadata:
+      name: mongod-data
+    spec:
+      resources: 
+        requests:
+          storage: 200Gi
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: fast

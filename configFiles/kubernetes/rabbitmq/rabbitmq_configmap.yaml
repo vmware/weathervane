@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+data: 
+  RABBITMQ_NODE_PORT: "5672"
+  RABBITMQ_PEER_PORT: "25672"

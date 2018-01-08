@@ -28,6 +28,8 @@ RUN yum install -y perl-App-cpanminus && \
 	cd /tmp/sysstat-11.1.4;./configure 2>&1;make 2>&1;make install && \
 	rm -rf /tmp/sysstat-11.1.4 && \
 	chmod -R 600 /root/.ssh && \
+	curl -o /usr/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
+	chmod +x /usr/bin/kubectl && \	
 	cpanm YAML && \
 	cpanm Config::Simple && \
 	cpanm String::Util && \

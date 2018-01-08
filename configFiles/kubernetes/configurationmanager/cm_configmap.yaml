@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-config
+data: 
+  JVMOPTS: "-Xmx500m -Xms500m -XX:+AlwaysPreTouch"
+  WORKLOADNUM: "1"
+  APPINSTANCENUM: "1"
+  PORT: "8888"

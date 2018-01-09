@@ -20,20 +20,27 @@ use Services::HaproxyService;
 use Services::HaproxyDockerService;
 use Services::HttpdService;
 use Services::NginxService;
+use Services::NginxKubernetesService;
 use Services::NginxDockerService;
 use Services::TomcatService;
+use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::MysqlService;
 use Services::PostgresqlService;
+use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::MongodbService;
+use Services::MongodbKubernetesService;
 use Services::MongodbDockerService;
 use Services::ZookeeperService;
+use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
 use Services::RabbitmqService;
+use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
 use Services::ConfigurationManager;
+use Services::ConfigurationKubernetesManager;
 use Services::ConfigurationManagerDocker;
 use Services::ScheduledElasticityService;
 use Services::SimpleElasticityService;
@@ -96,14 +103,7 @@ sub getServiceByType {
 		);
 	}
 	elsif ( $serviceName eq "haproxy" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = HaproxyKubernetesService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
-		} elsif ($docker) {
+		if ($docker) {
 			$service = HaproxyDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,

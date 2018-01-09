@@ -611,6 +611,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$appInstanceParamHashRef->{'instanceNum'}    = $appInstanceNum;
 		$appInstanceParamHashRef->{'appInstanceNum'} = $appInstanceNum;
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
+		if ($appInstanceParamHashRef->{'clusterName'}) {
+			# App instances running on clusters have a cluster object
+			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, !$service->getParamValue('useDocker') );			
+		}
 		push @appInstances, $appInstance;
 
 		# Create and add all of the services for the appInstance.

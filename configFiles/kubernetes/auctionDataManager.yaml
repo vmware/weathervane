@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auctiondatamanager-config
+data: 
+  USERSPERAUCTIONSCALEFACTOR: "15.0"
+  USERS: "1000"
+  MAXUSERS: "1000"
+  WORKLOADNUM: "1"
+  APPINSTANCENUM: "1"
+  MAXDURATION: "7200"
+  NUMNOSQLSHARDS: "0"
+  NUMNOSQLREPLICAS: "0"
+  MONGODBHOSTNAME: "mongod"
+  MONGODBPORT: "27017"
+  MONGODBREPLICASET: "mongo-0:27017,mongo-1:27017,mongo-2:27017"
+  DBHOSTNAME: "postgresql"
+  DBPORT: "5432"
+  SPRINGPROFILESACTIVE: "postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit" 
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: auctiondatamanager
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: auctiondatamanager
+      labels:
+        app: auction
+        tier: dm
+        impl: auctiondm
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-auctiondatamanager:1.1.0
+        name: cm
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: auctiondatamanager-config

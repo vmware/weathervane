@@ -52,7 +52,7 @@ perl /configure.pl
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf &
+	/usr/bin/mongod -f /etc/mongod.conf --bind_ip_all &
 fi
 
 if [ ! -e "/fifo" ]; then

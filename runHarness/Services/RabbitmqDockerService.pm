@@ -168,18 +168,7 @@ sub configureAfterIsUp {
 
 sub configureAfterIsUpSingleRabbitMQ {
 	my ( $self, $applog ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
 
-	# create the auction user and vhost	
-	$self->host->dockerExec($applog, $name, "rabbitmqctl add_user auction auction");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl set_user_tags auction administrator");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl add_vhost auction");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl set_permissions -p auction auction \".*\" \".*\" \".*\"");
-	
 }
 
 sub configureAfterIsUpClusteredRabbitMQ {

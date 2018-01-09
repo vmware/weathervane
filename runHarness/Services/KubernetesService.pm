@@ -29,10 +29,17 @@ use WeathervaneTypes;
 use Instance;
 use Services::Service;
 
+has 'namespace' => (
+	is  => 'ro',
+	isa => 'Str',
+);
+
 extends 'Service';
 override 'initialize' => sub {
 	my ( $self ) = @_;
-		
+	
+	$self->namespace($self->appInstance->namespace);
+	
 	super();
 
 };

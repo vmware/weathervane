@@ -35,12 +35,6 @@ has 'nextRabbitMQFirst' => (
 	default => 0,
 );
 
-override 'initialize' => sub {
-	my ($self) = @_;
-	super();
-
-};
-
 # The Auction appInstance needs to track various info for its services
 
 ## rabbitmqClusterHosts is used to keep track of
@@ -70,6 +64,14 @@ has 'wwwIpAddrs' => (
 	isa       => 'ArrayRef[Str]',
 	predicate => 'has_wwwIpAddrs',
 );
+
+
+override 'initialize' => sub {
+	my ($self) = @_;
+		
+	super();
+
+};
 
 override 'getEdgeService' => sub {
 	my ($self) = @_;

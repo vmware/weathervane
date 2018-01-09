@@ -1,7 +1,6 @@
 FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
-COPY mongodb.repo /etc/yum.repos.d/mongo.repo
 COPY entrypoint.sh /entrypoint.sh
 COPY dbLoader.jar /dbLoader.jar
 COPY dbLoaderLibs /dbLoaderLibs

@@ -15,3 +15,62 @@ data:
   TOMCAT_JDBC_MAXIDLE: "26"
   TOMCAT_HTTP_PORT: "8080"
   TOMCAT_DB_PORT: "5432"
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tomcat
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: tomcat
+      labels:
+        app: auction
+        tier: app
+        impl: tomcat
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-tomcat:1.1.0
+        name: tomcat
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: tomcat-config
+        ports: 
+        - containerPort: 8080
+          name: httpport
+          protocol: TCP
+        - containerPort: 8443
+          name: httpsport
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tomcat
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    name: httpport
+  - port: 8443
+    name: httpsport
+  selector:
+    app: auction
+    tier: app
+    impl: tomcat
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tomcat
+spec:
+  rules:
+  - host: www.weathervane
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: tomcat
+          servicePort: 8080

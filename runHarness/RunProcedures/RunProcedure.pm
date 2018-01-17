@@ -369,6 +369,11 @@ sub cleanData {
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
 }
 
+sub cleanupAppInstances {
+	my ( $self, $cleanupLogDir ) = @_;
+	return callBooleanMethodOnObjectsParallel1( 'cleanupAppInstances', $self->workloadsRef, $cleanupLogDir );
+}
+
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -1219,6 +1224,10 @@ sub checkVersions {
 
 	my $allSame = 1;
 	foreach my $host ( @{ $self->hostsRef } ) {
+
+		if ($host->meta->name eq "KubernetesCluster") {
+			next;
+		}
 
 		if (!$host->isNonDocker() || $host->getParamValue('vicHost')) {
 			next;

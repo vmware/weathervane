@@ -40,7 +40,6 @@ use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
 use Services::ConfigurationManager;
-use Services::ConfigurationKubernetesManager;
 use Services::ConfigurationManagerDocker;
 use Services::ScheduledElasticityService;
 use Services::SimpleElasticityService;

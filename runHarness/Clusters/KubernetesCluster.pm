@@ -55,31 +55,136 @@ override 'registerService' => sub {
 sub kubernetesSetContext {
 	my ( $self ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	my $contextName = $self->clusterName;
-	$logger->debug("kubernetesSetContext set context to $contextName");
-	my $cmd = "kubectl set config use-context $contextName 2>&1";
-	my $outString = `$cmd`;
+#	my $contextName = $self->clusterName;
+#	$logger->debug("kubernetesSetContext set context to $contextName");
+#	my $cmd = "kubectl config use-context $contextName 2>&1";
+#	my $outString = `$cmd`;
+#	$logger->debug("Command: $cmd");
+#	$logger->debug("Output: $outString");
+}
+
+sub kubernetesDeleteAll {
+	my ( $self, $resourceType, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesDelete deleteAll of type $resourceType in namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl delete $resourceType --all --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
+	
+}
+
+sub kubernetesDeleteAllWithLabel {
+	my ( $self, $selector, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesDeleteAllWithLabel with label $selector in namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl delete all --selector=$selector --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	$cmd = "kubectl delete configmap --selector=$selector --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+}
+
+sub kubernetesDeleteAllWithLabelAndResourceType {
+	my ( $self, $selector, $resourceType, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesDeleteAllWithLabelAndResourceType with resourceType $resourceType, label $selector in namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl delete $resourceType --selector=$selector --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
 }
 
 sub kubernetesDelete {
-	my ( $self, $resourceType, $resourceName, $namespace, $all ) = @_;
+	my ( $self, $resourceType, $resourceName, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDelete delete $resourceName of type $resourceType in namespace $namespace");
 	$self->kubernetesSetContext();
 	my $cmd;
 	my $outString;
-	if ($all) {
-		$cmd = "kubectl delete $resourceType --all --namespace=$namespace 2>&1";
-		$outString = `$cmd`;
-	} else {
-		$cmd = "kubectl delete $resourceType $resourcename --namespace=$namespace 2>&1";
-		$outString = `$cmd`;
-	}
+	$cmd = "kubectl delete $resourceType $resourceName --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
 	
+}
+
+# Does a kubectl exec in the first pod where the impl label matches  
+# serviceImplName.  It does the exec in the container with the same name.
+sub kubernetesExecOne {
+	my ( $self, $serviceTypeImpl, $commandString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesExecOne exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
+	$self->kubernetesSetContext();
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;	
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		exit(-1);
+	}
+	
+	# Get the name of the first pod
+	my $podName = $names[0];
+	
+	$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	return $outString;
+	
+}
+
+# Does a kubectl exec in all p[ods] where the impl label matches  
+# serviceImplName.  It does the exec in the container with the same name.
+sub kubernetesExecAll {
+	my ( $self, $serviceTypeImpl, $commandString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesExecAll exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
+	$self->kubernetesSetContext();
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;	
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		exit(-1);
+	}
+	
+	foreach my $podName (@names) { 	
+		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
+		$outString = `$cmd`;
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
 }
 
 sub kubernetesApply {
@@ -92,7 +197,101 @@ sub kubernetesApply {
 	$cmd = "kubectl apply -f $fileName --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");s
+	$logger->debug("Output: $outString");
+}
+
+sub kubernetesGetIngressIp {
+	my ( $self, $labelString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesAreAllPodRunning LabelString $labelString, namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl get ingress --selector=$labelString -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @ips = split /\n/, $outString;
+	if ($#ips < 0) {
+		$logger->debug("kubernetesGetIngressIp: There are no ingresses with label $labelString in namespace $namespace");
+		return "";
+	}
+	
+	return $ips[0];
+}
+
+sub kubernetesGetNodePortForPortNumber {
+	my ( $self, $labelString, $portNumber, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetNodePortForPortNumber LabelString $labelString, port $portNumber, namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl get service --selector=$labelString -o=jsonpath='{range .items[*]}{.spec.ports[*].port}{\",\"}{.spec.ports[*].nodePort}{\"\\n\"}{end}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @lines = split /\n/, $outString;
+	if ($#lines < 0) {
+		$logger->error("kubernetesGetNodePortForPortNumber: There are no services with label $labelString in namespace $namespace");
+		return "";
+	}
+	
+	my $line = $lines[0];
+	my @portLists = split /,/, $line;
+	if ($#portLists < 1) {
+		$logger->error("kubernetesGetNodePortForPortNumber: There are no nodePorts on services with label $labelString in namespace $namespace");
+		return "";
+	}
+
+	my @ports = split /\s+/, $portLists[0];
+	my @nodePorts = split /\s+/, $portLists[1];
+	if ($#ports != $#nodePorts) {
+		$logger->error("kubernetesGetNodePortForPortNumber: There are not nodePorts for every port on the services with label $labelString in namespace $namespace");
+		return "";
+	}
+	
+	my $index = 0;
+	foreach 	my $port (@ports) {
+		if ($port == $portNumber) {
+			return $nodePorts[$index];
+		}
+		$index++;
+	}
+
+	$logger->error("kubernetesGetNodePortForPortNumber: There is no port $portNumber on the services with label $labelString in namespace $namespace");
+	return "";
+		
+}
+
+sub kubernetesAreAllPodRunning {
+	my ( $self, $podLabelString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+
+	my @stati = split /\s+/, $outString;
+	if ($#stati < 0) {
+		$logger->debug("kubernetesAreAllPodRunning: There are no pods with label $podLabelString in namespace $namespace");
+		return 0;
+	}
+	
+	foreach my $status (@stati) { 
+		if ($status ne "Running") {
+			$logger->debug("kubernetesAreAllPodRunning: Found a non-running pod: $status");
+			return 0;
+		}	
+	}
+	$logger->debug("kubernetesAreAllPodRunning: All pods are running");
+	return 1;
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -163,11 +163,20 @@ override 'run' => sub {
 	## get the logs
 	$self->getLogFiles();
 
+	my $sanityPassed = 1;
 	if ( $self->getParamValue('stopServices') ) {
 
 		## stop the services
 		my @tiers = qw(frontend backend data infrastructure);
 		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
+
+		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
+		if ($sanityPassed) {
+			$console_logger->info("All Sanity Checks Passed");
+		}
+		else {
+			$console_logger->info("Sanity Checks Failed");
+		}
 
 		$debug_logger->debug("Unregister port numbers");
 		$self->unRegisterPortNumbers();
@@ -185,6 +194,9 @@ override 'run' => sub {
 		$self->removeBackendServices($cleanupLogDir);
 		$self->removeDataServices($cleanupLogDir);
 		$self->removeInfrastructureServices($cleanupLogDir);
+
+		# Let the appInstances clean any run specific data or services
+		$self->cleanupAppInstances($cleanupLogDir);
 
 		# clean up old logs and stats
 		$self->cleanup();

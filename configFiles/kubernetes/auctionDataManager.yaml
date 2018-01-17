@@ -11,7 +11,7 @@ data:
   MAXDURATION: "7200"
   NUMNOSQLSHARDS: "0"
   NUMNOSQLREPLICAS: "0"
-  MONGODBHOSTNAME: "mongod"
+  MONGODBHOSTNAME: "mongodb"
   MONGODBPORT: "27017"
   MONGODBREPLICASET: "mongo-0:27017,mongo-1:27017,mongo-2:27017"
   DBHOSTNAME: "postgresql"
@@ -29,13 +29,20 @@ spec:
       name: auctiondatamanager
       labels:
         app: auction
-        tier: dm
-        impl: auctiondm
+        tier: dataManager
+        impl: auctiondatamanager
     spec:
       containers:
       - image: hrosenbe/weathervane-auctiondatamanager:1.1.0
-        name: cm
-        imagePullPolicy: Always
+        name: auctiondatamanager
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /loadData.pl
+          initialDelaySeconds: 15
+          periodSeconds: 10
         envFrom:
         - configMapRef:
             name: auctiondatamanager-config

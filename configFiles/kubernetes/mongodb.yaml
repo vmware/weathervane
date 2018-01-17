@@ -1,7 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mongod-config
+  name: mongodb-config
+  labels:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: mongodb
 data: 
   CLEARBEFORESTART: "0"
   MONGODPORT: "27017"
@@ -14,27 +19,28 @@ data:
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: mongod
+  name: mongodb
 spec:
-  serviceName: mongo
+  serviceName: mongodb
   replicas: 1
   template:
     metadata:
-      name: mongod
+      name: mongodb
       labels:
         app: auction
-        tier: nosql
-        impl: mongod
+        tier: data
+        type: nosqlServer
+        impl: mongodb
     spec:
       containers:
       - image: hrosenbe/weathervane-mongodb:1.1.0
-        name: mongod
-        imagePullPolicy: Always
+        name: mongodb
+        imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
-            name: mongod-config
+            name: mongodb-config
         volumeMounts:
-        - name: mongod-data
+        - name: mongodb-data
           mountPath: /mnt/mongoData
         ports: 
         - containerPort: 27017 
@@ -42,7 +48,7 @@ spec:
           protocol: TCP
   volumeClaimTemplates:
   - metadata:
-      name: mongod-data
+      name: mongodb-data
     spec:
       resources: 
         requests:
@@ -54,7 +60,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongod
+  name: mongodb
 spec:
   clusterIP: None
   ports:
@@ -62,5 +68,6 @@ spec:
     targetPort: mongodport
   selector:
     app: auction
-    tier: nosql
-    impl: mongod
+    tier: data
+    type: nosqlServer
+    impl: mongodb

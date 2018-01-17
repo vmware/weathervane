@@ -231,4 +231,19 @@ foreach my $imageName (@imageNames) {
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version);	
 }
 
+# Clean up
+runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/dist");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+
 1;

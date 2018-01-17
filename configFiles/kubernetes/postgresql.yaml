@@ -2,6 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgresql-config
+  labels:
+    app: auction
+    tier: data
+    type: dbServer
+    impl: postgresql
 data: 
   POSTGRES_USER: "auction"
   POSTGRES_PASSWORD: "auction"
@@ -26,13 +31,14 @@ spec:
       name: postgresql
       labels:
         app: auction
-        tier: db
+        tier: data
+        type: dbServer
         impl: postgresql
     spec:
       containers:
       - image: hrosenbe/weathervane-postgresql:1.1.0
         name: postgresql
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
             name: postgresql-config
@@ -76,5 +82,6 @@ spec:
     name: postgresqlport
   selector:
     app: auction
-    tier: db
+    tier: data
+    type: dbServer
     impl: postgresql

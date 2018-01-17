@@ -156,7 +156,8 @@ sub getWorkloadNum {
 
 sub getAppInstanceNum {
 	my ($self) = @_;
-	return $self->getParamValue('appInstanceNum');
+	return 	$self->appInstance();
+
 }
 
 sub getDockerName {

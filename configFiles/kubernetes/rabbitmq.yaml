@@ -2,6 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rabbitmq-config
+  labels:
+    app: auction
+    tier: backend
+    type: msgServer
+    impl: rabbitmq
 data: 
   RABBITMQ_NODE_PORT: "5672"
   RABBITMQ_DIST_PORT: "25672"
@@ -17,13 +22,14 @@ spec:
       name: rabbitmq
       labels:
         app: auction
-        tier: msg
+        tier: backend
+        type: msgServer
         impl: rabbitmq
     spec:
       containers:
       - image: hrosenbe/weathervane-rabbitmq:1.1.0
         name: rabbitmq
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
             name: rabbitmq-config
@@ -48,5 +54,6 @@ spec:
     name: peerport
   selector:
     app: auction
-    tier: msg
+    tier: backend
+    type: msgServer
     impl: rabbitmq

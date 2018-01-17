@@ -3,6 +3,7 @@ MAINTAINER hrosenbe@vmware.com
 	
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
+COPY waitForNodes.pl /waitForNodes.pl
 COPY zoo.cfg /root/zookeeper/conf/zoo.cfg
 
 ARG ZOOKEEPER_VERSION=3.4.10

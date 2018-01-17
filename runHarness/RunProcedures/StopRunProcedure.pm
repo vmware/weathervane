@@ -61,6 +61,9 @@ override 'run' => sub {
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 
+	# Let the appInstances clean any run specific data or services
+	$self->cleanupAppInstances($tmpDir);
+
 	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
 

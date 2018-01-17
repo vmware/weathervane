@@ -85,6 +85,11 @@ sub sanityCheckServices {
 	return callBooleanMethodOnObjectsParallel1( 'sanityCheckServices', $self->appInstancesRef, $cleanupLogDir );
 }
 
+sub cleanupAppInstances {
+	my ( $self, $cleanupLogDir ) = @_;
+	return callBooleanMethodOnObjectsParallel1( 'cleanup', $self->appInstancesRef, $cleanupLogDir );
+}
+
 sub cleanData {
 	my ( $self, $cleanupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->appInstancesRef, $cleanupLogDir );

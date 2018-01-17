@@ -1337,8 +1337,16 @@ $parameters{"stopStatsScript"} = {
 $parameters{"clusterType"} = {
 	"type"      => "=s",
 	"default"   => "kubernetes",
-	"parent"    => "cluster",
+	"parent"    => "appInstance",
 	"usageText" => "This is the type of the cluster. Allowed values: kubernetes",
+	"showUsage" => 1,
+};
+
+$parameters{"clusterName"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "appInstance",
+	"usageText" => "This is the name of the cluster for an appInstance",
 	"showUsage" => 1,
 };
 

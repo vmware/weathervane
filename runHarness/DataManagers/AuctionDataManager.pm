@@ -33,11 +33,6 @@ extends 'DataManager';
 
 has '+name' => ( default => 'Weathervane', );
 
-has 'dbLoaderClasspath' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 # default scale factors
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
@@ -46,20 +41,6 @@ override 'initialize' => sub {
 	my ($self) = @_;
 
 	super();
-
-	my $weathervaneHome  = $self->getParamValue('weathervaneHome');
-	my $dbLoaderImageDir = $self->getParamValue('dbLoaderImageDir');
-	if ( !( $dbLoaderImageDir =~ /^\// ) ) {
-		$dbLoaderImageDir = $weathervaneHome . "/" . $dbLoaderImageDir;
-	}
-	$self->setParamValue( 'dbLoaderImageDir', $dbLoaderImageDir );
-
-	my $dbLoaderDir = $self->getParamValue('dbLoaderDir');
-	$self->setParamValue( 'dbLoaderDir',
-		"$dbLoaderDir/dbLoader.jar:$dbLoaderDir/dbLoaderLibs/*:$dbLoaderDir/dbLoaderLibs" );
-
-	$self->dbLoaderClasspath( "$dbLoaderDir/dbLoader.jar:$dbLoaderDir/dbLoaderLibs/*:$dbLoaderDir/dbLoaderLibs" );
-
 };
 
 sub startAuctionDataManagerContainer {

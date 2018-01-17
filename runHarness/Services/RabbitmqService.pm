@@ -388,6 +388,14 @@ sub configure {
 
 }
 
+sub clearDataBeforeStart {
+	my ( $self, $logPath ) = @_;
+}
+
+sub clearDataAfterStart {
+	my ( $self, $logPath ) = @_;
+}
+
 sub stopStatsCollection {
 	my ( $self, $host, $configPath ) = @_;
 

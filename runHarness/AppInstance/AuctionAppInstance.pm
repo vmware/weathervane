@@ -229,7 +229,7 @@ override 'checkConfig' => sub {
 	}
 
 	if ( $numConfigurationManagers == 0 ) {
-		if ( $self->getParamValue('prewarmAppServers') ) {
+		if ( $self->getParamValue('prewarmAppServers')  && !$self->getParamValue('clusterName')) {
 			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: Can't pre-warm appServers when there is no Configuration Manager");
 			return 0;
 		}

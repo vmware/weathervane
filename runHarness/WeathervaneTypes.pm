@@ -43,9 +43,9 @@ our %dockerServiceTypes = (
 # Map workload to serviceTier to serviceType in each tier
 our %workloadToServiceTypes = ('auction' => {
 	'infrastructure' => ['configurationManager', 'elasticityService'],
-	'data' => ['dbServer', 'nosqlServer', 'fileServer'],
-	'backend' => ['msgServer', 'coordinationServer', 'appServer', 'webServer'],
-	'frontend' => ['lbServer', 'ipManager'],
+	'data' => ['dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'coordinationServer'],
+	'backend' => ['appServer'],
+	'frontend' => ['webServer', 'lbServer', 'ipManager'],
 	}
 );
 

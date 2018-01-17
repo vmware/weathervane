@@ -432,6 +432,12 @@ sub isUp {
 	return 1;
 }
 
+sub isRunning {
+	my ($self, $fileout) = @_;
+	
+	return 1;
+}
+
 sub useDocker {
 	my ($self) = @_;
 	

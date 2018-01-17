@@ -2,14 +2,19 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-config
+  labels:
+    app: auction
+    tier: backend
+    type: webServer
+    impl: nginx
 data: 
-  WORKERCONNECTIONS : 100
-  PERSERVERCONNECTIONS: 25000
-  KEEPALIVETIMEOUT: 120
-  MAXKEEPALIVEREQUESTS: 1000
+  WORKERCONNECTIONS: "100"
+  PERSERVERCONNECTIONS: "25000"
+  KEEPALIVETIMEOUT: "120"
+  MAXKEEPALIVEREQUESTS: "1000"
   IMAGESTORETYPE: "mongodb"
-  HTTPPORT: 9080
-  HTTPSPORT: 9443
+  HTTPPORT: "80"
+  HTTPSPORT: "443"
   APPSERVERS: "tomcat:8080"
 ---
 apiVersion: extensions/v1beta1
@@ -23,21 +28,22 @@ spec:
       name: nginx
       labels:
         app: auction
-        tier: web
+        tier: backend
+        type: webServer
         impl: nginx
     spec:
       containers:
       - image: hrosenbe/weathervane-nginx:1.1.0
         name: nginx
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
             name: nginx-config
         ports: 
-        - containerPort: 9080
+        - containerPort: 80
           name: httpport
           protocol: TCP
-        - containerPort: 9443
+        - containerPort: 443
           name: httpsport
           protocol: TCP
 ---
@@ -48,25 +54,12 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 9080
+  - port: 80
     name: httpport
-  - port: 9443
+  - port: 443
     name: httpsport
   selector:
     app: auction
-    tier: app
+    tier: backend
+    type: webServer
     impl: nginx
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: nginx
-spec:
-  rules:
-  - host: www.weathervane
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: nginx
-          servicePort: 9080

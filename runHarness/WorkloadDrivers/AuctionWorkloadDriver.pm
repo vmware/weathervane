@@ -341,8 +341,9 @@ sub createRunConfigHash {
 	my ( $self, $appInstancesRef, $suffix ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	$logger->debug("createRunConfigHash start");
 
+	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $workloadProfile  = $self->getParamValue('workloadProfile');
 	my $rampUp           = $self->getParamValue('rampUp');
@@ -386,28 +387,9 @@ sub createRunConfigHash {
 
 		# There should be one target for each IP address
 		# associated with the www hostname for each appInstance
-		my $wwwIpAddrsRef = [];
-		if ( $appInstance->getParamValue('useVirtualIp') ) {
-			$logger->debug("configure for workload $workloadNum, appInstance uses virtualIp");
-			my $wwwHostname = $appInstance->getWwwHostname();
-			my $wwwIpsRef = Utils::getIpAddresses($wwwHostname);
-			foreach my $ip (@$wwwIpsRef) {
-				# When using virtualIP addresses, all edge services must use the same
-				# default port numbers
-				push @$wwwIpAddrsRef, [$ip, 80, 443];				
-			}
-		}
-		else {
-			my $edgeService  = $appInstance->getEdgeService();
-			my $edgeServices = $appInstance->getActiveServicesByType($edgeService);
-			$logger->debug(
-				"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
-			);
-			foreach my $service (@$edgeServices) {
-				push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
-			}
-		}
+		my $wwwIpAddrsRef = $appInstance->getWwwIpAddrsRef();
 		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
+	    $logger->debug("createRunConfigHash appInstance $instanceNum has $numVIPs targets");
 
 		my $users = $appInstance->getUsers();
 
@@ -420,6 +402,7 @@ sub createRunConfigHash {
 			my $httpPort = $wwwIpAddrsRef->[$vipNum]->[1];
 			my $httpsPort = $wwwIpAddrsRef->[$vipNum]->[2];
 			$loadPathName = "loadPath" . $instanceNum . "-" . $serverName;
+		    $logger->debug("createRunConfigHash appInstance $instanceNum, target $vipNum: $serverName:$httpPort:$httpsPort");
 
 			$target->{"type"}     = "http";
 			$target->{"hostname"} = "$serverName";
@@ -445,7 +428,7 @@ sub createRunConfigHash {
 			$loadPath->{"type"}          = "interval";
 			$loadPath->{"loadIntervals"} = [];
 			if ( $appInstance->hasLoadPath() ) {
-				$logger->debug("configure for workload $workloadNum, appInstance has load path");
+				$logger->debug("configure for workload $workloadNum, appInstance $instanceNum has load path");
 				$self->printLoadPath(
 					$appInstance->getLoadPath(),
 					$loadPath->{"loadIntervals"},
@@ -453,7 +436,7 @@ sub createRunConfigHash {
 				);
 			}
 			else {
-				$logger->debug("configure for workload $workloadNum, appInstance does not have load path");
+				$logger->debug("configure for workload $workloadNum, appInstance $instanceNum does not have load path");
 				$self->printRampUpIntervals( $appInstance->getUsers(), $loadPath->{"loadIntervals"}, $vipNum,
 					$numVIPs );
 				$self->printSteadyStateIntervals(
@@ -472,6 +455,7 @@ sub createRunConfigHash {
 		}
 
 		if ( $appInstance->hasLoadPath() ) {
+			$logger->debug("configuring fixedStataIntervalSpec for workload $workloadNum, appInstance $instanceNum");
 
 			# If using load path, need a fixedStatsIntervalSpec
 			# for rampup, steadystate, and rampDown
@@ -509,6 +493,7 @@ sub createRunConfigHash {
 		$intervalSpec->{"loadPathName"}   = "$loadPathName";
 
 		$runRef->{"statsIntervalSpecs"}->{$loadPathName} = $intervalSpec;
+		$logger->debug("configured statsIntervalSpec for workload $workloadNum, appInstance $instanceNum");
 
 		# Need a workload per app-instance to get correct maxUsers
 		my $workload = {};
@@ -537,6 +522,7 @@ sub createRunConfigHash {
 		$workload->{"usersScaleFactor"} = $usersScaleFactor;
 
 		$runRef->{"workloads"}->{ "appInstance" . $instanceNum } = $workload;
+		$logger->debug("Configured workload $workloadNum, appInstance $instanceNum");
 
 	}
 
@@ -549,6 +535,7 @@ sub createRunConfigHash {
 	$intervalSpec->{"period"}                     = $self->getParamValue('statsInterval');
 	$runRef->{"statsIntervalSpecs"}->{"periodic"} = $intervalSpec;
 
+	$logger->debug("createRunConfigHas completed");
 	return $runRef;
 }
 

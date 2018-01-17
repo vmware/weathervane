@@ -14,6 +14,16 @@ sigterm()
    fi
 
    rm -f /fifo
+
+   echo "Performing sanity checks"
+   perl /sanityCheck.pl
+   if [ $? -eq 0 ]
+   then
+   	echo "Sanity Checks Passed"
+   else
+   	echo "Sanity Checks Failed"
+   fi
+
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"
    else

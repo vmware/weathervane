@@ -150,6 +150,12 @@ override 'initialize' => sub {
 	}
 	$self->setParamValue( 'distDir', $distDir );
 
+	my $configDir  = $self->getParamValue('configDir');
+	if ( !( $configDir =~ /^\// ) ) {
+		$configDir = $weathervaneHome . "/" . $configDir;
+	}
+	$self->setParamValue('configDir', $configDir);
+
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
 	if ( $#$userLoadPath >= 0 ) {
@@ -484,6 +490,36 @@ sub hasLoadPath {
 sub getWwwHostname {
 	my ($self) = @_;
 	return $self->getParamValue('wwwHostname');
+}
+
+sub getWwwIpAddrsRef {
+	my ($self) = @_;
+	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
+	my $workloadNum    = $self->getParamValue('workloadNum');
+
+	my $wwwIpAddrsRef = [];
+	if ( $self->getParamValue('useVirtualIp') ) {
+		$logger->debug("configure for workload $workloadNum, appInstance uses virtualIp");
+		my $wwwHostname = $self->getWwwHostname();
+		my $wwwIpsRef = Utils::getIpAddresses($wwwHostname);
+		foreach my $ip (@$wwwIpsRef) {
+			# When using virtualIP addresses, all edge services must use the same
+			# default port numbers
+			push @$wwwIpAddrsRef, [$ip, 80, 443];				
+		}
+	}
+	else {
+		my $edgeService  = $self->getEdgeService();
+		my $edgeServices = $self->getActiveServicesByType($edgeService);
+		$logger->debug(
+			"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
+		);
+		foreach my $service (@$edgeServices) {
+			push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
+		}
+	}
+	
+	return $wwwIpAddrsRef;
 }
 
 sub clearReloadDb {
@@ -1010,6 +1046,70 @@ sub stopServices {
 	}
 }
 
+# Running == the process is started, but the application may not be ready to accept requests
+sub waitForServicesRunning {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsRunning = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsRunning &= $serviceRef->isRunning($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsRunning) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
+# Up == the process is started and the application is ready to accept requests
+sub waitForServicesUp {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsUp = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsUp &= $serviceRef->isUp($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsUp) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
 sub removeServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -1492,7 +1592,11 @@ sub getLogFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->hostName;
+					my $name = $service->host->clusterName;
+					if (!$name) {
+						$name = $service->host->hostName;
+					}
+					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
 					}
@@ -1539,7 +1643,11 @@ sub getConfigFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->hostName;
+					my $name = $service->host->clusterName;
+					if (!$name) {
+						$name = $service->host->hostName;
+					}
+					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
 					}
@@ -1590,6 +1698,12 @@ sub sanityCheckServices {
 	);
 
 	return $passed;
+}
+
+sub cleanup {
+	my ( $self, $cleanupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+
 }
 
 sub cleanData {
@@ -1666,10 +1780,13 @@ sub getHostStatsSummary {
 		my $servicesListRef = $self->getActiveServicesByType($serviceType);
 
 		foreach my $service (@$servicesListRef) {
-			if ($service->host->getParamValue('vicHost')) {
-				return;
+			my $hostname = $service->host->clusterName;
+			if (!$hostname) {
+				$hostname = $service->host->hostName;
+				if ($service->host->getParamValue('vicHost')) {
+					return;
+				}
 			}
-			my $hostname = $service->host->hostName;
 			if (   ( !exists $csvRefByHostname{$hostname} )
 				|| ( !defined $csvRefByHostname{$hostname} ) )
 			{

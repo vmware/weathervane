@@ -16,9 +16,6 @@ perl /updateResolveConf.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-    echo "Configure postgresql.conf"
-	perl /configure.pl
-	
 	echo "start postgresql"
 	/pg-init.sh &
 fi

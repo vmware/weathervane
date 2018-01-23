@@ -43,6 +43,9 @@ rm -f /mnt/dbData/pg_log/*
 rm -f /mnt/dbData/postgresql/postmaster.pid
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_resetxlog -f /mnt/dbData/postgresql
 
+echo "Configure postgresql.conf"
+perl /configure.pl	
+
 # Start postgresql
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/postgres -D /mnt/dbData/postgresql 
 

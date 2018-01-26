@@ -123,6 +123,7 @@ override 'run' => sub {
 	## get the stats logs
 	$self->getStatsFiles();
 
+	my $sanityPassed = true;
 	if ( $self->getParamValue('stopServices') ) {
 		## stop the services
 		$self->stopFrontendServices($cleanupLogDir);
@@ -138,7 +139,7 @@ override 'run' => sub {
 		## get the logs
 		$self->getLogFiles();
 
-		my $sanityPassed = $self->sanityCheckServices($cleanupLogDir);
+		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
 			$console_logger->info("All Sanity Checks Passed");
 		}

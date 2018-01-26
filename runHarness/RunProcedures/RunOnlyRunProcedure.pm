@@ -159,8 +159,7 @@ override 'run' => sub {
 	## get the stats logs
 	$self->getStatsFiles();
 
-	my $sanityPassed;
-
+	my $sanityPassed = 1;
 	if ( $self->getParamValue('stopServices') ) {
 		## stop the services
 		$self->stopFrontendServices($cleanupLogDir);

@@ -522,9 +522,7 @@ override 'sanityCheck' => sub {
 	my $dblog;
 	open( $dblog, ">$logName" )
 	  || die "Error opening /$logName:$!";
-	
-	$self->host->dockerKill("USR2", $dblog, $name);
-	
+		
 	my $logContents = $self->host->dockerGetLogs( $dblog, $name );
 	my @lines = split /\n/, $logContents;
 	

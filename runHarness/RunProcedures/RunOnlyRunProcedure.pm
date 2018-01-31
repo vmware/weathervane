@@ -158,8 +158,6 @@ override 'run' => sub {
 	## get the stats logs
 	$self->getStatsFiles();
 
-	my $sanityPassed = 1;
-
 	## get the logs
 	$self->getLogFiles();
 

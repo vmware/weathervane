@@ -172,9 +172,6 @@ sub prepareData {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	$appInstance->startServices("data", $logPath);
-	if ( !$self->isRunningAndUpDataServices($logHandle) ) {
-		return 0;
-	}	
 	
 	$self->startAuctionKubernetesDataManagerContainer ($users, $logHandle);
 		
@@ -201,17 +198,6 @@ sub prepareData {
 				$appInstance->stopServices("data", $logPath);
 				$appInstance->clearDataServicesBeforeStart($logPath);
 				$appInstance->startServices("data", $logPath);
-
-				$logger->debug( "All data services configured and started for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
-
-				# Make sure that all of the data services are up
-				if ( !$self->isRunningAndUpDataServices($logHandle) ) {
-					return 0;
-				}	
-
-				$logger->debug( "Clear data services after start for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
 				$appInstance->clearDataServicesAfterStart($logPath);
 
 				$retVal = $self->loadData( $users, $logPath );
@@ -774,36 +760,6 @@ sub cleanData {
 			print $logHandle $cmdout;
 
 	}
-}
-
-sub isRunningAndUpDataServices {
-	my ( $self, $logHandle ) = @_;
-	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $console_logger = get_logger("Console");
-	
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $appInstance = $self->appInstance;
-		
-	# Make sure that all of the data services are running and up (ready for requests)
-	$logger->debug(
-		"Checking that all data services are running for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsRunning = $appInstance->waitForServicesRunning("data", 15, 3, 15, $logHandle);
-	if ( !$allIsRunning ) {
-		$console_logger->error(
-			"Couldn't bring to running all data services for appInstance $appInstanceNum of workload $workloadNum." );
-		return 0;
-	}
-	$logger->debug(
-		"Checking that all data services are up for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsUp = $appInstance->waitForServicesUp("data", 0, 4, 15, $logHandle);
-	if ( !$allIsUp ) {
-		$console_logger->error(
-			"Couldn't bring up all data services for appInstance $appInstanceNum of workload $workloadNum." );
-		return 0;
-	}
-	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
-	return 1;
 }
 
 __PACKAGE__->meta->make_immutable;

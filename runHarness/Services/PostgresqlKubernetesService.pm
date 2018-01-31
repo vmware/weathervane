@@ -63,7 +63,6 @@ sub clearDataAfterStart {
 	print $applog "Clearing Data From PortgreSQL\n";
 
 	$cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
-
 	close $applog;
 
 }

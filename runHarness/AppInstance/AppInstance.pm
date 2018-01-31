@@ -982,6 +982,11 @@ sub startServices {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users  = $self->users;
 	my $impl         = $self->getParamValue('workloadImpl');
+	
+	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
 	# If in interactive mode, then configure services for maxUsers load
 	my $interactive = $self->getParamValue('interactive');
@@ -1016,7 +1021,10 @@ sub startServices {
 	}
 	
 	# Don't return until all services are ready
-	$self->isRunningAndUpDataServices($serviceTier, $setupLogDir);
+	$self->isRunningAndUpDataServices($serviceTier, $logFile);
+	
+	close $logFile;
+	
 }
 
 sub stopServices {
@@ -1050,7 +1058,7 @@ sub stopServices {
 }
 
 sub isRunningAndUpDataServices {
-	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my ( $self, $serviceTier, $logFile ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $console_logger = get_logger("Console");
 	
@@ -1061,7 +1069,7 @@ sub isRunningAndUpDataServices {
 	# Make sure that all of the services are running and up (ready for requests)
 	$logger->debug(
 		"Checking that all $serviceTier services are running for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsRunning = $appInstance->waitForServicesRunning($serviceTier, 15, 6, 15, $logHandle);
+	my $allIsRunning = $appInstance->waitForServicesRunning($serviceTier, 15, 6, 15, $logFile);
 	if ( !$allIsRunning ) {
 		$console_logger->error(
 			"Couldn't bring to running all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
@@ -1069,7 +1077,7 @@ sub isRunningAndUpDataServices {
 	}
 	$logger->debug(
 		"Checking that all $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsUp = $appInstance->waitForServicesUp($serviceTier, 0, 6, 15, $logHandle);
+	my $allIsUp = $appInstance->waitForServicesUp($serviceTier, 0, 6, 15, $logFile);
 	if ( !$allIsUp ) {
 		$console_logger->error(
 			"Couldn't bring up all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );

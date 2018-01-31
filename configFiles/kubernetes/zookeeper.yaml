@@ -47,12 +47,6 @@ spec:
         - containerPort: 3888
           name: electionport
           protocol: TCP
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - '[ "imok" = "$(echo ruok | nc -w 1 -q 1 127.0.0.1 2181)" ]'
 ---
 apiVersion: v1
 kind: Service

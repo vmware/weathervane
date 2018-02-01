@@ -52,7 +52,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - '[ "imok" = "$(echo ruok | nc -w 5 -q 1 127.0.0.1 2181)" ]'
+            - '[ "imok" = "$(echo ruok | nc -w 5 127.0.0.1 2181)" ]'
           initialDelaySeconds: 120
           periodSeconds: 5 
         readinessProbe:
@@ -60,7 +60,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - '[ "imok" = "$(echo ruok | nc -w 5 -q 1 127.0.0.1 2181)" ]'
+            - '[ "imok" = "$(echo ruok | nc -w 5 127.0.0.1 2181)" ]'
           initialDelaySeconds: 120
           periodSeconds: 5 
 ---

@@ -1118,6 +1118,38 @@ sub waitForServicesRunning {
 	return 0;
 }
 
+# Running == the process is started, but the application may not be ready to accept requests
+sub waitForServicesStopped {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsStopped = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsStopped &= !$serviceRef->isRunning($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsStopped) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
 # Up == the process is started and the application is ready to accept requests
 sub waitForServicesUp {
 	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;

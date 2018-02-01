@@ -133,6 +133,18 @@ sub configure {
 
 }
 
+override 'isUp' => sub {
+	my ($self, $fileout) = @_;
+	my $cluster = $self->host;
+	$cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction -d auction -c 'select * from auction limit 1;'", $self->namespace );
+	my $exitValue=$? >> 8;
+	if ($exitValue) {
+		return 0;
+	} else {
+		return 1;
+	}
+};
+
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 

@@ -97,6 +97,18 @@ sub configure {
 
 }
 
+override 'isUp' => sub {
+	my ($self, $fileout) = @_;
+	my $cluster = $self->host;
+	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace );
+	if ( $response =~ /auction/ ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+};
+
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 }

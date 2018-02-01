@@ -119,6 +119,18 @@ sub configure {
 
 }
 
+override 'isUp' => sub {
+	my ($self, $fileout) = @_;
+	my $cluster = $self->host;
+	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace );
+	if ( $response =~ /alive/ ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+};
+
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatDockerService");

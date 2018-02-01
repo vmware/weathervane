@@ -272,7 +272,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 			}
 
-		}, 120, TimeUnit.SECONDS);
+		}, 60, TimeUnit.SECONDS);
 		
 		// Create ClientBidUpdaters for auctions that are already running
 		logger.info("Create ClientBidUpdaters for auctions that are already running");

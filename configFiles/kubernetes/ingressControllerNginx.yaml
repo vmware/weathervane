@@ -62,6 +62,10 @@ spec:
             containerPort: 80
           - name: https
             containerPort: 443
+          resources:
+            requests:
+              cpu: 2
+              memory: 8Gi
           livenessProbe:
             failureThreshold: 3
             httpGet:

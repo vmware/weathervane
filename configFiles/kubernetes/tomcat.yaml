@@ -50,6 +50,13 @@ spec:
         - containerPort: 8443
           name: httpsport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
+          limits:
+            cpu: 2
+            memory: 8Gi
         livenessProbe:
           exec:
             command:

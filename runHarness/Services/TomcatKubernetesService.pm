@@ -110,7 +110,7 @@ sub configure {
 			print FILEOUT "  TOMCAT_CONNECTIONS: \"$maxConnections\"\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
-			print FILEOUT "  replicas: \"$numAppServers\"\n";
+			print FILEOUT "  replicas: $numAppServers\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

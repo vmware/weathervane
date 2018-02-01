@@ -83,7 +83,7 @@ sub configure {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
-			print FILEOUT "  replicas: \"$numWebServers\"\n";
+			print FILEOUT "  replicas: $numWebServers\n";
 		}
 		else {
 			print FILEOUT $inline;

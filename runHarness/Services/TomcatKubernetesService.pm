@@ -87,6 +87,7 @@ sub configure {
 	}
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
+	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
 
 	open( FILEIN,  "$configDir/kubernetes/tomcat.yaml" ) or die "$configDir/kubernetes/tomcat.yaml: $!\n";
 	open( FILEOUT, ">/tmp/tomcat-$namespace.yaml" )             or die "Can't open file /tmp/tomcat-$namespace.yaml: $!\n";
@@ -107,6 +108,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /TOMCAT_CONNECTIONS:/ ) {
 			print FILEOUT "  TOMCAT_CONNECTIONS: \"$maxConnections\"\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: \"$numAppServers\"\n";
 		}
 		else {
 			print FILEOUT $inline;

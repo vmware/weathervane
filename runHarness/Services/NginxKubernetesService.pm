@@ -94,6 +94,18 @@ sub configure {
 
 }
 
+override 'isUp' => sub {
+	my ($self, $fileout) = @_;
+	my $cluster = $self->host;
+	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s -w \"%{http_code}\n\" -o /dev/null http://127.0.0.1:80", $self->namespace );
+	if ( $response =~ /200/ ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+};
+
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 

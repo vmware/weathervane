@@ -150,6 +150,18 @@ sub configure {
 	close FILEOUT;
 }
 
+override 'isUp' => sub {
+	my ($self, $fileout) = @_;
+	my $cluster = $self->host;
+	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "mongo bid --eval 'printjson(db.getCollectionNames())'", $self->namespace );
+	my $exitValue=$? >> 8;
+	if ($exitValue) {
+		return 0;
+	} else {
+		return 1;
+	}
+};
+
 sub clearDataAfterStart {
 }
 

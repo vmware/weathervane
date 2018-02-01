@@ -46,6 +46,30 @@ spec:
         - containerPort: 27017 
           name: mongodport
           protocol: TCP
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - 'ps x | grep -v grep | grep -q mongod'
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - 'curl -s -w "%{http_code}\n" -o /dev/null http://127.0.0.1:80'
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
   volumeClaimTemplates:
   - metadata:
       name: mongodb-data

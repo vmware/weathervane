@@ -90,6 +90,7 @@ sub configure {
 		$totalMemory = 0;
 		$totalMemoryUnit = 0;		
 	}
+		
 
 	open( FILEIN,  "$configDir/kubernetes/postgresql.yaml" ) or die "$configDir/kubernetes/postgresql.yaml: $!\n";
 	open( FILEOUT, ">/tmp/postgresql-$namespace.yaml" )             or die "Can't open file /tmp/postgresql-$namespace.yaml: $!\n";
@@ -111,11 +112,15 @@ sub configure {
 		elsif ( $inline =~ /POSTGRESEFFECTIVECACHESIZE:/ ) {
 			print FILEOUT "  POSTGRESEFFECTIVECACHESIZE: \"" . $self->getParamValue('postgresqlEffectiveCacheSize') . "\"\n";
 		}
-		elsif ( $inline =~ /POSTGRESEFFECTIVECACHESIZEPCT/ ) {
+		elsif ( $inline =~ /POSTGRESEFFECTIVECACHESIZEPCT:/ ) {
 			print FILEOUT "  POSTGRESEFFECTIVECACHESIZEPCT: \"" . $self->getParamValue('postgresqlEffectiveCacheSizePct') . "\"\n";
 		}
-		elsif ( $inline =~ /POSTGRESMAXCONNECTIONS/ ) {
-			print FILEOUT "  POSTGRESMAXCONNECTIONS: \"" . $self->getParamValue('postgresqlMaxConnections') . "\"\n";
+		elsif ( $inline =~ /POSTGRESMAXCONNECTIONS:\s+\"(\d+)\"/ ) {
+			my $maxConn = $1;
+			if ( $self->getParamValue('postgresqlMaxConnections') ) {
+				$maxConn = $self->getParamValue('postgresqlMaxConnections');
+			}
+			print FILEOUT "  POSTGRESMAXCONNECTIONS: \"$maxConn\"\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

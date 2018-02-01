@@ -47,6 +47,13 @@ spec:
         - containerPort: 3888
           name: electionport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
 ---
 apiVersion: v1
 kind: Service

@@ -40,6 +40,13 @@ spec:
         - containerPort: 25672
           name: peerport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 250m
+            memory: 500Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
         livenessProbe:
           exec:
             command:

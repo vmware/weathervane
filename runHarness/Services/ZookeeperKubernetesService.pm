@@ -76,7 +76,7 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace );
+	$cluster->kubernetesExecOne ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"\$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace );
 	my $exitValue=$? >> 8;
 	if ($exitValue) {
 		return 0;

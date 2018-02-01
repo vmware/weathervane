@@ -187,12 +187,6 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		# Remove the services if they are dockerized
-		$self->removeFrontendServices($cleanupLogDir);
-		$self->removeBackendServices($cleanupLogDir);
-		$self->removeDataServices($cleanupLogDir);
-		$self->removeInfrastructureServices($cleanupLogDir);
-
 		# Let the appInstances clean any run specific data or services
 		$self->cleanupAppInstances($cleanupLogDir);
 

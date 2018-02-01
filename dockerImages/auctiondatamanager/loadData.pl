@@ -21,8 +21,8 @@ my $mongodbHostname = $ENV{'MONGODBHOSTNAME'};
 my $mongodbPort = $ENV{'MONGODBPORT'};
 my $mongodbReplicaSet = $ENV{'MONGODBREPLICASET'};
 
-my $heap              = "4G";
-my $threads = 8;
+my $heap              = "6G";
+my $threads = 16;
 
 if ( $users > $maxUsers ) {
 	$maxUsers = $users;

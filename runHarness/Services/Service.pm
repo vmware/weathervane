@@ -438,6 +438,12 @@ sub isRunning {
 	return 1;
 }
 
+sub isStopped {
+	my ($self, $fileout) = @_;
+	
+	return 1;
+}
+
 sub useDocker {
 	my ($self) = @_;
 	

@@ -294,6 +294,27 @@ sub kubernetesAreAllPodRunning {
 	return 1;
 }
 
+sub kubernetesDoPodsExist {
+	my ( $self, $podLabelString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
+	$self->kubernetesSetContext();
+	my $cmd;
+	my $outString;
+	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+
+	my @stati = split /\s+/, $outString;
+	if ($#stati < 0) {
+		$logger->debug("kubernetesDoPodsExist: There are no pods with label $podLabelString in namespace $namespace");
+		return 0;
+	}
+
+	return 1;
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

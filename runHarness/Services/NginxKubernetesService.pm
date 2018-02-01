@@ -57,6 +57,8 @@ sub configure {
 	}
 	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
 
+	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
+
 	open( FILEIN,  "$configDir/kubernetes/nginx.yaml" ) or die "$configDir/kubernetes/nginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/nginx-$namespace.yaml" )             or die "Can't open file /tmp/nginx-$namespace.yaml: $!\n";
 	
@@ -79,6 +81,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: \"$numWebServers\"\n";
 		}
 		else {
 			print FILEOUT $inline;

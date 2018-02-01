@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	</appender>
 
 	<logger name="com.vmware" level="WARN" />
-	<logger name="com.vmware.weathervane.auction.service.UserServiceImpl" level="WARN" />
+	<logger name="com.vmware.weathervane.auction.service.liveAuction" level="WARN" />
 	<logger name="com.vmware.weathervane.auction.security.UserDetailsServiceImpl" level="WARN" />
 	<logger name="com.vmware.weathervane.auction.service.GroupMembershipServiceImpl" level="WARN" />
 	<logger name="org.springframework" level="WARN" />

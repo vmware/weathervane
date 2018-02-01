@@ -579,7 +579,7 @@ sub loadData {
 	open my $pipe, "kubectl exec -c auctiondatamanager $podName perl /loadData.pl  |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
-		if ($line =~ /Loading/) {
+		if ($line =~ /\s+Loading/) {
   			print "$line\n";			
 		} 
    	}

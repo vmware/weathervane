@@ -74,6 +74,11 @@ override 'startServices' => sub {
 	my $users  = $self->users;
 	my $impl         = $self->getParamValue('workloadImpl');
 
+	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
+
 	# If in interactive mode, then configure services for maxUsers load
 	my $interactive = $self->getParamValue('interactive');
 	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
@@ -157,6 +162,12 @@ override 'startServices' => sub {
 			next;
 		}		
 	}
+		
+	# Don't return until all services are ready
+	$self->isRunningAndUpDataServices($serviceTier, $logFile);
+	
+	close $logFile;
+	
 };
 
 override 'cleanup' => sub {

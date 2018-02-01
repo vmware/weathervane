@@ -1031,6 +1031,7 @@ sub stopServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl   = $self->getParamValue('workloadImpl');
+	my $appInstanceName = $self->getParamValue('appInstanceName');
 	$logger->debug("stopServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
 		", appInstance ",

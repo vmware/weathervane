@@ -1053,8 +1053,10 @@ sub stopServices {
 			next;
 		}
 		
-		
 	}
+	
+	my $allIsStopped = $self->waitForServicesStopped($serviceTier, 15, 6, 15, $logFile);
+	
 }
 
 sub isRunningAndUpDataServices {
@@ -1135,7 +1137,7 @@ sub waitForServicesStopped {
 				# Use the first instance of the service for removing the 
 				# service instances
 				my $serviceRef = $servicesRef->[0];
-				$allIsStopped &= !$serviceRef->isRunning($logFile);
+				$allIsStopped &= $serviceRef->isStopped($logFile);
 			} else {
 				next;
 			}

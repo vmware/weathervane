@@ -1037,6 +1037,10 @@ sub stopServices {
 		$self->getParamValue('appInstanceNum'),
 		", impl = $impl"	);
 
+	my $logName         = "$setupLogDir/stop-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
+
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};	
 	foreach my $serviceType ( reverse @$serviceTypesRef ) {
@@ -1056,6 +1060,7 @@ sub stopServices {
 	}
 	
 	my $allIsStopped = $self->waitForServicesStopped($serviceTier, 15, 6, 15, $logFile);
+	close $logFile;
 	
 }
 

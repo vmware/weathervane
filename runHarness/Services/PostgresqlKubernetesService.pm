@@ -141,7 +141,7 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction -d auction -c 'select * from auction limit 1;'", $self->namespace );
+	$cluster->kubernetesExecOne ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace );
 	my $exitValue=$? >> 8;
 	if ($exitValue) {
 		return 0;

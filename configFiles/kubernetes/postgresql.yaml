@@ -73,7 +73,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - psql -U auction -d auction -c 'select * from auction limit 1;'
+            - /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10

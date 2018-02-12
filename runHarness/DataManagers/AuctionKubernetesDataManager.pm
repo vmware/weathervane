@@ -575,13 +575,15 @@ sub loadData {
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-
-	open my $pipe, "kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl  |"   or die "Couldn't execute program: $!";
+	$cmd = "kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
+	$logger->debug("opening pipe with command $cmd")
+	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
 		if ($line =~ /\s+Loading/) {
   			print "$line\n";			
 		} 
+		$logger->debug("Got line: $line")
    	}
    	close $pipe;	
 	close $applog;

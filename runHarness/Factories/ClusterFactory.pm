@@ -34,6 +34,10 @@ sub getCluster {
 	
 	if ( $clusterType eq "kubernetes" ) {
 		$logger->debug("Creating a Kubernetes cluster with name $clusterName");
+		if ( ( !exists $paramsHashRef->{'kubernetesConfigFile'} ) || ( !defined $paramsHashRef->{'kubernetesConfigFile'} ) ) {
+			$console_logger->error("Kubernetes clusters must have a kubernetesConfigFile parameter pointing to the kubectl config file for the desired context.");
+			exit(-1);
+		}
 		$cluster = KubernetesCluster->new(
 				'paramHashRef' => $paramsHashRef,);
 	} else {

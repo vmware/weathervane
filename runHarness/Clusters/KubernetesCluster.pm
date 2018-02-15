@@ -52,25 +52,16 @@ override 'registerService' => sub {
 
 };
 
-sub kubernetesSetContext {
-	my ( $self ) = @_;
-	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-#	my $contextName = $self->clusterName;
-#	$logger->debug("kubernetesSetContext set context to $contextName");
-#	my $cmd = "kubectl config use-context $contextName 2>&1";
-#	my $outString = `$cmd`;
-#	$logger->debug("Command: $cmd");
-#	$logger->debug("Output: $outString");
-}
-
 sub kubernetesDeleteAll {
 	my ( $self, $resourceType, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDelete deleteAll of type $resourceType in namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl delete $resourceType --all --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl delete $resourceType --all --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -81,14 +72,16 @@ sub kubernetesDeleteAllWithLabel {
 	my ( $self, $selector, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDeleteAllWithLabel with label $selector in namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl delete all --selector=$selector --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete all --selector=$selector --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
-	$cmd = "kubectl delete configmap --selector=$selector --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete configmap --selector=$selector --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -99,10 +92,12 @@ sub kubernetesDeleteAllWithLabelAndResourceType {
 	my ( $self, $selector, $resourceType, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDeleteAllWithLabelAndResourceType with resourceType $resourceType, label $selector in namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl delete $resourceType --selector=$selector --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete $resourceType --selector=$selector --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -113,10 +108,12 @@ sub kubernetesDelete {
 	my ( $self, $resourceType, $resourceName, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDelete delete $resourceName of type $resourceType in namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl delete $resourceType $resourceName --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete $resourceType $resourceName --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -130,12 +127,13 @@ sub kubernetesExecOne {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesExecOne exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
 	# Get the list of pods
 	my $cmd;
 	my $outString;	
-	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -148,7 +146,7 @@ sub kubernetesExecOne {
 	# Get the name of the first pod
 	my $podName = $names[0];
 	
-	$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -164,12 +162,13 @@ sub kubernetesExecAll {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesExecAll exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
 	# Get the list of pods
 	my $cmd;
 	my $outString;	
-	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -180,7 +179,7 @@ sub kubernetesExecAll {
 	}
 	
 	foreach my $podName (@names) { 	
-		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
+		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
 		$outString = `$cmd`;
 		$logger->debug("Command: $cmd");
 		$logger->debug("Output: $outString");
@@ -191,10 +190,12 @@ sub kubernetesApply {
 	my ( $self, $fileName, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesApply apply file $fileName in namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl apply -f $fileName --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl apply -f $fileName --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -204,10 +205,12 @@ sub kubernetesGetIngressIp {
 	my ( $self, $labelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesAreAllPodRunning LabelString $labelString, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl get ingress --selector=$labelString -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}' --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get ingress --selector=$labelString -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}' --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -225,10 +228,12 @@ sub kubernetesGetNodePortForPortNumber {
 	my ( $self, $labelString, $portNumber, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetNodePortForPortNumber LabelString $labelString, port $portNumber, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl get service --selector=$labelString -o=jsonpath='{range .items[*]}{.spec.ports[*].port}{\",\"}{.spec.ports[*].nodePort}{\"\\n\"}{end}' --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get service --selector=$labelString -o=jsonpath='{range .items[*]}{.spec.ports[*].port}{\",\"}{.spec.ports[*].nodePort}{\"\\n\"}{end}' --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -270,10 +275,12 @@ sub kubernetesAreAllPodRunning {
 	my ( $self, $podLabelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -298,10 +305,12 @@ sub kubernetesDoPodsExist {
 	my ( $self, $podLabelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
-	$self->kubernetesSetContext();
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
 	my $cmd;
 	my $outString;
-	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");

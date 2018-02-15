@@ -1350,6 +1350,14 @@ $parameters{"clusterName"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"kubernetesConfigFile"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "appInstance",
+	"usageText" => "This is the location of the kubectl config file for an appInstance",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
 	"default"   => "1.1.0",

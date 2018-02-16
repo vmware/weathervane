@@ -110,7 +110,7 @@ override 'startServices' => sub {
 	
 		# Create the tls secret for the ingress controller
 		$logger->debug("Create tls secret for namespace ", $self->namespace);
-		my $cmd = "kubectl create secret tls tls-secret --key $configDir/host/centos7/tls/private/weathervane.key --cert $configDir/host/centos7/tls/private/weathervane.crt --namespace=$namespace 2>&1"; 
+		my $cmd = "kubectl create secret tls tls-secret --key $configDir/host/centos7/tls/private/weathervane.key --cert $configDir/host/centos7/tls/certs/weathervane.crt --namespace=$namespace 2>&1"; 
 		my $outString = `$cmd`;
 		$logger->debug("Command: $cmd");
 		$logger->debug("Output: $outString");

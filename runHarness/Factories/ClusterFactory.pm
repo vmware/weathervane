@@ -27,6 +27,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getCluster {
 	my ( $self, $paramsHashRef ) = @_;
+	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane::Factories::HostFactory");
 	my $cluster;	
 	my $clusterName = $paramsHashRef->{'clusterName'};

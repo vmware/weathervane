@@ -77,7 +77,7 @@ spec:
             - -c
             - 'curl -s http://127.0.0.1:8080/auction/healthCheck | grep -Eq alive'
           failureThreshold: 3
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1

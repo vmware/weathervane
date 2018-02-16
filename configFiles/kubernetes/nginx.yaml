@@ -73,7 +73,7 @@ spec:
             - -c
             - 'curl -s -w "%{http_code}\n" -o /dev/null http://127.0.0.1:80'
           failureThreshold: 3
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1

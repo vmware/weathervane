@@ -113,7 +113,7 @@ public class GroupMembershipServiceImpl implements GroupMembershipService {
 	
 	@Override
 	public long nextLongValue(String groupName, String counterName) {
-		logger.warn("nextLongValue for group " + groupName + ", counter " + counterName);
+		logger.info("nextLongValue for group " + groupName + ", counter " + counterName);
 		String counterPath = "/" + groupName + "/" + counterName;
 		String lockPath = "/" + groupName + "/" + counterName + "/lock";
 		
@@ -132,7 +132,7 @@ public class GroupMembershipServiceImpl implements GroupMembershipService {
 			AtomicValue<Long> counterValue = idCounter.increment();
 			if (counterValue != null)  {
 				if (counterValue.succeeded()) {
-					logger.debug("nextLongValue returning " + counterValue.preValue());
+					logger.warn("nextLongValue returning " + counterValue.preValue());
 					return counterValue.preValue();
 				} else {
 					logger.warn("nextLongValue counter did not succeed. Returning 0.");

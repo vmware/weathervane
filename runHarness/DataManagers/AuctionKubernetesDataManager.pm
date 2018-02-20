@@ -559,11 +559,11 @@ sub loadData {
 
 	$logger->debug("Exec-ing perl /loadData.pl");
 	print $applog "Exec-ing perl /loadData.pl\n";
-	$cluster->kubernetesSetContext();
+	my $kubernetesConfigFile = $cluster->getParamValue('kubernetesConfigFile');
 	# Get the list of pods
 	my $cmd;
 	my $outString;	
-	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -575,7 +575,7 @@ sub loadData {
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-	$cmd = "kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {

@@ -23,7 +23,7 @@ import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 public interface GroupMembershipService {
 
-	Map<String, byte[]> joinDistributedGroup(String groupName);
+	Map<String, byte[]> joinDistributedGroup(String groupName, long nodeNumber);
 
 	String leaveDistributedGroup(String groupName) throws InvalidStateException;
 
@@ -31,7 +31,7 @@ public interface GroupMembershipService {
 
 	List<String> registerMembershipChangeCallback(String groupName, Consumer<String> consumer) throws Exception;
 
-	void registerTakeLeadershipCallback(String groupName, Consumer<Boolean> consumer);
+	void registerTakeLeadershipCallback(String groupName, Consumer<Boolean> consumer, long nodeNumber);
 
 	void cancelTakeLeadershipCallback(String groupName);
 
@@ -50,5 +50,7 @@ public interface GroupMembershipService {
 	void createNode(String parentPath, Long nodeId, String contents) throws Exception;
 
 	void cleanUp();
+
+	long nextLongValue(String groupName, String counterName);
 	
 }

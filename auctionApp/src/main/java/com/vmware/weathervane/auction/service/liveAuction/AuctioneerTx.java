@@ -36,7 +36,7 @@ public interface AuctioneerTx {
 	/**
 	 * @param theBid
 	 */
-	void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids);
+	void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids, Long nodeNumber);
 
 	HighBid startNextItem(HighBid curHighBid);
 

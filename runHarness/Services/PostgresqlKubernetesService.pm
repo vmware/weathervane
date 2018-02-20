@@ -125,6 +125,39 @@ sub configure {
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
+		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if ( $inline =~ /(\s+)name:\spostgresql\-data/ ) {
+					print FILEOUT $inline;
+					while ( my $inline = <FILEIN> ) {
+						if ( $inline =~ /(\s+)storageClassName:)/ ) {
+							my $storageClass = $self->getParamValue("postgresqlDataStorageClass");
+							print FILEOUT "${1}storageClassName: $storageClass\n";
+							last;
+						} else {
+							print FILEOUT $inline;
+						}	
+					}
+				} elsif ( $inline =~ /(\s+)name:\spostgresql\-logs/ ) {
+					print FILEOUT $inline;
+					while ( my $inline = <FILEIN> ) {
+						if ( $inline =~ /(\s+)storageClassName:)/ ) {
+							my $storageClass = $self->getParamValue("postgresqlLogStorageClass");
+							print FILEOUT "${1}storageClassName: $storageClass\n";
+							last;
+						} else {
+							print FILEOUT $inline;
+						}	
+					}
+				} elsif ( $inline =~ /\-\-\-/ ) {
+					print FILEOUT $inline;
+					last;
+				} else {
+					print FILEOUT $inline;					
+				}
+			}
+		}
 		else {
 			print FILEOUT $inline;
 		}

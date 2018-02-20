@@ -140,6 +140,10 @@ sub configure {
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
+		elsif ( $inline =~ /(\s+)storageClassName:/ ) {
+			my $storageClass = $self->getParamValue("mongodbDataStorageClass");
+			print FILEOUT "${1}storageClassName: $storageClass\n";
+		}
 		else {
 			print FILEOUT $inline;
 		}

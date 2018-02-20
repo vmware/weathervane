@@ -2714,6 +2714,14 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"postgresqlDataStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlData",
@@ -2735,6 +2743,14 @@ $parameters{"postgresqlLogDir"} = {
 	"default"   => "/mnt/dbLogs/postgresql",
 	"usageText" => "",
 	"parent"    => "appInstance",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
 	"showUsage" => 0,
 };
 
@@ -2792,6 +2808,14 @@ $parameters{"mongodbUseNamedVolumes"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 1,
+};
+
+$parameters{"mongodbDataStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 
 $parameters{"mongodbDataVolume"} = {

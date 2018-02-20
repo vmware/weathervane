@@ -165,6 +165,9 @@ sub prepareData {
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
+	# stop the auctiondatamanager container
+	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+
 	# Start the data services
 	if ($reloadDb) {
 		# Avoid an extra stop/start cycle for the data services since we know

@@ -20,17 +20,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package com.vmware.weathervane.auction.service.liveAuction;
 
-import java.util.Map;
-
 import org.springframework.transaction.annotation.Transactional;
-
-import com.vmware.weathervane.auction.data.model.Auction;
-import com.vmware.weathervane.auction.data.model.HighBid;
-import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
-import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
-import com.vmware.weathervane.auction.service.exception.AuctionNoItemsException;
-import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 /**
  * @author Hal

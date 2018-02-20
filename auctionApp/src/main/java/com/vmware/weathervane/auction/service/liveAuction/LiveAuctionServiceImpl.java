@@ -85,6 +85,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 	public static final String auctionManagementGroupName = "liveAuctionMgmtGroup";
 	public static final String auctionAssignmentMapName = "liveAuctionAssignmentMap";
+	private static final String auctionIdCounterName = "liveAuctionIdCounter";
 
 	public static final String liveAuctionExchangeName = "liveAuctionMgmtExchange";
 	public static final String newBidRoutingKey = "newBid.";
@@ -135,7 +136,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 	 */
 	private int _liveAuctionNodeHeartbeatDelay;
 
-	private Long nodeNumber = Long.getLong("nodeNumber", -1L);
+	private Long nodeNumber;
 
 	private static Lock auctionAssignmentChangeLock = new ReentrantLock();
 
@@ -229,10 +230,17 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		 * Don't join immediately so we are sure that the node is fully started.
 		 */
 		_groupMembershipExecutorService.schedule(new Runnable() {
+
 			@Override
 			public void run() {
 
 				try {
+					/*
+					 * Get a unique node number for this instance of the LiveAuctionService
+					 */
+					logger.info("Getting node number for this service");
+					nodeNumber = groupMembershipService.nextLongValue(auctionAssignmentMapName, auctionIdCounterName);
+					
 					/*
 					 * Create a node to hold the auction assignment for this
 					 * node
@@ -252,7 +260,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 					_currentAuctionAssignment = new LinkedList<Long>();
 
 					logger.info("Joining distributed group " + auctionManagementGroupName);
-					groupMembershipService.joinDistributedGroup(auctionManagementGroupName);
+					groupMembershipService.joinDistributedGroup(auctionManagementGroupName, nodeNumber);
 
 					/*
 					 * Register a callback for when this node is made leader
@@ -260,7 +268,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 					logger.info("Registering callback for taking leadership of group " + auctionManagementGroupName);
 					_takeLeadershipHandler = new TakeLeadershipHandler();
 					groupMembershipService.registerTakeLeadershipCallback(auctionManagementGroupName,
-							_takeLeadershipHandler);
+							_takeLeadershipHandler, nodeNumber);
 					
 				} catch (Exception e1) {
 					logger.error("Couldn't set up group membership.  Not handling auctions: " + e1.getMessage());
@@ -510,7 +518,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		_auctionIdToBindingMap.put(auctionId, newBidBinding);
 
 		Auctioneer auctioneer = new AuctioneerImpl(auctionId, _auctioneerExecutorService, _auctioneerTx, _highBidDao, _bidRepository, auctionDao,
-				liveAuctionRabbitTemplate, auctionMaxIdleTime);
+				liveAuctionRabbitTemplate, auctionMaxIdleTime, nodeNumber);
 		_auctionIdToAuctioneerMap.put(auctionId, auctioneer);
 
 	}
@@ -874,7 +882,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 				_auctionIdToBindingMap.put(auctionId, newBidBinding);
 
 				Auctioneer auctioneer = new AuctioneerImpl(auctionId, _auctioneerExecutorService, _auctioneerTx, _highBidDao, _bidRepository, auctionDao,
-						liveAuctionRabbitTemplate, auctionMaxIdleTime);
+						liveAuctionRabbitTemplate, auctionMaxIdleTime, nodeNumber);
 				_auctionIdToAuctioneerMap.put(auctionId, auctioneer);
 			}
 

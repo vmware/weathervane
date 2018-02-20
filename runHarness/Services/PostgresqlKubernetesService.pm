@@ -131,7 +131,7 @@ sub configure {
 				if ( $inline =~ /(\s+)name:\spostgresql\-data/ ) {
 					print FILEOUT $inline;
 					while ( my $inline = <FILEIN> ) {
-						if ( $inline =~ /(\s+)storageClassName:)/ ) {
+						if ( $inline =~ /(\s+)storageClassName:/ ) {
 							my $storageClass = $self->getParamValue("postgresqlDataStorageClass");
 							print FILEOUT "${1}storageClassName: $storageClass\n";
 							last;
@@ -142,7 +142,7 @@ sub configure {
 				} elsif ( $inline =~ /(\s+)name:\spostgresql\-logs/ ) {
 					print FILEOUT $inline;
 					while ( my $inline = <FILEIN> ) {
-						if ( $inline =~ /(\s+)storageClassName:)/ ) {
+						if ( $inline =~ /(\s+)storageClassName:/ ) {
 							my $storageClass = $self->getParamValue("postgresqlLogStorageClass");
 							print FILEOUT "${1}storageClassName: $storageClass\n";
 							last;

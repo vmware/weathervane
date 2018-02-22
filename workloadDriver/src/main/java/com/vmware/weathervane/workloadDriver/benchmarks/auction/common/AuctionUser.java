@@ -241,17 +241,6 @@ public class AuctionUser extends User {
 
 	private Random _randomGenerator;
 
-	public AuctionUser(Long id, Long orderingId, Long globalOrderingId, String behaviorSpecName, Target target, AuctionWorkload workload) {
-		super(id, orderingId, globalOrderingId, behaviorSpecName, target);
-		this.setWorkload(workload);
-		this.setOperationFactory(new AuctionOperationFactory());
-		this.setTransitionChooserFactory(new AuctionTransitionChooserFactory());
-
-		_randomGenerator = new Random();
-
-		_allBidStrategies.add(new RandomBidStrategy());
-	}
-
 	@Override
 	public void start(long activeUsers) {
 

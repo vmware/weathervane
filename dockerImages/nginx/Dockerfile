@@ -1,8 +1,9 @@
 FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
-RUN yum install -y http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm && \
-	yum install -y nginx && \
+COPY nginx.repo /etc/yum.repos.d/nginx.repo
+
+RUN 	yum install -y nginx && \
 	yum -y clean all 
 
 COPY html /usr/share/nginx/html

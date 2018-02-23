@@ -35,12 +35,6 @@ has 'nextRabbitMQFirst' => (
 	default => 0,
 );
 
-override 'initialize' => sub {
-	my ($self) = @_;
-	super();
-
-};
-
 # The Auction appInstance needs to track various info for its services
 
 ## rabbitmqClusterHosts is used to keep track of
@@ -64,48 +58,20 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-## numShardsProcessed is used to keep track of how many
-# mongodbService instances have already been
-# started/stopped/etc.  This is needed when deciding
-# who should start the config servers and mongos
-# instances
-has 'numShardsProcessed' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numShardsProcessed',
-	predicate => 'has_numShardsProcessed',
-);
-
-# This holds the string describing the hostname;port
-# pairs for the config servers that is used when
-# starting the mongos instances.
-has 'configDbString' => (
-	is        => 'rw',
-	isa       => 'Str',
-	clearer   => 'clear_configDbString',
-	predicate => 'has_configDbString',
-);
-
-has 'numNosqlShards' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numNosqlShards',
-	predicate => 'has_numNosqlShards',
-);
-
-has 'numNosqlReplicas' => (
-	is        => 'rw',
-	isa       => 'Num',
-	clearer   => 'clear_numNosqlReplicas',
-	predicate => 'has_numNosqlReplicas',
-);
-
 # AppInstance variables for keepalived
 has 'wwwIpAddrs' => (
 	is        => 'rw',
 	isa       => 'ArrayRef[Str]',
 	predicate => 'has_wwwIpAddrs',
 );
+
+
+override 'initialize' => sub {
+	my ($self) = @_;
+		
+	super();
+
+};
 
 override 'getEdgeService' => sub {
 	my ($self) = @_;
@@ -165,7 +131,8 @@ override 'checkConfig' => sub {
 	# First make sure that any configPaths specified didn't ask for more services
 	# than the user specified
 	my $impl         = $self->getParamValue('workloadImpl');
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypes =  $serviceTiersHashRef->{"infrastructure"};
 	foreach my $serviceType (@$serviceTypes) {
 		if ( $self->getMaxNumOfServiceType($serviceType) < $self->getTotalNumOfServiceType($serviceType) ) {
 			$console_logger->error(
@@ -262,7 +229,7 @@ override 'checkConfig' => sub {
 	}
 
 	if ( $numConfigurationManagers == 0 ) {
-		if ( $self->getParamValue('prewarmAppServers') ) {
+		if ( $self->getParamValue('prewarmAppServers')  && !$self->getParamValue('clusterName')) {
 			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: Can't pre-warm appServers when there is no Configuration Manager");
 			return 0;
 		}
@@ -320,7 +287,7 @@ override 'redeploy' => sub {
 			$service->pullDockerImage($logfile);
 		}
 	}
-
+	
 	# Figure out if mongodb is using docker, and if so pull docker images
 	# to app servers and data manager
 	my $nosqlServicesRef = $self->getAllServicesByType('nosqlServer');
@@ -344,6 +311,9 @@ override 'redeploy' => sub {
 		$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
 	}
 
+	# Pull the datamanager image
+	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
+	
 	# Redeploy the dataManager files
 	my $localHostname = `hostname`; 
 	my $localIpsRef = Utils::getIpAddresses($localHostname);

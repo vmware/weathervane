@@ -180,7 +180,6 @@ ALTER TABLE auctionmgmt OWNER TO auction;
 
 CREATE TABLE dbbenchmarkinfo (
     id bigint NOT NULL,
-    scale bigint,
     maxusers bigint,
     maxduration bigint,
     numnosqlshards bigint,

@@ -80,8 +80,6 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	@Named("bidCompletionDelayDao")
 	private BidCompletionDelayDao bidCompletionDelayDao;
 	
-	private Long nodeNumber = Long.getLong("nodeNumber", -1L);
-
 	@Override
 	@Transactional
 	public HighBid makeForwardProgress(HighBid curHighBid) {
@@ -250,7 +248,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 	@Override
 	@Transactional
-	public void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids) {
+	public void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids, Long nodeNumber) {
 		
 		Calendar now = FixedOffsetCalendarFactory.getCalendar();
 		BidCompletionDelay delayRecord = new BidCompletionDelay();

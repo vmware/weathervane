@@ -20,7 +20,7 @@ use Parameters qw(getParamValue);
 use POSIX;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
 
 use strict;
 
@@ -81,11 +81,10 @@ override 'run' => sub {
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
-	$self->killOldWorkloadDrivers();
+	$self->killOldWorkloadDrivers("/tmp");
 
-	# Now configure docker pinning if requested on any host
-	$debug_logger->debug("configureDockerHostCpuPinning");
-	$self->configureDockerHostCpuPinning();
+	# Now get the cpu and memory config of all hosts
+	$self->getCpuMemConfig();
 
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
@@ -159,21 +158,15 @@ override 'run' => sub {
 	## get the stats logs
 	$self->getStatsFiles();
 
+	## get the logs
+	$self->getLogFiles();
+
 	my $sanityPassed = 1;
 	if ( $self->getParamValue('stopServices') ) {
+
 		## stop the services
-		$self->stopFrontendServices($cleanupLogDir);
-		$self->stopBackendServices($cleanupLogDir);
-
-		# cleanup the databases
-		$self->cleanData($cleanupLogDir);
-
-		$self->stopDataServices($cleanupLogDir);
-		$self->stopInfrastructureServices($cleanupLogDir);
-		$self->unRegisterPortNumbers();
-
-		## get the logs
-		$self->getLogFiles();
+		my @tiers = qw(frontend backend data infrastructure);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 
 		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
@@ -183,17 +176,22 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		# Remove the services if they are dockerized
-		$self->removeFrontendServices($cleanupLogDir);
-		$self->removeBackendServices($cleanupLogDir);
-		$self->removeDataServices($cleanupLogDir);
-		$self->removeInfrastructureServices($cleanupLogDir);
+		$debug_logger->debug("Unregister port numbers");
+		$self->unRegisterPortNumbers();
+
+		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
+		if ($sanityPassed) {
+			$console_logger->info("All Sanity Checks Passed");
+		}
+		else {
+			$console_logger->info("Sanity Checks Failed");
+		}
+
+		# Let the appInstances clean any run specific data or services
+		$self->cleanupAppInstances($cleanupLogDir);
+
 		# clean up old logs and stats
 		$self->cleanup();
-	}
-	else {
-		## get the logs
-		$self->getLogFiles();
 	}
 
 	# Put a file in the output/seqnum directory with the run name

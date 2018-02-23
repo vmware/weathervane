@@ -14,6 +14,10 @@ perl /updateResolveConf.pl
 
 perl /configure.pl
 
+# If zookeeper is clustered, then wait until all nodes are reachable
+# before starting zookeeper
+perl /waitForNodes.pl
+
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else

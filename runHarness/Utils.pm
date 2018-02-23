@@ -25,7 +25,8 @@ BEGIN {
 	  callMethodsOnObjectParallel1 callMethodsOnObject1 callMethodOnObjects1
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3
-	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3);
+	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
+	  callMethodOnObjectsParamListParallel1);
 }
 
 sub createDebugLogger {
@@ -84,6 +85,38 @@ sub getIpAddress {
 
 	return $1;
 }
+
+sub callMethodOnObjectsParamListParallel1 {
+	my ( $method, $objectsRef, $paramListRef, $param1 ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Util");
+	my @pids;
+	my $pid;
+
+	foreach my $object (@$objectsRef) {
+		foreach my $param (@$paramListRef) {
+			$pid = fork();
+			if ( !defined $pid ) {
+				$console_logger->error("Couldn't fork a process: $!");
+				exit(-1);
+			}
+			elsif ( $pid == 0 ) {
+				
+				$logger->debug("callMethodOnObjectsParamListParallel1 calling method $method with params ($param, $param1)");
+				$object->$method($param, $param1);
+				exit;
+			}
+			else {
+				push @pids, $pid;
+			}
+		}
+		
+		foreach $pid (@pids) {
+			waitpid $pid, 0;
+		}
+	}
+}
+
 
 sub callMethodOnObjectsParallel {
 	my ( $method, $objectsRef ) = @_;

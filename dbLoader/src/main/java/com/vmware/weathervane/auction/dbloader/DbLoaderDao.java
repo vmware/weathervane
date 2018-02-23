@@ -411,21 +411,19 @@ public class DbLoaderDao {
 		return imageSizes;
 	}
 
-	public void saveBenchmarkInfo(long maxUsers, long scale, int numNosqlShards, int numNosqlReplicas, 
+	public void saveBenchmarkInfo(long maxUsers, int numNosqlShards, int numNosqlReplicas, 
 								String imageStoreType, Long maxDuration) {
 
-		// Save the scale in the NoSQL Data store
+		// Save the load info in the NoSQL Data store
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = new NosqlBenchmarkInfo();
-		nosqlBenchmarkInfo.setScale(scale);
 		nosqlBenchmarkInfo.setMaxusers(maxUsers);
 		nosqlBenchmarkInfo.setNumShards(numNosqlShards);
 		nosqlBenchmarkInfo.setNumReplicas(numNosqlReplicas);
 		nosqlBenchmarkInfo.setImageStoreType(imageStoreType);
 		nosqlBenchmarkInfoRepository.save(nosqlBenchmarkInfo);
 
-		// Save the scale in the database
+		// Save the load info in the database
 		DbBenchmarkInfo dbBenchmarkInfo = new DbBenchmarkInfo();
-		dbBenchmarkInfo.setScale(scale);
 		dbBenchmarkInfo.setMaxusers(maxUsers);
 		dbBenchmarkInfo.setImagestoretype(imageStoreType);
 		dbBenchmarkInfo.setNumnosqlreplicas(new Long(numNosqlReplicas));
@@ -433,12 +431,11 @@ public class DbLoaderDao {
 		dbBenchmarkInfo.setMaxduration(maxDuration);
 		dbBenchmarkInfoDao.save(dbBenchmarkInfo);
 
-		// Save the scale as a file in the image store
+		// Save the load info as a file in the image store
 		ImageStoreBenchmarkInfo imageStoreBenchmarkInfo = new ImageStoreBenchmarkInfo();
-		imageStoreBenchmarkInfo.setScale(scale);
 		imageStoreBenchmarkInfo.setMaxusers(maxUsers);
 		imageStoreBenchmarkInfo.setImageStoreType(imageStoreType);
-		imageStore.setScale(imageStoreBenchmarkInfo);
+		imageStore.setBenchmarkInfo(imageStoreBenchmarkInfo);
 
 	}
 

@@ -52,7 +52,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'dbLoader' 
 		mysqlConnectorVersion = "5.1.41"
 		postgreSQLJdbcVersion = "9.4.1212.jre7"
 		dbcpVersion = "1.4"
-		springDataMongoVersion = "1.9.1.RELEASE"
+		springDataMongoVersion = "1.10.9.RELEASE"
 		mongodbJavaDriverVersion = "3.2.1"
 		javasimonVersion = "3.5.2"
 		curatorVersion = "2.11.0"

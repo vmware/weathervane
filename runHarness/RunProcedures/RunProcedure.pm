@@ -22,7 +22,8 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger :levels);
 use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsParallel1 callMethodsOnObjectParallel
   callMethodsOnObjectParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3);
+  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
+  callMethodOnObjectsParamListParallel1);
 use Instance;
 use Utils qw(getIpAddresses getIpAddress);
 
@@ -45,6 +46,12 @@ has 'virtualInfrastructure' => (
 );
 
 has 'hostsRef' => (
+	is      => 'rw',
+	isa     => 'ArrayRef',
+	default => sub { [] },
+);
+
+has 'clustersRef' => (
 	is      => 'rw',
 	isa     => 'ArrayRef',
 	default => sub { [] },
@@ -148,6 +155,17 @@ sub addHost {
 	push @$hostsRef, $host;
 }
 
+sub setClusters {
+	my ( $self, $clustersRef ) = @_;
+	$self->clustersRef($clustersRef);
+}
+
+sub addCluster {
+	my ( $self, $cluster ) = @_;
+	my $clustersRef = $self->clustersRef;
+	push @$clustersRef, $cluster;
+}
+
 sub removeHost {
 	my ( $self, $host ) = @_;
 	my $hostsRef = $self->hostsRef;
@@ -182,11 +200,11 @@ sub getCpuMemConfig {
 }
 
 sub killOldWorkloadDrivers {
-	my ($self) = @_;
+	my ($self, $setupLogDir) = @_;
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug(": Stopping old workload drivers.");
 
-	callMethodOnObjectsParallel( 'killOldWorkloadDrivers', $self->workloadsRef );
+	callMethodOnObjectsParallel1( 'killOldWorkloadDrivers', $self->workloadsRef, $setupLogDir );
 }
 
 sub initializeWorkloads {
@@ -351,78 +369,21 @@ sub cleanData {
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
 }
 
-sub prepareData {
-	my ( $self, $setupLogDir ) = @_;
-	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->workloadsRef, $setupLogDir );
+sub cleanupAppInstances {
+	my ( $self, $cleanupLogDir ) = @_;
+	return callBooleanMethodOnObjectsParallel1( 'cleanupAppInstances', $self->workloadsRef, $cleanupLogDir );
 }
 
-sub configureAndStartInfrastructureServices {
+sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartInfrastructureServices($setupLogDir);
-	}
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("prepareData with logDir $setupLogDir");
+	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->workloadsRef, $setupLogDir );
 }
 
 sub sanityCheckServices {
 	my ( $self, $cleanupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'sanityCheckServices', $self->workloadsRef, $cleanupLogDir );
-}
-
-sub configureAndStartFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartFrontendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartBackendServices($setupLogDir);
-	}
-}
-
-sub configureAndStartDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->configureAndStartDataServices($setupLogDir);
-	}
-}
-
-sub startInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startInfrastructureServices($setupLogDir);
-	}
-}
-
-sub startFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startFrontendServices($setupLogDir);
-	}
-}
-
-sub startBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startBackendServices($setupLogDir);
-	}
-}
-
-sub startDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startDataServices($setupLogDir);
-	}
 }
 
 sub pretouchData {
@@ -477,100 +438,34 @@ sub clearResults {
 	}
 }
 
-sub stopInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopInfrastructureServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub stopFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopFrontendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub stopBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopBackendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub stopDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'stopDataServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub removeInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
+sub startServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	$logger->debug("removing infrastructure services with log dir $setupLogDir");
+	
+	$logger->debug("startServices for serviceTier $serviceTier with logDir $setupLogDir");
+	
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
-		$workload->removeInfrastructureServices($setupLogDir);
+		$workload->startServices($serviceTier, $setupLogDir);
 	}
 }
 
-sub removeFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
+sub stopServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	$logger->debug("removing frontend services with log dir $setupLogDir");
+	$logger->debug("stopServices for serviceTier $serviceTier with logDir $setupLogDir");
+	
+	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
+}
+
+sub removeServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("removeServices removing $serviceTier services with log dir $setupLogDir");
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
-		$workload->removeFrontendServices($setupLogDir);
+		$workload->removeServices($serviceTier, $setupLogDir);
 	}
-}
-
-sub removeBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->removeBackendServices($setupLogDir);
-	}
-}
-
-sub removeDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->removeDataServices($setupLogDir);
-	}
-}
-
-sub createInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createInfrastructureServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createFrontendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createBackendServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub createDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjectsParallel1( 'createDataServices', $self->workloadsRef, $setupLogDir );
-}
-
-sub configureInfrastructureServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureInfrastructureServices', $self->workloadsRef );
-}
-
-sub configureFrontendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureFrontendServices', $self->workloadsRef );
-}
-
-sub configureBackendServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureBackendServices', $self->workloadsRef );
-}
-
-sub configureDataServices {
-	my ($self) = @_;
-	callMethodOnObjectsParallel( 'configureDataServices', $self->workloadsRef );
 }
 
 sub cleanupAfterFailure {
@@ -587,26 +482,18 @@ sub cleanupAfterFailure {
 		`mkdir -p $cleanupLogDir`;
 	}
 
-	## stop the services
-	$self->stopInfrastructureServices($cleanupLogDir);
-	$self->stopFrontendServices($cleanupLogDir);
-	$self->stopBackendServices($cleanupLogDir);
-	$self->stopDataServices($cleanupLogDir);
-
 	## get the logs
 	$self->getLogFiles();
 
 	## get the config files
 	$self->getConfigFiles();
 
+	## stop the services
+	my @tiers = qw(frontend backend data infrastructure);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
+
 	# clean up old logs and stats
 	$self->cleanup();
-
-	# Remove the services if they are dockerized
-	$self->removeInfrastructureServices($cleanupLogDir);
-	$self->removeFrontendServices($cleanupLogDir);
-	$self->removeBackendServices($cleanupLogDir);
-	$self->removeDataServices($cleanupLogDir);
 
 	my $resultsDir = "$outputDir/$seqnum";
 	`mkdir -p $resultsDir`;
@@ -735,6 +622,15 @@ sub getStatsFiles {
 
 }
 
+sub cleanup {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+
+	$self->cleanStatsFiles();
+	$self->cleanLogFiles();
+
+}
+
 sub cleanStatsFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -765,7 +661,7 @@ sub cleanStatsFiles {
 
 	if ( $logLevel >= 4 ) {
 
-		# Start stops collection on virtual infrastructure
+		# Clean stats files on virtual infrastructure
 		$pid = fork();
 		if ( !defined $pid ) {
 			$logger->error("Couldn't fork a process: $!");
@@ -781,6 +677,7 @@ sub cleanStatsFiles {
 		}
 	}
 
+	# Clean stats files from workload driver.  Stats files for services are cleaned in service stop
 	$pid = fork();
 	if ( !defined $pid ) {
 		$logger->error("Couldn't fork a process: $!");
@@ -788,6 +685,64 @@ sub cleanStatsFiles {
 	}
 	elsif ( $pid == 0 ) {
 		callMethodOnObjectsParallel( 'cleanStatsFiles', $self->workloadsRef );
+		exit;
+	}
+	else {
+		push @pids, $pid;
+	}
+
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+	}
+
+}
+
+sub cleanLogFiles {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	my $pid;
+	my @pids;
+	$logger->debug(": CleanLogFiles\n");
+
+	my $hostsRef = $self->hostsRef;
+	foreach my $host (@$hostsRef) {
+		$pid = fork();
+		if ( !defined $pid ) {
+			$logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}
+		elsif ( $pid == 0 ) {
+			$host->cleanLogFiles();
+			exit;
+		}
+		else {
+			push @pids, $pid;
+		}
+	}
+
+	# clean log files on virtual infrastructure
+	$pid = fork();
+	if ( !defined $pid ) {
+		$logger->error("Couldn't fork a process: $!");
+		exit(-1);
+	}
+	elsif ( $pid == 0 ) {
+		my $virtualInfrastructure = $self->virtualInfrastructure;
+		$virtualInfrastructure->cleanLogFiles();
+		exit;
+	}
+	else {
+		push @pids, $pid;
+	}
+
+	# Clean logs from workload driver.  Service logs are cleaned in service stop
+	$pid = fork();
+	if ( !defined $pid ) {
+		$logger->error("Couldn't fork a process: $!");
+		exit(-1);
+	}
+	elsif ( $pid == 0 ) {
+		callMethodOnObjectsParallel( 'cleanLogFiles', $self->workloadsRef );
 		exit;
 	}
 	else {
@@ -875,63 +830,6 @@ sub getLogFiles {
 		else {
 			push @pids, $pid;
 		}
-	}
-
-	foreach $pid (@pids) {
-		waitpid $pid, 0;
-	}
-
-}
-
-sub cleanLogFiles {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $pid;
-	my @pids;
-	$logger->debug(": CleanLogFiles\n");
-
-	my $hostsRef = $self->hostsRef;
-	foreach my $host (@$hostsRef) {
-		$pid = fork();
-		if ( !defined $pid ) {
-			$logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$host->cleanLogFiles();
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-	}
-
-	# clean log files on virtual infrastructure
-	$pid = fork();
-	if ( !defined $pid ) {
-		$logger->error("Couldn't fork a process: $!");
-		exit(-1);
-	}
-	elsif ( $pid == 0 ) {
-		my $virtualInfrastructure = $self->virtualInfrastructure;
-		$virtualInfrastructure->cleanLogFiles();
-		exit;
-	}
-	else {
-		push @pids, $pid;
-	}
-
-	$pid = fork();
-	if ( !defined $pid ) {
-		$logger->error("Couldn't fork a process: $!");
-		exit(-1);
-	}
-	elsif ( $pid == 0 ) {
-		callMethodOnObjectsParallel( 'cleanLogFiles', $self->workloadsRef );
-		exit;
-	}
-	else {
-		push @pids, $pid;
 	}
 
 	foreach $pid (@pids) {
@@ -1285,15 +1183,6 @@ sub doPowerControl {
 	}
 }
 
-sub cleanup {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-
-	$self->cleanStatsFiles();
-	$self->cleanLogFiles();
-
-}
-
 sub run {
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	die "Only concrete classes of RunProcedure implement run()";
@@ -1323,59 +1212,6 @@ sub getNextRunInfo {
 	return $returnString;
 }
 
-# Sync time to the time on the host which is running the script
-sub syncTime {
-	my ($self)         = @_;
-	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $console_logger = get_logger("Console");
-
-	my $hostname = `hostname`;
-	chomp($hostname);
-	my $ipAddrsRef = getIpAddresses($hostname);
-
-	# Make sure that ntpd is running on this host
-	my $out = `service ntpd status 2>&1`;
-	if ( !( $out =~ /Active:\sactive/ ) && !( $out =~ /is running/ ) ) {
-
-		# try to start ntpd
-		$logger->debug("ntpd is not running on $hostname, starting");
-		$out = `service ntpd start 2>&1`;
-		$out = `service ntpd status 2>&1`;
-		if ( !( $out =~ /Active:\sactive/ ) && !( $out =~ /is running/ ) ) {
-			$console_logger->debug("Could not start ntpd on $hostname, exiting.");
-			exit(-1);
-		}
-	}
-
-	# Create an ntp.conf that uses this host as the server
-	open( FILEIN,  "/etc/ntp.conf" )  or die "Error opening/etc/ntp.conf:$!";
-	open( FILEOUT, ">/tmp/ntp.conf" ) or die "Error opening /tmp/ntp.conf:$!";
-	print FILEOUT "server $hostname iburst\n";
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /^\s*server\s/ ) {
-			next;
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-
-	foreach my $host ( @{ $self->hostsRef } ) {
-		if ( $host->ipAddr ~~ @$ipAddrsRef ) {
-
-			# Don't sync this host to itself
-			$logger->debug( "Skipping syncing ", $host->hostName, " to itself." );
-			next;
-		}
-
-		$host->restartNtp();
-
-	}
-
-}
-
 sub checkVersions {
 	my ($self)          = @_;
 	my $logger          = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -1388,6 +1224,10 @@ sub checkVersions {
 
 	my $allSame = 1;
 	foreach my $host ( @{ $self->hostsRef } ) {
+
+		if ($host->meta->name eq "KubernetesCluster") {
+			next;
+		}
 
 		if (!$host->isNonDocker() || $host->getParamValue('vicHost')) {
 			next;

@@ -152,8 +152,6 @@
 
 "logLevel" : 4,
 
-"backup" : false,
-"rebackup" : false,
 "reloadDb" : false,
  
 "powerOnVms" : true,

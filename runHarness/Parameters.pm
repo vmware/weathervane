@@ -652,7 +652,7 @@ sub getSingletonInstanceParamHashRef {
 
 }
 
-our $version = "1.2.0";
+our $version = "1.1.0";
 
 # These variables contain the key names for the parameter hashes
 tie( our %parameters, 'Tie::IxHash' );
@@ -713,6 +713,14 @@ $parameters{"dataManager"} = {
 };
 
 $parameters{"host"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"cluster"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "runProc",
@@ -795,6 +803,15 @@ $parameters{"appInstances"} = {
 	"default"   => [],
 	"parent"    => "workload",
 	"isa"       => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"clusters"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "cluster",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1035,14 +1052,6 @@ $parameters{"instanceNum"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"accept"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "",
-	"usageText" => "Specifying this parameter indicates acceptance of the COPYRIGHT and LICENSE.",
-	"showUsage" => 1,
-};
-
 $parameters{"help"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -1231,22 +1240,6 @@ $parameters{"redeploy"} = {
 	"usageText" => "",
 	"showUsage" => 1,
 };
-
-$parameters{"backup"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"rebackup"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 1,
-};
 $parameters{"reloadDb"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -1267,20 +1260,6 @@ $parameters{"stopServices"} = {
 	"parent"    => "runProc",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-$parameters{"restartNtp"} = {
-	"type"      => "!",
-	"default"   => 0,
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-$parameters{"harnessHostNtpServer"} = {
-	"type"      => "!",
-	"default"   => 0,
-	"parent"    => "host",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 $parameters{"configFile"} = {
@@ -1363,9 +1342,33 @@ $parameters{"stopStatsScript"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"clusterType"} = {
+	"type"      => "=s",
+	"default"   => "kubernetes",
+	"parent"    => "appInstance",
+	"usageText" => "This is the type of the cluster. Allowed values: kubernetes",
+	"showUsage" => 1,
+};
+
+$parameters{"clusterName"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "appInstance",
+	"usageText" => "This is the name of the cluster for an appInstance",
+	"showUsage" => 1,
+};
+
+$parameters{"kubernetesConfigFile"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "appInstance",
+	"usageText" => "This is the location of the kubectl config file for an appInstance",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
-	"default"   => "1.2.0",
+	"default"   => "1.1.0",
 	"parent"    => "host",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -1470,6 +1473,8 @@ $parameters{"dockerServiceImages"} = {
 		"mongodb"    => "weathervane-mongodb",
 		"zookeeper"  => "weathervane-zookeeper",
 		"webConfig"  => "weathervane-configurationmanager",
+		"auctiondatamanager"  => "weathervane-auctiondatamanager",
+		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
 	},
 	"parent"    => "host",
 	"usageText" => "",
@@ -1993,14 +1998,6 @@ $parameters{"dbLoaderHeap"} = {
 	"type"      => "=s",
 	"default"   => "4G",
 	"parent"    => "dataManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"scale"} = {
-	"type"      => "=i",
-	"default"   => -1,
-	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -2693,14 +2690,6 @@ $parameters{"keepalivedServerRoot"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mysqlBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbBackup/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"mysqlDataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbData/mysql",
@@ -2712,14 +2701,6 @@ $parameters{"mysqlDataDir"} = {
 $parameters{"mysqlLogDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbLogs/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbBackup/postgresql",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2739,6 +2720,14 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 1,
+};
+
+$parameters{"postgresqlDataStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 
 $parameters{"postgresqlDataVolume"} = {
@@ -2762,6 +2751,14 @@ $parameters{"postgresqlLogDir"} = {
 	"default"   => "/mnt/dbLogs/postgresql",
 	"usageText" => "",
 	"parent"    => "appInstance",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
 	"showUsage" => 0,
 };
 
@@ -2805,14 +2802,6 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoBackup",
-	"parent"    => "nosqlServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"mongodbDataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/mongoData",
@@ -2827,6 +2816,14 @@ $parameters{"mongodbUseNamedVolumes"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 1,
+};
+
+$parameters{"mongodbDataStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 
 $parameters{"mongodbDataVolume"} = {
@@ -2931,14 +2928,6 @@ $parameters{"imageStoreDir"} = {
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the location of the directory in which images are stored when the\n\timageStore type is filesystem.   This is the \n\tdirectory that is exported by NFS and mounted by other VMs.",
-	"showUsage" => 0,
-};
-
-$parameters{"imageStoreBackupDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/imageStoreBackup",
-	"parent"    => "appInstance",
-	"usageText" => "This is the directory in which backups of the filesystem-based imageStore are saved.",
 	"showUsage" => 0,
 };
 

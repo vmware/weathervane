@@ -101,7 +101,7 @@ override 'create' => sub {
 	close $applog;
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 	$logger->debug("stop RabbitmqDockerService");
@@ -120,7 +120,7 @@ sub stop {
 }
 
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $sshConnectString = $self->host->sshConnectString;
 	my $hostname         = $self->host->hostName;
@@ -168,18 +168,7 @@ sub configureAfterIsUp {
 
 sub configureAfterIsUpSingleRabbitMQ {
 	my ( $self, $applog ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
 
-	# create the auction user and vhost	
-	$self->host->dockerExec($applog, $name, "rabbitmqctl add_user auction auction");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl set_user_tags auction administrator");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl add_vhost auction");
-
-	$self->host->dockerExec($applog, $name, "rabbitmqctl set_permissions -p auction auction \".*\" \".*\" \".*\"");
-	
 }
 
 sub configureAfterIsUpClusteredRabbitMQ {
@@ -321,6 +310,14 @@ sub setExternalPortNumbers {
 sub configure {
 	my ( $self, $logPath, $users, $suffix) = @_;
 
+}
+
+sub clearDataBeforeStart {
+	my ( $self, $logPath ) = @_;
+}
+
+sub clearDataAfterStart {
+	my ( $self, $logPath ) = @_;
 }
 
 sub stopStatsCollection {

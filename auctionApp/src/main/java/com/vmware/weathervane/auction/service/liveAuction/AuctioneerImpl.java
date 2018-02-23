@@ -47,7 +47,7 @@ import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 public class AuctioneerImpl implements Auctioneer, Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(AuctioneerImpl.class);
-	private final Long nodeNumber = Long.getLong("nodeNumber", -1L);
+	private final Long nodeNumber;
 
 	private static final String liveAuctionExchangeName = "liveAuctionMgmtExchange";
 	private static final String highBidRoutingKey = "highBid.";
@@ -74,7 +74,8 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 	
 	public AuctioneerImpl(Long auctionId, ScheduledExecutorService scheduledExecutorService,
 			AuctioneerTx auctioneerTx, HighBidDao highBidDao, BidRepository bidRepository,
-			AuctionDao auctionDao, RabbitTemplate rabbitTemplate, long auctionMaxIdleTime) {
+			AuctionDao auctionDao, RabbitTemplate rabbitTemplate, long auctionMaxIdleTime,
+			Long nodeNumber) {
 		logger.info("Starting auction with auctionId " + auctionId);
 		_auctionId = auctionId;
 		_scheduledExecutorService = scheduledExecutorService;
@@ -84,6 +85,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 		_auctionDao = auctionDao;
 		_liveAuctionRabbitTemplate = rabbitTemplate;
 		_auctionMaxIdleTime = auctionMaxIdleTime;
+		this.nodeNumber = nodeNumber;
 
 		// Get the latest info about the auction
 		Auction theAuction = _auctionDao.get(_auctionId);

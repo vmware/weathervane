@@ -16,6 +16,7 @@ package AppInstanceFactory;
 use Moose;
 use MooseX::Storage;
 use AppInstance::AuctionAppInstance;
+use AppInstance::AuctionKubernetesAppInstance;
 use Parameters qw(getParamValue);
 use WeathervaneTypes;
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
@@ -35,7 +36,13 @@ sub getAppInstance {
 
 	my $application;
 	if ( $applicationImpl eq "auction" ) {
-		$application = AuctionAppInstance->new( paramHashRef => $applicationParamHashRef );
+		if ($applicationParamHashRef->{'clusterName'}) {
+			if ($applicationParamHashRef->{'clusterType'} eq 'kubernetes') {
+			$application = AuctionKubernetesAppInstance->new( paramHashRef => $applicationParamHashRef );
+			} 
+		} else {
+			$application = AuctionAppInstance->new( paramHashRef => $applicationParamHashRef );			
+		}
 	}
 	else {
 		die "No matching application for workload type $applicationImpl";

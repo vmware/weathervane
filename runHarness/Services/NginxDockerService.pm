@@ -134,7 +134,7 @@ override 'create' => sub {
 	close $applog;
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxDockerService");
 	$logger->debug("stop NginxDockerService");
@@ -152,7 +152,7 @@ sub stop {
 	close $applog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $sshConnectString = $self->host->sshConnectString;
 	my $hostname         = $self->host->hostName;

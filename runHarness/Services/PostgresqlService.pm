@@ -38,7 +38,7 @@ override 'initialize' => sub {
 	super();
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	$logger->debug("stop PostgresqlService");
@@ -69,7 +69,7 @@ sub stop {
 	close $dblog;
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger      = get_logger("Weathervane::Services::PostgresqlService");
 	my $serviceType = $self->getParamValue('serviceType');
@@ -211,25 +211,6 @@ sub setExternalPortNumbers {
 	
 }
 	
-sub isBackupAvailable {
-	my ( $self, $backupDirPath, $applog ) = @_;
-	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-
-	my $sshConnectString = $self->host->sshConnectString;
-
-	my $chkOut = `$sshConnectString \"[ -d $backupDirPath ] && echo 'found'\"`;
-	if ( !( $chkOut =~ /found/ ) ) {
-		return 0;
-	}
-	$chkOut = `$sshConnectString \"[ \\\"$(ls -A $backupDirPath)\\\" ] && echo \\\"Full\\\" || echo \\\"Empty\\\"\"`;
-	if ( $chkOut =~ /Empty/ ) {
-		return 0;
-	}
-
-	return 1;
-
-}
-
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
 	my $logger           = get_logger("Weathervane::Services::PostgresqlService");

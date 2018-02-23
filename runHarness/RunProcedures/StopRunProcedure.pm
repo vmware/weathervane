@@ -19,7 +19,7 @@ use WeathervaneTypes;
 use Parameters qw(getParamValue);
 use POSIX;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodsOnObjectParallel callMethodsOnObjectParallel1);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodsOnObjectParallel callMethodsOnObjectParallel1);
 
 use strict;
 
@@ -55,20 +55,17 @@ override 'run' => sub {
 	close $ps;
 
 	$console_logger->info("Stopping running workload-drivers");
-	$self->killOldWorkloadDrivers();
+	$self->killOldWorkloadDrivers("/tmp");
 
 	## stop the services
-	$self->stopFrontendServices($tmpDir);
-	$self->stopBackendServices($tmpDir);
+	my @tiers = qw(frontend backend data infrastructure);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 
-	$self->stopDataServices($tmpDir);
-	$self->stopInfrastructureServices($tmpDir);
+	# Let the appInstances clean any run specific data or services
+	$self->cleanupAppInstances($tmpDir);
+
+	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
-
-	$self->removeFrontendServices($tmpDir);
-	$self->removeBackendServices($tmpDir);
-	$self->removeDataServices($tmpDir);
-	$self->removeInfrastructureServices($tmpDir);
 
 	# clean up old logs and stats
 	$self->cleanup();

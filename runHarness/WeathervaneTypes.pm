@@ -26,7 +26,7 @@ no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 our @workloadImpls = ('auction');
 
-# valid service types for Weathervane
+# valid service types 
 our %serviceTypes = ( 
 	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'appServer'], 
 );
@@ -36,12 +36,18 @@ our %dockerServiceTypes = (
 	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'coordinationServer', 'configurationManager'], 
 );
 
+
 # Services are started in the order data->backend->frontend
 # Within each type they are started in the given order ad stopped in reverse order
-our %infrastructureServiceTypes = ('auction' => ['configurationManager', 'elasticityService'],);
-our %dataServiceTypes = ('auction' => ['dbServer', 'nosqlServer', 'fileServer'],);
-our %backendServiceTypes = ('auction' => ['msgServer', 'coordinationServer', 'appServer', 'webServer'],);
-our %frontendServiceTypes = ( 'auction' => ['lbServer', 'ipManager'],);
+
+# Map workload to serviceTier to serviceType in each tier
+our %workloadToServiceTypes = ('auction' => {
+	'infrastructure' => ['configurationManager', 'elasticityService'],
+	'data' => ['dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'coordinationServer'],
+	'backend' => ['appServer'],
+	'frontend' => ['webServer', 'lbServer', 'ipManager'],
+	}
+);
 
 # Valid service implementations for each service type
 our %serviceImpls = (

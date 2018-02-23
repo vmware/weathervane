@@ -319,18 +319,18 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 	}
 
 	@Override
-	public void setScale(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
+	public void setBenchmarkInfo(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
 
 		imageStoreBenchmarkInfoRepository.save(imageStoreBenchmarkInfo);
 	}
 
 	@Override
-	public ImageStoreBenchmarkInfo getScale() throws NoScaleException {
+	public ImageStoreBenchmarkInfo getBenchmarkInfo() throws NoBenchmarkInfoException {
 		List<ImageStoreBenchmarkInfo> imageStoreBenchmarkInfos = imageStoreBenchmarkInfoRepository
 				.findAll();
 		if ((imageStoreBenchmarkInfos == null) || (imageStoreBenchmarkInfos.size() < 1)) {
 			logger.warn("getScale imageStoreBenchmarkInfos = null");
-			throw new NoScaleException();
+			throw new NoBenchmarkInfoException();
 		}
 		return imageStoreBenchmarkInfos.get(0);
 

@@ -20,7 +20,7 @@ use WeathervaneTypes;
 use RunResults::RunResult;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2);
 
 use Parameters qw(getParamValue setParamValue);
 
@@ -40,16 +40,6 @@ has 'loadDb' => (
 );
 
 has 'reloadDb' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
-has 'backup' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
-has 'rebackup' => (
 	is  => 'rw',
 	isa => 'Bool',
 );
@@ -147,25 +137,24 @@ sub run {
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
-	$self->killOldWorkloadDrivers();
+	$self->killOldWorkloadDrivers($setupLogDir);
 
 	$debug_logger->debug("stop services");
-	my @methods = qw(stopInfrastructureServices stopFrontendServices stopBackendServices stopDataServices);
-	callMethodsOnObjectParallel1( \@methods, $self, $setupLogDir );
+	my @tiers = qw(frontend backend data infrastructure);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
+
+	# Let the appInstances clean any run specific data or services
+	$self->cleanupAppInstances($setupLogDir);
+
 	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
 	
-	$debug_logger->debug("cleanup");
+	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
 	$self->cleanup();
 
 	# Get rid of old results from previous run
 	$debug_logger->debug("clear results");
 	$self->clearResults();
-
-	# Remove the services if they are dockerized
-	$debug_logger->debug("Remove services");
-	@methods = qw(removeFrontendServices removeBackendServices removeDataServices removeInfrastructureServices);
-	callMethodsOnObjectParallel1( \@methods, $self, $setupLogDir );
 
 	# redeploy artifacts if selected
 	if ( $self->getParamValue('redeploy') ) {
@@ -184,13 +173,7 @@ sub run {
 	
 	# Copy the version file into the output directory
 	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-	
-	# Make sure time is synced on all hosts
-	if ( $self->getParamValue('restartNtp') ) {
-		$debug_logger->debug("Sync time");
-		$self->syncTime();
-	}	
-	
+		
 	# Prepare the data for this run and start the data services
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);
@@ -202,28 +185,31 @@ sub run {
 
 	## start all of the backend services.  Data services should be up.
 	$console_logger->info("Starting data services");
-	$self->configureAndStartDataServices( $setupLogDir );
+	$self->startServices( "data", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
-	sleep 30;
+	sleep 240;
 
 	$console_logger->info("Pre-warming data services.\n");
 	$self->pretouchData($setupLogDir);
 
 	$console_logger->info("Starting backend services");
-	$self->configureAndStartBackendServices( $setupLogDir );
+	$self->startServices( "backend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
+	sleep 60;
 
 	$console_logger->info("Starting frontend services");
-	$self->configureAndStartFrontendServices( $setupLogDir );
+	$self->startServices( "frontend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
+	sleep 60;
 
 	$console_logger->info("Starting infrastructure services");
-	$self->configureAndStartInfrastructureServices( $setupLogDir );
+	$self->startServices( "infrastructure", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
+	sleep 60;
 
 	# Make sure that all of the services are up
 	$debug_logger->debug("Check isUp");

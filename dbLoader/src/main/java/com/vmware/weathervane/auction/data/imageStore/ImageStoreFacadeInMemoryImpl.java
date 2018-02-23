@@ -168,12 +168,12 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 	}
 
 	@Override
-	public void setScale(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
+	public void setBenchmarkInfo(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
 	}
 
 	@Override
-	public ImageStoreBenchmarkInfo getScale() throws NoScaleNeededException  {
-		throw new NoScaleNeededException();
+	public ImageStoreBenchmarkInfo getBenchmarkInfo() throws NoBenchmarkInfoNeededException  {
+		throw new NoBenchmarkInfoNeededException();
 	}
 	
 }

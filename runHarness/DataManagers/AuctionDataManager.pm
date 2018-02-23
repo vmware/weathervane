@@ -727,13 +727,6 @@ sub loadData {
 			"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
 	}
 
-	# if the number of auctions wasn't explicitly set, determine based on
-	# the usersPerAuctionScaleFactor
-	my $auctions = $self->getParamValue('auctions');
-	if ( !$auctions ) {
-		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
-	}
-
 	my $nosqlServersRef = $appInstance->getActiveServicesByType('nosqlServer');
 	my $cmdout;
 	my $replicaMasterHostname = "";
@@ -1412,6 +1405,10 @@ sub isDataLoaded {
 	my $auctions = $self->getParamValue('auctions');
 	if ( !$auctions ) {
 		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
+	}
+	# Must be multiple of 2
+	if (($auctions % 2) != 0) {
+		$auctions++;
 	}
 
 	my $dbPrepOptions = " -a $auctions -c ";

@@ -222,14 +222,15 @@ sub configure {
 						my $serverMaxConn = $maxConn;
 						
 						foreach my $webServer (@$webServersRef) {
+							my $serverHostname = $self->getHostnameForUsedService($webServer);
 							my $port;
 							if ($filePort == 80) {
-								$port = $webServer->portMap->{"http"};							
+								$port = $self->getPortNumberForUsedService($webServer, "http");							
 							} else {
-								$port = $webServer->portMap->{"https"};															
+								$port = $self->getPortNumberForUsedService($webServer, "https");															
 							}
 							print FILEOUT "    server web" . $cnt . " "
-							  . $webServer->host->ipAddr .":" . $port
+							  . $serverHostname .":" . $port
 							  . $endLine
 							  . " maxconn $serverMaxConn "
 							  . "\n";
@@ -238,14 +239,15 @@ sub configure {
 					}
 					else {
 						foreach my $appServer (@$appServersRef) {
+							my $serverHostname = $self->getHostnameForUsedService($appServer);
 							my $port;
 							if ($filePort == 80) {
-								$port = $appServer->portMap->{"http"};							
+								$port = $self->getPortNumberForUsedService($appServer, "http");							
 							} else {
-								$port = $appServer->portMap->{"https"};															
+								$port = $self->getPortNumberForUsedService($appServer, "https");															
 							}
 							print FILEOUT "    server app" . $cnt . " "
-							  . $appServer->host->ipAddr .":" . $port
+							  . $serverHostname .":" . $port
 							  . $endLine
 							  . " maxconn " . $self->getParamValue('haproxyAppServerMaxConn')
 							  . "\n";

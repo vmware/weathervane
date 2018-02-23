@@ -1061,7 +1061,7 @@ $parameters{"interactive"} = {
 
 $parameters{"users"} = {
 	"type"    => "=s",
-	"default" => "300",
+	"default" => "1000",
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the number of simulated users to use for a run.\n\tThe number of simulated users is the primary metric of load for the Weathervane benchmark.",
@@ -1070,7 +1070,7 @@ $parameters{"users"} = {
 
 $parameters{"maxUsers"} = {
 	"type"    => "=i",
-	"default" => 300,
+	"default" => 1000,
 	"parent"  => "dataManager",
 	"usageText" =>
 "This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load.\n",
@@ -1405,7 +1405,7 @@ $parameters{"dockerCpuShares"} = {
 
 $parameters{"dockerCpuSetCpus"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "unset",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1413,7 +1413,7 @@ $parameters{"dockerCpuSetCpus"} = {
 
 $parameters{"dockerCpuSetMems"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "unset",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1443,17 +1443,9 @@ $parameters{"dockerNet"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerHostPin"} = {
+$parameters{"vicHost"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "host",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"dockerHostPinMode"} = {
-	"type"      => "=s",
-	"default"   => "all",
 	"parent"    => "host",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1477,7 +1469,7 @@ $parameters{"dockerServiceImages"} = {
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
 		"zookeeper"  => "weathervane-zookeeper",
-		"webConfig"  => "weathervane-cm",
+		"webConfig"  => "weathervane-configurationmanager",
 	},
 	"parent"    => "host",
 	"usageText" => "",
@@ -2217,6 +2209,30 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"nginxUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"nginxCacheVolume"} = {
+	"type"      => "=s",
+	"default"   => "nginxCache",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nginxCacheVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "12GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 # Parameters specific to haproxy
 $parameters{"haproxyProcPerCpu"} = {
 	"type"      => "!",
@@ -2717,6 +2733,54 @@ $parameters{"postgresqlDataDir"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"postgresqlUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"postgresqlDataVolume"} = {
+	"type"      => "=s",
+	"default"   => "postgresqlData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "20GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogDir"} = {
+	"type"      => "=s",
+	"default"   => "/mnt/dbLogs/postgresql",
+	"usageText" => "",
+	"parent"    => "appInstance",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogVolume"} = {
+	"type"      => "=s",
+	"default"   => "postgresqlLogs",
+	"usageText" => "",
+	"parent"    => "appInstance",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "20GB",
+	"usageText" => "",
+	"parent"    => "appInstance",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlConfDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbData/postgresql",
@@ -2741,14 +2805,6 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/postgresql",
-	"usageText" => "",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
 $parameters{"mongodbBackupDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/mongoBackup",
@@ -2765,10 +2821,50 @@ $parameters{"mongodbDataDir"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"mongodbUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"mongodbDataVolume"} = {
+	"type"      => "=s",
+	"default"   => "mongoData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "200GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"mongodbC1DataDir"} = {
 	"type"      => "=s",
 	"parent"    => "appInstance",
 	"default"   => "/mnt/mongoC1Data",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbC1DataVolume"} = {
+	"type"      => "=s",
+	"default"   => "mongoC1Data",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbC1DataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "10GB",
+	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2781,6 +2877,22 @@ $parameters{"mongodbC2DataDir"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"mongodbC2DataVolume"} = {
+	"type"      => "=s",
+	"default"   => "mongoC2Data",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbC2DataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "10GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"mongodbC3DataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/mongoC3Data",
@@ -2788,6 +2900,23 @@ $parameters{"mongodbC3DataDir"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+
+$parameters{"mongodbC3DataVolume"} = {
+	"type"      => "=s",
+	"default"   => "mongoC3Data",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbC3DataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "10GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"rampupInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,

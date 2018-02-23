@@ -1,9 +1,11 @@
-FROM namespace/centos7ssh:version
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY mongodb.repo /etc/yum.repos.d/mongo.repo
-COPY mongo*.conf /etc/
+COPY mongo*.conf /root/
 COPY entrypoint.sh /entrypoint.sh
+COPY configure.pl /configure.pl
+COPY sanityCheck.pl /sanityCheck.pl
 
 RUN mkdir /mnt/mongoData && \
 	mkdir /mnt/mongoBackup && \

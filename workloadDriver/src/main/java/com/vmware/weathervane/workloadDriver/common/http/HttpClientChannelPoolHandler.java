@@ -76,7 +76,7 @@ public class HttpClientChannelPoolHandler extends AbstractChannelPoolHandler {
 		if (ch.pipeline().get("readTimeoutHandler") != null) {
 			ch.pipeline().remove("readTimeoutHandler");
 		}
-		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(60));
+		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(300));
 
 	}
 

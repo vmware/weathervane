@@ -2,7 +2,17 @@
 
 sigterm()
 {
-   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"
+   echo "signal TERM received. cmd = $cmd, $numArgs = $numArgs"   
+
+   echo "Performing sanity checks"
+   perl /sanityCheck.pl
+   if [ $? -eq 0 ]
+   then
+   	echo "Sanity Checks Passed"
+   else
+   	echo "Sanity Checks Failed"
+   fi
+
    rm -f /fifo
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"
@@ -14,20 +24,14 @@ sigterm()
 
 sigusr1()
 {
-   echo "signal USR1 received. cmd = $cmd, $numArgs = $numArgs. Reloading"
-   if [ $numArgs -gt 0 ]; then
-   	  eval "$cmd --shutdown"
-	  eval "$cmd &"
-   else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
-    /usr/bin/mongod -f /etc/mongod.conf &
-   fi
+   echo "signal USR1 received. Clearing data and restarting"
+
 }
 
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
 
-echo "search weathervane" >> /etc/resolv.conf 
+perl /updateResolveConf.pl
 
 echo never > /sys/kernel/mm/transparent_hugepage/enabled
 echo never > /sys/kernel/mm/transparent_hugepage/defrag
@@ -35,10 +39,18 @@ echo never > /sys/kernel/mm/transparent_hugepage/defrag
 cmd=$*
 numArgs=$#
 
+if [ $CLEARBEFORESTART -eq 1 ]; then
+  find /mnt/mongoData/* -delete
+  find /mnt/mongoC1Data/* -delete
+  find /mnt/mongoC2Data/* -delete
+  find /mnt/mongoC3Data/* -delete
+fi
+
+perl /configure.pl
+
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf --shutdown
 	/usr/bin/mongod -f /etc/mongod.conf &
 fi
 

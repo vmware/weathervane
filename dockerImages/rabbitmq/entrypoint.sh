@@ -16,16 +16,21 @@ sigusr1()
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+echo "Add weathervane domain to resolv.conf" 
+perl /updateResolveConf.pl
 
+echo "Set file permissions" 
 chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /var/lib/rabbitmq/.erlang.cookie
-chmod 400 /root/.erlang.cookie
+chmod 600 /var/lib/rabbitmq/.erlang.cookie
+chmod 600 /root/.erlang.cookie
 
+hostname="$(hostname)"
+echo "NODENAME=rabbit@${hostname}" > /etc/rabbitmq/rabbitmq-env.conf
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+    echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &"
 	sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &
 fi
 

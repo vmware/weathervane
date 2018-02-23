@@ -8,17 +8,9 @@ sigterm()
    exit 0
 }
 
-sigusr1()
-{
-   echo "signal USR1 received.  pid = $pid. Reloading"
-   kill -TERM $pid
-   java -jar ${JVMOPTS} -DWA=W${WORKLOADNUM}I${APPINSTANCENUM} /auctionConfigManager.jar --port=${PORT}
-}
-
 trap 'sigterm' TERM
-trap 'sigusr1' USR1
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+perl /updateResolveConf.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"

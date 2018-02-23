@@ -170,13 +170,13 @@ sub getRunProcedureImpl {
 }
 
 # Tell the hosts to go get their CPU and memory configuration
-sub configureDockerHostCpuPinning {
+sub getCpuMemConfig {
 	my ($self)       = @_;
 	my $hostsRef     = $self->hostsRef;
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 
 	foreach my $host (@$hostsRef) {
-		$host->configureDockerPinning();
+		$host->getCpuMemConfig();
 	}
 
 }
@@ -1389,7 +1389,7 @@ sub checkVersions {
 	my $allSame = 1;
 	foreach my $host ( @{ $self->hostsRef } ) {
 
-		if (!$host->isNonDocker()) {
+		if (!$host->isNonDocker() || $host->getParamValue('vicHost')) {
 			next;
 		}
 

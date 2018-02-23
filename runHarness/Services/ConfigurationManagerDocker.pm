@@ -105,7 +105,7 @@ override 'create' => sub {
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
-	if ( $self->getParamValue('dockerNet') eq "host" ) {
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
 
 		# For docker host networking, external ports are same as internal ports
 		$self->	portMap->{$impl}   = $self->internalPortMap->{$impl};
@@ -131,6 +131,7 @@ sub start {
 	open( my $applog, ">$logName" ) || die "Error opening /$logName:$!";
 
 	# Don't need to reload as we configure properly on initial create
+	$self->setExternalPortNumbers();
 
 	# Wait for the configurationManager to be up and then
 	# configure it with the information on the initial services
@@ -157,7 +158,7 @@ sub configureAfterIsUp {
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 	my $console_logger = get_logger("Console");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $impl     = $self->getImpl();
 	my $port     = $self->portMap->{$impl};
 
@@ -372,9 +373,13 @@ sub configureAfterIsUp {
 			}
 			$paramHash{"hostHostName"}     = $service->host->hostName;
 			$paramHash{"hostIpAddr"}       = $service->host->ipAddr;
-			$paramHash{"hostCpus"}         = $service->host->cpus + 0;
-			$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
-			$paramHash{"hostIsBonneville"} = $service->host->isBonneville();
+			if ($service->host->getParamValue('vicHost')) {
+				$paramHash{"hostCpus"}         = 2;				
+				$paramHash{"hostMemKb"}        = 8192;
+			} else {
+				$paramHash{"hostCpus"}         = $service->host->cpus + 0;
+				$paramHash{"hostMemKb"}        = $service->host->memKb + 0;
+			}
 
 			my $content = $json->encode( \%paramHash );
 			my $url     = "http://$hostname:$port/$serviceType/add";
@@ -478,7 +483,7 @@ sub isUp {
 	my ( $self, $fileout ) = @_;
 	my $logger = get_logger("Weathervane::Services::ConfigurationManager");
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->getIpAddr();
 	my $port     = $self->portMap->{$self->getImpl()};
 
 	my $ua = LWP::UserAgent->new;
@@ -522,7 +527,16 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self) = @_;
-	$self->portMap->{$self->getImpl()} = $self->internalPortMap->{$self->getImpl()};
+		my $name = $self->getParamValue('dockerName');
+	
+	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
+		# For docker host networking, external ports are same as internal ports
+		$self->portMap->{$self->getImpl()} = $self->internalPortMap->{$self->getImpl()};
+	} else {
+		# For bridged networking, ports get assigned at start time
+		my $portMapRef = $self->host->dockerPort($name);
+		$self->portMap->{$self->getImpl()}  = $portMapRef->{$self->internalPortMap->{$self->getImpl()}};
+	}	
 
 }
 

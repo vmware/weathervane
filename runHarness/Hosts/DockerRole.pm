@@ -146,15 +146,69 @@ sub dockerStart {
 	
 }
 
+sub dockerNetIsHostOrExternal {
+	my ( $self, $dockerNetName) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerNetIsHostOrExternal dockerNetName = $dockerNetName");
+	my $dockerHostString  = $self->dockerHostString;
+
+	my $out = `$dockerHostString docker network ls`;
+	$logger->debug("output of docker network ls: $out");
+	my @lines = split /\n/, $out;	
+	foreach my $line (@lines) {
+		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s]+)\s+.*$/) {
+			if ($1 eq $dockerNetName) {
+				if (($2 eq 'host') || ($2 eq 'external')) {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is host or external");
+					return 1;
+				} else {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is not host or external");
+					return 0;
+				}
+			}
+		}
+	}
+	
+	die("Network $dockerNetName not found on host ", $self->hostName);
+}
+
+sub dockerNetIsExternal {
+	my ( $self, $dockerNetName) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerNetIsExternal dockerNetName = $dockerNetName");
+	my $dockerHostString  = $self->dockerHostString;
+
+	my $out = `$dockerHostString docker network ls`;
+	$logger->debug("output of docker network ls: $out");
+	my @lines = split /\n/, $out;	
+	foreach my $line (@lines) {
+		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s]+)\s+.*$/) {
+			if ($1 eq $dockerNetName) {
+				if ($2 eq 'external') {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is external");
+					return 1;
+				} else {
+					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is not external");
+					return 0;
+				}
+			}
+		}
+	}
+	
+	die("Network $dockerNetName not found on host ", $self->hostName);
+}
+
 sub dockerPort {
 	my ( $self, $name) = @_;
+	my %portMap;
+
 	my $dockerHostString  = $self->dockerHostString;
 	my $out = `$dockerHostString docker port $name`;	
-	my %portMap;
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
-		$line =~ /(\d+)\/.*\:(\d+)\s*$/;
-		$portMap{$1} = $2;
+		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
+			$portMap{$1} = $2;
+		}
 	}
 	
 	return \%portMap;
@@ -193,6 +247,19 @@ sub dockerRestart {
 		
 }
 
+sub dockerKill {
+	my ( $self, $signal, $logFileHandle, $name) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerKill name = $name");
+	my $dockerHostString  = $self->dockerHostString;
+	
+	my $out;
+	$out = `$dockerHostString docker kill --signal $signal $name 2>&1`;
+	print $logFileHandle "$dockerHostString docker kill --signal $signal $name 2>&1\n";
+	print $logFileHandle "$out\n";	
+
+}
+
 sub dockerReload {
 	my ( $self, $logFileHandle, $name) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
@@ -211,8 +278,9 @@ sub dockerReload {
 	my %portMap;
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
-		$line =~ /(\d+)\/.*\:(\d+)\s*$/;
-		$portMap{$1} = $2;
+		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
+			$portMap{$1} = $2;
+		}
 	}
 	
 	return \%portMap;
@@ -247,6 +315,7 @@ sub dockerCreate {
 	my $imagesHashRef = $self->getParamValue('dockerServiceImages');
 	my $imageName = $imagesHashRef->{$impl};
 	my $namespace = $self->getParamValue('dockerNamespace');
+	my $isVicHost = 	$self->getParamValue('vicHost');
 	
 	my $netString = "";
 	if ((defined $dockerConfigHashRef->{"net"}) && ($dockerConfigHashRef->{"net"} ne "bridge")) {
@@ -294,17 +363,21 @@ sub dockerCreate {
 	}
 
 	my $cpusString = "";
+	my $cpuSetCpusString = "";
 	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
-		$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		if (!$isVicHost) {
+			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		} else {
+			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+		}
 	}
 
-	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-cpus"} && $dockerConfigHashRef->{"cpuset-cpus"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}
 
 	my $cpuSetMemsString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-mems"} && $dockerConfigHashRef->{"cpuset-mems"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-mems"}) {
 		$cpuSetMemsString = "--cpuset-mems=". $dockerConfigHashRef->{"cpuset-mems"};
 	}
 	
@@ -322,7 +395,7 @@ sub dockerCreate {
 	if ($entryPoint) {
 		$entryPointString = "--entrypoint=\"$entryPoint\"";
 	}
-		
+		 
 	if (!defined($cmd)) {
 		$cmd = "";
 	}
@@ -349,6 +422,7 @@ sub dockerRun {
 	my $imagesHashRef = $self->getParamValue('dockerServiceImages');
 	my $imageName = $imagesHashRef->{$impl};
 	my $namespace = $self->getParamValue('dockerNamespace');
+	my $isVicHost = 	$self->getParamValue('vicHost');
 	
 	my $netString = "";
 	if ((defined $dockerConfigHashRef->{"net"}) && ($dockerConfigHashRef->{"net"} ne "bridge")) {
@@ -390,23 +464,27 @@ sub dockerRun {
 		$envString .= " -e $envVar=$value ";
 	}
 
-	my $cpusString = "";
-	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
-		$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
-	}
-	
 	my $cpuSharesString = "";
 	if (defined $dockerConfigHashRef->{"cpu-shares"} && $dockerConfigHashRef->{"cpu-shares"}) {
 		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
 	}
 
+	my $cpusString = "";
 	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-cpus"} && $dockerConfigHashRef->{"cpuset-cpus"}) {
+	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+		if (!$isVicHost) {
+			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+		} else {
+			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+		}
+	}
+
+	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
 		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
 	}
 
 	my $cpuSetMemsString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-mems"} && $dockerConfigHashRef->{"cpuset-mems"}) {
+	if (defined $dockerConfigHashRef->{"cpuset-mems"}) {
 		$cpuSetMemsString = "--cpuset-mems=". $dockerConfigHashRef->{"cpuset-mems"};
 	}
 	
@@ -457,8 +535,9 @@ sub dockerRun {
 	my %portMap;
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
-		$line =~ /(\d+)\/.*\:(\d+)\s*$/;
-		$portMap{$1} = $2;
+		if (	$line =~ /(\d+)\/.*\:(\d+)\s*$/) {
+			$portMap{$1} = $2;
+		}
 	}
 		
 	return \%portMap;
@@ -479,6 +558,50 @@ sub dockerGetLogs {
 	return "";
 }
 
+sub dockerVolumeCreate {
+	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
+	print $logFileHandle "dockerVolumeCreate $volumeName\n";
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerVolumeCreate $volumeName");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	my $cmd = "$dockerHostString docker volume create --name $volumeName ";
+	if ($self->getParamValue('vicHost')) {
+		# Add capacity
+		$cmd .= "--opt Capacity=" . $volumeSize;
+	}
+	
+	$logger->debug("dockerVolumeCreate cmd = $cmd");
+	print $logFileHandle "$cmd\n";
+	my $out = `$cmd`;
+	$logger->debug("dockerVolumeCreate out = $out");
+	print $logFileHandle "$out\n";
+
+}
+
+sub dockerVolumeExists {
+	my ( $self, $logFileHandle, $volumeName ) = @_;
+	print $logFileHandle "dockerVolumeExists $volumeName\n";
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerVolumeExists $volumeName");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	my $cmd = "$dockerHostString docker volume ls -q";
+	print $logFileHandle "$cmd\n";
+	my $out = `$cmd`;
+	print $logFileHandle "$out\n";
+	my @lines = split /\n/, $out;
+	foreach my $line (@lines) {
+		chomp($line);
+		if ($line eq $volumeName) {
+			$logger->debug("dockerVolumeExists $volumeName exists");
+			return 1;				
+		}	
+	} 	
+	$logger->debug("dockerVolumeExists $volumeName does not exist");
+	return 0;	
+}
+
 sub dockerRm {
 	my ( $self, $logFileHandle, $name ) = @_;
 	print $logFileHandle "dockerRm $name\n";
@@ -497,8 +620,26 @@ sub dockerRm {
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
 	my $dockerHostString  = $self->dockerHostString;	
-	my $out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	my $out;
+	if ($self->getParamValue('vicHost')) {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
+	} else {
+		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+	}
 	chomp($out);
+	return $out;
+}
+
+sub dockerGetExternalNetIP {
+	my ( $self, $name, $dockerNetName) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName");
+	my $dockerHostString  = $self->dockerHostString;
+	my $cmd = "$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.$dockerNetName.IPAddress }}' $name 2>&1";
+	$logger->debug("command: $cmd");
+	my $out = `$cmd`;
+	chomp($out);
+	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName, ipAddr = $out");
 	return $out;
 }
 

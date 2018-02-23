@@ -8,25 +8,15 @@ sigterm()
    exit 0
 }
 
-sigusr1()
-{
-   echo "signal USR1 received.  pid = $pid. Reloading"
-   kill $pid
-   if [ $# -gt 0 ]; then
-	  eval "$* &"
-   else
-	  sudo -u postgres /usr/pgsql-9.3/bin/pg_ctl restart -D /mnt/dbData/postgresql 
-   fi
-}
-
 trap 'sigterm' TERM
-trap 'sigusr1' USR1
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+echo "Update resolv.conf"
+perl /updateResolveConf.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+	echo "start postgresql"
 	/pg-init.sh &
 fi
 

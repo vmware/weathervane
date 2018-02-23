@@ -1,4 +1,4 @@
-FROM namespace/centos7ssh:version
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 RUN yum install -y http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm && \
@@ -7,7 +7,9 @@ RUN yum install -y http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-
 
 COPY html /usr/share/nginx/html
 COPY nginx /etc/nginx
+COPY nginx /root/nginx
 COPY entrypoint.sh /entrypoint.sh
+COPY configure.pl /configure.pl
 
 # forward request and error logs to docker log collector
 RUN ln -sf /dev/stdout /var/log/nginx/access.log && \

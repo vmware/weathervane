@@ -93,7 +93,7 @@ maxConnections="3000"
 protocol="org.apache.coyote.http11.Http11NioProtocol"
 port="8080"
 redirectPort="8443"/>
-
+ 
     <!-- You should set jvmRoute to support load-balancing via AJP ie :-->
     <Engine name="Catalina" defaultHost="localhost" jvmRoute="AuctionApp1">
     <!--

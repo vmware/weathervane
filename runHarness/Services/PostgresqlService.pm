@@ -90,6 +90,10 @@ sub start {
 	
 	$self->portMap->{$impl} = $self->internalPortMap->{$impl};
 
+	
+	# Force a vacuum and a checkpoint
+	$self->doVacuum($dblog);
+
 	$self->registerPortsWithHost();
 	$self->host->startNscd();
 

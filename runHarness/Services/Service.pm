@@ -157,27 +157,28 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerCpuShares')) {
 		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
 	} 
-	if ($self->getParamValue('dockerCpuSetCpus')) {
+	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
 		
-		# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-		# set dockerCpus accordingly so that services can know how many CPUs the 
-		# container has when configuring
-		my $numCpus = 0;
-		my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
-		foreach my $cpuGroup (@cpuGroups) {
-			if ($cpuGroup =~ /-/) { 
-				# This cpu group is a range
-				my @rangeEnds = split(/-/,$cpuGroup);
-				$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-			} else {
-				$numCpus++;
+		if ($self->getParamValue('dockerCpus') == 0) {
+			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
+			# set dockerCpus accordingly so that services can know how many CPUs the 
+			# container has when configuring
+			my $numCpus = 0;
+			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
+			foreach my $cpuGroup (@cpuGroups) {
+				if ($cpuGroup =~ /-/) {
+					# This cpu group is a range
+					my @rangeEnds = split(/-/,$cpuGroup);
+					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
+				} else {
+					$numCpus++;
+				}
 			}
+			$self->setParamValue('dockerCpus', $numCpus);
 		}
-		$self->setParamValue('dockerCpus', $numCpus);
-		$self->dockerConfigHashRef->{'cpus'} = $numCpus;
 	}
-	if ($self->getParamValue('dockerCpuSetMems')) {
+	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
 	}
 	if ($self->getParamValue('dockerMemory')) {
@@ -249,6 +250,14 @@ sub getWorkloadNum {
 sub getAppInstanceNum {
 	my ($self) = @_;
 	return $self->getParamValue('appInstanceNum');
+}
+
+sub getIpAddr {
+	my ($self) = @_;
+	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
+	}
+	return $self->host->ipAddr;
 }
 
 sub create {
@@ -380,7 +389,8 @@ sub corunningDockerized {
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
-		|| !$self->host->equals($other->host)) 
+		|| !$self->host->equals($other->host)
+		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
 		return 0;
 	} else {
@@ -403,7 +413,7 @@ sub getHostnameForUsedService {
 	{
 		return $other->host->dockerGetIp($other->getDockerName());
 	} else {
-		return $other->host->hostName;
+		return $other->getIpAddr();
 	}	
 }
 

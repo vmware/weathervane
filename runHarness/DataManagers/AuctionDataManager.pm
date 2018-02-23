@@ -279,13 +279,13 @@ sub prepareData {
 	my $mongodbPort;
 	if ( $self->appInstance->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->host->hostName;
+		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
 
 		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->host->hostName;
+		$nosqlHostname = $self->getIpAddr();
 		$mongodbPort   = $self->portMap->{'mongos'};
 	}
 
@@ -293,7 +293,7 @@ sub prepareData {
 	if ( $self->appInstance->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService = $nosqlServersRef->[$i];
-			$nosqlHostname = $nosqlService->host->hostName;
+			$nosqlHostname = $nosqlService->getIpAddr();
 			$mongodbPort   = $nosqlService->portMap->{'mongod'};
 			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
 		}
@@ -301,7 +301,7 @@ sub prepareData {
 
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->host->hostName;
+	my $dbHostname    = $dbService->getIpAddr();
 	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
 
 	my $dbLoaderOptions = "";
@@ -338,12 +338,6 @@ sub prepareData {
 		return 0;
 	}
 
-	if ( $dbServicesRef->[0]->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$dbServer->doVacuum($logHandle);
-		}
-	}
-
 	if (   ( $self->appInstance->numNosqlReplicas > 0 )
 		&& ( $self->appInstance->numNosqlShards == 0 ) )
 	{
@@ -377,11 +371,18 @@ sub pretouchData {
 	};
 
 	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+
 	my @pids            = ();
 	if ( $self->getParamValue('mongodbTouch') ) {
-		foreach my $nosqlService (@$nosqlServersRef) {
+		my $nosqlService = $nosqlServersRef->[0];
+		if ($nosqlService->host->getParamValue('vicHost')) {
+			# mongoDb takes longer to start on VIC
+			sleep 240;
+		}
 
-			my $hostname = $nosqlService->host->hostName;
+		foreach $nosqlService (@$nosqlServersRef) {
+
+			my $hostname = $nosqlService->getIpAddr();
 			my $port     = $nosqlService->portMap->{'mongod'};
 			my $cmdString;
 			my $cmdout;
@@ -744,7 +745,7 @@ sub loadData {
 
 		# Add the shards to the database
 		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->host->hostName;
+			my $hostname = $nosqlServer->getIpAddr();
 			my $port     = $nosqlServer->portMap->{'mongod'};
 			print $applog "Add $hostname as shard.\n";
 			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))'";
@@ -881,7 +882,7 @@ sub loadData {
 		
 		# Create the replica set
 		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->host->hostName;
+			my $hostname = $nosqlServer->getIpAddr();
 			my $port     = $nosqlServer->portMap->{'mongod'};
 			if ( $replicaMasterHostname eq "" ) {
 				$replicaMasterHostname = $hostname;
@@ -978,13 +979,13 @@ sub loadData {
 	my $mongodbPort;
 	if ( $appInstance->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->host->hostName;
+		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
 
 		# The mongos will be running on the data manager
-		$nosqlHostname = $self->host->hostName;
+		$nosqlHostname = $self->getIpAddr();
 		$mongodbPort   = $self->portMap->{'mongos'};
 	}
 
@@ -992,7 +993,7 @@ sub loadData {
 	if ( $appInstance->numNosqlReplicas > 0 ) {
 		for ( my $i = 0 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService  = $nosqlServersRef->[$i];
-			my $nosqlHostname = $nosqlService->host->hostName;
+			my $nosqlHostname = $nosqlService->getIpAddr();
 			my $replicaPort;
 			if ($nosqlHostname eq $replicaMasterHostname) {
 				$replicaPort = $nosqlService->internalPortMap->{'mongod'};
@@ -1008,7 +1009,7 @@ sub loadData {
 
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType('dbServer');
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->host->hostName;
+	my $dbHostname    = $dbService->getIpAddr();
 	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
 
 	my $ppid = fork();
@@ -1076,13 +1077,6 @@ sub loadData {
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $applog );
-	}
-
-	my $dbServersRef = $self->appInstance->getActiveServicesByType('dbServer');
-	if ( $dbService->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$dbServer->doVacuum($applog);
-		}
 	}
 
 	close $applog;
@@ -1437,13 +1431,13 @@ sub isDataLoaded {
 	my $mongodbPort;
 	if ( $self->appInstance->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServicesRef->[0];
-		$nosqlHostname = $nosqlService->host->hostName;
+		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
 
 		# The mongos will be running on the datManager
-		$nosqlHostname = $self->host->hostName;
+		$nosqlHostname = $self->getIpAddr();
 		$mongodbPort   = $self->portMap->{'mongos'};
 	}
 
@@ -1451,7 +1445,7 @@ sub isDataLoaded {
 	if ( $self->appInstance->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
 			my $nosqlService  = $nosqlServicesRef->[$i];
-			my $nosqlHostname = $nosqlService->host->hostName;
+			my $nosqlHostname = $nosqlService->getIpAddr();
 			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
 			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
 		}
@@ -1459,7 +1453,7 @@ sub isDataLoaded {
 
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->host->hostName;
+	my $dbHostname    = $dbService->getIpAddr();
 	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
 
 	my $sshConnectString = $self->host->sshConnectString;
@@ -1493,7 +1487,7 @@ sub waitForMongodbReplicaSync {
 
 	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
 	my $nosqlServer      = $nosqlServersRef->[0];
-	my $nosqlHostname    = $nosqlServer->host->hostName;
+	my $nosqlHostname    = $nosqlServer->getIpAddr();
 	my $port             = $nosqlServer->portMap->{'mongod'};
 	my $sshConnectString = $self->host->sshConnectString;
 	my $inSync           = 0;
@@ -1648,7 +1642,7 @@ sub cleanData {
 			$logger->debug(
 				"cleanData. Deleting added images for workload ",
 				$workloadNum, " appInstance ",
-				$appInstanceNum, " on host ", $fileServer->host->hostName
+				$appInstanceNum, " on host ", $fileServer->getIpAddr()
 			);
 			my $sshConnectString = $fileServer->host->sshConnectString;
 			`$sshConnectString \"find $imageStoreDataDir -name '*added*' -delete 2>&1\"`;
@@ -1671,13 +1665,13 @@ sub cleanData {
 	my $mongodbPort;
 	if ( $self->appInstance->numNosqlShards == 0 ) {
 		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->host->hostName;
+		$nosqlHostname = $nosqlService->getIpAddr();
 		$mongodbPort   = $nosqlService->portMap->{'mongod'};
 	}
 	else {
 
 		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->host->hostName;
+		$nosqlHostname = $self->getIpAddr();
 		$mongodbPort   = $self->portMap->{'mongos'};
 	}
 
@@ -1685,7 +1679,7 @@ sub cleanData {
 	if ( $self->appInstance->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService = $nosqlServersRef->[$i];
-			$nosqlHostname = $nosqlService->host->hostName;
+			$nosqlHostname = $nosqlService->getIpAddr();
 			$mongodbPort   = $nosqlService->portMap->{'mongod'};
 			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
 		}
@@ -1693,7 +1687,7 @@ sub cleanData {
 
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->host->hostName;
+	my $dbHostname    = $dbService->getIpAddr();
 	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
 
 	my $dbLoaderOptions = "";
@@ -1742,26 +1736,6 @@ sub cleanData {
 		return 0;
 	}
 
-	if ( $dbServicesRef->[0]->getImpl() eq "postgresql" ) {
-		foreach my $dbServer (@$dbServersRef) {
-			$logger->debug(
-				"cleanData. Running vacuum on DB host ",
-				$dbServer->host->hostName,
-				" for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$dbServer->doVacuum($logHandle);
-			$logger->debug(
-				"cleanData. Ran vacuum on DB host ",
-				$dbServer->host->hostName,
-				" for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-		}
-	}
-
 	if (   ( $self->appInstance->numNosqlReplicas > 0 )
 		&& ( $self->appInstance->numNosqlShards == 0 ) )
 	{
@@ -1773,8 +1747,7 @@ sub cleanData {
 
 		# Compact all mongodb collections
 		foreach my $nosqlService (@$nosqlServersRef) {
-			my $sshConnectString = $nosqlService->host->sshConnectString;
-			my $hostname         = $nosqlService->host->hostName;
+			my $hostname         = $nosqlService->getIpAddr();
 			my $port             = $nosqlService->portMap->{'mongod'};
 			print $logHandle "Compacting MongoDB collections on $hostname\n";
 			$logger->debug(
@@ -1783,20 +1756,15 @@ sub cleanData {
 				$appInstanceNum
 			);
 
-			my $cmdString = "$sshConnectString du -hsc /mnt/mongoData";
-			print $logHandle "$cmdString\n";
-			my $cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
 			$logger->debug(
 				"cleanData. Compacting attendanceRecord collection on $hostname for workload ",
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
+			my $cmdString =
 "mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord";
 			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			my $cmdout = `$cmdString`;
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -1859,10 +1827,6 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString = "$sshConnectString du -hsc /mnt/mongoData";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
 
 		}
 	}

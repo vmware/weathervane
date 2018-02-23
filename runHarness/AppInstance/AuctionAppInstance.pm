@@ -606,23 +606,27 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
+		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
+		if ( $appServerCacheImpl eq 'ignite' ) {
 
-		my $copyOnRead = "false";
-		if ( $self->getParamValue('igniteCopyOnRead') ) {
-			$copyOnRead = "true";
+			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
+	
+			my $copyOnRead = "false";
+			if ( $self->getParamValue('igniteCopyOnRead') ) {
+				$copyOnRead = "true";
+			}
+			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
+
+			my $appServersRef = $self->getActiveServicesByType('appServer');
+			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
+			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 		}
-		$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-		my $appServersRef = $self->getActiveServicesByType('appServer');
-		my $app1Hostname  = $appServersRef->[0]->host->hostName;
-		$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
-			$zookeeperConnectionString .=
-			  $coordinationServer->host->ipAddr . ":" . $coordinationServer->portMap->{"client"} . ",";
+			my $zkHost = $service->getHostnameForUsedService($coordinationServer);
+			my $zkPort = $service->getPortNumberForUsedService( $coordinationServer, "client" );
+			$zookeeperConnectionString .= $zkHost . ":" . $zkPort . ",";
 		}
 		chop $zookeeperConnectionString;
 		$jvmOpts .= " -DZOOKEEPERCONNECTIONSTRING=$zookeeperConnectionString ";
@@ -656,17 +660,11 @@ sub getServiceConfigParameters {
 		}
 
 		my $numCpus;
-		if ( !$service->useDocker() ) {
-			$numCpus = $service->host->cpus;
-		}
-		elsif ( $service->dockerConfigHashRef->{'cpu-shares'} ) {
-			$numCpus = $service->dockerConfigHashRef->{'cpu-shares'};
-		}
-		elsif ( !$service->host->isBonneville() ) {
-			$numCpus = $service->host->cpus;
+		if ( $service->useDocker() && $service->getParamValue('dockerCpus')) {
+			$numCpus = $service->getParamValue('dockerCpus');
 		}
 		else {
-			$numCpus = 1;
+			$numCpus = $service->host->cpus;
 		}
 		
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');

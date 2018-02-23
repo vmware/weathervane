@@ -13,8 +13,10 @@ sigusr1()
    echo "signal USR1 received.  pid = $pid. Reloading"
    if pgrep -x "nginx" > /dev/null
    then
+	   perl /configure.pl
 	   /usr/sbin/nginx -s reload
 	else
+	   perl /configure.pl
 	   /usr/sbin/nginx &
 	fi
 }
@@ -22,11 +24,14 @@ sigusr1()
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
 
-echo "search weathervane eng.vmware.com" >> /etc/resolv.conf 
+chown -R nginx:nginx /var/cache/nginx
+
+perl /updateResolveConf.pl
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
+	perl /configure.pl
 	/usr/sbin/nginx  &
 fi
 

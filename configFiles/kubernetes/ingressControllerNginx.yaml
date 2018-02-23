@@ -150,6 +150,7 @@ spec:
         prometheus.io/port: '10254'
         prometheus.io/scrape: 'true' 
     spec:
+      serviceAccountName: nginx-ingress-serviceaccount
       containers:
         - name: nginx-ingress-controller
           image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.11.0

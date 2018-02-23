@@ -49,7 +49,7 @@ override 'initializeVmInfo' => sub {
 		foreach my $host (@$hostsRef) {
 			my $viHostname = $host->hostName;
 			$logger->debug("Getting VM info for virtual-infrastructure host $viHostname");
-			my @vmInfo = `ssh  -o 'StrictHostKeyChecking no' root\@$viHostname vim-cmd /vmsvc/getallvms`;
+			my @vmInfo = `ssh  -o 'StrictHostKeyChecking no' root\@$viHostname vim-cmd /vmsvc/getallvms 2>&1`;
 			foreach my $vmInfo (@vmInfo) {
 				if ( $vmInfo =~ /(\d+)\s+([^\s]*)\s+\[(.*)\]\s+([^\s]+).*/ ) {
 					my ( $vmid, $vmName, $datastore, $file ) = ( $1, $2, $3, $4 );

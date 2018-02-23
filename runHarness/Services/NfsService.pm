@@ -40,7 +40,7 @@ override 'initialize' => sub {
 
 };
 
-sub stop {
+sub stopInstance {
 	my ( $self, $logPath ) = @_;
 
 	my $scpConnectString = $self->host->scpConnectString;
@@ -138,7 +138,7 @@ sub stop {
 
 }
 
-sub start {
+sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 
@@ -392,24 +392,6 @@ sub configure {
 	close FILEIN;
 	`$scpConnectString /tmp/nfs$suffix root\@$scpHostString:/etc/sysconfig/nfs`;
 	
-}
-
-sub isBackupAvailable {
-	my ( $self, $backupDirPath, $applog ) = @_;
-
-	my $sshConnectString = $self->host->sshConnectString;
-
-	my $chkOut = `$sshConnectString \"[ -d $backupDirPath ] && echo 'found'\"`;
-	if ( !( $chkOut =~ /found/ ) ) {
-		return 0;
-	}
-	$chkOut = `$sshConnectString \"[ \\\"$(ls -A $backupDirPath)\\\" ] && echo \\\"Full\\\" || echo \\\"Empty\\\"\"`;
-	if ( $chkOut =~ /Empty/ ) {
-		return 0;
-	}
-
-	return 1;
-
 }
 
 sub stopStatsCollection {

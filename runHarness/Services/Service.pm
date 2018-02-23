@@ -24,8 +24,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 use namespace::autoclean;
 use Log::Log4perl qw(get_logger);
-
-use Hosts::Host;
+use ComputeResources::ComputeResource;
 use WeathervaneTypes;
 use Instance;
 
@@ -54,7 +53,7 @@ has 'appInstance' => (
 # Attributes for a specific instance
 has 'host' => (
 	is  => 'rw',
-	isa => 'Host',
+	isa => 'ComputeResource',
 );
 
 has 'dockerConfigHashRef' => (
@@ -307,6 +306,88 @@ sub create {
 	close $applog;
 }
 
+sub start {
+	my ($self, $serviceType, $users, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Service::Service");
+	$logger->debug(
+		"start serviceType $serviceType, Workload ",
+		$self->getParamValue('workloadNum'),
+		", appInstance ",
+		$self->getParamValue('instanceNum')
+	);
+
+	my $impl   = $self->appInstance->getParamValue('workloadImpl');
+	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+
+	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
+	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+
+	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
+		foreach my $service (@$servicesRef) {
+			$logger->debug( "Create " . $service->getDockerName() . "\n" );
+			$service->create($logPath);
+		}
+	}
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Configure " . $service->getDockerName() . "\n" );
+		$service->configure( $logPath, $users, $suffix );
+	}
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Start " . $service->getDockerName() . "\n" );
+		$service->startInstance($logPath);
+	}
+	
+	sleep 15;
+	
+}
+
+
+sub stop {
+	my ($self, $serviceType, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Service::Service");
+	$logger->debug(
+		"stop serviceType $serviceType, Workload ",
+		$self->getParamValue('workloadNum'),
+		", appInstance ",
+		$self->getParamValue('instanceNum')
+	);
+
+	my $impl   = $self->appInstance->getParamValue('workloadImpl');
+	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+
+	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
+	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Stop " . $service->getDockerName() . "\n" );
+		$service->stopInstance( $logPath );
+	}
+
+	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
+		foreach my $service (@$servicesRef) {
+			$logger->debug( "Remove " . $service->getDockerName() . "\n" );
+			$service->remove($logPath);
+		}
+	}
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "CleanLogFiles " . $service->getDockerName() . "\n" );
+		$service->cleanLogFiles();
+		$logger->debug( "CleanStatsFiles " . $service->getDockerName() . "\n" );
+		$service->cleanStatsFiles();
+	}
+
+	sleep 15;
+	
+}
+
+sub remove {
+	my ($self)            = @_;
+
+}
+
 sub pullDockerImage {
 	my ($self, $logfile)            = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
@@ -324,11 +405,6 @@ sub pullDockerImage {
 sub workloadRunning {
 	my ($self) = @_;
 	# Default workloadRunning is no-op
-}
-
-sub remove {
-	my ($self) = @_;
-	# Default remove is no-op
 }
 
 sub sanityCheck {
@@ -351,6 +427,18 @@ sub isReachable {
 }
 
 sub isUp {
+	my ($self, $fileout) = @_;
+	
+	return 1;
+}
+
+sub isRunning {
+	my ($self, $fileout) = @_;
+	
+	return 1;
+}
+
+sub isStopped {
 	my ($self, $fileout) = @_;
 	
 	return 1;
@@ -380,7 +468,7 @@ sub getImpl {
 	return $self->getParamValue($serviceType . 'Impl');
 }
 
-# This method returns true is both this and the other service are
+# This method returns true if both this and the other service are
 # running dockerized on the same Docker host and network but are not
 # using docker host networking
 sub corunningDockerized {

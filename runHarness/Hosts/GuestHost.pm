@@ -15,7 +15,7 @@ package GuestHost;
 
 use Moose;
 use MooseX::Storage;
-use Hosts::Host;
+use ComputeResources::Host;
 use VirtualInfrastructures::VirtualInfrastructure;
 use WeathervaneTypes;
 

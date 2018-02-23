@@ -14,6 +14,16 @@ sigterm()
    fi
 
    rm -f /fifo
+
+   echo "Performing sanity checks"
+   perl /sanityCheck.pl
+   if [ $? -eq 0 ]
+   then
+   	echo "Sanity Checks Passed"
+   else
+   	echo "Sanity Checks Failed"
+   fi
+
    if [ $numArgs -gt 0 ]; then
   	 eval "$cmd --shutdown"
    else
@@ -40,6 +50,7 @@ cmd=$*
 numArgs=$#
 
 if [ $CLEARBEFORESTART -eq 1 ]; then
+  echo "Clearing old MongoDB data"
   find /mnt/mongoData/* -delete
   find /mnt/mongoC1Data/* -delete
   find /mnt/mongoC2Data/* -delete
@@ -51,7 +62,7 @@ perl /configure.pl
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf &
+	/usr/bin/mongod -f /etc/mongod.conf --bind_ip_all &
 fi
 
 if [ ! -e "/fifo" ]; then

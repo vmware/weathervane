@@ -27,12 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.recipes.atomic.AtomicValue;
+import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
+import org.apache.curator.framework.recipes.atomic.PromotedToLock;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
@@ -51,13 +53,15 @@ import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 public class GroupMembershipServiceImpl implements GroupMembershipService {
 
 	private static final Logger logger = LoggerFactory.getLogger(GroupMembershipServiceImpl.class);
-	private Long nodeNumber = Long.getLong("nodeNumber", -1L);
 
 	private CuratorFramework client = null;
 
 	private Map<String, GroupMember> nameToGroupMap = new HashMap<String, GroupMember>();
 	private Map<String, LeaderSelector> nameToLeaderSelectorMap = new HashMap<String, LeaderSelector>();
 
+	private final int counterBaseSleepMs = 100;
+	private final int counterMaxRetries = 10;
+	
 	public GroupMembershipServiceImpl() {
 
 	}
@@ -79,7 +83,7 @@ public class GroupMembershipServiceImpl implements GroupMembershipService {
 			logger.info("Curator client could not connect");
 			client = null;
 		}
-
+		
 	}
 
 	@Override
@@ -108,7 +112,45 @@ public class GroupMembershipServiceImpl implements GroupMembershipService {
 	}
 	
 	@Override
-	public Map<String, byte[]> joinDistributedGroup(String groupName) {
+	public long nextLongValue(String groupName, String counterName) {
+		logger.info("nextLongValue for group " + groupName + ", counter " + counterName);
+		String counterPath = "/" + groupName + "/" + counterName;
+		String lockPath = "/" + groupName + "/" + counterName + "/lock";
+		
+		RetryPolicy counterRp = new ExponentialBackoffRetry(counterBaseSleepMs, counterMaxRetries);
+		PromotedToLock promotedToLock = PromotedToLock.builder().retryPolicy(counterRp).lockPath(lockPath).build();
+		
+		DistributedAtomicLong idCounter = new DistributedAtomicLong(client, counterPath, counterRp, promotedToLock);
+		try {
+			idCounter.initialize(0L);
+		} catch (Exception e) {
+			logger.warn("nextLongValue got exception when initializing: " + e.getMessage());
+			return 0L;
+		}
+		
+		try {
+			AtomicValue<Long> counterValue = idCounter.increment();
+			if (counterValue != null)  {
+				if (counterValue.succeeded()) {
+					logger.warn("nextLongValue returning " + counterValue.preValue());
+					return counterValue.preValue();
+				} else {
+					logger.warn("nextLongValue counter did not succeed. Returning 0.");
+					return 0;
+				}
+			} else {
+				logger.warn("nextLongValue counter did not succeed. Returning 0.");				
+				return 0;
+			}
+		} catch (Exception e) {
+			logger.warn("nextLongValue got exception when incrementing: " + e.getMessage());
+			return 0L;
+		}
+		
+	}
+
+	@Override
+	public Map<String, byte[]> joinDistributedGroup(String groupName, long nodeNumber) {
 		logger.warn("Joining distributed group " + groupName);
 
 		GroupMember groupMember = new org.apache.curator.framework.recipes.nodes.GroupMember(client, "/" + groupName, Long.toString(nodeNumber));
@@ -161,7 +203,7 @@ public class GroupMembershipServiceImpl implements GroupMembershipService {
 	}
 
 	@Override
-	public void registerTakeLeadershipCallback(String groupName, Consumer<Boolean> consumer) {
+	public void registerTakeLeadershipCallback(String groupName, Consumer<Boolean> consumer, long nodeNumber) {
 		LeaderSelectorListener listener = new LeaderSelectorListenerAdapter() {
 
 			@Override

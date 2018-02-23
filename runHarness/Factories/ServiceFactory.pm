@@ -20,17 +20,23 @@ use Services::HaproxyService;
 use Services::HaproxyDockerService;
 use Services::HttpdService;
 use Services::NginxService;
+use Services::NginxKubernetesService;
 use Services::NginxDockerService;
 use Services::TomcatService;
+use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::MysqlService;
 use Services::PostgresqlService;
+use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::MongodbService;
+use Services::MongodbKubernetesService;
 use Services::MongodbDockerService;
 use Services::ZookeeperService;
+use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
 use Services::RabbitmqService;
+use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
 use Services::ConfigurationManager;
@@ -64,13 +70,19 @@ sub getServiceByType {
 	my ( $self, $paramHashRef, $serviceType, $numScvInstances, $appInstance ) = @_;
 	my $service;
 
-
 	my $serviceName = $paramHashRef->{$serviceType . "Impl"};
 	
 	my $docker = $paramHashRef->{"useDocker"};
 
 	if ( $serviceName eq "tomcat" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = TomcatKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = TomcatDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -109,7 +121,14 @@ sub getServiceByType {
 			);
 	}
 	elsif ( $serviceName eq "zookeeper" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = ZookeeperKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = ZookeeperDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -123,7 +142,14 @@ sub getServiceByType {
 		}
 	}
 	elsif ( $serviceName eq "nginx" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = NginxKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = NginxDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -143,7 +169,14 @@ sub getServiceByType {
 		);
 	}
 	elsif ( $serviceName eq "postgresql" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = PostgresqlKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = PostgresqlDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -156,7 +189,14 @@ sub getServiceByType {
 		}
 	}
 	elsif ( $serviceName eq "mongodb" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = MongodbKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = MongodbDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -169,7 +209,14 @@ sub getServiceByType {
 		}
 	}
 	elsif ( $serviceName eq "rabbitmq" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = RabbitmqKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = RabbitmqDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
@@ -188,7 +235,14 @@ sub getServiceByType {
 		);
 	}
 	elsif ( $serviceName eq "webConfig" ) {
-		if ($docker) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = ConfigurationManagerKubernetes->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
 			$service = ConfigurationManagerDocker->new(
 					paramHashRef => $paramHashRef,
 					appInstance => $appInstance,

@@ -150,6 +150,12 @@ override 'initialize' => sub {
 	}
 	$self->setParamValue( 'distDir', $distDir );
 
+	my $configDir  = $self->getParamValue('configDir');
+	if ( !( $configDir =~ /^\// ) ) {
+		$configDir = $weathervaneHome . "/" . $configDir;
+	}
+	$self->setParamValue('configDir', $configDir);
+
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
 	if ( $#$userLoadPath >= 0 ) {
@@ -484,6 +490,36 @@ sub hasLoadPath {
 sub getWwwHostname {
 	my ($self) = @_;
 	return $self->getParamValue('wwwHostname');
+}
+
+sub getWwwIpAddrsRef {
+	my ($self) = @_;
+	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
+	my $workloadNum    = $self->getParamValue('workloadNum');
+
+	my $wwwIpAddrsRef = [];
+	if ( $self->getParamValue('useVirtualIp') ) {
+		$logger->debug("configure for workload $workloadNum, appInstance uses virtualIp");
+		my $wwwHostname = $self->getWwwHostname();
+		my $wwwIpsRef = Utils::getIpAddresses($wwwHostname);
+		foreach my $ip (@$wwwIpsRef) {
+			# When using virtualIP addresses, all edge services must use the same
+			# default port numbers
+			push @$wwwIpAddrsRef, [$ip, 80, 443];				
+		}
+	}
+	else {
+		my $edgeService  = $self->getEdgeService();
+		my $edgeServices = $self->getActiveServicesByType($edgeService);
+		$logger->debug(
+			"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
+		);
+		foreach my $service (@$edgeServices) {
+			push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
+		}
+	}
+	
+	return $wwwIpAddrsRef;
 }
 
 sub clearReloadDb {
@@ -841,287 +877,6 @@ sub getFindMaxInfoString {
 	$returnString .= " MinRateStep = " . $self->minRateStep . "\n";
 	return $returnString;
 }
-
-sub configureAndStartInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $users  = $self->users;
-
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
-	my $impl         = $self->getParamValue('workloadImpl');
-	my $suffix       = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "Create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-}
-
-sub configureAndStartFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"configureAndStartFrontendServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $users = $self->users;
-
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
-
-	my $impl         = $self->getParamValue('workloadImpl');
-	my $suffix       = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-	my $serviceTypes = $WeathervaneTypes::frontendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "Create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-}
-
-sub configureAndStartBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"configureAndStartBackendServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $users = $self->users;
-
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
-
-	my $impl   = $self->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-
-	my $serviceTypes          = $WeathervaneTypes::backendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "Create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-
-		sleep 15;
-	}
-}
-
-sub configureAndStartDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"configureAndStartDataServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $users = $self->users;
-
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
-
-	my $impl   = $self->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-
-	my $serviceTypes          = $WeathervaneTypes::dataServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "Create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
-		}
-
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-}
-
-sub startInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-}
-
-sub startFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"startFrontendServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes = $WeathervaneTypes::frontendServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-	$logger->debug(
-		"startFrontendServices finish ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-}
-
-sub startBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"startBackendServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes = $WeathervaneTypes::backendServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-	$logger->debug(
-		"startBackendServices finish ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-
-}
-
-sub startDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"startDataServices start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "Start " . $service->getDockerName() . "\n" );
-			$service->start($setupLogDir);
-		}
-	}
-	$logger->debug(
-		"startDataServices finish ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-}
-
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -1222,287 +977,16 @@ sub unRegisterPortNumbers {
 	}
 }
 
-sub stopInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"stopInfrastructureServices for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			if ( $service->isReachable() ) {
-				$logger->debug( "stop " . $service->getDockerName() . "\n" );
-				$service->stop($setupLogDir);
-			}
-		}
-	}
-}
-
-sub stopFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug("");
-	my $impl = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"stopFrontendServices for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
-	my $serviceTypes = $WeathervaneTypes::frontendServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			if ( $service->isReachable() ) {
-				$logger->debug( "stop " . $service->getDockerName() . "\n" );
-				$service->stop($setupLogDir);
-			}
-		}
-	}
-}
-
-sub stopBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"stopBackendServices for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
-
-	my $serviceTypes = $WeathervaneTypes::backendServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			if ( $service->isReachable() ) {
-				$logger->debug( "stop " . $service->getDockerName() . "\n" );
-				$service->stop($setupLogDir);
-			}
-		}
-	}
-}
-
-sub stopDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"stopDataServices for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
-
-	my $serviceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			if ( $service->isReachable() ) {
-				$logger->debug( "stop " . $service->getDockerName() . "\n" );
-				$service->stop($setupLogDir);
-			}
-		}
-	}
-}
-
-sub removeInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug("removing infrastructure services with log dir $setupLogDir");
-
-	my $serviceTypes          = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				if ( $service->isReachable() ) {
-					$logger->debug( "remove " . $service->getDockerName() . "\n" );
-					$service->remove($setupLogDir);
-				}
-			}
-		}
-	}
-}
-
-sub removeFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-	$logger->debug(
-		"removeFrontendServices for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
-		", impl = $impl"
-	);
-
-	my $serviceTypes          = $WeathervaneTypes::frontendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				if ( $service->isReachable() ) {
-					$logger->debug( "remove " . $service->getDockerName() . "\n" );
-					$service->remove($setupLogDir);
-				}
-			}
-		}
-	}
-}
-
-sub removeBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"removeBackendServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                      $self->getParamValue('appInstanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::backendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				if ( $service->isReachable() ) {
-					$logger->debug( "remove " . $service->getDockerName() . "\n" );
-					$service->remove($setupLogDir);
-				}
-			}
-		}
-	}
-}
-
-sub removeDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"removeDataServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                   $self->getParamValue('appInstanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::dataServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				if ( $service->isReachable() ) {
-					$logger->debug( "remove " . $service->getDockerName() . "\n" );
-					$service->remove($setupLogDir);
-				}
-			}
-		}
-	}
-}
-
-sub createInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $impl   = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getActiveServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-	}
-}
-
-sub createFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"createFrontendServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                       $self->getParamValue('appInstanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::frontendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getActiveServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-	}
-}
-
-sub createBackendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"createBackendServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                      $self->getParamValue('appInstanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::backendServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getActiveServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-	}
-}
-
-sub createDataServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"createDataServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                   $self->getParamValue('appInstanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	my $serviceTypes          = $WeathervaneTypes::dataServiceTypes{$impl};
-	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		if ( $serviceType ~~ @$dockerServiceTypesRef ) {
-			my $servicesRef = $self->getActiveServicesByType($serviceType);
-			foreach my $service (@$servicesRef) {
-				$logger->debug( "create " . $service->getDockerName() . "\n" );
-				$service->create($setupLogDir);
-			}
-		}
-	}
-}
-
-sub configureInfrastructureServices {
-	my ( $self, $setupLogDir ) = @_;
+sub startServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users  = $self->users;
+	my $impl         = $self->getParamValue('workloadImpl');
+	
+	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
 	# If in interactive mode, then configure services for maxUsers load
 	my $interactive = $self->getParamValue('interactive');
@@ -1511,75 +995,218 @@ sub configureInfrastructureServices {
 		$users = $maxUsers;
 	}
 
-	my $impl   = $self->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-
-	my $serviceTypes = $WeathervaneTypes::infrastructureServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
-		}
-	}
-}
-
-sub configureFrontendServices {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"configureFrontendServices for workload ",
+		"startServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->getParamValue('appInstanceNum'),
+		", impl = $impl", 
+		" users = $users",
+		" setupLogDir = $setupLogDir"
 	);
-	my $users = $self->users;
 
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
-	my $impl   = $self->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
-
-	my $serviceTypes = $WeathervaneTypes::frontendServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
+	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
+	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
+		if ($#{$servicesRef} >= 0) {
+			# Use the first instance of the service for starting the 
+			# service instances
+			my $serviceRef = $servicesRef->[0];
+			$serviceRef->start($serviceType, $users, $setupLogDir);
+		} else {
+			next;
 		}
 	}
+	
+	# Don't return until all services are ready
+	$self->isRunningAndUpDataServices($serviceTier, $logFile);
+	
+	close $logFile;
+	
 }
 
-sub configureBackendServices {
-	my ( $self, $setupLogDir ) = @_;
+sub stopServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"configureBackendServices for workload ",
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $appInstanceName = $self->getParamValue('appInstanceName');
+	$logger->debug("stopServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
-	);
-	my $users = $self->users;
+		$self->getParamValue('appInstanceNum'),
+		", impl = $impl"	);
 
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
+	my $logName         = "$setupLogDir/stop-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
+
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};	
+	foreach my $serviceType ( reverse @$serviceTypesRef ) {
+		my $servicesRef = $self->getAllServicesByType($serviceType);
+		if ($#{$servicesRef} >= 0) {
+			# Use the first instance of the service for stopping the 
+			# service instances
+			my $serviceRef = $servicesRef->[0];
+			if ( $serviceRef->isReachable() ) {
+				$logger->debug( "stop " . $serviceRef->getDockerName() . "\n" );
+				$serviceRef->stop($serviceType, $setupLogDir);
+			}
+		} else {
+			next;
+		}
+		
 	}
-	my $impl   = $self->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	
+	my $allIsStopped = $self->waitForServicesStopped($serviceTier, 15, 6, 15, $logFile);
+	close $logFile;
+	
+}
 
-	my $serviceTypes = $WeathervaneTypes::backendServiceTypes{$impl};
-	foreach my $serviceType ( reverse @$serviceTypes ) {
+sub isRunningAndUpDataServices {
+	my ( $self, $serviceTier, $logFile ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
+	my $console_logger = get_logger("Console");
+	
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+		
+	# Make sure that all of the services are running and up (ready for requests)
+	$logger->debug(
+		"Checking that all $serviceTier services are running for appInstance $appInstanceNum of workload $workloadNum." );
+	my $allIsRunning = $self->waitForServicesRunning($serviceTier, 15, 8, 15, $logFile);
+	if ( !$allIsRunning ) {
+		$console_logger->error(
+			"Couldn't bring to running all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
+		exit 1;
+	}
+	$logger->debug(
+		"Checking that all $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
+	my $allIsUp = $self->waitForServicesUp($serviceTier, 0, 6, 15, $logFile);
+	if ( !$allIsUp ) {
+		$console_logger->error(
+			"Couldn't bring up all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
+		exit 1;
+	}
+	$logger->debug( "All $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
+	return 1;
+}
+
+# Running == the process is started, but the application may not be ready to accept requests
+sub waitForServicesRunning {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsRunning = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsRunning &= $serviceRef->isRunning($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsRunning) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
+# Running == the process is started, but the application may not be ready to accept requests
+sub waitForServicesStopped {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsStopped = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsStopped &= $serviceRef->isStopped($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsStopped) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
+# Up == the process is started and the application is ready to accept requests
+sub waitForServicesUp {
+	my ( $self, $serviceTier, $initialDelaySeconds, $retries, $periodSeconds, $logFile ) = @_;
+	
+	sleep $initialDelaySeconds;
+	
+	my $impl   = $self->getParamValue('workloadImpl');
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	while ($retries >= 0) {
+		my $allIsUp = 1;
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getActiveServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$allIsUp &= $serviceRef->isUp($logFile);
+			} else {
+				next;
+			}
+		}
+		
+		if ($allIsUp) {
+			return 1;
+		}
+		sleep $periodSeconds;
+		$retries--;
+	}
+	return 0;
+}
+
+sub removeServices {
+	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $impl   = $self->getParamValue('workloadImpl');
+	$logger->debug("removing $serviceTier services with log dir $setupLogDir");
+
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	foreach my $serviceType ( reverse @$serviceTypesRef ) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "configure " . $service->getDockerName() . "\n" );
-			$service->configure( $setupLogDir, $users, $suffix );
+		if ($#{$servicesRef} >= 0) {
+			# Use the first instance of the service for removing the 
+			# service instances
+			my $serviceRef = $servicesRef->[0];
+			$serviceRef->remove($setupLogDir);
+		} else {
+			next;
 		}
 	}
 }
@@ -1601,12 +1228,13 @@ sub isUp {
 	my $log;
 	open( $log, " > $logName " ) or die " Error opening $logName: $!";
 
-	my $dataServiceTypes           = $WeathervaneTypes::dataServiceTypes{$impl};
-	my $backendServiceTypes        = $WeathervaneTypes::backendServiceTypes{$impl};
-	my $frontendServiceTypes       = $WeathervaneTypes::frontendServiceTypes{$impl};
-	my $infrastructureServiceTypes = $WeathervaneTypes::frontendServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
+	my $backendServiceTypes        = $serviceTiersHashRef->{"backend"};
+	my $frontendServiceTypes       = $serviceTiersHashRef->{"frontend"};
+	my $infrastructureServiceTypes = $serviceTiersHashRef->{"infrastructure"};
 
-	foreach my $serviceType ( @$dataServiceTypes, @$backendServiceTypes, @$frontendServiceTypes ) {
+	foreach my $serviceType ( @$dataServiceTypes, @$backendServiceTypes, @$frontendServiceTypes, @$infrastructureServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$isUp = $service->isUp($log);
@@ -1615,9 +1243,13 @@ sub isUp {
 				if ( ( $retriesRemaining == 0 ) && !$isUp ) {
 
 					# no more retries so give an error
+					my $hostname = $service->host->clusterName;
+					if (!$hostname) {
+						$hostname = $service->host->hostName;
+					}
 					$console_logger->error( "Couldn't start $serviceType "
 						  . $service->getImpl() . " on "
-						  . $service->host->hostName
+						  . $hostname
 						  . ". Check logs for run." );
 				}
 			}
@@ -1654,7 +1286,8 @@ sub isUpDataServices {
 	open( $log, " > $logName " ) or die " Error opening $logName: $!";
 
 	my $isUp;
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 
 	do {
 		sleep 30;
@@ -1702,7 +1335,8 @@ sub clearDataServicesBeforeStart {
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -1728,7 +1362,8 @@ sub clearDataServicesAfterStart {
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -1758,7 +1393,8 @@ sub cleanDataServiceStatsFiles {
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 
 		my $impl             = $self->getParamValue('workloadImpl');
-		my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+		my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+		my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 		foreach my $serviceType (@$dataServiceTypes) {
 			my $servicesRef = $self->getActiveServicesByType($serviceType);
 			foreach my $service (@$servicesRef) {
@@ -1804,7 +1440,8 @@ sub cleanDataServiceLogFiles {
 
 	# clean log files on services
 	my $impl             = $self->getParamValue('workloadImpl');
-	my $dataServiceTypes = $WeathervaneTypes::dataServiceTypes{$impl};
+	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
+	my $dataServiceTypes           = $serviceTiersHashRef->{"data"};
 	foreach my $serviceType (@$dataServiceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
@@ -2039,7 +1676,11 @@ sub getLogFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->hostName;
+					my $name = $service->host->clusterName;
+					if (!$name) {
+						$name = $service->host->hostName;
+					}
+					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
 					}
@@ -2086,7 +1727,11 @@ sub getConfigFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->hostName;
+					my $name = $service->host->clusterName;
+					if (!$name) {
+						$name = $service->host->hostName;
+					}
+					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
 					}
@@ -2139,6 +1784,12 @@ sub sanityCheckServices {
 	return $passed;
 }
 
+sub cleanup {
+	my ( $self, $cleanupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+
+}
+
 sub cleanData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -2155,11 +1806,13 @@ sub cleanData {
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $users = $self->users;
 	$logger->debug(
 		"prepareData for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum')
+		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		", users ",            $users,
+		", logDir ",            $setupLogDir
 	);
-	my $users = $self->users;
 
 	return $self->dataManager->prepareData( $users, $setupLogDir );
 }
@@ -2211,10 +1864,13 @@ sub getHostStatsSummary {
 		my $servicesListRef = $self->getActiveServicesByType($serviceType);
 
 		foreach my $service (@$servicesListRef) {
-			if ($service->host->getParamValue('vicHost')) {
-				return;
+			my $hostname = $service->host->clusterName;
+			if (!$hostname) {
+				$hostname = $service->host->hostName;
+				if ($service->host->getParamValue('vicHost')) {
+					return;
+				}
 			}
-			my $hostname = $service->host->hostName;
 			if (   ( !exists $csvRefByHostname{$hostname} )
 				|| ( !defined $csvRefByHostname{$hostname} ) )
 			{

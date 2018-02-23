@@ -21,7 +21,7 @@ use Parameters qw(getParamValue);
 use POSIX;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
 
 use strict;
 
@@ -120,24 +120,30 @@ override 'run' => sub {
 	## get the config files
 	$self->getConfigFiles();
 
-	## get the stats logs
+	## get the stats files
 	$self->getStatsFiles();
 
+	## get the logs
+	$self->getLogFiles();
+
 	my $sanityPassed = 1;
+
 	if ( $self->getParamValue('stopServices') ) {
+
 		## stop the services
-		$self->stopFrontendServices($cleanupLogDir);
-		$self->stopBackendServices($cleanupLogDir);
+		my @tiers = qw(frontend backend data infrastructure);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 
-		# cleanup the databases
-		$self->cleanData($cleanupLogDir);
+ 		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
+		if ($sanityPassed) {
+			$console_logger->info("All Sanity Checks Passed");
+		}
+		else {
+			$console_logger->info("Sanity Checks Failed");
+		}
 
-		$self->stopDataServices($cleanupLogDir);
-		$self->stopInfrastructureServices($cleanupLogDir);
+		$debug_logger->debug("Unregister port numbers");
 		$self->unRegisterPortNumbers();
-
-		## get the logs
-		$self->getLogFiles();
 
 		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
@@ -147,16 +153,11 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		$self->removeFrontendServices($cleanupLogDir);
-		$self->removeBackendServices($cleanupLogDir);
-		$self->removeDataServices($cleanupLogDir);
-		$self->removeInfrastructureServices($cleanupLogDir);
+		# Let the appInstances clean any run specific data or services
+		$self->cleanupAppInstances($cleanupLogDir);
+
 		# clean up old logs and stats
 		$self->cleanup();
-	}
-	else {
-		## get the logs
-		$self->getLogFiles();
 	}
 
 	# Put a file in the output/seqnum directory with the run name

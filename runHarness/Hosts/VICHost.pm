@@ -15,7 +15,7 @@ package VICHost;
 
 use Moose;
 use MooseX::Storage;
-use Hosts::Host;
+use ComputeResources::Host;
 use VirtualInfrastructures::VirtualInfrastructure;
 use WeathervaneTypes;
 use Log::Log4perl qw(get_logger);
@@ -86,10 +86,6 @@ override 'unRegisterPortNumber' => sub {
 	my ( $self ) = @_;
 
 };
-
-sub restartNtp {
-	my ($self) = @_;
-}
 
 sub startNscd {
 	my ($self)           = @_;

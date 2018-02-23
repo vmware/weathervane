@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
+my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -133,6 +133,7 @@ runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
 runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
 runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
+
 # configurationManager
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
 runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationmanager/auctionConfigManager.jar");
@@ -146,6 +147,32 @@ runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-a
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
 runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
+
+# workload driver
+runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+runAndLog($fileout, "cp ./dist/workloadDriver.jar ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "cp -r ./dist/workloadDriverLibs ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+
+# data manager
+runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+runAndLog($fileout, "cp ./dist/dbLoader.jar ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctiondatamanager/dbLoaderLibs");
+
+# run harness
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/dist");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runharness/weathervane.pl");
+runAndLog($fileout, "cp ./version.txt ./dockerImages/runharness/version.txt");
+runAndLog($fileout, "cp -r ./runHarness ./dockerImages/runharness/runHarness");
+runAndLog($fileout, "cp -r ./dist ./dockerImages/runharness/dist");
+runAndLog($fileout, "cp -r ./configFiles ./dockerImages/runharness/configFiles");
+runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 
 
 my $version = `cat version.txt`;
@@ -203,5 +230,20 @@ foreach my $imageName (@imageNames) {
 	
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version);	
 }
+
+# Clean up
+runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/dist");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
+runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
+runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
 
 1;

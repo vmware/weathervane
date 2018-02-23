@@ -415,7 +415,7 @@ sub dockerRun {
 	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
 		$envVarHashRef, $dockerConfigHashRef, $entryPoint, $cmd, $needsTty) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	$logger->debug("name = $name");
+	$logger->debug("name = $name, impl = $impl");
 
 	my $version  = $self->getParamValue('dockerWeathervaneVersion');
 	my $dockerHostString  = $self->dockerHostString;
@@ -558,6 +558,20 @@ sub dockerGetLogs {
 	return "";
 }
 
+sub dockerFollowLogs {
+	my ( $self, $logFileHandle, $name, $outFile ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	
+	my $dockerHostString  = $self->dockerHostString;
+	$logger->debug("dockerFollowLogs name = $name, outfile = $outFile, dockerHostString = $dockerHostString");
+	
+	if ($self->dockerExists($logFileHandle, $name)) {
+		my $out = `$dockerHostString docker logs --follow $name 2>&1 > $outFile`;
+		return $out;
+	}
+	return "";
+}
+
 sub dockerVolumeCreate {
 	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
 	print $logFileHandle "dockerVolumeCreate $volumeName\n";
@@ -652,7 +666,9 @@ sub dockerExec {
 	$logger->debug("name = $name, hostname = $hostname");
 		
 	my $out = `$dockerHostString docker exec $name $commandString 2>&1`;
+	$logger->debug("$dockerHostString docker exec $name $commandString 2>&1");
 	print $logFileHandle "$dockerHostString docker exec $name $commandString 2>&1\n";
+	$logger->debug("docker exec output: $out");
 	print $logFileHandle "$out\n";
 	
 	return $out;

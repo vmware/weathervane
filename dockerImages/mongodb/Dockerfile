@@ -8,7 +8,6 @@ COPY configure.pl /configure.pl
 COPY sanityCheck.pl /sanityCheck.pl
 
 RUN mkdir /mnt/mongoData && \
-	mkdir /mnt/mongoBackup && \
 	mkdir /mnt/mongoC1Data && \
 	mkdir /mnt/mongoC2Data && \
 	mkdir /mnt/mongoC3Data && \

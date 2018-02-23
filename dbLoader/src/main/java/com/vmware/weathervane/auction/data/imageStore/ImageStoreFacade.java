@@ -105,8 +105,8 @@ public interface ImageStoreFacade {
 	/*
 	 * Methods for recording and retrieving the benchmark scale
 	 */
-	void setScale(ImageStoreBenchmarkInfo benchmarkInfo);
-	ImageStoreBenchmarkInfo getScale() throws NoScaleException, NoScaleNeededException;
+	void setBenchmarkInfo(ImageStoreBenchmarkInfo benchmarkInfo);
+	ImageStoreBenchmarkInfo getBenchmarkInfo() throws NoBenchmarkInfoException, NoBenchmarkInfoNeededException;
 
 	void stopServiceThreads();
 

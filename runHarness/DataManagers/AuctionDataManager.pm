@@ -33,48 +33,146 @@ extends 'DataManager';
 
 has '+name' => ( default => 'Weathervane', );
 
-has 'dbLoaderClasspath' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 # default scale factors
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
 
-# There are enough users and auctions in the database to
-# support running each scale at up to 2x the officially
-# designated cut-off
-my $maxUsersMultiplier = 2;
-my @scaleLevelMaxUsers = ( 125.0, 25000.0, 50000.0, 100000.0, 200000.0 );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
-	# get the imageStore type for use when creating directory
-	# hierarchy for backups.  For the purposes of backups,
-	# filesystemApp is the same as filesystem
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $imageStoreType eq "filesystemApp" ) {
-		$self->setParamValue( 'imageStoreType', 'filesystem' );
-	}
-
 	super();
-
-	my $weathervaneHome  = $self->getParamValue('weathervaneHome');
-	my $dbLoaderImageDir = $self->getParamValue('dbLoaderImageDir');
-	if ( !( $dbLoaderImageDir =~ /^\// ) ) {
-		$dbLoaderImageDir = $weathervaneHome . "/" . $dbLoaderImageDir;
-	}
-	$self->setParamValue( 'dbLoaderImageDir', $dbLoaderImageDir );
-
-	my $dbLoaderDir = $self->getParamValue('dbLoaderDir');
-	$self->setParamValue( 'dbLoaderDir',
-		"$dbLoaderDir/dbLoader.jar:$dbLoaderDir/dbLoaderLibs/*:$dbLoaderDir/dbLoaderLibs" );
-
-	$self->dbLoaderClasspath( "$dbLoaderDir/dbLoader.jar:$dbLoaderDir/dbLoaderLibs/*:$dbLoaderDir/dbLoaderLibs" );
-
 };
+
+sub startAuctionDataManagerContainer {
+	my ( $self, $users, $applog ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $name        = $self->getParamValue('dockerName');
+	
+	$self->host->dockerStopAndRemove( $applog, $name );
+
+	# Calculate the values for the environment variables used by the auctiondatamanager container
+	my %envVarMap;
+	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
+	$envVarMap{"USERS"} = $users;	
+	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
+	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
+	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
+
+	my $maxDuration = $self->getParamValue('maxDuration');
+	my $totalTime =
+	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
+	$envVarMap{"MAXDURATION"} = max( $maxDuration, $totalTime );
+
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServerRef = $nosqlServersRef->[0];
+	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
+	$envVarMap{"NUMNOSQLSHARDS"} = $numNosqlShards;
+	
+	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
+	$envVarMap{"NUMNOSQLREPLICAS"} = $numNosqlReplicas;
+	
+	my $mongodbHostname;
+	my $mongodbPort;
+	if ( $nosqlServerRef->numNosqlShards == 0 ) {
+		$mongodbHostname = $nosqlServerRef->getIpAddr();
+		$mongodbPort   = $nosqlServerRef->portMap->{'mongod'};
+	}
+	else {
+		# The mongos will be running on an appServer
+		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
+		my $appServerRef = $appServersRef->[0];
+		$mongodbHostname = $appServerRef->getIpAddr();
+		$mongodbPort   = $appServerRef->portMap->{'mongos'};
+	}
+
+	my $mongodbReplicaSet = "$mongodbHostname:$mongodbPort";
+	if ( $nosqlServerRef->numNosqlReplicas > 0 ) {
+		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
+			my $nosqlService  = $nosqlServersRef->[$i];
+			my $mongodbHostname = $nosqlService->getIpAddr();
+			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
+			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
+		}
+	}
+	$envVarMap{"MONGODBHOSTNAME"} = $mongodbHostname;
+	$envVarMap{"MONGODBPORT"} = $mongodbPort;
+	$envVarMap{"MONGODBREPLICASET"} = $mongodbReplicaSet;
+	
+	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbService     = $dbServicesRef->[0];
+	my $dbHostname    = $dbService->getIpAddr();
+	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
+	$envVarMap{"DBHOSTNAME"} = $dbHostname;
+	$envVarMap{"DBPORT"} = $dbPort;
+	
+	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+	$envVarMap{"SPRINGPROFILESACTIVE"} = $springProfilesActive;
+	
+	# Start the  auctiondatamanager container
+	my %volumeMap;
+	my %portMap;
+	my $directMap = 0;
+	my $cmd        = "";
+	my $entryPoint = "";
+	my $dockerConfigHashRef = {};	
+	if ($self->getParamValue('dockerNet')) {
+		$dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
+	}
+	if ($self->getParamValue('dockerCpus')) {
+		$dockerConfigHashRef->{'cpus'} = $self->getParamValue('dockerCpus');
+	}
+	if ($self->getParamValue('dockerCpuShares')) {
+		$dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
+	} 
+	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
+		$dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
+		
+		if ($self->getParamValue('dockerCpus') == 0) {
+			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
+			# set dockerCpus accordingly so that services can know how many CPUs the 
+			# container has when configuring
+			my $numCpus = 0;
+			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
+			foreach my $cpuGroup (@cpuGroups) {
+				if ($cpuGroup =~ /-/) {
+					# This cpu group is a range
+					my @rangeEnds = split(/-/,$cpuGroup);
+					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
+				} else {
+					$numCpus++;
+				}
+			}
+			$self->setParamValue('dockerCpus', $numCpus);
+		}
+	}
+	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
+		$dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
+	}
+	if ($self->getParamValue('dockerMemory')) {
+		$dockerConfigHashRef->{'memory'} = $self->getParamValue('dockerMemory');
+	}
+	if ($self->getParamValue('dockerMemorySwap')) {
+		$dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
+	}	
+	$self->host->dockerRun(
+		$applog, $name,
+		"auctiondatamanager", $directMap, \%portMap, \%volumeMap, \%envVarMap, $dockerConfigHashRef,
+		$entryPoint, $cmd, 1
+	);
+}
+
+sub stopAuctionDataManagerContainer {
+	my ( $self, $applog ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $name        = $self->getParamValue('dockerName');
+
+	$self->host->dockerStopAndRemove( $applog, $name );
+
+}
 
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
@@ -82,19 +180,31 @@ sub prepareData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $name        = $self->getParamValue('dockerName');
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $maxUsers = $self->getParamValue('maxUsers');
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
-	$console_logger->info(
-		"Configuring and starting data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n" );
+	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
 
-	# The data services must be started for checking whether the data is loaded
+	$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+	$logger->debug("prepareData users = $users, logPath = $logPath");
+	print $logHandle "prepareData users = $users, logPath = $logPath\n";
+
+	# Start the data services
 	if ($reloadDb) {
+		# Avoid an extra stop/start cycle for the data services since we know
+		# we are reloading the data
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
-	$appInstance->configureAndStartDataServices($logPath);
+	$appInstance->startServices("data", $logPath);
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();
 	sleep(10);
@@ -110,11 +220,13 @@ sub prepareData {
 	}
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
 
+	$self->startAuctionDataManagerContainer ($users, $logHandle);
+		
 	my $loadedData = 0;
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
-		# Either need to or have been asked to load the data
+		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
 		$loadedData = 1;
@@ -124,44 +236,16 @@ sub prepareData {
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->isBackupAvailable( $users, $logPath ) ) {
-
-				$console_logger->info( ": Backup is available at the proper scale for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Restoring backup.\n" );
-
-				# There is a backup, so use it
-				$appInstance->stopDataServices($logPath);
-				$appInstance->unRegisterPortNumbers();
-				$appInstance->cleanupDataServices();
-				$appInstance->removeDataServices($logPath);
-				$retVal = $self->restoreBackup( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-
-				$appInstance->configureAndStartDataServices( $logPath, $users );
-				# Make sure that the services know their external port numbers
-				$self->appInstance->setExternalPortNumbers();
-
-				# Make sure that all of the data services are up
-				my $allUp = $appInstance->isUpDataServices($logPath);
-				if ( !$allUp ) {
-					$console_logger->error( "Couldn't bring up all data services for appInstance "
-						  . "$appInstanceNum of workload $workloadNum." );
-					return 0;
-				}
-
-			}
-			elsif ( $self->getParamValue('loadDb') ) {
+			if ( $self->getParamValue('loadDb') ) {
 				$console_logger->info(
-					    "Backup is not available at the proper scale for $users users for appInstance "
+					    "Data is not loaded for $users users for appInstance "
 					  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
-				# There is no backup, so load the data
-				$appInstance->stopDataServices($logPath);
+				# Load the data
+				$appInstance->stopServices("data", $logPath);
 				$appInstance->unRegisterPortNumbers();
-				$appInstance->cleanupDataServices();
-				$appInstance->removeDataServices($logPath);
 				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->configureAndStartDataServices( $logPath, $users );
+				$appInstance->startServices("data", $logPath);
 				# Make sure that the services know their external port numbers
 				$self->appInstance->setExternalPortNumbers();
 
@@ -186,8 +270,8 @@ sub prepareData {
 
 			}
 			else {
-				$console_logger->error( "Data not loaded at the proper scale for $users users  for appInstance "
-					  . "$appInstanceNum of workload $workloadNum and no backup available. To load data, run again with loadDb=true.  Exiting.\n"
+				$console_logger->error( "Data not loaded for $users users for appInstance "
+					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
 				);
 				return 0;
 
@@ -198,45 +282,7 @@ sub prepareData {
 				  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
 
 			# cleanup the databases from any previous run
-			$self->cleanData( $users, $logPath );
-
-		}
-	}
-
-	if ( $self->getParamValue('rebackup')
-		|| ( $loadedData && $self->getParamValue('backup') ) )
-	{
-
-		$appInstance->stopDataServices($logPath);
-		$appInstance->unRegisterPortNumbers();
-		$appInstance->cleanupDataServices();
-		$appInstance->removeDataServices($logPath);
-		$retVal = $self->createBackup( $users, $logPath );
-		if ( !$retVal ) { return 0; }
-		$appInstance->configureAndStartDataServices( $logPath, $users );
-		# Make sure that the services know their external port numbers
-		$self->appInstance->setExternalPortNumbers();
-
-		# Make sure that all of the data services are up
-		my $allUp = $appInstance->isUpDataServices($logPath);
-		if ( !$allUp ) {
-			$console_logger->error(
-				"Couldn't bring up all data services for appInstance " . "$appInstanceNum of workload $workloadNum." );
-			return 0;
-		}
-
-		# clear rebackup so we don't backup twice
-		$self->setParamValue( 'rebackup', 0 );
-	}
-
-	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
-	$springProfilesActive .= ",dbprep";
-	my $dbLoaderClasspath = $self->dbLoaderClasspath;
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
+			$self->cleanData( $users, $logHandle );
 
 	# if the number of auctions wasn't explicitly set, determine based on
 	# the usersPerAuctionScaleFactor and maxUsers
@@ -252,9 +298,6 @@ sub prepareData {
 		}
 	}
 
-	my $dbServersRef    = $self->appInstance->getActiveServicesByType('dbServer');
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
 
@@ -267,88 +310,34 @@ sub prepareData {
 
 	}
 
-	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
+	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
+	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
+	my $dockerHostString  = $self->host->dockerHostString;	
+	my $cmdOut = `$dockerHostString docker exec $name perl /prepareData.pl`;
+	print $logHandle "Output: $cmdOut, \$? = $?\n";
+	$logger->debug("Output: $cmdOut, \$? = $?");
 
-	print $logHandle "Preparing auctions to be active in current run\n";
-	my $nosqlHostname;
-	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
-		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->getIpAddr();
-		$mongodbPort   = $nosqlService->portMap->{'mongod'};
-	}
-	else {
 
-		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
-		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService = $nosqlServersRef->[$i];
-			$nosqlHostname = $nosqlService->getIpAddr();
-			$mongodbPort   = $nosqlService->portMap->{'mongod'};
-			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
-		}
-	}
-
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
-	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
-
-	my $dbLoaderOptions = "";
-	if ( $self->getParamValue('dbLoaderEnableJprofiler') ) {
-		$dbLoaderOptions .=
-		  " -agentpath:/opt/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m ";
-	}
-
-	my $dbPrepOptions = " -a $auctions ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
-
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
-	$dbPrepOptions .= " -f " . max( $maxDuration, $totalTime ) . " ";
-
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
-
-	my $heap             = $self->getParamValue('dbLoaderHeap');
-	my $sshConnectString = $self->host->sshConnectString;
-	my $cmdString =
-"$sshConnectString \"java -Xms$heap -Xmx$heap -client $dbLoaderOptions -cp $dbLoaderClasspath -Dspring.profiles.active='$springProfilesActive' -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1\"";
-	print $logHandle $cmdString . "\n";
-	my $cmdOut = `$cmdString`;
-	print $logHandle $cmdOut;
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		return 0;
 	}
 
-	if (   ( $self->appInstance->numNosqlReplicas > 0 )
-		&& ( $self->appInstance->numNosqlShards == 0 ) )
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServerRef = $nosqlServersRef->[0];
+	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
+		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $logHandle );
 	}
 
+	# stop the auctiondatamanager container
+	$self->stopAuctionDataManagerContainer ($logHandle);
+
 	# stop the data services. They must be started in the main process
 	# so that the port numbers are available
-	$appInstance->stopDataServices($logPath);
-	$appInstance->removeDataServices($logPath);
+	$appInstance->stopServices("data", $logPath);
 	$appInstance->unRegisterPortNumbers();
 
 	close $logHandle;
@@ -360,6 +349,7 @@ sub pretouchData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $name        = $self->getParamValue('dockerName');
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 
@@ -694,7 +684,9 @@ sub loadData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $hostname         = $self->host->hostName;
+	my $hostname    = $self->host->hostName;
+	my $name        = $self->getParamValue('dockerName');
+
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
@@ -710,370 +702,32 @@ sub loadData {
 		return 0;
 	  };
 
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
-	my $maxUsers = $self->getParamValue('maxUsers');
+	my $maxUsers = $self->getParamValue('maxUsers');	
 	if ( $users > $maxUsers ) {
 		$maxUsers = $users;
 	}
 
-	if ( $scale >= 0 ) {
-		$console_logger->info( "Workload $workloadNum, appInstance $appInstanceNum: Loading data at scale $scale" );
-	}
-	else {
-		$console_logger->info(
-			"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
-	}
+	$console_logger->info(
+		"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
 
-	my $nosqlServersRef = $appInstance->getActiveServicesByType('nosqlServer');
-	my $cmdout;
-	my $replicaMasterHostname = "";
-	my $replicaMasterPort = "";
-	if (   ( $appInstance->numNosqlShards > 0 )
-		&& ( $appInstance->numNosqlReplicas > 0 ) )
-	{
-		$console_logger->( "Loading data in sharded and replicated mongo is not supported yet" );
-		return 0;
-	}
-	elsif ( $appInstance->numNosqlShards > 0 ) {
-		print $applog "Sharding MongoDB\n";
-		my $localPort = $self->portMap->{'mongos'};
-		my $cmdString;
-
-		# Add the shards to the database
-		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
-			my $port     = $nosqlServer->portMap->{'mongod'};
-			print $applog "Add $hostname as shard.\n";
-			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))'";
-			my $cmdout = `$sshConnectString \"$cmdString\"`;
-			print $applog "$sshConnectString \"$cmdString\"\n";
-			print $applog $cmdout;
-		}
-
-		# enable sharding for the databases
-
-		print $applog "Enabling sharding for auction database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auction\\\"))'";
-		my $cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for bid database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"bid\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for attendanceRecord database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"attendanceRecord\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for imageInfo database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"imageInfo\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionFullImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionFullImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionPreviewImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionPreviewImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Enabling sharding for auctionThumbnailImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionThumbnailImages\\\"))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# Create indexes for collections
-		print $applog "Adding hashed index for userId in attendanceRecord Collection.\n";
-		$cmdString =
-"mongo --port $localPort attendanceRecord --eval 'printjson(db.attendanceRecord.ensureIndex({userId : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for bidderId in bid Collection.\n";
-		$cmdString = "mongo --port $localPort bid --eval 'printjson(db.bid.ensureIndex({bidderId : \\\"hashed\\\"}))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for entityid in imageInfo Collection.\n";
-		$cmdString =
-		  "mongo --port $localPort imageInfo --eval 'printjson(db.imageInfo.ensureIndex({entityid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imageFull Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionFullImages --eval 'printjson(db.imageFull.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imagePreview Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionPreviewImages --eval 'printjson(db.imagePreview.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Adding hashed index for imageid in imageThumbnail Collection.\n";
-		$cmdString =
-"mongo --port $localPort auctionThumbnailImages --eval 'printjson(db.imageThumbnail.ensureIndex({imageid : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# shard the collections
-		print $applog "Sharding attendanceRecord collection on hashed userId.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"attendanceRecord.attendanceRecord\\\", {\\\"userId\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding bid collection on hashed bidderId.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"bid.bid\\\",{\\\"bidderId\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageInfo collection on hashed entityid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"imageInfo.imageInfo\\\",{\\\"entityid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageFull collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionFullImages.imageFull\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imagePreview collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionPreviewImages.imagePreview\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-		print $applog "Sharding imageThumbnail collection on hashed imageid.\n";
-		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionThumbnailImages.imageThumbnail\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))'";
-		$cmdout = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-		# disable the balancer
-		print $applog "Disabling the balancer.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.setBalancerState(false))'";
-		$cmdout    = `$sshConnectString \"$cmdString\"`;
-		print $applog "$sshConnectString \"$cmdString\"\n";
-		print $applog $cmdout;
-
-	}
-	elsif ( $appInstance->numNosqlReplicas > 0 ) {
-		$logger->debug("Creating the MongoDB Replica Set");
-		print $applog "Creating the MongoDB Replica Set\n";
-		my $cmdString;
-		
-		# Create the replica set
-		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
-			my $port     = $nosqlServer->portMap->{'mongod'};
-			if ( $replicaMasterHostname eq "" ) {
-				$replicaMasterHostname = $hostname;
-				$replicaMasterPort = $port;
-
-				# Initiate replica set
-				print $applog "Add $hostname as replica primary.\n";
-				my $replicaName      = "auction" . $nosqlServer->shardNum;
-				my $replicaConfig = "{_id : \"$replicaName\", members: [ { _id : 0, host : \"$replicaMasterHostname:$replicaMasterPort\" } ],}";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.initiate($replicaConfig))'";				
-				$logger->debug("Add $hostname as replica primary: $cmdString");
-				$cmdout = `$cmdString`;
-				$logger->debug("Add $hostname as replica primary result : $cmdout");
-				print $applog $cmdout;
-
-				print $applog "rs.status() : \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() : \n$cmdout");
-				print $applog $cmdout;
-
-				sleep(30);
-
-				print $applog "rs.status() after 30s: \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() after 30s : \n$cmdout");
-				print $applog $cmdout;
-
-				sleep(30);
-
-				print $applog "rs.status() after 60s: \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $port --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() after 60s : \n$cmdout");
-				print $applog $cmdout;
-
-			}
-			else {
-				print $applog "Add $hostname as replica secondary.\n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $replicaMasterPort --eval 'printjson(rs.add(\"$hostname:$port\"))'";
-				$logger->debug("Add $hostname as replica secondary: $cmdString");
-				$cmdout = `$cmdString`;
-				$logger->debug("Add $hostname as replica secondary result : $cmdout");
-				print $applog $cmdout;
-
-				print $applog "rs.status() : \n";
-				$cmdString = "mongo --host $replicaMasterHostname --port $replicaMasterPort --eval 'printjson(rs.status())'";
-				$cmdout = `$cmdString`;
-				$logger->debug("rs.status() : \n$cmdout");
-				print $applog $cmdout;
-
-			}
-		}
-
-	}
-
-	# Load the data
-	my $dbScriptDir     = $self->getParamValue('dbScriptDir');
-	my $dbLoaderOptions = "-d $dbScriptDir/items.json -t " . $self->getParamValue('dbLoaderThreads');
-	if ( $scale >= 0 ) {
-		$dbLoaderOptions .= " -s $scale ";
-	}
-	else {
-		$dbLoaderOptions .= " -u $maxUsers ";
-	}
-
-	$dbLoaderOptions .= " -m " . $appInstance->numNosqlShards . " ";
-	$dbLoaderOptions .= " -p " . $appInstance->numNosqlReplicas . " ";
-
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
-	$dbLoaderOptions .= " -f " . max( $maxDuration, $totalTime ) . " ";
-
-	$dbLoaderOptions .= " -a 'Workload $workloadNum, appInstance $appInstanceNum.' ";
-	if ( $self->getParamValue('dbLoaderImageDir') ) {
-		$dbLoaderOptions .= " -r \"" . $self->getParamValue('dbLoaderImageDir') . "\"";
-	}
-
-	my $dbLoaderJavaOptions = "";
-	if ( $self->getParamValue('dbLoaderEnableJprofiler') ) {
-		$dbLoaderJavaOptions .=
-		  "  -agentpath:/opt/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m ";
-	}
-
-	my $springProfilesActive = $appInstance->getSpringProfilesActive();
-	$springProfilesActive .= ",dbloader";
-
-	my $dbLoaderClasspath = $self->dbLoaderClasspath;
-	my $heap              = $self->getParamValue('dbLoaderHeap');
-
-	my $nosqlHostname;
-	my $mongodbPort;
-	if ( $appInstance->numNosqlShards == 0 ) {
-		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->getIpAddr();
-		$mongodbPort   = $nosqlService->portMap->{'mongod'};
-	}
-	else {
-
-		# The mongos will be running on the data manager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "";
-	if ( $appInstance->numNosqlReplicas > 0 ) {
-		for ( my $i = 0 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService  = $nosqlServersRef->[$i];
-			my $nosqlHostname = $nosqlService->getIpAddr();
-			my $replicaPort;
-			if ($nosqlHostname eq $replicaMasterHostname) {
-				$replicaPort = $nosqlService->internalPortMap->{'mongod'};
-				print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is primary ($replicaMasterHostname), using port $replicaPort.\n";
-				$mongodbReplicaSet .= "$nosqlHostname:$replicaPort";
-			} else {
-				$replicaPort = $nosqlService->portMap->{'mongod'};
-				print $applog "Creating mongodbReplicaSet define.  $nosqlHostname is secondary, using port $replicaPort.\n";
-				$mongodbReplicaSet .= ",$nosqlHostname:$replicaPort";
-			}
-		}
-	}
-
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
-
-	my $ppid = fork();
-	if ( $ppid == 0 ) {
-		print $applog "Starting dbLoader\n";
-		my $cmdString =
-"java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum} -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions ";
-		my $cmdOut =
-`$sshConnectString "$cmdString 2>&1 | tee /tmp/dbLoader_W${workloadNum}I${appInstanceNum}.log" 2>&1  > $logPath/dbLoader_W${workloadNum}I${appInstanceNum}.log `;
-		print $applog "$sshConnectString $cmdString\n";
-		print $applog $cmdOut;
-		exit;
-	}
-
-	# get the pid of the dbLoader process
-	sleep(30);
-	my $loaderPid = "";
-	my $out = `$sshConnectString ps x`;
-	$logger->debug("Looking for pid of dbLoader_W${workloadNum}I${appInstanceNum}: $out");
-	if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-Dwkld=W${workloadNum}I${appInstanceNum}.*DBLoader/m ) {
-		$loaderPid = $1;
-		$logger->debug("Found pid $loaderPid for dbLoader_W${workloadNum}I${appInstanceNum}");
-	}
-	else {
-		# Check again if the data is loaded.  The dbLoader may have finished
-		# before 30 seconds
-		my $isDataLoaded = 0;
-		try {
-			$isDataLoaded = $self->isDataLoaded( $users, $logPath );
-		};
-
-		if ( !$isDataLoaded ) {
-			# check one last time for the pid
-			my $out = `$sshConnectString ps x`;
-			$logger->debug("Looking for pid of dbLoader_W${workloadNum}I${appInstanceNum}: $out");
-			if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-Dwkld=W${workloadNum}I${appInstanceNum}.*DBLoader/m ) {
-				$loaderPid = $1;
-				$logger->debug("Found pid $loaderPid for dbLoader_W${workloadNum}I${appInstanceNum}");
-			} else {
-				$console_logger->error( "Can't find dbloader pid for workload $workloadNum, appInstance $appInstanceNum" );
-				return 0;
-			}		
-		}
-	}
-
-	if ($loaderPid) {
-		# open a pipe to follow progress
-		open my $driver, "$sshConnectString tail -f --pid=$loaderPid /tmp/dbLoader_W${workloadNum}I${appInstanceNum}.log |"
-		  or do {
-			$console_logger->error(
-				"Can't fork to follow dbloader at $logPath/dbLoader_W${workloadNum}I${appInstanceNum}.log : $!" );
-			return 0;
-		  };
-
-		while ( my $inline = <$driver> ) {
-			if (!($inline =~ /^\d\d\:\d\d/)) {
-				print $inline;
-			}
-		}
-		close $driver;
-	}
+	$logger->debug("Exec-ing perl /loadData.pl in container $name");
+	print $applog "Exec-ing perl /loadData.pl in container $name\n";
+	my $dockerHostString  = $self->host->dockerHostString;
 	
-	if (   ( $appInstance->numNosqlReplicas > 0 )
-		&& ( $appInstance->numNosqlShards == 0 ) )
+	open my $pipe, "$dockerHostString docker exec $name perl /loadData.pl  |"   or die "Couldn't execute program: $!";
+ 	while ( defined( my $line = <$pipe> )  ) {
+		chomp($line);
+		if ($line =~ /Loading/) {
+  			print "$line\n";			
+		} 
+   	}
+   	close $pipe;	
+	close $applog;
+	
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServerRef = $nosqlServersRef->[0];
+	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
+		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $applog );
@@ -1089,288 +743,9 @@ sub loadData {
 
 	if ( !$isDataLoaded ) {
 		$console_logger->error(
-			"Data is still not loaded at proper scale.  Check the logs of the data services for errors.\n" );
+			"Data is still not loaded properly.  Check the logs of the data services for errors.\n" );
 		return 0;
 	}
-	return 1;
-}
-
-sub createBackup {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug("createBackup for workload $workloadNum, appInstance $appInstanceNum");
-
-	my $backupDir;
-	my $dataDir;
-	my $logDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('postgresqlDataDir');
-		$logDir    = $self->getParamValue('postgresqlLogDir');
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('mysqlDataDir');
-		$logDir    = $self->getParamValue('mysqlLogDir');
-	}
-
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-	my $cmdout;
-	my $appInstance = $self->appInstance;
-
-	my $nosqlServersRef = $self -appInstance->getActiveServicesByType('nosqlServer');
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
-	my $maxUsers = $self->maxUsers;
-
-	my $backupPathNum;
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-		$console_logger->info( "Creating backup of data at scale $scale for the "
-			  . $self->db
-			  . " database and "
-			  . $self->imageStoreType
-			  . " imageStore" );
-	}
-	else {
-		$backupPathNum = $maxUsers;
-
-		$console_logger->info( "Creating backup of data for a maximum of $maxUsers users for the "
-			  . $self->db
-			  . " database and "
-			  . $self->imageStoreType
-			  . " imageStore" );
-	}
-
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		my $sshConnectString = $dbServer->host->sshConnectString;
-		$console_logger->info( "Backing up the database on " . $dbServer->host->hostName );
-
-		# Make sure the backup directory exists
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/data\"`;
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/logs\"`;
-
-		# Clear out any old backups
-		$cmdout = `$sshConnectString \"find $backupDirPath/logs/* -delete 2>&1\"`;
-		$cmdout = `$sshConnectString \"find $backupDirPath/data/* -delete 2>&1\"`;
-
-		# Copy the data to the backup storage
-		$cmdout = `$sshConnectString \"cp -r $dataDir/* $backupDirPath/data/.\"`;
-
-		$cmdout = `$sshConnectString \"cp -r $logDir/* $backupDirPath/logs/.\"`;
-	}
-
-	my $numShards   = $appInstance->numNosqlShards;
-	my $numReplicas = $appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		$console_logger->info( "Backing up the NoSQL data-store on " . $nosqlServer->host->hostName );
-
-		my $sshConnectString = $nosqlServer->host->sshConnectString;
-
-		$cmdout = `$sshConnectString \"mkdir -p $backupDirPath/mongod\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/mongod/* -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r $mongodbDataDir/* $backupDirPath/mongod/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr1 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr1 $backupDirPath/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr2 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr2 $backupDirPath/.\"`;
-
-		$cmdout = `$sshConnectString \"find $backupDirPath/configsvr3 -delete 2>&1\"`;
-
-		$cmdout = `$sshConnectString \"cp -r /var/lib/mongo/configsvr3 $backupDirPath/.\"`;
-
-	}
-
-	# If the imageStore type is filesystem, then backup the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreDataDir   = $self->getParamValue('imageStoreDir');
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-			$cmdout = `$sshConnectString \"mkdir -p $backupDirPath\"`;
-
-			# Clean any old backup at this scale
-			$console_logger->info( "Clearing out the old filesystem backup on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"find $backupDirPath/* -delete 2>&1\"`;
-
-			$cmdout = `$sshConnectString \"mkdir -p $backupDirPath\"`;
-			$console_logger->info( "Backing up the filesystem contents on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"cp -r $imageStoreDataDir/* $backupDirPath/.\"`;
-
-		}
-	}
-
-}
-
-sub restoreBackup {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug("restoreBackup for workload $workloadNum, appInstance $appInstanceNum");
-
-	my $backupDir;
-	my $dataDir;
-	my $logDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('postgresqlDataDir');
-		$logDir    = $self->getParamValue('postgresqlLogDir');
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-		$dataDir   = $self->getParamValue('mysqlDataDir');
-		$logDir    = $self->getParamValue('mysqlLogDir');
-	}
-
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $mongodbDataDir   = $self->getParamValue('mongodbDataDir');
-
-	# Stop the data services before restoring backup
-	my $appInstance = $self->appInstance;
-	$appInstance->stopDataServices($logPath);
-	$appInstance->unRegisterPortNumbers();
-	$appInstance->cleanupDataServices();
-	$appInstance->removeDataServices($logPath);
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
-	my $maxUsers = $self->maxUsers;
-
-	my $runLog = $self->runLog;
-	my $backupPathNum;
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-		$console_logger->info(
-			"Restoring backup of data at scale $scale for " . $self->imageStoreType . " imageStore" );
-	}
-	else {
-		$backupPathNum = $maxUsers;
-		$console_logger->info(
-			"Restoring backup of data for $maxUsers max users and  " . $self->imageStoreType . " imageStore" );
-	}
-
-	my $cmdout;
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		my $sshConnectString = $dbServer->host->sshConnectString;
-
-		$console_logger->info( "Restoring the database on " . $dbServer->host->hostName );
-
-		my $cmdOut;
-		$cmdOut = `$sshConnectString \"find $dataDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find $logDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/data/* $dataDir/. 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/logs/* $logDir/. 2>&1\"`;
-
-		if ( $db eq 'mysql' ) {
-			$cmdOut = `$sshConnectString \"chown -R mysql:mysql $logDir 2>&1\"`;
-
-			$cmdOut = `$sshConnectString \"chown -R mysql:mysql $dataDir 2>&1\"`;
-		}
-		elsif ( $db eq "postgresql" ) {
-			$cmdOut = `$sshConnectString \"chown -R postgres:users $logDir 2>&1\"`;
-
-			$cmdOut = `$sshConnectString \"chown -R postgres:users $dataDir 2>&1\"`;
-		}
-		else {
-			$console_logger->error("The database must be \"mysql\" or \"postgresql\"");
-			return 0;
-		}
-
-	}
-
-	my $numShards   = $appInstance->numNosqlShards;
-	my $numReplicas = $appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		my $sshConnectString = $nosqlServer->host->sshConnectString;
-
-		my $cmdOut;
-		$console_logger->info( "Restoring the NoSQL data-store on " . $nosqlServer->host->hostName );
-
-		$cmdOut = `$sshConnectString \"find $mongodbDataDir/* -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/mongod/* $mongodbDataDir/. 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"chown -R mongod:mongod $mongodbDataDir -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr1 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr1 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr2 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr2 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"find /var/lib/mongo/configsvr3 -delete 2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"cp -r $backupDirPath/configsvr3 /var/lib/mongo/.  2>&1\"`;
-
-		$cmdOut = `$sshConnectString \"chown -R mongod:mongod /var/lib/mongo 2>&1\"`;
-	}
-
-	# If the imageStore type is filesystem, then restore the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreDataDir   = $self->getParamValue('imageStoreDir');
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-
-			# Clean any old backup at this scale
-			$console_logger->info( "Clearing out the old filesystem contents on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"find $imageStoreDataDir/* -delete 2>&1\"`;
-
-			$console_logger->info( "Restoring the filesystem on " . $fileServer->host->hostName );
-			$cmdout = `$sshConnectString \"cp -r $backupDirPath/* $imageStoreDataDir/. 2>&1\"`;
-
-		}
-	}
-
-	# Restart the data services
-	$appInstance->configureAndStartDataServices( $logPath, $users );
-	# Make sure that the services know their external port numbers
-	$self->appInstance->setExternalPortNumbers();
 	return 1;
 }
 
@@ -1384,253 +759,48 @@ sub isDataLoaded {
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $hostname = $self->host->hostName;
-	my $scale    = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
+	my $name        = $self->getParamValue('dockerName');
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	# if the number of auctions wasn't explicitly set, determine based on
-	# the usersPerAuctionScaleFactor
-	my $auctions = $self->getParamValue('auctions');
-	if ( !$auctions ) {
-		$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
-	}
-	# Must be multiple of 2
-	if (($auctions % 2) != 0) {
-		$auctions++;
-	}
-
-	my $dbPrepOptions = " -a $auctions -c ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
-
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
-	$dbPrepOptions .= " -f " . max( $maxDuration, $totalTime ) . " ";
-
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
-
-	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
-	$springProfilesActive .= ",dbprep";
-
-	my $dbLoaderClasspath = $self->dbLoaderClasspath;
-
-	my $nosqlServicesRef = $self->appInstance->getActiveServicesByType("nosqlServer");
-	my $nosqlHostname;
-	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
-		my $nosqlService = $nosqlServicesRef->[0];
-		$nosqlHostname = $nosqlService->getIpAddr();
-		$mongodbPort   = $nosqlService->portMap->{'mongod'};
-	}
-	else {
-
-		# The mongos will be running on the datManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
-		for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
-			my $nosqlService  = $nosqlServicesRef->[$i];
-			my $nosqlHostname = $nosqlService->getIpAddr();
-			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
-			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
-		}
-	}
-
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
-	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
-
-	my $sshConnectString = $self->host->sshConnectString;
-	print $applog
-"$sshConnectString java -client -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1\n";
-	my $cmdOut =
-`$sshConnectString java -client -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1`;
-	print $applog $cmdOut;
-	print $applog "$? \n";
+	print $applog "Exec-ing perl /isDataLoaded.pl  in container $name\n";
+	$logger->debug("Exec-ing perl /isDataLoaded.pl  in container $name");
+	my $dockerHostString  = $self->host->dockerHostString;	
+	my $cmdOut = `$dockerHostString docker exec $name perl /isDataLoaded.pl`;
+	print $applog "Output: $cmdOut, \$? = $?\n";
+	$logger->debug("Output: $cmdOut, \$? = $?");
+	close $applog;
 	if ($?) {
-		$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$? = $?" );
+		$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
 		return 0;
 	}
 	else {
-		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$? = $?" );
+		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
 		return 1;
 	}
 
-	close $applog;
 
 }
 
-sub waitForMongodbReplicaSync {
-	my ( $self, $runLog ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug( "waitFormongodbReplicaSync for workload $workloadNum, appInstance $appInstanceNum" );
-
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServer      = $nosqlServersRef->[0];
-	my $nosqlHostname    = $nosqlServer->getIpAddr();
-	my $port             = $nosqlServer->portMap->{'mongod'};
-	my $sshConnectString = $self->host->sshConnectString;
-	my $inSync           = 0;
-	while ( !$inSync ) {
-		sleep 30;
-
-		my $time1 = -1;
-		my $time2 = -1;
-		$inSync = 1;
-		print $runLog "Checking MongoDB Replica Sync.  rs.status: \n";
-		my $cmdString = "mongo --host $nosqlHostname --port $port --eval 'printjson(rs.status())'";
-		my $cmdout = `$cmdString`;
-		print $runLog $cmdout;
-
-		my @lines = split /\n/, $cmdout;
-
-		# Parse rs.status to see if timestamp is same on primary and secondaries
-		foreach my $line (@lines) {
-			if ( $line =~ /\"optime\"\s*:\s*Timestamp\((\d+)\,\s*(\d+)/ ) {
-				if ( $time1 == -1 ) {
-					$time1 = $1;
-					$time2 = $2;
-				}
-				elsif ( ( $time1 != $1 ) || ( $time2 != $2 ) ) {
-					print $runLog "Not yet in sync\n";
-					$inSync = 0;
-					last;
-				}
-			}
-		}
-	}
-}
-
-sub isBackupAvailable {
-	my ( $self, $users, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	$logger->debug( "isBackupAvailable for workload $workloadNum, appInstance $appInstanceNum" );
-
-	my $logName = "$logPath/isBackupAvailable-W${workloadNum}I${appInstanceNum}.log";
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	my $backupDir;
-	my $dbServersRef   = $self->appInstance->getActiveServicesByType('dbServer');
-	my $dbServer       = $dbServersRef->[0];
-	my $db             = $dbServer->getImpl();
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( $db eq 'postgresql' ) {
-		$backupDir = $self->getParamValue('postgresqlBackupDir') . "/${imageStoreType}ImageStore";
-	}
-	elsif ( $db eq 'mysql' ) {
-		$backupDir = $self->getParamValue('mysqlBackupDir') . "/${imageStoreType}ImageStore";
-	}
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
-	my $backupPathNum;
-	my $maxUsers = $self->getParamValue('maxUsers');
-	if ( $scale >= 0 ) {
-		$backupPathNum = $scale;
-	}
-	else {
-		$backupPathNum = $maxUsers;
-	}
-
-	# Check for relational db backup at correct scale
-	my $backupDirPath = "$backupDir/$backupPathNum";
-	foreach my $dbServer (@$dbServersRef) {
-		if ( !$dbServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-			close $applog;
-			return 0;
-		}
-	}
-
-	# Check for mongodb db backup at correct scale
-	my $nosqlServersRef  = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $mongodbBackupDir = $self->getParamValue('mongodbBackupDir');
-	my $numShards        = $self->appInstance->numNosqlShards;
-	my $numReplicas      = $self->appInstance->numNosqlReplicas;
-	$backupDirPath = "$mongodbBackupDir/$backupPathNum/${numShards}shards/${numReplicas}replicas";
-
-	foreach my $nosqlServer (@$nosqlServersRef) {
-		if ( !$nosqlServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-			close $applog;
-			return 0;
-		}
-	}
-
-	# If the imageStore type is filesystem, check for backup at correct scale
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		my $imageStoreBackupDir = $self->getParamValue('imageStoreBackupDir');
-		$backupDirPath = "$imageStoreBackupDir/$backupPathNum";
-
-		my $fileServersRef = $self->appInstance->getActiveServicesByType('fileServer');
-		foreach my $fileServer (@$fileServersRef) {
-			if ( !$fileServer->isBackupAvailable( $backupDirPath, $applog ) ) {
-				close $applog;
-				return 0;
-			}
-
-		}
-	}
-
-	close $applog;
-	return 1;
-
-}
 
 sub cleanData {
-	my ( $self, $users, $logPath ) = @_;
+	my ( $self, $users, $logHandle ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $name        = $self->getParamValue('dockerName');
 
 	my $appInstance = $self->appInstance;
 	my $retVal      = 0;
 
-	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
-	$springProfilesActive .= ",dbprep";
-	my $dbLoaderClasspath = $self->dbLoaderClasspath;
 
 	$console_logger->info(
 		"Cleaning and compacting storage on all data services.  This can take a long time after large runs." );
-	$logger->debug("cleanData.  user = $users, logPath = $logPath");
-
-	my $scale = -1;
-	if ( $self->getParamValue('scale') >= 0 ) {
-		$scale = $self->getParamValue('scale');
-	}
-
-	# Not preparing any auctions, just cleaning up
-	my $auctions = 0;
-
-	my $dbServersRef    = $self->appInstance->getActiveServicesByType('dbServer');
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	$logger->debug("cleanData.  user = $users");
 
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
@@ -1650,84 +820,16 @@ sub cleanData {
 
 	}
 
-	my $logName = "$logPath/CleanData_W${workloadNum}I${appInstanceNum}.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
-	$logger->debug("cleanData. opened log $logName");
-
 	$logger->debug(
 		"cleanData. Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n";
-	my $nosqlHostname;
-	my $mongodbPort;
-	if ( $self->appInstance->numNosqlShards == 0 ) {
-		my $nosqlService = $nosqlServersRef->[0];
-		$nosqlHostname = $nosqlService->getIpAddr();
-		$mongodbPort   = $nosqlService->portMap->{'mongod'};
-	}
-	else {
 
-		# The mongos will be running on the dataManager
-		$nosqlHostname = $self->getIpAddr();
-		$mongodbPort   = $self->portMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-	if ( $self->appInstance->numNosqlReplicas > 0 ) {
-		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService = $nosqlServersRef->[$i];
-			$nosqlHostname = $nosqlService->getIpAddr();
-			$mongodbPort   = $nosqlService->portMap->{'mongod'};
-			$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
-		}
-	}
-
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
-	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
-
-	my $dbLoaderOptions = "";
-	if ( $self->getParamValue('dbLoaderEnableJprofiler') ) {
-		$dbLoaderOptions .=
-		  " -agentpath:/opt/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m ";
-	}
-
-	my $dbPrepOptions = " -a $auctions ";
-	$dbPrepOptions .= " -m " . $self->appInstance->numNosqlShards . " ";
-	$dbPrepOptions .= " -p " . $self->appInstance->numNosqlReplicas . " ";
-
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $steadyState = $self->getParamValue('steadyState');
-	$dbPrepOptions .= " -f " . max( $maxDuration, $steadyState ) . " ";
-
-	if ( $scale >= 0 ) {
-		$dbPrepOptions .= " -s " . $self->getParamValue('scale') . " ";
-	}
-	else {
-		$dbPrepOptions .= " -u " . $users . " ";
-	}
-
-	my $heap             = $self->getParamValue('dbLoaderHeap');
-	my $sshConnectString = $self->host->sshConnectString;
-	my $cmdString =
-"$sshConnectString \"java -Xms$heap -Xmx$heap -client $dbLoaderOptions -cp $dbLoaderClasspath -Dspring.profiles.active='$springProfilesActive' -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort -DMONGODB_REPLICA_SET=$mongodbReplicaSet com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1\"";
-	$logger->debug(
-		"cleanData. Running dbPrep to clean data for workload ",
-		$workloadNum, " appInstance ",
-		$appInstanceNum, ". The command line is: ", $cmdString
-	);
-	print $logHandle $cmdString . "\n";
-	my $cmdOut = `$cmdString`;
-	$logger->debug(
-		"cleanData. Ran dbPrep to clean data for workload ",
-		$workloadNum, " appInstance ",
-		$appInstanceNum, ". The output is: ", $cmdOut
-	);
-	print $logHandle $cmdOut;
+	print $logHandle "Exec-ing perl /cleanData.pl  in container $name\n";
+	$logger->debug("Exec-ing perl /cleanData.pl  in container $name");
+	my $dockerHostString  = $self->host->dockerHostString;	
+	my $cmdOut = `$dockerHostString docker exec $name perl /cleanData.pl`;
+	print $logHandle "Output: $cmdOut, \$? = $?\n";
+	$logger->debug("Output: $cmdOut, \$? = $?");
 
 	if ($?) {
 		$console_logger->error(
@@ -1736,8 +838,10 @@ sub cleanData {
 		return 0;
 	}
 
-	if (   ( $self->appInstance->numNosqlReplicas > 0 )
-		&& ( $self->appInstance->numNosqlShards == 0 ) )
+	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlService = $nosqlServersRef->[0];
+	if (   ( $nosqlService->numNosqlReplicas > 0 )
+		&& ( $nosqlService->numNosqlShards == 0 ) )
 	{
 		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
 		waitForMongodbReplicaSync( $self, $logHandle );
@@ -1830,7 +934,6 @@ sub cleanData {
 
 		}
 	}
-	close $logHandle;
 }
 
 __PACKAGE__->meta->make_immutable;

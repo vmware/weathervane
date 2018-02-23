@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zookeeper-config
+  labels:
+    app: auction
+    tier: backend
+    type: coordinationServer
+    impl: zookeeper
+data: 
+  ZK_CLIENT_PORT: "2181"
+  ZK_PEER_PORT: "2888"
+  ZK_ELECTION_PORT: "3888"
+  ZK_SERVERS: "server.1=zookeeper-0.zookeeper:2888:3888,server.2=zookeeper-1.zookeeper:2888:3888,server.3=zookeeper-2.zookeeper:2888:3888"
+  ZK_ID: "0"
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+spec:
+  serviceName: zookeeper
+  replicas: 3
+  template:
+    metadata:
+      name: zookeeper
+      labels:
+        app: auction
+        tier: backend
+        type: coordinationServer
+        impl: zookeeper
+    spec:
+      containers:
+      - image: hrosenbe/weathervane-zookeeper:1.1.0
+        name: zookeeper
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: zookeeper-config
+        ports: 
+        - containerPort: 2181
+          name: clientport
+          protocol: TCP
+        - containerPort: 2888
+          name: peerport
+          protocol: TCP
+        - containerPort: 3888
+          name: electionport
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+spec:
+  clusterIP: None
+  ports:
+  - port: 2181
+    name: clientport
+  - port: 2888
+    name: peerport
+  - port: 3888
+    name: electionport
+  selector:
+    app: auction
+    tier: backend
+    type: coordinationServer
+    impl: zookeeper

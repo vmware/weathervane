@@ -284,20 +284,10 @@ sub prepareData {
 			# cleanup the databases from any previous run
 			$self->cleanData( $users, $logHandle );
 
-	# if the number of auctions wasn't explicitly set, determine based on
-	# the usersPerAuctionScaleFactor and maxUsers
-	my $auctions = $self->getParamValue('auctions');
-	if ( !$auctions ) {
-		$auctions = ceil( $maxUsers / $self->getParamValue('usersPerAuctionScaleFactor') );
-		if ( $auctions < 4 ) {
-			$auctions = 4;
-		}
-		# Must be multiple of 2
-		if (($auctions % 2) != 0) {
-			$auctions++;
+
 		}
 	}
-
+	
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
 

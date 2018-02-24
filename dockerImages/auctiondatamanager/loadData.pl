@@ -29,6 +29,13 @@ if ( $users > $maxUsers ) {
 }
 
 my $auctions = ceil($users / $ENV{'USERSPERAUCTIONSCALEFACTOR'}); 
+if ( $auctions < 4 ) {
+	$auctions = 4;
+}
+# Must be multiple of 2
+if (($auctions % 2) != 0) {
+	$auctions++;
+}
 
 my @mongoHostPortPairs = split /,/, $mongoHostPortPairsString;
 

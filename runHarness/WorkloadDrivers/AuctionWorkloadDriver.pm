@@ -302,9 +302,8 @@ sub createRunConfigHash {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	$logger->debug("createRunConfigHash start");
-
 	my $workloadNum    = $self->getParamValue('workloadNum');
+
 	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $workloadProfile  = $self->getParamValue('workloadProfile');
 	my $rampUp           = $self->getParamValue('rampUp');
@@ -496,118 +495,14 @@ sub createRunConfigHash {
 			push @targetNames, $targetName;
 		$logger->debug("createRunConfigHash adding target " . $targetName);
 
-			my $loadPath = {};
-			$loadPath->{"type"}          = "interval";
-			$loadPath->{"loadIntervals"} = [];
-			if ( $appInstance->hasLoadPath() ) {
-				$logger->debug("configure for workload $workloadNum, appInstance $instanceNum has load path");
-				$self->printLoadPath(
-					$appInstance->getLoadPath(),
-					$loadPath->{"loadIntervals"},
-					$vipNum, $numVIPs, $totalTime
-				);
-			}
-			else {
-				$logger->debug("configure for workload $workloadNum, appInstance $instanceNum does not have load path");
-				$self->printRampUpIntervals( $appInstance->getUsers(), $loadPath->{"loadIntervals"}, $vipNum,
-					$numVIPs );
-				$self->printSteadyStateIntervals(
-					$appInstance->getUsers(),
-					$loadPath->{"loadIntervals"},
-					$vipNum, $numVIPs
-				);
-				$self->printRampDownIntervals(
-					$appInstance->getUsers(),
-					$loadPath->{"loadIntervals"},
-					$vipNum, $numVIPs
-				);
-			}
-			$runRef->{"loadPaths"}->{$loadPathName} = $loadPath;
+			push @{ $workload->{"targets"} }, $target;
 
 		}
-
-		if ( $appInstance->hasLoadPath() ) {
-			$logger->debug("configuring fixedStataIntervalSpec for workload $workloadNum, appInstance $instanceNum");
-
-			# If using load path, need a fixedStatsIntervalSpec
-			# for rampup, steadystate, and rampDown
-			my $intervalSpec = {};
-			$intervalSpec->{"type"}           = "fixed";
-			$intervalSpec->{"printSummary"}   = JSON::true;
-			$intervalSpec->{"printIntervals"} = JSON::false;
-			$intervalSpec->{"printCsv"}       = JSON::true;
-
-			my $statsIntervals = [];
-			my %rampUpInterval;
-			$rampUpInterval{"name"}     = "rampUp";
-			$rampUpInterval{"duration"} = $self->getParamValue('rampUp');
-			push @$statsIntervals, \%rampUpInterval;
-			my %steadyStateInterval;
-			$steadyStateInterval{"name"}     = "steadyState";
-			$steadyStateInterval{"duration"} = $self->getParamValue('steadyState');
-			push @$statsIntervals, \%steadyStateInterval;
-			my %rampDownInterval;
-			$rampDownInterval{"name"}     = "rampDown";
-			$rampDownInterval{"duration"} = $self->getParamValue('rampDown');
-			push @$statsIntervals, \%rampDownInterval;
-			$intervalSpec->{"intervals"} = $statsIntervals;
-
-			$runRef->{"statsIntervalSpecs"}->{ "runIntervals-" . $instanceNum } = $intervalSpec;
-		}
-
-		# Need one loadPath statsIntervalSpec per appinstance.  Only need
-		# one as the timing is the same for all targets
-		my $intervalSpec = {};
-		$intervalSpec->{"type"}           = "loadpath";
-		$intervalSpec->{"printSummary"}   = JSON::true;
-		$intervalSpec->{"printIntervals"} = JSON::false;
-		$intervalSpec->{"printCsv"}       = JSON::true;
-		$intervalSpec->{"loadPathName"}   = "$loadPathName";
-
-		$runRef->{"statsIntervalSpecs"}->{$loadPathName} = $intervalSpec;
-		$logger->debug("configured statsIntervalSpec for workload $workloadNum, appInstance $instanceNum");
-
-		# Need a workload per app-instance to get correct maxUsers
-		my $workload = {};
-		$workload->{"type"}                   = "auction";
-		$workload->{"behaviorSpecName"}       = "auctionMainUser";
-		$workload->{"statsIntervalSpecNames"} = [];
-		push @{ $workload->{"statsIntervalSpecNames"} }, "periodic";
-
-		push @{ $workload->{"statsIntervalSpecNames"} }, $loadPathName;
-
-		if ( $appInstance->hasLoadPath() ) {
-			my $name = "runIntervals-" . $instanceNum;
-			push @{ $workload->{"statsIntervalSpecNames"} }, $name;
-		}
-
-		# Get the max number of users the appInstance is loaded for.
-		$workload->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
-
-		if ( $self->getParamValue('useThinkTime') ) {
-			$workload->{"useThinkTime"} = JSON::true;
-		}
-		else {
-			$workload->{"useThinkTime"} = JSON::false;
-		}
-
-		$workload->{"usersScaleFactor"} = $usersScaleFactor;
-
-		$runRef->{"workloads"}->{ "appInstance" . $instanceNum } = $workload;
-		$logger->debug("Configured workload $workloadNum, appInstance $instanceNum");
-
+		
+		push @{ $runRef->{"workloads"} }, $workload;
+		
 	}
 
-	# The periodic interval spec
-	my $intervalSpec = {};
-	$intervalSpec->{"type"}                       = "periodic";
-	$intervalSpec->{"printSummary"}               = JSON::false;
-	$intervalSpec->{"printIntervals"}             = JSON::true;
-	$intervalSpec->{"printCsv"}                   = JSON::true;
-	$intervalSpec->{"period"}                     = $self->getParamValue('statsInterval');
-	$runRef->{"statsIntervalSpecs"}->{"periodic"} = $intervalSpec;
-
-	$logger->debug("createRunConfigHas completed");
 	return $runRef;
 }
 

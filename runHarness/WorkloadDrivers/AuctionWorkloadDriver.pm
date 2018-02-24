@@ -953,6 +953,7 @@ sub initializeRun {
 	$self->suffix($suffix);
 	my $port = $self->portMap->{'http'};
 	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $runName = "runW${workloadNum}";
 
 	my $logName = "$logDir/InitializeRun$suffix.log";
 	my $logHandle;

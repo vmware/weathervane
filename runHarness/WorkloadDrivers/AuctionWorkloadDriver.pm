@@ -1249,6 +1249,8 @@ sub startRun {
 	}
 	my $nextIsHeader = 0;
 	my $startTime    = time();
+	my $startedSteadyState = 0;
+	my $startedRampDown = 0;
 	my $inline;
 	while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
 		if ( $inline =~ /^\|/ ) {

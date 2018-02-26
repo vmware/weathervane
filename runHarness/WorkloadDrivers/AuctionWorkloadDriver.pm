@@ -1385,6 +1385,13 @@ sub startRun {
 				return 0;
 				}
 				
+				# Now stop and remove all of the driver containers
+				foreach my $driver (@$driversRef) {
+					$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
+				}
+				kill(9, $pipePid);
+				close $driverPipe;	
+				
 				last;
 			}
 		}

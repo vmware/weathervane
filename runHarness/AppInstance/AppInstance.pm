@@ -1864,8 +1864,11 @@ sub getHostStatsSummary {
 		my $servicesListRef = $self->getActiveServicesByType($serviceType);
 
 		foreach my $service (@$servicesListRef) {
-			my $hostname = $service->host->clusterName;
-			if (!$hostname) {
+			my $hostname;
+			if (exists $service->host->paramHashRef->{'clusterName'}) {
+				$hostname = $service->host->clusterName;
+			}
+			else {
 				$hostname = $service->host->hostName;
 				if ($service->host->getParamValue('vicHost')) {
 					return;

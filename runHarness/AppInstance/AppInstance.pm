@@ -1865,7 +1865,7 @@ sub getHostStatsSummary {
 
 		foreach my $service (@$servicesListRef) {
 			my $hostname;
-			if (exists $service->host->paramHashRef->{'clusterName'}) {
+			if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
 				$hostname = $service->host->clusterName;
 			}
 			else {

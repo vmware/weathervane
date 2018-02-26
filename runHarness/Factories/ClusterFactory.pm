@@ -45,6 +45,7 @@ sub getCluster {
 		die "No matching cluster type $clusterType available to ClusterFactory";
 	}
 
+	$cluster->isCluster(1);
 	$cluster->initialize();
 	return $cluster;
 }

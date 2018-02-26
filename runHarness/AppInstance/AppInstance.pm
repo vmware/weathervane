@@ -1677,7 +1677,7 @@ sub getLogFiles {
 				}
 				elsif ( $pid == 0 ) {
 					my $name;
-					if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
+					if ($service->host->isCluster) {
 						$name = $service->host->clusterName;
 					} else {
 						$name = $service->host->hostName;
@@ -1730,7 +1730,7 @@ sub getConfigFiles {
 				}
 				elsif ( $pid == 0 ) {
 					my $name;
-					if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
+					if ($service->host->isCluster) {
 						$name = $service->host->clusterName;
 					} else {
 						$name = $service->host->hostName;
@@ -1869,7 +1869,7 @@ sub getHostStatsSummary {
 
 		foreach my $service (@$servicesListRef) {
 			my $hostname;
-			if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
+			if ($service->host->isCluster) {
 				$hostname = $service->host->clusterName;
 			}
 			else {

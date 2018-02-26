@@ -46,7 +46,8 @@ sub getHost {
 			'paramHashRef' => $paramsHashRef,);
 	}
 	$host->initialize();
-
+	$host->isCluster(0);
+	
 	apply_all_roles($host, 'DockerRole');		
 
 	return $host;

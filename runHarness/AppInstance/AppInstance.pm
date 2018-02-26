@@ -1676,8 +1676,10 @@ sub getLogFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $name = $service->host->clusterName;
-					if (!$name) {
+					my $name;
+					if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
+						$name = $service->host->clusterName;
+					} else {
 						$name = $service->host->hostName;
 					}
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
@@ -1727,8 +1729,10 @@ sub getConfigFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $name = $service->host->clusterName;
-					if (!$name) {
+					my $name;
+					if ((exists $service->host->paramHashRef->{'clusterName'}) && (defined $service->host->paramHashRef->{'clusterName'})) {
+						$name = $service->host->clusterName;
+					} else {
 						$name = $service->host->hostName;
 					}
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;

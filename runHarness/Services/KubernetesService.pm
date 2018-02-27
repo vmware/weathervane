@@ -131,8 +131,13 @@ sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $serviceType = $self->getParamValue('serviceType');
 	my $namespace = $self->namespace;
+	my $impl = $self->getImpl();
+	
+	if ( !( -e $destinationPath ) ) {
+		`mkdir -p $destinationPath`;
+	}
 
-	$self->host->kubernetesGetLogs("type=$serviceType", $namespace, $destinationPath);
+	$self->host->kubernetesGetLogs("type=$serviceType", $impl, $namespace, $destinationPath);
 
 }
 sub setPortNumbers {

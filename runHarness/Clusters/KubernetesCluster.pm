@@ -325,10 +325,40 @@ sub kubernetesDoPodsExist {
 }
 
 sub kubernetesGetLogs {
-	my ( $self, $podLabelString, $namespace, $destinationPath ) = @_;
+	my ( $self, $podLabelString, $serviceTypeImpl, $namespace, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
 	
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;	
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		exit(-1);
+	}
+	
+	foreach my $podName (@names) { 	
+		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs -c $serviceTypeImpl --namespace=$namespace $podName 2>&1";
+		$outString = `$cmd`;
+
+		$logger->debug("Command: $cmd");
+		my $logName          = "$destinationPath/${podName}.log";
+		my $applog;
+		open( $applog, ">$logName" )
+	  	||	 die "Error opening $logName:$!";
+	  			
+		print $applog $outString;
+	
+		close $applog;
+
+	}
 	
 	return "";
 }

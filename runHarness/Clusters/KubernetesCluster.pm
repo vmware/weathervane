@@ -325,7 +325,7 @@ sub kubernetesDoPodsExist {
 }
 
 sub kubernetesGetLogs {
-	my ( $self, $podLabelString, $namespace ) = @_;
+	my ( $self, $podLabelString, $namespace, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
 	

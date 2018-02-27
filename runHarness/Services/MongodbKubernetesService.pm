@@ -144,6 +144,10 @@ sub configure {
 			my $storageClass = $self->getParamValue("mongodbDataStorageClass");
 			print FILEOUT "${1}storageClassName: $storageClass\n";
 		}
+		elsif ( $inline =~ /(\s+)\-\simage:(.*\:)/ ) {
+			my $version  = $self->getParamValue('dockerWeathervaneVersion');
+			print FILEOUT "${1}image:${2}:$version\n";
+		}
 		else {
 			print FILEOUT $inline;
 		}

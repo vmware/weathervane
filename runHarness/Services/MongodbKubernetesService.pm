@@ -145,7 +145,7 @@ sub configure {
 			print FILEOUT "${1}storageClassName: $storageClass\n";
 		}
 		elsif ( $inline =~ /(\s+)\-\simage:(.*\:)/ ) {
-			my $version  = $self->cluster->getParamValue('dockerWeathervaneVersion');
+			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}image:${2}:$version\n";
 		}
 		else {

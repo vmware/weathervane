@@ -126,7 +126,7 @@ sub configure {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
 		elsif ( $inline =~ /(\s+)\-\simage:(.*\:)/ ) {
-			my $version  = $self->cluster->getParamValue('dockerWeathervaneVersion');
+			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}image:${2}:$version\n";
 		}
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {

@@ -33,7 +33,7 @@ spec:
         impl: auctiondatamanager
     spec:
       containers:
-      - image: hrosenbe/weathervane-auctiondatamanager:1.1.0
+      - image: hrosenbe/weathervane-auctiondatamanager:1.2.0
         name: auctiondatamanager
         imagePullPolicy: IfNotPresent
         livenessProbe:

@@ -33,7 +33,7 @@ spec:
         impl: nginx
     spec:
       containers:
-      - image: hrosenbe/weathervane-nginx:1.1.0
+      - image: hrosenbe/weathervane-nginx:1.2.0
         name: nginx
         imagePullPolicy: IfNotPresent
         envFrom:

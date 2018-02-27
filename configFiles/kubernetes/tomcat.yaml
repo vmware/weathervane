@@ -37,7 +37,7 @@ spec:
         impl: tomcat
     spec:
       containers:
-      - image: hrosenbe/weathervane-tomcat:1.1.0
+      - image: hrosenbe/weathervane-tomcat:1.2.0
         name: tomcat
         imagePullPolicy: IfNotPresent
         envFrom:

@@ -437,33 +437,9 @@ sub createRunConfigHash {
 
 		# There should be one target for each IP address
 		# associated with the www hostname for each appInstance
-		my $wwwIpAddrsRef = [];
-		if ( $appInstance->getParamValue('useVirtualIp') ) {
-			$logger->debug(
-"configure for workload $workloadNum, appInstance uses virtualIp"
-			);
-			my $wwwHostname = $appInstance->getWwwHostname();
-			my $wwwIpsRef   = Utils::getIpAddresses($wwwHostname);
-			foreach my $ip (@$wwwIpsRef) {
-
-		   # When using virtualIP addresses, all edge services must use the same
-		   # default port numbers
-				push @$wwwIpAddrsRef, [ $ip, 80, 443 ];
-			}
-		}
-		else {
-			my $edgeService = $appInstance->getEdgeService();
-			my $edgeServices =
-			  $appInstance->getActiveServicesByType($edgeService);
-			$logger->debug(
-"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
-			);
-			foreach my $service (@$edgeServices) {
-				push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
-			}
-		}
+		my $wwwIpAddrsRef = $appInstance->getWwwIpAddrsRef();
 		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
-		$logger->debug("createRunConfigHash numVIPs = " .$numVIPs);
+	    $logger->debug("createRunConfigHash appInstance $instanceNum has $numVIPs targets");
 
 		$workload->{"targets"} = [];
 		my @targetNames;

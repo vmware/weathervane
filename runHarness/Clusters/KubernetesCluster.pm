@@ -327,6 +327,7 @@ sub kubernetesDoPodsExist {
 sub kubernetesGetLogs {
 	my ( $self, $podLabelString, $serviceTypeImpl, $namespace, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
 	
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
@@ -340,7 +341,7 @@ sub kubernetesGetLogs {
 	$logger->debug("Output: $outString");
 	my @names = split /\s+/, $outString;
 	if ($#names < 0) {
-		$console_logger->error("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		$console_logger->error("kubernetesGetLogs: There are no pods with label $serviceTypeImpl in namespace $namespace");
 		exit(-1);
 	}
 	

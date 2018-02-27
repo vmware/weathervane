@@ -401,37 +401,14 @@ override 'getLogFiles' => sub {
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			if ( $service->isReachable() ) {
-				$pid = fork();
-				if ( !defined $pid ) {
-					$logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					my $name;
-					if ($service->host->isCluster) {
-						$name = $service->host->clusterName;
-					} else {
-						$name = $service->host->hostName;
-					}
-					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
-					if ( !( -e $destinationPath ) ) {
-						`mkdir -p $destinationPath`;
-					}
-					$service->getLogFiles($destinationPath);
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-			}
+		my $service = $servicesRef->[0];
+		my $name = $service->host->clusterName;
+		my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
+		if ( !( -e $destinationPath ) ) {
+			`mkdir -p $destinationPath`;
 		}
-	}
-
-	foreach $pid (@pids) {
-		waitpid $pid, 0;
-	}
+		$service->getLogFiles($destinationPath);
+	}	
 };
 
 __PACKAGE__->meta->make_immutable;

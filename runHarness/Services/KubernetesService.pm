@@ -127,6 +127,14 @@ override 'isStopped' => sub {
 	return !$self->host->kubernetesDoPodsExist("type=$serviceType", $namespace );
 };
 
+sub getLogFiles {
+	my ( $self, $destinationPath ) = @_;
+	my $serviceType = $self->getParamValue('serviceType');
+	my $namespace = $self->namespace;
+
+	$self->host->kubernetesGetLogs("type=$serviceType", $namespace, $destinationPath);
+
+}
 sub setPortNumbers {
 	my ($self)          = @_;
 }

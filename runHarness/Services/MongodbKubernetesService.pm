@@ -191,12 +191,6 @@ override 'sanityCheck' => sub {
 	return 1;	
 };
 
-sub getLogFiles {
-	my ( $self, $destinationPath ) = @_;
-
-
-}
-
 sub cleanLogFiles {
 	my ($self) = @_;
 

@@ -115,13 +115,6 @@ override 'isUp' => sub {
 	}
 };
 
-sub getLogFiles {
-	my ( $self, $destinationPath ) = @_;
-
-
-}
-
-
 sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxDockerService");

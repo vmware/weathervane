@@ -1369,7 +1369,7 @@ $parameters{"kubernetesConfigFile"} = {
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
 	"default"   => "1.2.0",
-	"parent"    => "host",
+	"parent"    => "",
 	"usageText" => "",
 	"showUsage" => 0,
 };

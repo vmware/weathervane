@@ -33,7 +33,7 @@ spec:
         impl: mongodb
     spec:
       containers:
-      - image: hrosenbe/weathervane-mongodb:1.1.0
+      - image: hrosenbe/weathervane-mongodb:1.2.0
         name: mongodb
         imagePullPolicy: IfNotPresent
         envFrom:

@@ -27,7 +27,7 @@ spec:
         impl: rabbitmq
     spec:
       containers:
-      - image: hrosenbe/weathervane-rabbitmq:1.1.0
+      - image: hrosenbe/weathervane-rabbitmq:1.2.0
         name: rabbitmq
         imagePullPolicy: IfNotPresent
         envFrom:

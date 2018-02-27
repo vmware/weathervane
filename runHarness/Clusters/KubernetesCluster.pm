@@ -324,6 +324,15 @@ sub kubernetesDoPodsExist {
 	return 1;
 }
 
+sub kubernetesGetLogs {
+	my ( $self, $podLabelString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
+	
+	
+	return "";
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -19,7 +19,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator" />
 
 	<appender name="LOGFILE" class="ch.qos.logback.core.FileAppender">
-		<file>${catalina.base}/logs/auction.log</file>
+		<file>/dev/stdout</file>
 		<encoder>
 			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
 			</pattern>

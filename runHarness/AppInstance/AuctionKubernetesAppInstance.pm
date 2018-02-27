@@ -380,6 +380,60 @@ override 'cleanStatsFiles' => sub {
 
 };
 
+override 'getLogFiles' => sub {
+	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
+	$logger->debug(
+		"getLogFiles for workload ", $self->getParamValue('workloadNum'),
+		", appInstance ",            $self->getParamValue('appInstanceNum')
+	);
+
+	my $pid;
+	my @pids;
+
+	my $newBaseDestinationPath = $baseDestinationPath;
+	if ($usePrefix) {
+		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
+	}
+
+	#  collection on services
+	my $impl         = $self->getParamValue('workloadImpl');
+	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
+	foreach my $serviceType (@$serviceTypes) {
+		my $servicesRef = $self->getAllServicesByType($serviceType);
+		foreach my $service (@$servicesRef) {
+			if ( $service->isReachable() ) {
+				$pid = fork();
+				if ( !defined $pid ) {
+					$logger->error("Couldn't fork a process: $!");
+					exit(-1);
+				}
+				elsif ( $pid == 0 ) {
+					my $name;
+					if ($service->host->isCluster) {
+						$name = $service->host->clusterName;
+					} else {
+						$name = $service->host->hostName;
+					}
+					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
+					if ( !( -e $destinationPath ) ) {
+						`mkdir -p $destinationPath`;
+					}
+					$service->getLogFiles($destinationPath);
+					exit;
+				}
+				else {
+					push @pids, $pid;
+				}
+			}
+		}
+	}
+
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+	}
+};
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -109,6 +109,10 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
+	my $namespace = $self->namespace;
+	`mkdir -p $destinationPath`;
+
+	`cp /tmp/zookeeper-$namespace.yaml $destinationPath/. 2>&1`;
 	
 }
 

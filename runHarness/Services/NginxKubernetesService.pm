@@ -129,6 +129,10 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
+	my $namespace = $self->namespace;
+	`mkdir -p $destinationPath`;
+
+	`cp /tmp/nginx-$namespace.yaml $destinationPath/. 2>&1`;
 
 }
 

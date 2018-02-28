@@ -23,6 +23,6 @@ RUN yum install -y java-1.8.0-openjdk && \
 	mkdir /opt/apache-tomcat-auction1/temp && \
 	mkdir /opt/apache-tomcat-auction1/logs && \
     chmod +x /entrypoint.sh && \
-    ln -sf /dev/stdout /opt/apache-tomcat/auction1/logs/auction.log
+    ln -sf /dev/stdout /opt/apache-tomcat-auction1/logs/auction.log
 
 ENTRYPOINT ["/entrypoint.sh"]   

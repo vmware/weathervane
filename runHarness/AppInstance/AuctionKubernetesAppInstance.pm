@@ -401,13 +401,15 @@ override 'getLogFiles' => sub {
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
-		my $service = $servicesRef->[0];
-		my $name = $service->host->clusterName;
-		my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
-		if ( !( -e $destinationPath ) ) {
-			`mkdir -p $destinationPath`;
+		if ($#{$servicesRef} >= 0) {
+			my $service = $servicesRef->[0];
+			my $name = $service->host->clusterName;
+			my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
+			if ( !( -e $destinationPath ) ) {
+				`mkdir -p $destinationPath`;
+			}
+			$service->getLogFiles($destinationPath);
 		}
-		$service->getLogFiles($destinationPath);
 	}	
 };
 

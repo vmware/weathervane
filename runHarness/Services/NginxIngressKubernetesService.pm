@@ -46,10 +46,11 @@ sub configure {
 	print $dblog "Configure Nginx Ingress\n";
 
 	my $namespace = $self->namespace;	
+	my $impl = $self->getImpl();
 	my $configDir        = $self->getParamValue('configDir');
 
 	open( FILEIN,  "$configDir/kubernetes/ingressControllerNginx.yaml" ) or die "$configDir/kubernetes/ingressControllerNginx.yaml: $!\n";
-	open( FILEOUT, ">/tmp/ingressControllerNginx-$namespace.yaml" )             or die "Can't open file /tmp/ingressControllerNginx-$namespace.yaml: $!\n";
+	open( FILEOUT, ">/tmp/${impl}-$namespace.yaml" )             or die "Can't open file /tmp/${impl}-$namespace.yaml: $!\n";
 	
 	while ( my $inline = <FILEIN> ) {
 

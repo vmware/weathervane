@@ -1793,7 +1793,7 @@ $parameters{"lbServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "haproxy",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which load-balancer to use.  Currently must be haproxy or nginxIngress.",
+	"usageText" => "Controls which load-balancer to use.  Currently must be haproxy or nginx-ingress-controller.",
 	"showUsage" => 0,
 };
 $parameters{"appServerImpl"} = {

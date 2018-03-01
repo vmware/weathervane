@@ -198,8 +198,10 @@ spec:
   template:
     metadata:
       labels:
+        tier: frontend
         app: ingress-controller-nginx
-        type: appInstance
+        type: lbServer
+        impl: nginx-ingress-controller
       annotations:
         prometheus.io/port: '10254'
         prometheus.io/scrape: 'true' 

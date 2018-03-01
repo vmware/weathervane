@@ -171,7 +171,8 @@ sub getServiceByType {
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
+			}
+		}	
 		else {
 			$console_logger->error("nginxIngress can only be created when running an AppInstance on a Kubernetes cluster");
 		}

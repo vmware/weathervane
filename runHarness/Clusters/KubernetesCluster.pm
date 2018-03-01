@@ -218,9 +218,12 @@ sub kubernetesGetIngressIp {
 	my @ips = split /\n/, $outString;
 	if ($#ips < 0) {
 		$logger->debug("kubernetesGetIngressIp: There are no ingresses with label $labelString in namespace $namespace");
-		return "";
+		return 0;
 	}
 	
+	if (!$ips[0]) {
+		return 0;
+	}
 	return $ips[0];
 }
 
@@ -361,7 +364,7 @@ sub kubernetesGetLogs {
 
 	}
 	
-	return "";
+	return 0;
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -117,7 +117,7 @@ override 'isUp' => sub {
 
 sub cleanLogFiles {
 	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::NginxDockerService");
+	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
 	$logger->debug("cleanLogFiles");
 
 }

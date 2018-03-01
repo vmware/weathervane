@@ -21,6 +21,7 @@ use Services::HaproxyDockerService;
 use Services::HttpdService;
 use Services::NginxService;
 use Services::NginxKubernetesService;
+use Services::NginxIngressKubernetesService;
 use Services::NginxDockerService;
 use Services::TomcatService;
 use Services::TomcatKubernetesService;
@@ -68,6 +69,7 @@ sub getServiceByNameAndVersion {
 
 sub getServiceByType {
 	my ( $self, $paramHashRef, $serviceType, $numScvInstances, $appInstance ) = @_;
+	my $console_logger = get_logger("Console");
 	my $service;
 
 	my $serviceName = $paramHashRef->{$serviceType . "Impl"};
@@ -160,6 +162,18 @@ sub getServiceByType {
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
+		}
+	}
+	elsif ( $serviceName eq "nginxIngress" ) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = NginxIngressKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		else {
+			$console_logger->error("nginxIngress can only be created when running an AppInstance on a Kubernetes cluster");
 		}
 	}
 	elsif ( $serviceName eq "mysql" ) {

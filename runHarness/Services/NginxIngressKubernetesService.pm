@@ -53,7 +53,7 @@ sub configure {
 	
 	while ( my $inline = <FILEIN> ) {
 
-		if ( $inline =~ /(\s+)namespace:)/ ) {
+		if ( $inline =~ /(\s+)namespace:/ ) {
 			print FILEOUT "${1}namespace: $namespace\n";
 		}
 		else {

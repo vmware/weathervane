@@ -44,6 +44,7 @@ use Services::ConfigurationManager;
 use Services::ConfigurationManagerDocker;
 use Services::ScheduledElasticityService;
 use Services::SimpleElasticityService;
+use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 

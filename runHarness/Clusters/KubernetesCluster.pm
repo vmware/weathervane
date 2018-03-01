@@ -221,10 +221,34 @@ sub kubernetesGetIngressIp {
 		return 0;
 	}
 	
-	if (!$ips[0]) {
+	return $ips[0];
+}
+
+sub kubernetesIngressHasIp {
+	my ( $self, $labelString, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesAreAllPodRunning LabelString $labelString, namespace $namespace");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get ingress --selector=$labelString -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @ips = split /\n/, $outString;
+	if ($#ips < 0) {
+		$logger->debug("kubernetesGetIngressIp: There are no ingresses with label $labelString in namespace $namespace");
 		return 0;
 	}
-	return $ips[0];
+	
+	if (!$ips[0]) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 sub kubernetesGetNodePortForPortNumber {

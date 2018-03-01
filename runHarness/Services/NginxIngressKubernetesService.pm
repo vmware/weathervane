@@ -74,7 +74,7 @@ override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	
 	my $cluster = $self->host;
-	return $cluster->kubernetesGetIngressIp("type=appInstance", $self->namespace)
+	return $cluster->kubernetesIngressHasIp("type=appInstance", $self->namespace)
 };
 
 sub cleanLogFiles {

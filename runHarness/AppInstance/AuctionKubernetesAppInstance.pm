@@ -70,7 +70,7 @@ sub setHost {
 
 override 'startServices' => sub {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
 	my $users  = $self->users;
 	my $impl         = $self->getParamValue('workloadImpl');
 
@@ -105,39 +105,6 @@ override 'startServices' => sub {
 	close FILEOUT;
 	$cluster->kubernetesApply("/tmp/namespace-$namespace.yaml", $self->namespace);
 	
-	# When the backend is starting, start the appInstance specific services
-	if ($serviceTier eq "backend") {
-	
-		# Create the tls secret for the ingress controller
-		$logger->debug("Create tls secret for namespace ", $self->namespace);
-		my $cmd = "kubectl create secret tls tls-secret --key $configDir/host/centos7/tls/private/weathervane.key --cert $configDir/host/centos7/tls/certs/weathervane.crt --namespace=$namespace 2>&1"; 
-		my $outString = `$cmd`;
-		$logger->debug("Command: $cmd");
-		$logger->debug("Output: $outString");
-	
-		# Create the default backend in the namespace
-		$cluster->kubernetesApply("$configDir/kubernetes/defaultBackend.yaml", $self->namespace);
-	
-		# Create the ingress controller in the namespace
-		$cluster->kubernetesApply("$configDir/kubernetes/ingressControllerNginx.yaml", $self->namespace);
-	
-		# Create the service for the ingress controller
-		$cluster->kubernetesApply("$configDir/kubernetes/ingressControllerNginxService.yaml", $self->namespace);
-	
-		# Create the ingress for the appInstance
-		$cluster->kubernetesApply("$configDir/kubernetes/auctionIngress.yaml", $self->namespace);
-		
-		# Need to wait until ingress has IP address
-		my $sleepInterval = 15;
-		my $numIntervals = 1;
-		sleep $sleepInterval;
-		while (!$cluster->kubernetesGetIngressIp("type=appInstance", $self->namespace)) {
-			sleep $sleepInterval;
-			$numIntervals++;
-		}
-		$logger->debug("Got ingress IP after $numIntervals intervals, ",$numIntervals*$sleepInterval," seconds.");
-	}
-
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),

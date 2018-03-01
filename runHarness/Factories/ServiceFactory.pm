@@ -165,7 +165,7 @@ sub getServiceByType {
 			);
 		}
 	}
-	elsif ( $serviceName eq "nginxIngress" ) {
+	elsif ( $serviceName eq "nginx-ingress-controller" ) {
 		if ($paramHashRef->{'clusterName'}) {
 			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
 				$service = NginxIngressKubernetesService->new(

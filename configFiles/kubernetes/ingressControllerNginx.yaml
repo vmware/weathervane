@@ -185,6 +185,7 @@ data:
   enable-underscores-in-headers: "true"
   disable-access-log: "true"
   max-worker-connections: "32768"
+  worker-processes: "6"
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -236,6 +237,9 @@ spec:
             requests:
               cpu: 2
               memory: 8Gi
+            limits:
+              cpu: 6
+              memory: 24Gi
           livenessProbe:
             failureThreshold: 3
             httpGet:

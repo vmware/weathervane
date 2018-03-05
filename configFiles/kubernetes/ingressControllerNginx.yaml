@@ -179,7 +179,7 @@ metadata:
   name: ingress-controller-nginx-conf
   labels:
     app: ingress-controller-nginx
-    type: appInstance
+    type: lbServer
 data:
   ssl-redirect: "false"
   enable-underscores-in-headers: "true"
@@ -208,7 +208,7 @@ spec:
       annotations:
         prometheus.io/port: '10254'
         prometheus.io/scrape: 'true' 
-    spec:
+    spec: 
       serviceAccountName: nginx-ingress-serviceaccount
       containers:
         - name: nginx-ingress-controller

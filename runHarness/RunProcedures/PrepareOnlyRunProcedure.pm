@@ -188,7 +188,6 @@ sub run {
 	$self->startServices( "data", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
-	sleep 240;
 
 	$console_logger->info("Pre-warming data services.\n");
 	$self->pretouchData($setupLogDir);
@@ -197,19 +196,16 @@ sub run {
 	$self->startServices( "backend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
-	sleep 60;
 
 	$console_logger->info("Starting frontend services");
 	$self->startServices( "frontend", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
-	sleep 60;
 
 	$console_logger->info("Starting infrastructure services");
 	$self->startServices( "infrastructure", $setupLogDir );
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
-	sleep 60;
 
 	# Make sure that all of the services are up
 	$debug_logger->debug("Check isUp");

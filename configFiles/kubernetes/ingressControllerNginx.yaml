@@ -4,7 +4,7 @@ metadata:
   name: default-http-backend
   labels:
     app: default-http-backend
-    type: appInstance
+    type: lbServer
 spec:
   replicas: 1
   template:

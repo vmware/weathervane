@@ -94,7 +94,7 @@ sub getConfigFiles {
 	my $namespace = $self->namespace;
 	`mkdir -p $destinationPath`;
 
-	`cp /tmp/ingressControllerNginx-$namespace.yaml $destinationPath/. 2>&1`;
+	`cp /tmp/nginx-ingress-controller-$namespace.yaml $destinationPath/. 2>&1`;
 
 }
 

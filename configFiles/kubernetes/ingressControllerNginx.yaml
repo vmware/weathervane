@@ -183,6 +183,8 @@ metadata:
 data:
   ssl-redirect: "false"
   enable-underscores-in-headers: "true"
+  disable-access-log: "true"
+  max-worker-connections: "32768"
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment

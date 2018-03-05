@@ -259,10 +259,6 @@ sub prepareData {
 	# stop the auctiondatamanager container
 	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
 
-	# stop the data services. They must be started in the main process
-	# so that the port numbers are available
-	$appInstance->stopServices("data", $logPath);
-
 	close $logHandle;
 }
 

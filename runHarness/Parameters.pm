@@ -652,7 +652,7 @@ sub getSingletonInstanceParamHashRef {
 
 }
 
-our $version = "1.0.19";
+our $version = "1.0.20";
 
 # These variables contain the key names for the parameter hashes
 tie( our %parameters, 'Tie::IxHash' );
@@ -1357,7 +1357,7 @@ $parameters{"stopStatsScript"} = {
 
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
-	"default"   => "1.0.19",
+	"default"   => "1.0.20",
 	"parent"    => "host",
 	"usageText" => "",
 	"showUsage" => 0,

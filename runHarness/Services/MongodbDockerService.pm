@@ -160,7 +160,7 @@ sub createSingleMongodb {
 
 	my %volumeMap;
 	my $dataDir = $self->getParamValue('mongodbDataDir');
-	if ($host->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($self->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$dataDir = $self->getParamValue('mongodbDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($dblog, $dataDir)) {

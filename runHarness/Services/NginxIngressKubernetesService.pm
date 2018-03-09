@@ -45,9 +45,14 @@ sub configure {
 	$logger->debug("Configure Nginx Ingress");
 	print $dblog "Configure Nginx Ingress\n";
 
+	my $cluster = $self->host;
 	my $namespace = $self->namespace;	
 	my $impl = $self->getImpl();
 	my $configDir        = $self->getParamValue('configDir');
+
+	# Create the tls secret for the ingress controller
+	$logger->debug("Create tls secret for namespace ", $self->namespace);
+  	$cluster->kubernetesCreateSecret("$configDir/host/centos7/tls/private/weathervane.key", "$configDir/host/centos7/tls/certs/weathervane.crt", $namespace);
 
 	open( FILEIN,  "$configDir/kubernetes/ingressControllerNginx.yaml" ) or die "$configDir/kubernetes/ingressControllerNginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/${impl}-$namespace.yaml" )             or die "Can't open file /tmp/${impl}-$namespace.yaml: $!\n";

@@ -186,6 +186,8 @@ data:
   disable-access-log: "true"
   max-worker-connections: "32768"
   worker-processes: "6"
+  client-body-buffer-size: "64k"
+  client-body-buffer-timeout: "60"
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment

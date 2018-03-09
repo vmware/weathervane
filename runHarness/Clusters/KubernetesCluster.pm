@@ -201,6 +201,21 @@ sub kubernetesApply {
 	$logger->debug("Output: $outString");
 }
 
+sub kubernetesCreateSecret {
+	my ( $self, $keyFileName, $certFileName, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesCreateSecret  keyFile $keyFileName, certFile $certFileName, in namespace $namespace");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl create secret tls tls-secret --key $keyFileName --cert $certFileName --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+}
+
 sub kubernetesGetIngressIp {
 	my ( $self, $labelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

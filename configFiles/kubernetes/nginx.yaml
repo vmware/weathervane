@@ -82,6 +82,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx
+  labels:
+    app: auction
+    tier: backend
+    type: webServer
+    impl: nginx
 spec:
   type: NodePort
   ports:

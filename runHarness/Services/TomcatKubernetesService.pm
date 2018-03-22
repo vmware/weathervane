@@ -59,9 +59,6 @@ sub configure {
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
 	my $numCpus            = 2;
-	if ($self->getParamValue('dockerCpus')) {
-		$numCpus = $self->getParamValue('dockerCpus');
-	}
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');

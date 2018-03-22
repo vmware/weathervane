@@ -35,6 +35,10 @@ if [ ! -e "/fifo" ]; then
 fi
 chmod 400 /fifo
 
+sleep 30;
+tail -f /opt/apache-tomcat-auction1/logs/gc.log &
+tail -f /opt/apache-tomcat-auction1/logs/auction.log &
+
 # wait indefinitely
 while true;
 do

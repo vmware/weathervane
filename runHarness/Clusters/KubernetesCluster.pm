@@ -266,6 +266,29 @@ sub kubernetesIngressHasIp {
 	}
 }
 
+sub kubernetesGetNodeIPs {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetNodeIPs ");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get node  -o=jsonpath='{$.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}' 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @ips = split /\s/, $outString;
+	if ($#ips < 0) {
+		$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+	}
+
+	return \@ips;
+	
+}
+
 sub kubernetesGetNodePortForPortNumber {
 	my ( $self, $labelString, $portNumber, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

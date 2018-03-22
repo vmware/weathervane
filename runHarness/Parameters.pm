@@ -2103,7 +2103,7 @@ $parameters{"appServerFullImageCacheSizeMultiplier"} = {
 
 $parameters{"appServerThreads"} = {
 	"type"      => "=i",
-	"default"   => 50,
+	"default"   => 48,
 	"parent"    => "appServer",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -2111,7 +2111,7 @@ $parameters{"appServerThreads"} = {
 
 $parameters{"appServerJdbcConnections"} = {
 	"type"      => "=i",
-	"default"   => 51,
+	"default"   => 49,
 	"parent"    => "appServer",
 	"usageText" => "",
 	"showUsage" => 1,

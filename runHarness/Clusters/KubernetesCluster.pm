@@ -275,7 +275,7 @@ sub kubernetesGetNodeIPs {
 
 	my $cmd;
 	my $outString;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get node  -o=jsonpath='{$.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}' 2>&1";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get node  -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}' 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");

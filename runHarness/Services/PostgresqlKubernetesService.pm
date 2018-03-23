@@ -230,7 +230,7 @@ sub getMaxLoadedUsers {
 	
 	my $cluster = $self->host;
 	my $impl = $self->getImpl();
-	my $maxUsers = $cluster->kubernetesExecOne($impl, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"", $self->namespace);
+	my $maxUsers = $cluster->kubernetesExecOne($impl, "sudo -u postgres psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"", $self->namespace);
 	chomp($maxUsers);
 	$maxUsers += 0;
 	

@@ -60,7 +60,7 @@ sub clearDataAfterStart {
 
 	my $applog;
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
-	print $applog "Clearing Data From PortgreSQL\n";
+	print $applog "Clearing Data From PostgreSQL\n";
 
 	$cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
 	close $applog;

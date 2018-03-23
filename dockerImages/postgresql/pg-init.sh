@@ -22,6 +22,7 @@ if [ "$MODE" == 'firstrun' ]; then
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -w start
 
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role auction with superuser createdb login password 'auction;'"
+  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role root with superuser createdb login password 'auction;'"
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database auction owner auction;"
 
   # Stop postgresql
@@ -47,8 +48,11 @@ echo "Configure postgresql.conf"
 perl /configure.pl	
 
 # Start postgresql
+echo "Starting PostgreSQL"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/postgres -D /mnt/dbData/postgresql 
 
 # Force a vacuum and checkpoint
+echo "Force vacuum"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
+echo "Force checkpoint"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"

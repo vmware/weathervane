@@ -50,5 +50,5 @@ perl /configure.pl
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/postgres -D /mnt/dbData/postgresql 
 
 # Force a vacuum and checkpoint
-psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
-psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"
+sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
+sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"

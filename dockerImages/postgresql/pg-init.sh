@@ -24,6 +24,7 @@ if [ "$MODE" == 'firstrun' ]; then
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role auction with superuser createdb login password 'auction;'"
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role root with superuser createdb login password 'auction;'"
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database auction owner auction;"
+  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database root owner root;"
 
   # Stop postgresql
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -m fast -w stop

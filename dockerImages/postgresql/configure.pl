@@ -32,7 +32,7 @@ elsif ( uc($totalMemUnit) eq "G" ) {
 
 # Modify the postgresql.conf and
 # then copy the new version to the DB
-`echo "Configuring postgresql.conf"`;
+print "Configuring postgresql.conf\n";
 open( FILEIN,  "/postgresql.conf" );
 open( FILEOUT, ">/mnt/dbData/postgresql/postgresql.conf" );
 while ( my $inline = <FILEIN> ) {
@@ -114,5 +114,7 @@ while ( my $inline = <FILEIN> ) {
 }
 close FILEIN;
 close FILEOUT;
-`chown postgres:postgres /mnt/dbData/postgresql/postgresql.conf`
+`chown postgres:postgres /mnt/dbData/postgresql/postgresql.conf`;
+
+print "Configured postgresql.conf\n";
 

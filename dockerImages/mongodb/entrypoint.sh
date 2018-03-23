@@ -43,9 +43,6 @@ trap 'sigusr1' USR1
 
 perl /updateResolveConf.pl
 
-echo never > /sys/kernel/mm/transparent_hugepage/enabled
-echo never > /sys/kernel/mm/transparent_hugepage/defrag
-
 cmd=$*
 numArgs=$#
 

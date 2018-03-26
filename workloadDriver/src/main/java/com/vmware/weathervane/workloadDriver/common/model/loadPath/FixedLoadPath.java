@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.vmware.weathervane.workloadDriver.common.model.Workload;
 
 @JsonTypeName(value = "fixed")
 public class FixedLoadPath extends LoadPath {
@@ -36,7 +37,7 @@ public class FixedLoadPath extends LoadPath {
 	private long steadyState;
 	private long rampDown;
 
-	private long timeStep = 15L;
+	private long timeStep = 10L;
 
 	@JsonIgnore
 	private List<UniformLoadInterval> uniformIntervals = null;
@@ -48,9 +49,9 @@ public class FixedLoadPath extends LoadPath {
 	private int nextStatsIntervalIndex = 0;
 
 	@Override
-	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber,
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
 
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
 

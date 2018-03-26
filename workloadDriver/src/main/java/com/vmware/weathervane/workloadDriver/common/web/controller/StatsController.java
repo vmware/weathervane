@@ -33,6 +33,7 @@ import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.RunCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStartedMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 import com.vmware.weathervane.workloadDriver.common.web.service.StatsService;
 
@@ -59,6 +60,20 @@ public class StatsController {
 		}
 	
 		return new ResponseEntity<BasicResponse>(response, status);
+	}
+
+	@RequestMapping(value="/run/{runName}/workload/{workloadName}/specName/{specName}/intervalName/{intervalName}", method = RequestMethod.GET)
+	public HttpEntity<StatsSummaryResponseMessage> getStatsSummary(@PathVariable String runName, @PathVariable String workloadName, 
+			@PathVariable String specName, @PathVariable String intervalName) {
+		logger.debug("getStatsSummary for run " + runName + ", workload " + workloadName + ", statsIntervalSpec " + specName + ", interval " + intervalName);
+		StatsSummaryResponseMessage response = null;
+		HttpStatus status = HttpStatus.OK;
+		
+		response = statsService.getStatsSummary(runName, workloadName, specName, intervalName);
+		response.setMessage("Success");
+		response.setStatus("Success");
+	
+		return new ResponseEntity<StatsSummaryResponseMessage>(response, status);
 	}
 
 	@RequestMapping(value="/initialize/run/{runName}", method = RequestMethod.POST)

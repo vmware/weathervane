@@ -79,7 +79,12 @@ public abstract class StatsIntervalSpec implements Runnable {
 
 	@JsonIgnore
 	private long lastIntervalEndTime;
-
+	
+	@JsonIgnore 
+	private long intervalStartUsers = -1;
+	
+	@JsonIgnore
+	private long intervalEndUsers = -1;
 
 	@JsonIgnore
 	protected abstract StatsInterval getNextInterval();
@@ -116,6 +121,10 @@ public abstract class StatsIntervalSpec implements Runnable {
 		logger.debug("run");
 		lastIntervalEndTime = System.currentTimeMillis();
 
+		if (this.intervalEndUsers == -1) {
+			this.intervalEndUsers = this.intervalStartUsers;
+		}
+		
 		/*
 		 * Send messages to workloadService on driver nodes indicating
 		 * that stats interval is complete
@@ -129,6 +138,8 @@ public abstract class StatsIntervalSpec implements Runnable {
 			statsIntervalCompleteMessage.setCurIntervalName(curIntervalName);
 			statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
 			statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
+			statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
+			statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
 			
 			HttpHeaders requestHeaders = new HttpHeaders();
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -147,7 +158,7 @@ public abstract class StatsIntervalSpec implements Runnable {
 				logger.error("Error posting statsIntervalComplete message to " + url);
 			}
 		}
-		
+		intervalStartUsers = intervalEndUsers;		
 		curIntervalStartTime = lastIntervalEndTime;
 
 		StatsInterval interval = this.getNextInterval();
@@ -199,6 +210,14 @@ public abstract class StatsIntervalSpec implements Runnable {
 
 	public void setCurIntervalName(String curIntervalName) {
 		this.curIntervalName = curIntervalName;
+	}
+
+	public void setActiveUsers(long users) {
+		if (this.intervalStartUsers == -1) {
+			this.intervalStartUsers = users;
+		} else {
+			this.intervalEndUsers = users;
+		}
 	}
 
 }

@@ -172,7 +172,7 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * LoadPaths run locally
 		 */
-		getLoadPath().initialize(runName, name, hosts, statsPortNumber, restTemplate, executorService);
+		getLoadPath().initialize(runName, name, this, hosts, statsPortNumber, restTemplate, executorService);
 
 		state = WorkloadState.INITIALIZED;
 	}
@@ -301,7 +301,7 @@ public abstract class Workload implements UserFactory {
 		if (maxUsers < numUsers) {
 			throw new TooManyUsersException("MaxUsers = " + maxUsers);
 		}
-		
+				
 		/*
 		 * Divide the users among the targets and set the load per-target
 		 */
@@ -433,6 +433,12 @@ public abstract class Workload implements UserFactory {
 
 		
 		return theStringBuilder.toString();
+	}
+
+	public void setActiveUsers(long users) {
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
+			spec.setActiveUsers(users);
+		}		
 	}
 
 }

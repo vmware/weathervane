@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.vmware.weathervane.workloadDriver.common.model.Workload;
 
 @JsonTypeName(value = "findmax")
 public class FindMaxLoadPath extends LoadPath {
@@ -32,9 +33,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private long maxUsers;
 
 	@Override
-	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber,
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
 
 	}
 

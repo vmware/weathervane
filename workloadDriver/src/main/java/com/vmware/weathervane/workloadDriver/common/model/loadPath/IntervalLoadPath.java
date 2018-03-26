@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.vmware.weathervane.workloadDriver.common.model.Workload;
 
 @JsonTypeName(value = "interval")
 public class IntervalLoadPath extends LoadPath {
@@ -42,9 +43,9 @@ public class IntervalLoadPath extends LoadPath {
 	private int nextStatsIntervalIndex = 0;
 	
 	@Override
-	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber, RestTemplate restTemplate, 
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
 		
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
 		

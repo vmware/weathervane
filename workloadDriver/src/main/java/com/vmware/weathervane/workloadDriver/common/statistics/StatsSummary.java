@@ -43,6 +43,9 @@ public class StatsSummary {
 	private String intervalName = null;
 	private Long intervalStartTime = null;
 	private Long intervalEndTime = null;
+
+	private long startActiveUsers = -1;
+	private long endActiveUsers = -1;
 	
 	private Boolean printSummary = null;
 	private Boolean printIntervals = null;
@@ -131,6 +134,14 @@ public class StatsSummary {
 			}
 		}
 		
+		if (this.startActiveUsers == -1) {
+			this.startActiveUsers = that.startActiveUsers;
+		}
+		
+		if (this.endActiveUsers == -1) {
+			this.endActiveUsers = that.endActiveUsers;
+		}
+		
 		if (this.intervalStartTime == null) {
 			this.intervalStartTime = that.intervalStartTime;
 		}
@@ -155,6 +166,8 @@ public class StatsSummary {
 	}
 
 	public void reset() {
+		startActiveUsers = -1;
+		endActiveUsers = -1;
 		for (OperationStatsSummary summary : opNameToStatsMap.values()) {
 			summary.reset();
 		}
@@ -208,6 +221,22 @@ public class StatsSummary {
 		this.intervalEndTime = intervalEndTime;
 	}
 
+	public void setEndActiveUsers(Long activeUsers) {
+		this.endActiveUsers = activeUsers;
+	}
+
+	public Long getEndActiveUsers() {
+		return endActiveUsers;
+	}
+
+	public void setStartActiveUsers(Long activeUsers) {
+		this.startActiveUsers = activeUsers;
+	}
+
+	public Long getStartActiveUsers() {
+		return startActiveUsers;
+	}
+
 	public Boolean getPrintSummary() {
 		return printSummary;
 	}
@@ -251,19 +280,19 @@ public class StatsSummary {
 
 	@JsonIgnore
 	public String getStatsIntervalHeader(boolean includeWorkload) {
-		String outputFormat = "|%12s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
+		String outputFormat = "|%12s|%11s|%11s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
 			outputFormat = "|%12s" + outputFormat;
 		}
 		StringBuilder retVal = new StringBuilder();
 		if (includeWorkload) {
-			retVal.append(String.format(outputFormat, "Time", "Workload", "TP", "Avg RT", "Ops", "Ops",
+			retVal.append(String.format(outputFormat, "Time", "Workload", "StartUsers", "EndUsers", "TP", "Avg RT", "Ops", "Ops",
 					"Ops", "Per Operation: Operation:Total/FailedRT(RT-Limit/AvgRT/AvgFailingRT)", "Timestamp\n"));
-			retVal.append(String.format(outputFormat, "(sec)", "", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
+			retVal.append(String.format(outputFormat, "(sec)", "", "", "", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
 		} else {
-			retVal.append(String.format(outputFormat, "Time", "TP", "Avg RT", "Ops", "Ops", "Ops",
+			retVal.append(String.format(outputFormat, "Time", "StartUsers", "EndUsers", "TP", "Avg RT", "Ops", "Ops", "Ops",
 					"Per Operation: Operation:Total/FailedRT(RT-Limit/AvgRT/AvgFailingRT)", "Timestamp\n"));
-			retVal.append(String.format(outputFormat, "(sec)", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
+			retVal.append(String.format(outputFormat, "(sec)", "", "", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
 		}
 
 		return retVal.toString();
@@ -274,7 +303,7 @@ public class StatsSummary {
 		logger.debug("getStatsIntervalLine for statsSummary:" + this);
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
-		String outputFormat = "|%12s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
+		String outputFormat = "|%12s|%11s|%11s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
 			outputFormat = "|%12s" + outputFormat;
 		}
@@ -313,11 +342,11 @@ public class StatsSummary {
 		String retVal = null;
 		if (includeWorkload) {
 			retVal = String.format(outputFormat, this.getIntervalName(),
-					this.getWorkloadName(), 
+					this.getWorkloadName(), startActiveUsers, endActiveUsers,
 					throughput, avgRT, statsSummaryRollup.getTotalNumOps(), statsSummaryRollup.totalNumFailed,
 					statsSummaryRollup.getTotalNumFailedRT(), allOpString, timestamp);
 		} else {
-			retVal = String.format(outputFormat, this.getIntervalName(),
+			retVal = String.format(outputFormat, this.getIntervalName(), startActiveUsers, endActiveUsers,
 					throughput, avgRT, statsSummaryRollup.getTotalNumOps(), statsSummaryRollup.totalNumFailed,
 					statsSummaryRollup.getTotalNumFailedRT(), allOpString, timestamp);			
 		}
@@ -327,7 +356,7 @@ public class StatsSummary {
 	@JsonIgnore
 	public String getStatsCsvHeader() {
 		StringBuilder retVal = new StringBuilder();
-		retVal.append("Interval Start, Interval End, Duration (s), Interval, Workload, Target, StatsInterval, Host, TP (ops/s), Effective TP (ops/s),  Avg RT (sec)," +
+		retVal.append("Interval Start, Interval End, Duration (s), Interval, Workload, Target, StatsInterval, Host, Start Users, End Users, TP (ops/s), Effective TP (ops/s),  Avg RT (sec)," +
 						"Ops Total, Ops Failed, Ops Fail RT");
 
 		for (String opName : opNameToStatsMap.keySet()) {
@@ -369,6 +398,8 @@ public class StatsSummary {
 					+ ", " + targetName 
 					+ ", " + statsIntervalSpecName 
 					+ ", " + hostName
+					+ ", " + startActiveUsers
+					+ ", " + endActiveUsers
 					);
 
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
@@ -535,6 +566,8 @@ public class StatsSummary {
 		retVal.append("\tPassed: " + statsSummaryRollup.isIntervalPassed() + "\n");
 		retVal.append("\tPassed Response-Time: " + statsSummaryRollup.isIntervalPassedRT() + "\n");
 		retVal.append("\tPassed Mix Percentage: " + statsSummaryRollup.isIntervalPassedMix() + "\n");
+		retVal.append("\tActive users at start: " + startActiveUsers + "\n");
+		retVal.append("\tActive users at end: " + endActiveUsers + "\n");
 		retVal.append("\tThroughput: " + throughput + " ops/sec\n");
 		retVal.append("\tEffective Throughput: " + throughputPassing + " ops/sec\n");
 		retVal.append("\tAverage Response-Time: " + avgRT + " sec\n");

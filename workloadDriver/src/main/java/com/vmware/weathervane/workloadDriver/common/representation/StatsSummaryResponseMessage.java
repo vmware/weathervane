@@ -13,25 +13,63 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.web.service;
+package com.vmware.weathervane.workloadDriver.common.representation;
 
-import java.io.IOException;
-
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
-public interface StatsService {
+public class StatsSummaryResponseMessage {
 
-	void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException;
-
-	void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage);
-
-	void runStarted(String runName);
+	private String status;
+	private String message;
+	private StatsSummary statsSummary;
+	private Integer numSamplesReceived;
+	private Integer numSamplesExpected;
 	
-	void runComplete(String runName) throws IOException;
+	public StatsSummary getStatsSummary() {
+		return statsSummary;
+	}
 
-	StatsSummaryResponseMessage getStatsSummary(String runName, String workloadName, String specName,
-			String intervalName);
+	public void setStatsSummary(StatsSummary statsSummary) {
+		this.statsSummary = statsSummary;
+	}
 
+	public Integer getNumSamplesReceived() {
+		return numSamplesReceived;
+	}
+
+	public void setNumSamplesReceived(Integer numSamplesReceived) {
+		this.numSamplesReceived = numSamplesReceived;
+	}
+
+	public Integer getNumSamplesExpected() {
+		return numSamplesExpected;
+	}
+
+	public void setNumSamplesExpected(Integer numSamplesExpected) {
+		this.numSamplesExpected = numSamplesExpected;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	@Override
+	public String toString() {
+		return "StatsSummaryResponseMessage: "
+				+ "numSamplesReceived = " + numSamplesReceived
+				+ ", numSamplesExpected = " + numSamplesExpected;
+	}
+	
 }

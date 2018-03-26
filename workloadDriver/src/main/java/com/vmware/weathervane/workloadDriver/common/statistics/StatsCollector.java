@@ -42,7 +42,7 @@ public class StatsCollector  {
 	private static final RestTemplate restTemplate = new RestTemplate();
 
 	private String workloadName;
-
+	
 	private List<String> targetNames = null;
 	
 	private List<Operation> operations = null;
@@ -193,6 +193,8 @@ public class StatsCollector  {
 			targetStatsSummary.setIntervalStartTime(completeMessage.getCurIntervalStartTime());
 			targetStatsSummary.setIntervalEndTime(completeMessage.getLastIntervalEndTime());
 			targetStatsSummary.setIntervalName(completeMessage.getCurIntervalName());
+			targetStatsSummary.setEndActiveUsers(completeMessage.getIntervalEndUsers());
+			targetStatsSummary.setStartActiveUsers(completeMessage.getIntervalStartUsers());
 
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
 					+ " and target " + targetName + ", summary = " + targetStatsSummary);
@@ -241,23 +243,9 @@ public class StatsCollector  {
 	public List<String> getTargetNames() {
 		return targetNames;
 	}
-
-	private void initializeTargetToCurrentStatsMap(List<String> targetNames) {
-		logger.debug("initializeTargetToCurrentStatsMap");
-		synchronized (targetToCurrentStatsMap) {
-			targetToCurrentStatsMap.clear();
-			for (String targetName : targetNames) {
-				logger.debug("initializeTargetToCurrentStatsMap: adding stats summary for target " + targetName);
-				StatsSummary newStatsSummary = new StatsSummary(workloadName, operations, behaviorSpec, 
-													targetName, localHostname, null);
-				targetToCurrentStatsMap.put(targetName, newStatsSummary);
-			}
-		}		
-	}
 	
 	public void setTargetNames(List<String> targetNames) {
 		this.targetNames = targetNames;
-		initializeTargetToCurrentStatsMap(targetNames);
 	}
 	
 

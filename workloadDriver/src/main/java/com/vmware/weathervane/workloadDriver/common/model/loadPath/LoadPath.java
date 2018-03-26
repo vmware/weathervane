@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
@@ -78,19 +79,26 @@ public abstract class LoadPath implements Runnable {
 	private String workloadName = null;
 
 	@JsonIgnore
+	private Workload workload = null;
+
+	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
 	
 	@JsonIgnore
-	private RestTemplate restTemplate = null;
+	protected RestTemplate restTemplate = null;
 
 	@JsonIgnore
 	private int portNumber;
+	
+	@JsonIgnore
+	private StatsIntervalWatcher statsWatcher = null;
 
-	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber, RestTemplate restTemplate, 
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
 		logger.debug("initialize for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		this.runName = runName;
 		this.workloadName = workloadName;
+		this.workload = workload;
 		this.executorService = executorService;
 		this.hosts = hosts;
 		this.portNumber = portNumber;
@@ -107,7 +115,7 @@ public abstract class LoadPath implements Runnable {
 			 * for every interval in the load path. Start a watcher to send the
 			 * appropriate messages
 			 */
-			StatsIntervalWatcher statsWatcher = new StatsIntervalWatcher();
+			statsWatcher = new StatsIntervalWatcher();
 		}
 	}
 
@@ -120,6 +128,13 @@ public abstract class LoadPath implements Runnable {
 		logger.debug("run for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		UniformLoadInterval nextInterval = this.getNextInterval();
 		logger.debug("run nextInterval = " + nextInterval);
+		
+		/*
+		 * Notify the workload, so that it can notify the statsIntervalSpec
+		 * of the start number of users
+		 */
+		workload.setActiveUsers(nextInterval.getUsers());
+		statsWatcher.setActiveUsers(nextInterval.getUsers());
 		/*
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
@@ -187,7 +202,9 @@ public abstract class LoadPath implements Runnable {
 		private String curIntervalName = "";
 		private long curIntervalStartTime;
 		private long lastIntervalEndTime;
-		
+		private long intervalStartUsers = -1;
+		private long intervalEndUsers = -1;
+	
 		public StatsIntervalWatcher() {
 			LoadInterval nextInterval = getNextStatsInterval();
 			long wait = nextInterval.getDuration();
@@ -200,10 +217,23 @@ public abstract class LoadPath implements Runnable {
 			lastIntervalEndTime = curIntervalStartTime = System.currentTimeMillis();
 		}
 
+		public void setActiveUsers(long users) {
+			if (this.intervalStartUsers == -1) {
+				this.intervalStartUsers = users;
+			} else {
+				this.intervalEndUsers = users;
+			}			
+		}
+
 		@Override
 		public void run() {
 			logger.debug("StatsIntervalWatcher run");
 			lastIntervalEndTime = System.currentTimeMillis();
+
+			if (this.intervalEndUsers == -1) {
+				this.intervalEndUsers = this.intervalStartUsers;
+			}
+
 			/*
 			 * Send messages to workloadService on driver nodes that interval
 			 * has completed. 
@@ -217,6 +247,8 @@ public abstract class LoadPath implements Runnable {
 				statsIntervalCompleteMessage.setCurIntervalName(curIntervalName);
 				statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
 				statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
+				statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
+				statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
 				
 				HttpHeaders requestHeaders = new HttpHeaders();
 				requestHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -235,7 +267,7 @@ public abstract class LoadPath implements Runnable {
 					logger.error("Error posting statsIntervalComplete message to " + url);
 				}
 			}
-
+			intervalStartUsers = intervalEndUsers;
 			
 			LoadInterval nextInterval = getNextStatsInterval();
 			long wait = nextInterval.getDuration();

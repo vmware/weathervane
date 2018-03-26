@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
 @Service
@@ -236,6 +237,33 @@ public class StatsServiceImpl implements StatsService {
 				
 	}
 
+	@Override
+	public StatsSummaryResponseMessage getStatsSummary(String runName, String workloadName, String specName,
+			String intervalName) {
+		StatsSummaryResponseMessage statsSummaryResponseMessage = new StatsSummaryResponseMessage();
+		statsSummaryResponseMessage.setNumSamplesExpected(runNameToHostsListMap.get(runName).size() 
+				* runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName));
+		statsSummaryResponseMessage.setNumSamplesReceived(0);
+		statsSummaryResponseMessage.setStatsSummary(null);
+		
+		Map<String, Map<String, StatsSummary>> workloadAggregatedStats = aggregatedStatsSummaries.get(workloadName);
+		Map<String, Map<String, Integer>> workloadSamplesReceived = receivedSamplesPerSpecAndInterval.get(workloadName);
+		if (workloadAggregatedStats != null) {
+			Map<String, StatsSummary> specAggregatedStats = workloadAggregatedStats.get(specName);
+			Map<String, Integer> specSamplesReceived = workloadSamplesReceived.get(specName);
+			if (specAggregatedStats != null) {
+				StatsSummary intervalAggregatedStats = specAggregatedStats.get(intervalName);
+				Integer intervalSamplesReceived = specSamplesReceived.get(intervalName);
+				if (intervalAggregatedStats != null) {
+					statsSummaryResponseMessage.setNumSamplesReceived(intervalSamplesReceived);
+					statsSummaryResponseMessage.setStatsSummary(intervalAggregatedStats);
+				}
+			}
+		}
+		
+		return statsSummaryResponseMessage;
+	}
+	
 	@Override
 	public void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage) {
 		logger.debug("initializeRun runName = " + runName + ", statsOutputDirName = " + initializeRunStatsMessage.getStatsOutputDirName());

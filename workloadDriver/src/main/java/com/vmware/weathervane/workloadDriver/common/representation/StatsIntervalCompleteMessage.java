@@ -21,6 +21,8 @@ public class StatsIntervalCompleteMessage {
 	private Long curIntervalStartTime;
 	private Long lastIntervalEndTime;
 	private String curIntervalName;
+	private Long intervalStartUsers;
+	private Long intervalEndUsers;
 	
 	public String getCompletedSpecName() {
 		return completedSpecName;
@@ -47,6 +49,18 @@ public class StatsIntervalCompleteMessage {
 		this.curIntervalName = curIntervalName;
 	}
 	
+	public Long getIntervalStartUsers() {
+		return intervalStartUsers;
+	}
+	public void setIntervalStartUsers(Long intervalStartUsers) {
+		this.intervalStartUsers = intervalStartUsers;
+	}
+	public Long getIntervalEndUsers() {
+		return intervalEndUsers;
+	}
+	public void setIntervalEndUsers(Long intervalEndUsers) {
+		this.intervalEndUsers = intervalEndUsers;
+	}
 	@Override
 	public String toString() {
 		return "StatsIntervalCompleteMessage: "

@@ -213,9 +213,12 @@ public abstract class StatsIntervalSpec implements Runnable {
 	}
 
 	public void setActiveUsers(long users) {
+		logger.debug("setActiveUsers to " + users + " users");
 		if (this.intervalStartUsers == -1) {
+			logger.debug("setActiveUsers setting intervalStartUsers to " + users + " users");
 			this.intervalStartUsers = users;
 		} else {
+			logger.debug("setActiveUsers setting intervalEndUsers to " + users + " users");
 			this.intervalEndUsers = users;
 		}
 	}

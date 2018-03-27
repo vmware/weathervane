@@ -107,7 +107,6 @@ public abstract class LoadPath implements Runnable {
 
 	public void start() {
 		logger.debug("start for run " + runName + ", workload " + workloadName + ", loadPath " + name );
-		executorService.execute(this);
 
 		if (isStatsInterval) {
 			/*
@@ -115,8 +114,11 @@ public abstract class LoadPath implements Runnable {
 			 * for every interval in the load path. Start a watcher to send the
 			 * appropriate messages
 			 */
+			logger.debug("start: Creating statsWatcher");
 			statsWatcher = new StatsIntervalWatcher();
 		}
+
+		executorService.execute(this);
 	}
 
 	public void stop() {
@@ -128,21 +130,28 @@ public abstract class LoadPath implements Runnable {
 		logger.debug("run for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		UniformLoadInterval nextInterval = this.getNextInterval();
 		logger.debug("run nextInterval = " + nextInterval);
-		
+		long users = nextInterval.getUsers();
 		/*
 		 * Notify the workload, so that it can notify the statsIntervalSpec
 		 * of the start number of users
 		 */
-		workload.setActiveUsers(nextInterval.getUsers());
-		statsWatcher.setActiveUsers(nextInterval.getUsers());
+		workload.setActiveUsers(users);
+		if (statsWatcher != null) {
+			logger.debug("Calling setActiveUsers on statsWatcher");
+			statsWatcher.setActiveUsers(users);
+		} else {
+			logger.debug("No statsWatcher, not setting active users");
+		}
 		/*
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		changeActiveUsers(nextInterval.getUsers());
+		changeActiveUsers(users);
 
 		long wait = nextInterval.getDuration();
+		logger.debug("run: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {
+			logger.debug("run: sleeping for  " + wait + " seconds");
 			executorService.schedule(this, wait, TimeUnit.SECONDS);
 		}
 
@@ -165,12 +174,12 @@ public abstract class LoadPath implements Runnable {
 	}
 
 	public void changeActiveUsers(long numUsers) {
-
+		logger.debug("changeActiveUsers to " + numUsers);
 		numActiveUsers = numUsers;
 		int nodeNumber = 0;
 		for (String hostname : hosts) {
 			long adjustedUsers = adjustUserCount(numActiveUsers, nodeNumber);
-			
+			logger.debug("changeActiveUsers Host " + hostname + " will run " + adjustedUsers + " users");
 			/*
 			 * Send the changeusers message for the workload to the host
 			 */
@@ -218,6 +227,7 @@ public abstract class LoadPath implements Runnable {
 		}
 
 		public void setActiveUsers(long users) {
+			logger.debug("StatsIntervalWatcher::setActiveUsers: users set to " + users);
 			if (this.intervalStartUsers == -1) {
 				this.intervalStartUsers = users;
 			} else {
@@ -227,7 +237,7 @@ public abstract class LoadPath implements Runnable {
 
 		@Override
 		public void run() {
-			logger.debug("StatsIntervalWatcher run");
+			logger.debug("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
 			lastIntervalEndTime = System.currentTimeMillis();
 
 			if (this.intervalEndUsers == -1) {

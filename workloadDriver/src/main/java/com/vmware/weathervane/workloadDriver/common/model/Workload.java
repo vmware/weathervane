@@ -436,9 +436,11 @@ public abstract class Workload implements UserFactory {
 	}
 
 	public void setActiveUsers(long users) {
+		logger.debug("setActiveUsers: users set to " + users);
 		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
 			spec.setActiveUsers(users);
 		}		
+		logger.debug("setActiveUsers: finished");
 	}
 
 }

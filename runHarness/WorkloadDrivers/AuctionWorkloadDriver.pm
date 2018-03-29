@@ -407,6 +407,7 @@ sub createRunConfigHash {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
+			$loadPath->{"type"}          = "findmax";
 			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {

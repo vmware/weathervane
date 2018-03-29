@@ -1243,7 +1243,7 @@ sub startRun {
 		}
 
 		if ($nextIsHeader) {
-			if (!(($inline =~ /^\|\s*Time/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/)) {
+			if (!(($inline =~ /^\|\s*Time/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/))) {
 				$console_logger->warn(
 "Workload driver did not start properly. Check run.log for errors. "
 				);

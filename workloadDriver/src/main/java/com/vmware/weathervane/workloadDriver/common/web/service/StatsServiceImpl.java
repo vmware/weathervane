@@ -52,7 +52,9 @@ public class StatsServiceImpl implements StatsService {
 	private Map<String, Map<String, Writer>> workloadAllSamplesCsvWriters 
 										= new HashMap<String, Map<String, Writer>>();
 	private Map<String, Map<String, Writer>> workloadAggregatedCsvWriters 
-										= new HashMap<String, Map<String, Writer>>();
+		= new HashMap<String, Map<String, Writer>>();
+	private Map<String, Map<String, Writer>> workloadSummaryWriters 
+		= new HashMap<String, Map<String, Writer>>();
 	
 	/**
 	 * Overall aggregated stats
@@ -203,7 +205,6 @@ public class StatsServiceImpl implements StatsService {
 						aggregatedWriter = new BufferedWriter(new OutputStreamWriter(
 								new FileOutputStream(statsOutputDirName + "/" + workloadName + "-" + statsIntervalSpecName + ".csv"), "utf-8"));
 						specToAggregatedWriterMap.put(statsIntervalSpecName, aggregatedWriter);
-						aggregatedWriter.write(intervalAggregatedStats.getAggregatedStatsCsvHeader() + "\n");
 					}
 					aggregatedWriter.write(intervalAggregatedStats.getAggregatedStatsCsvLine() + "\n");
 				}
@@ -232,6 +233,20 @@ public class StatsServiceImpl implements StatsService {
 					statsIntervalSpecPrintSummary.put(statsIntervalSpecName, false);
 				} else {
 					statsIntervalSpecPrintSummary.put(statsIntervalSpecName, true);
+					
+					Map<String, Writer> specToSummaryWriterMap = workloadSummaryWriters.get(workloadName);
+					if (specToSummaryWriterMap == null) {
+						specToSummaryWriterMap = new HashMap<String, Writer>();
+						workloadSummaryWriters.put(workloadName, specToSummaryWriterMap);
+					}
+					Writer summaryWriter = specToSummaryWriterMap.get(statsIntervalSpecName);
+					if (summaryWriter == null) {
+						summaryWriter = new BufferedWriter(new OutputStreamWriter(
+								new FileOutputStream(statsOutputDirName + "/" + workloadName + "-" + statsIntervalSpecName + "-summary.txt"), "utf-8"));
+						specToSummaryWriterMap.put(statsIntervalSpecName, summaryWriter);
+					}
+					summaryWriter.write(intervalAggregatedStats.getStatsSummary() + "\n");
+
 				}
 
 			}
@@ -342,16 +357,12 @@ public class StatsServiceImpl implements StatsService {
 					continue;
 				}
 				System.out.println("StatsIntervalSpec: " + specName);
-				Writer summaryWriter = new BufferedWriter(new OutputStreamWriter(
-						new FileOutputStream(statsOutputDirName + "/" + workloadName + "-" + specName + "-summary.txt"), "utf-8"));
 				while (!intervalOrderQueue.isEmpty()) {
 					String intervalName = intervalOrderQueue.poll();
 					StatsSummary stats = aggregatedStatsSummaries.get(workloadName).get(specName).get(intervalName);
 					String summary = stats.getStatsSummary();
 					System.out.println(summary);
-					summaryWriter.write(summary + "\n");
 				}
-				summaryWriter.close();
 			}
 		}
 		
@@ -364,6 +375,11 @@ public class StatsServiceImpl implements StatsService {
 			}
 		}
 		for (Map<String, Writer> specToWriterMap : workloadAggregatedCsvWriters.values()) {
+			for (Writer writer : specToWriterMap.values()) {
+				writer.close();
+			}
+		}
+		for (Map<String, Writer> specToWriterMap : workloadSummaryWriters.values()) {
 			for (Writer writer : specToWriterMap.values()) {
 				writer.close();
 			}

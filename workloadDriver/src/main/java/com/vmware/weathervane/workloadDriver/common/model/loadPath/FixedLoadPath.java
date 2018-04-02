@@ -49,9 +49,9 @@ public class FixedLoadPath extends LoadPath {
 	private int nextStatsIntervalIndex = 0;
 
 	@Override
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber,
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
 
@@ -83,15 +83,18 @@ public class FixedLoadPath extends LoadPath {
 			return null;
 		}
 
-		/*
-		 * wrap at end of intervals
-		 */
+		UniformLoadInterval nextInterval;
 		if (nextIntervalIndex >= uniformIntervals.size()) {
-			nextIntervalIndex = 0;
+			/*
+			 * At end of intervals, signal that loadPath is complete.
+			 * Keep returning the last interval
+			 */
+			workload.loadPathComplete();
+			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
+		} else {
+			nextInterval = uniformIntervals.get(nextIntervalIndex);
+			nextIntervalIndex++;
 		}
-
-		UniformLoadInterval nextInterval = uniformIntervals.get(nextIntervalIndex);
-		nextIntervalIndex++;
 
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;

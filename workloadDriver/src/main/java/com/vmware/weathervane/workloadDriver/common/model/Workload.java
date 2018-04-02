@@ -104,11 +104,17 @@ public abstract class Workload implements UserFactory {
 
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
+
+	@JsonIgnore
+	private Run run = null;
+	
+	@JsonIgnore
+	private boolean finished = false;
 	
 	/*
 	 * Used to initialize the master workload in the RunService
 	 */
-	public void initialize(String runName, List<String> hosts, String statsHostName, int statsPortNumber, 
+	public void initialize(String runName, Run run, List<String> hosts, String statsHostName, int statsPortNumber, 
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		logger.debug("Initialize workload: " + this.toString());
 
@@ -123,6 +129,7 @@ public abstract class Workload implements UserFactory {
 		}
 
 		this.runName = runName;
+		this.run = run;
 		this.hosts = hosts;
 		this.statsHostName = statsHostName;
 		this.statsPortNumber = statsPortNumber;
@@ -172,7 +179,7 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * LoadPaths run locally
 		 */
-		getLoadPath().initialize(runName, name, this, hosts, statsPortNumber, restTemplate, executorService);
+		getLoadPath().initialize(runName, name, this, hosts, statsHostName, statsPortNumber, restTemplate, executorService);
 
 		state = WorkloadState.INITIALIZED;
 	}
@@ -227,6 +234,8 @@ public abstract class Workload implements UserFactory {
 	public void stop() {
 		logger.debug("stop for workload " + name);
 
+		finished = true;
+		
 		getLoadPath().stop();
 
 		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {
@@ -323,6 +332,14 @@ public abstract class Workload implements UserFactory {
 		logger.debug("statsIntervalComplete");
 		statsCollector.statsIntervalComplete(statsIntervalCompleteMessage);
 		logger.debug("statsIntervalComplete returning");
+	}
+	
+
+	public void loadPathComplete() {
+		if (!finished) {
+			this.stop();
+		}
+		run.workloadComplete(name);
 	}
 
 	public String getName() {

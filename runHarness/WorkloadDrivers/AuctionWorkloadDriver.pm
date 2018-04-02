@@ -1148,12 +1148,6 @@ sub startRun {
 
 	my $port = $self->portMap->{'http'};
 
-	# open a pipe to follow progress
-	my $pipeString = "tail -f $logDir/run$suffix.log |";
-	$logger->debug("Command to follow workload progress: $pipeString");
-	my $pipePid = open my $driverPipe, "$pipeString"
-	  or die "Can't fork to follow driver at $logDir/run$suffix.log : $!";
-
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -1220,158 +1214,164 @@ sub startRun {
 		return 0;
 	}
 
-	my $periodicOutputId   = "";
-	if ( $suffix ne "" ) {
-		$periodicOutputId = "W${workloadNum} ";
-	}
-	my $nextIsHeader = 0;
-	my $startTime    = time();
-	my $startedSteadyState = 0;
-	my $startedRampDown = 0;
-	my $inline;
-	while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-		if ( $inline =~ /^\|/ ) {
-			if ( $self->getParamValue('showPeriodicOutput') ) {
-				print $periodicOutputId . $inline;
-			}
-		}
+	# Start a process to echo the log to the screen and start/stop the stats collection
+	my $pid = fork();
+	if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+	} elsif ( $pid == 0 ) {
 
-		# The next line after ----- should be first header
-		if ( $inline =~ /^-------------------/ ) {
-			$nextIsHeader = 1;
-			next;
-		}
+		# open a pipe to follow progress
+		my $pipeString = "tail -f $logDir/run$suffix.log |";
+		$logger->debug("Command to follow workload progress: $pipeString");
+		my $pipePid = open my $driverPipe, "$pipeString"
+		  or die "Can't fork to follow driver at $logDir/run$suffix.log : $!";
 
-		if ($nextIsHeader) {
-			if (!(($inline =~ /^\|\s*Time/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/))) {
-				$console_logger->warn(
-"Workload driver did not start properly. Check run.log for errors. "
-				);
-				return 0;
-			}
-			else {
-				$nextIsHeader = 0;
-				my $runLengthMinutes = $totalTime / 60;
-				my $impl             = $self->getParamValue('workloadImpl');
-				$console_logger->info(
-"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
-				);
-				$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
-			}
+		my $periodicOutputId   = "";
+		if ( $suffix ne "" ) {
+			$periodicOutputId = "W${workloadNum} ";
 		}
+		my $nextIsHeader = 0;
+		my $startTime    = time();
+		my $startedSteadyState = 0;
+		my $startedRampDown = 0;
+		my $inline;
+		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
+			if ( $inline =~ /^\|/ ) {
+				if ( $self->getParamValue('showPeriodicOutput') ) {
+					print $periodicOutputId . $inline;
+				}
+			}
+
+			# The next line after ----- should be first header
+			if ( $inline =~ /^-------------------/ ) {
+				$nextIsHeader = 1;
+				next;
+			}
+
+			if ($nextIsHeader) {
+				if (!(($inline =~ /^\|\s*Time/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/))) {
+					$console_logger->warn(
+			"Workload driver did not start properly. Check run.log for errors. "
+					);
+					return 0;
+				}
+				else {
+					$nextIsHeader = 0;
+					my $runLengthMinutes = $totalTime / 60;
+					my $impl             = $self->getParamValue('workloadImpl');
+					$console_logger->info(
+	"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
+					);
+					$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
+				}
+			}
 		
-		if (!($inline =~ /^\|\s*\d/)) {
-			# Don't do anything with header lines
-			next;
-		} elsif ($inline =~ /^\|[^\d]*(\d+)\|/) {
-			my $curTime = $1;
-			
-			if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
-
-				$console_logger->info("Steady-State Started");
-
-				$startedSteadyState = 1;
+			if (!($inline =~ /^\|\s*\d/)) {
+				# Don't do anything with header lines
+				next;
+			} elsif ($inline =~ /^\|[^\d]*(\d+)\|/) {
+				my $curTime = $1;
 				
-				# Start collecting statistics on all hosts and services
-				$self->workload->startStatsCollection();
-			} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) { 
+				if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
 
-				$console_logger->info("Steady-State Complete");
-				$startedRampDown = 1;
-				$self->workload->stopStatsCollection();
-			} elsif ($startedRampDown and  ($curTime > $totalTime)) {
+					$console_logger->info("Steady-State Started");
 
-				# Now send the stop message to the runService
-				$hostname = $self->host->hostName;
-				my $url      = "http://$hostname:$port/run/$runName/stop";
-				$logger->debug("Sending POST to $url");
-				$req = HTTP::Request->new( POST => $url );
-				$req->content_type('application/json');
-				$req->header( Accept => "application/json" );
-				$req->content($runContent);
-	
-				$res = $ua->request($req);
-				$logger->debug( "Response status line: "
-					  . $res->status_line
-					  . " for url "
-					  . $url );
-				if ( $res->is_success ) {
-					$logger->debug(
-						"Response sucessful.  Content: " . $res->content );
-				}
-				else {
-					$console_logger->warn(
-	"Could not send stop message to workload driver node on $hostname. Exiting"
-					);
-					return 0;
-				}
-
-				sleep 30;
-
-				# Now send the stats/complete message the primary driver which is also the statsService host
-				my $statsCompleteMsg = {};
-				$statsCompleteMsg->{'timestamp'} = time;
-				my $statsCompleteContent = $json->encode($statsCompleteMsg);
-
-				$hostname = $self->host->hostName;
-				$url      = "http://$hostname:$port/stats/complete/$runName";
-				$logger->debug("Sending POST to $url");
-				$req = HTTP::Request->new( POST => $url );
-				$req->content_type('application/json');
-				$req->header( Accept => "application/json" );
-				$req->content($statsCompleteContent);
-
-				$res = $ua->request($req);
-				$logger->debug( "Response status line: "
-					  . $res->status_line
-					  . " for url "
-					  . $url );
-				if ( $res->is_success ) {
-					$logger->debug(
-						"Response sucessful.  Content: " . $res->content );
-				}	
-				else {
-					$console_logger->warn(
-					"Could not send stats/complete message to workload driver node on $hostname. Exiting"
-					);
-					return 0;
-				}
-
-				# Now send the shutdown message
-				$hostname = $self->host->hostName;
-				$url      = "http://$hostname:$port/run/$runName/shutdown";
-				$logger->debug("Sending POST to $url");
-				$req = HTTP::Request->new( POST => $url );
-				$req->content_type('application/json');
-				$req->header( Accept => "application/json" );
-				$req->content($runContent);
-
-				$res = $ua->request($req);
-				$logger->debug( "Response status line: "
-					  . $res->status_line
-					  . " for url "
-					  . $url );
-				if ( $res->is_success ) {
-					$logger->debug(
-						"Response sucessful.  Content: " . $res->content );
-				}	
-				else {
-					$console_logger->warn(
-	"Could not send shutdown message to workload driver node on $hostname. Exiting"
-					);
-				return 0;
-				}
+					$startedSteadyState = 1;
 				
-				# Now stop and remove all of the driver containers
-				foreach my $driver (@$driversRef) {
-					$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
-				}
-				kill(9, $pipePid);
-				close $driverPipe;	
-				
+					# Start collecting statistics on all hosts and services
+					$self->workload->startStatsCollection();
+				} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) { 
+
+					$console_logger->info("Steady-State Complete");
+					$startedRampDown = 1;
+					$self->workload->stopStatsCollection();
+				} 				
+			}
+		}
+		kill(9, $pipePid);
+		close $driverPipe;			
+		exit;
+	}
+
+
+	# Now poll for a runState of COMPLETE 
+	# once every minute
+	my $runCompleted = false;
+	while (!$runCompleted) {
+		$url = "http://$hostname:$port/run/$runName/state";
+		$logger->debug("Sending get to $url");
+		$req = HTTP::Request->new( GET => $url );
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			my $jsonResponse = $json->decode( $res->content );			
+			if ( $jsonResponse->{"state"} eq "COMPLETED") {
+				$runCompleted = true;
 				last;
 			}
 		}
+		sleep 60;
+	}
+	
+	$console_logger->info("Run is complete");
+	
+
+	# Now send the stats/complete message the primary driver which is also the statsService host
+	my $statsCompleteMsg = {};
+	$statsCompleteMsg->{'timestamp'} = time;
+	my $statsCompleteContent = $json->encode($statsCompleteMsg);
+
+	$url      = "http://$hostname:$port/stats/complete/$runName";
+	$logger->debug("Sending POST to $url");
+	$req = HTTP::Request->new( POST => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	$req->content($statsCompleteContent);
+
+	$res = $ua->request($req);
+	$logger->debug( "Response status line: "
+		  . $res->status_line
+		  . " for url "
+		  . $url );
+	if ( $res->is_success ) {
+		$logger->debug("Response sucessful.  Content: " . $res->content );
+	}	
+	else {
+		$console_logger->warn(
+			"Could not send stats/complete message to workload driver node on $hostname. Exiting"
+		);
+		return 0;
+	}
+
+	# Now send the shutdown message
+	$url      = "http://$hostname:$port/run/$runName/shutdown";
+	$logger->debug("Sending POST to $url");
+	$req = HTTP::Request->new( POST => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	$req->content($runContent);
+
+	$res = $ua->request($req);
+	$logger->debug( "Response status line: "
+		  . $res->status_line
+		  . " for url "
+		  . $url );
+	if ( $res->is_success ) {
+		$logger->debug(
+			"Response sucessful.  Content: " . $res->content );
+	}	
+	else {
+		$console_logger->warn(
+			"Could not send shutdown message to workload driver node on $hostname. Exiting"
+		);
+		return 0;
+	}
+				
+	# Now stop and remove all of the driver containers
+	foreach my $driver (@$driversRef) {
+		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
 	}
 
 	foreach my $driver (@$driversRef) {

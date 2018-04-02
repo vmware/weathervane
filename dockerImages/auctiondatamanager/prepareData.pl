@@ -4,16 +4,16 @@ use strict;
 use POSIX;
 
 print "Preparing data for run\n";
-my $maxUsers = $ENV{'MAXUSERS'};
+my $maxUsers = $ENV{'USERS'};
 
 my $auctions = ceil($maxUsers / $ENV{'USERSPERAUCTIONSCALEFACTOR'}); 
 if ( $auctions < 4 ) {
 	$auctions = 4;
 }
 # Must be multiple of 2
-if (($auctions % 2) != 0) {
-	$auctions++;
-}
+#if (($auctions % 2) != 0) {
+#	$auctions++;
+#}
 
 my $dbPrepOptions = " -a $auctions ";
 $dbPrepOptions .= " -m $ENV{'NUMNOSQLSHARDS'} ";

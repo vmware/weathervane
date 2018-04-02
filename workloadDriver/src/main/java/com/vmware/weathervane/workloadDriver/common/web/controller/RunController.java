@@ -37,6 +37,7 @@ import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersRe
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 import com.vmware.weathervane.workloadDriver.common.web.service.RunService;
 
 @RestController
@@ -64,7 +65,6 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
-
 	@RequestMapping(value="/{runName}", method = RequestMethod.GET)
 	public HttpEntity<Run> getRun(@PathVariable String runName) {
 		logger.debug("getRun for run " + runName );
@@ -77,6 +77,27 @@ public class RunController {
 		}
 
 		return new ResponseEntity<Run>(theRun, status);
+	}
+
+	@RequestMapping(value="/{runName}/state", method = RequestMethod.GET)
+	public HttpEntity<RunStateResponse> getRunState(@PathVariable String runName) {
+		logger.debug("getRun for run " + runName );
+		HttpStatus status = HttpStatus.OK;
+		Run.RunState theRunState = null;
+		RunStateResponse response = new RunStateResponse();
+		response.setMessage("Success");
+		response.setStatus("Success");
+		try {
+			theRunState = runService.getRunState(runName);
+		} catch (RunNotInitializedException e) {
+			status = HttpStatus.CONFLICT;
+			response.setMessage("Run not initialized");
+			response.setStatus("Failed");			
+		}
+		
+		response.setState(theRunState);
+
+		return new ResponseEntity<RunStateResponse>(response, status);
 	}
 
 	@RequestMapping(value="/{runName}/initialize", method = RequestMethod.POST)

@@ -43,9 +43,9 @@ public class IntervalLoadPath extends LoadPath {
 	private int nextStatsIntervalIndex = 0;
 	
 	@Override
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber, RestTemplate restTemplate, 
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 		
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
 		
@@ -162,15 +162,22 @@ public class IntervalLoadPath extends LoadPath {
 		/* 
 		 * wrap at end of intervals
 		 */
+		UniformLoadInterval nextInterval;
 		if (nextIntervalIndex >= uniformIntervals.size()) {
-			nextIntervalIndex = 0;
+			/*
+			 * At end of intervals, signal that loadPath is complete.
+			 * Keep returning the last interval
+			 */
+			workload.loadPathComplete();
+			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
+		} else {
+			nextInterval = uniformIntervals.get(nextIntervalIndex);
+			nextIntervalIndex++;
 		}
-		
-		UniformLoadInterval nextInterval = uniformIntervals.get(nextIntervalIndex);
-		nextIntervalIndex++;
-		
+
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
+
 	}
 
 	
@@ -179,15 +186,17 @@ public class IntervalLoadPath extends LoadPath {
 	public LoadInterval getNextStatsInterval() {
 		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
 		
-		/* 
-		 * wrap at end of intervals
-		 */
+		LoadInterval nextStatsInterval;
 		if (nextStatsIntervalIndex >= loadIntervals.size()) {
-			nextStatsIntervalIndex = 0;
+			/*
+			 * At end of intervals.  keep returning last interval 
+			 */
+			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex-1);			
+		} else {
+			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex);
+			nextStatsIntervalIndex++;			
 		}
 		
-		LoadInterval nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex);
-		nextStatsIntervalIndex++;
 		
 		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
 		return nextStatsInterval;

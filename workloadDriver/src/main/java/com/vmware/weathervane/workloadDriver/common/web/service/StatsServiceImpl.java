@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
 @Service
@@ -74,10 +75,12 @@ public class StatsServiceImpl implements StatsService {
 	
 	@Override
 	public synchronized void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException {
-		logger.debug("postStatsSummary for run " + runName + ": " + statsSummary.toString());
 		String workloadName = statsSummary.getWorkloadName();
 		String statsIntervalSpecName = statsSummary.getStatsIntervalSpecName();
 		String intervalName = statsSummary.getIntervalName();
+		String targetName = statsSummary.getTargetName();
+		logger.info("postStatsSummary for runName = " + runName + ", workloadName = " + workloadName +
+				", targetName = " + targetName + ", specName = " + statsIntervalSpecName + ", intervalName = " + intervalName);
 		Map<String, Integer> workloadNameToNumTargetsMap = runNameToWorkloadNameToNumTargetsMap.get(runName);
 		
 		if (statsSummary.getPrintSummary()) {
@@ -265,8 +268,43 @@ public class StatsServiceImpl implements StatsService {
 	}
 	
 	@Override
+	public StatsSummaryRollupResponseMessage getStatsSummaryRollup(String runName, String workloadName, String specName,
+			String intervalName) {
+		logger.info("getStatsSummaryRollup for runName = " + runName + ", workloadName = " + workloadName + 
+				", specName = " + specName + ", intervalName = " + intervalName);				
+		StatsSummaryRollupResponseMessage responseMessage = new StatsSummaryRollupResponseMessage();
+		responseMessage.setNumSamplesExpected(runNameToHostsListMap.get(runName).size() 
+				* runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName));
+		responseMessage.setNumSamplesReceived(0);
+		responseMessage.setStatsSummaryRollup(null);
+		
+		Map<String, Map<String, StatsSummary>> workloadAggregatedStats = aggregatedStatsSummaries.get(workloadName);
+		Map<String, Map<String, Integer>> workloadSamplesReceived = receivedSamplesPerSpecAndInterval.get(workloadName);
+		if (workloadAggregatedStats != null) {
+			Map<String, StatsSummary> specAggregatedStats = workloadAggregatedStats.get(specName);
+			Map<String, Integer> specSamplesReceived = workloadSamplesReceived.get(specName);
+			if (specAggregatedStats != null) {
+				StatsSummary intervalAggregatedStats = specAggregatedStats.get(intervalName);
+				Integer intervalSamplesReceived = specSamplesReceived.get(intervalName);
+				if (intervalAggregatedStats != null) {
+					responseMessage.setNumSamplesReceived(intervalSamplesReceived);
+					responseMessage.setStatsSummaryRollup(intervalAggregatedStats.getStatsSummaryRollup());
+				} else {
+					logger.info("getStatsSummaryRollup intervalAggregatedStats == null");				
+				}
+			} else {
+				logger.info("getStatsSummaryRollup specAggregatedStats == null");				
+			}
+		} else {
+			logger.info("getStatsSummaryRollup workloadSamplesReceived == null");
+		}
+		
+		return responseMessage;
+	}
+	
+	@Override
 	public void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage) {
-		logger.debug("initializeRun runName = " + runName + ", statsOutputDirName = " + initializeRunStatsMessage.getStatsOutputDirName());
+		logger.info("initializeRun runName = " + runName + ", statsOutputDirName = " + initializeRunStatsMessage.getStatsOutputDirName());
 
 		runNameToHostsListMap.put(runName, initializeRunStatsMessage.getHosts());
 
@@ -283,7 +321,7 @@ public class StatsServiceImpl implements StatsService {
 
 	@Override
 	public void runComplete(String runName) throws IOException {
-		logger.debug("runComplete runName = " + runName);
+		logger.info("runComplete runName = " + runName);
 		/*
 		 * Print the summaries for all of the workloads and statsIntervalSpecs
 		 */

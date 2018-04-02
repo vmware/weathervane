@@ -73,13 +73,16 @@ public abstract class LoadPath implements Runnable {
 	private List<String> hosts;
 
 	@JsonIgnore
-	private String runName = null;
+	protected String statsHostName = null;
 
 	@JsonIgnore
-	private String workloadName = null;
+	protected String runName = null;
 
 	@JsonIgnore
-	private Workload workload = null;
+	protected String workloadName = null;
+
+	@JsonIgnore
+	protected Workload workload = null;
 
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
@@ -88,12 +91,13 @@ public abstract class LoadPath implements Runnable {
 	protected RestTemplate restTemplate = null;
 
 	@JsonIgnore
-	private int portNumber;
+	protected int portNumber;
 	
 	@JsonIgnore
 	private StatsIntervalWatcher statsWatcher = null;
 
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber, RestTemplate restTemplate, 
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, 
+			int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
 		logger.debug("initialize for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		this.runName = runName;
@@ -101,6 +105,7 @@ public abstract class LoadPath implements Runnable {
 		this.workload = workload;
 		this.executorService = executorService;
 		this.hosts = hosts;
+		this.statsHostName = statsHostName;
 		this.portNumber = portNumber;
 		this.restTemplate = restTemplate;
 	}
@@ -116,13 +121,16 @@ public abstract class LoadPath implements Runnable {
 			 */
 			logger.debug("start: Creating statsWatcher");
 			statsWatcher = new StatsIntervalWatcher();
+			executorService.execute(statsWatcher);
 		}
 
 		executorService.execute(this);
+
 	}
 
 	public void stop() {
 		finished = true;
+		workload.loadPathComplete();
 	}
 
 	@Override
@@ -213,18 +221,6 @@ public abstract class LoadPath implements Runnable {
 		private long lastIntervalEndTime;
 		private long intervalStartUsers = -1;
 		private long intervalEndUsers = -1;
-	
-		public StatsIntervalWatcher() {
-			LoadInterval nextInterval = getNextStatsInterval();
-			long wait = nextInterval.getDuration();
-			curIntervalName = nextInterval.getName();
-			logger.debug("StatsIntervalWatcher: Initial interval has wait of " + wait + " seconds and name " + curIntervalName);
-			
-			if (!isFinished() && (wait > 0)) {
-				executorService.schedule(this, wait, TimeUnit.SECONDS);
-			}
-			lastIntervalEndTime = curIntervalStartTime = System.currentTimeMillis();
-		}
 
 		public void setActiveUsers(long users) {
 			logger.debug("StatsIntervalWatcher::setActiveUsers: users set to " + users);
@@ -238,50 +234,55 @@ public abstract class LoadPath implements Runnable {
 		@Override
 		public void run() {
 			logger.debug("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
+
 			lastIntervalEndTime = System.currentTimeMillis();
 
-			if (this.intervalEndUsers == -1) {
-				this.intervalEndUsers = this.intervalStartUsers;
-			}
+			if (!curIntervalName.equals("")) {
+				// This is not the first interval
 
-			/*
-			 * Send messages to workloadService on driver nodes that interval
-			 * has completed. 
-			 */
-			for (String hostname : hosts) {
-				/*
-				 * Send the statsIntervalComplete message for the workload to the host
-				 */
-				StatsIntervalCompleteMessage statsIntervalCompleteMessage = new StatsIntervalCompleteMessage();
-				statsIntervalCompleteMessage.setCompletedSpecName(name);
-				statsIntervalCompleteMessage.setCurIntervalName(curIntervalName);
-				statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
-				statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
-				statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
-				statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
-				
-				HttpHeaders requestHeaders = new HttpHeaders();
-				requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-				HttpEntity<StatsIntervalCompleteMessage> msgEntity 
-					= new HttpEntity<StatsIntervalCompleteMessage>(statsIntervalCompleteMessage,
-						requestHeaders);
-				String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/" + workloadName + "/statsIntervalComplete";
-				logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName + ", workload " + workloadName 
-						+ " to host " + hostname + ", url = " + url);
-				ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-						BasicResponse.class);
-
-				BasicResponse response = responseEntity.getBody();
-				if (responseEntity.getStatusCode() != HttpStatus.OK) {
-					logger.error("Error posting statsIntervalComplete message to " + url);
+				if (this.intervalEndUsers == -1) {
+					this.intervalEndUsers = this.intervalStartUsers;
 				}
+
+				/*
+				 * Send messages to workloadService on driver nodes that interval has completed.
+				 */
+				for (String hostname : hosts) {
+					/*
+					 * Send the statsIntervalComplete message for the workload to the host
+					 */
+					StatsIntervalCompleteMessage statsIntervalCompleteMessage = new StatsIntervalCompleteMessage();
+					statsIntervalCompleteMessage.setCompletedSpecName(name);
+					statsIntervalCompleteMessage.setCurIntervalName(curIntervalName);
+					statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
+					statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
+					statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
+					statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
+
+					HttpHeaders requestHeaders = new HttpHeaders();
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+					HttpEntity<StatsIntervalCompleteMessage> msgEntity = new HttpEntity<StatsIntervalCompleteMessage>(
+							statsIntervalCompleteMessage, requestHeaders);
+					String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/"
+							+ workloadName + "/statsIntervalComplete";
+					logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
+							+ ", workload " + workloadName + " to host " + hostname + ", url = " + url);
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST,
+							msgEntity, BasicResponse.class);
+
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting statsIntervalComplete message to " + url);
+					}
+				}
+				intervalStartUsers = intervalEndUsers;
 			}
-			intervalStartUsers = intervalEndUsers;
-			
+
 			LoadInterval nextInterval = getNextStatsInterval();
 			long wait = nextInterval.getDuration();
 			curIntervalName = nextInterval.getName();
+			curIntervalStartTime = System.currentTimeMillis();
 			logger.debug("StatsIntervalWatcher: Next interval has wait of " + wait + " seconds and name " + curIntervalName);
 
 			if (!isFinished() && (wait > 0)) {

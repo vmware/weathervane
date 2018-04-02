@@ -20,6 +20,7 @@ import java.net.UnknownHostException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.model.Run;
+import com.vmware.weathervane.workloadDriver.common.model.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 
 public interface RunService {
@@ -43,5 +44,7 @@ public interface RunService {
 	ActiveUsersResponse getNumActiveUsers(String runName);
 
 	Run getRun(String runName);
+
+	RunState getRunState(String runName);
 
 }

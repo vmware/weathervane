@@ -1297,7 +1297,7 @@ sub startRun {
 
 	# Now poll for a runState of COMPLETE 
 	# once every minute
-	my $runCompleted = false;
+	my $runCompleted = 0;
 	while (!$runCompleted) {
 		$url = "http://$hostname:$port/run/$runName/state";
 		$logger->debug("Sending get to $url");
@@ -1308,7 +1308,7 @@ sub startRun {
 		if ( $res->is_success ) {
 			my $jsonResponse = $json->decode( $res->content );			
 			if ( $jsonResponse->{"state"} eq "COMPLETED") {
-				$runCompleted = true;
+				$runCompleted = 1;
 				last;
 			}
 		}

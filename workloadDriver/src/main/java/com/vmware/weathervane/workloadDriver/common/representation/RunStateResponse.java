@@ -13,29 +13,33 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.web.service;
+package com.vmware.weathervane.workloadDriver.common.representation;
 
-import java.io.IOException;
+import com.vmware.weathervane.workloadDriver.common.model.Run;
 
-import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
-import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
-
-public interface StatsService {
-
-	void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException;
-
-	void initializeRun(String runName, InitializeRunStatsMessage initializeRunStatsMessage);
-
-	void runStarted(String runName);
+public class RunStateResponse {
+	private String status;
+	private String message;
+	private Run.RunState state;
 	
-	void runComplete(String runName) throws IOException;
-
-	StatsSummaryResponseMessage getStatsSummary(String runName, String workloadName, String specName,
-			String intervalName);
-
-	StatsSummaryRollupResponseMessage getStatsSummaryRollup(String runName, String workloadName, String specName,
-			String intervalName);
-
+	public String getStatus() {
+		return status;
+	}
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	public Run.RunState getState() {
+		return state;
+	}
+	public void setState(Run.RunState state) {
+		this.state = state;
+	}
+	
+	
 }

@@ -37,9 +37,9 @@ public class RampToMaxLoadPath extends LoadPath {
 	private long rampIntervalDuration = 180;
 	
 	@Override
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, int portNumber,
+	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, workload, hosts, portNumber, restTemplate, executorService);
+		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 
 	}
 

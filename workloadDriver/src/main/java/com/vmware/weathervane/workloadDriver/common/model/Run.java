@@ -18,8 +18,10 @@ package com.vmware.weathervane.workloadDriver.common.model;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +64,8 @@ public class Run {
 	private List<String> hosts;
 
 	private List<Workload> workloads;	
+	
+	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
@@ -122,7 +126,7 @@ public class Run {
 		 */
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
-			workload.initialize(name, hosts, statsHost, portNumber, restTemplate, executorService);
+			workload.initialize(name, this, hosts, statsHost, portNumber, restTemplate, executorService);
 		}
 		
 		state = RunState.INITIALIZED;
@@ -133,13 +137,26 @@ public class Run {
 		
 		for (Workload workload : workloads) {
 			logger.debug("start run " + name + " starting workload " + workload.getName());
+			runningWorkloadNames.add(workload.getName());
 			workload.start();
 		}
 		
 		state = RunState.RUNNING;
 
 	}
-	
+
+	/*
+	 * One of the workloads has completed.  If all of the workloads
+	 * have completed then the run is complete. 
+	 */
+	public void workloadComplete(String workloadName) {
+		runningWorkloadNames.remove(workloadName);
+		if (runningWorkloadNames.isEmpty()) {
+			logger.debug("All workloads have finished.  Run is completed");
+			state = RunState.COMPLETED;
+		}
+	}
+
 	public void stop() {
 		logger.debug("stop for run " + name);
 		state = RunState.STOPPING;

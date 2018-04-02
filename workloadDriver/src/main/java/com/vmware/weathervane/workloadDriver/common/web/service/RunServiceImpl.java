@@ -58,6 +58,16 @@ public class RunServiceImpl implements RunService {
 	}
 
 	@Override
+	public Run.RunState getRunState(String runName) throws RunNotInitializedException {
+		// Make sure that this run isn't already being handled
+		if (!runs.containsKey(runName)) {
+			throw new RunNotInitializedException("Run " + runName + " does not exist.");
+		}
+
+		return runs.get(runName).getState();
+	}
+
+	@Override
 	public void addRun(String runName, Run theRun) throws DuplicateRunException {
 		logger.debug("addRun runName = " + runName);
 		// Make sure that this run isn't already being handled
@@ -157,7 +167,7 @@ public class RunServiceImpl implements RunService {
 		}
 
 		if (run.getState() != RunState.RUNNING) {
-			logger.debug("stop Run " + runName + " has not completed.");
+			logger.debug("stop Run " + runName + " is not running.");
 			throw new RunNotInitializedException("Run " + runName + " is not running");
 		}
 

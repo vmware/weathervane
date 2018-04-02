@@ -1658,28 +1658,31 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $baseDestinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname           = $self->host->hostName;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $sshConnectString = $self->host->sshConnectString;
 	my $workloadNum      = $self->getParamValue('workloadNum');
+	my $name               = $self->getParamValue('dockerName');
+	
+	if ( !( -e $destinationPath ) ) {
+		`mkdir -p $destinationPath`;
+	}
 
-	`mkdir -p $destinationPath 2>&1`;
-`$scpConnectString root\@$scpHostString:/tmp/gc-W${workloadNum}*.log $destinationPath/. 2>&1`;
-`$scpConnectString root\@$scpHostString:/tmp/appInstance*.csv $destinationPath/. 2>&1`;
-`$scpConnectString root\@$scpHostString:/tmp/appInstance*-summary.txt $destinationPath/. 2>&1`;
+	my $logName = "$destinationPath/GetStatsFilesWorkloadDriver-$hostname-$name.log";
 
-	`$sshConnectString rm -f /tmp/gc-W${workloadNum}*.log  2>&1`;
-	`$sshConnectString rm -f /tmp/appInstance*.csv  2>&1`;
-	`$sshConnectString rm -f /tmp/appInstance*-summary.txt  2>&1`;
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
+
+	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
+	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/appInstance*.csv", "$destinationPath/." );
+	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/appInstance*-summary.txt", "$destinationPath/." );
 
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
 		my $secHostname     = $secondary->host->hostName;
-		my $destinationPath = $baseDestinationPath . "/" . $secHostname;
+		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
-`scp root\@$secHostname:/tmp/gc-W${workloadNum}*.log $destinationPath/. 2>&1`;
+		$secondary->host->dockerScpFileFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
 	}
 
 }

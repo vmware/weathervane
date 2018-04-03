@@ -1132,7 +1132,7 @@ $parameters{"rampDown"} = {
 
 $parameters{"loadPathType"} = {
 	"type"      => "=s",
-	"default"   => "fixed",
+	"default"   => "findMax",
 	"parent"    => "appInstance",
 	"usageText" => "The type of loadPath to use for the run. Allowed values are: fixed, interval, findmax, ramptomax ",
 	"showUsage" => 1,

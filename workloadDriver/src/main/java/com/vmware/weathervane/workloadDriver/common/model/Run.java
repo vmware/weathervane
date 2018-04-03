@@ -42,6 +42,7 @@ import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersExcep
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 
 public class Run {
 	private static final Logger logger = LoggerFactory.getLogger(Run.class);
@@ -69,6 +70,9 @@ public class Run {
 		
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
+	
+	@JsonIgnore
+	private List<WorkloadStatus> completedWorkloadStati = new ArrayList<WorkloadStatus>();
 	
 	public void initialize() throws UnknownHostException {
 		logger.debug("initialize name = " + name);
@@ -149,8 +153,9 @@ public class Run {
 	 * One of the workloads has completed.  If all of the workloads
 	 * have completed then the run is complete. 
 	 */
-	public void workloadComplete(String workloadName) {
-		runningWorkloadNames.remove(workloadName);
+	public void workloadComplete(WorkloadStatus status) {
+		runningWorkloadNames.remove(status.getName());
+		completedWorkloadStati.add(status);
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
 			state = RunState.COMPLETED;
@@ -240,6 +245,29 @@ public class Run {
 			}
 		}
 	}
+	
+	public RunStateResponse getRunState() {
+		RunStateResponse response = new RunStateResponse();
+		response.setState(getState());
+
+		// Add status for completed workloads
+		List<WorkloadStatus> workloadStati = new ArrayList<WorkloadStatus>();
+		for (WorkloadStatus status : completedWorkloadStati) {
+			workloadStati.add(status);
+		}
+		
+		// Add status for running workloads
+		for (Workload aWorkload: workloads) {
+			if (runningWorkloadNames.contains(aWorkload.getName())) {
+				workloadStati.add(aWorkload.getWorkloadStatus());
+			}
+		}
+		
+		response.setWorkloadStati(workloadStati);
+
+		return(response);
+	}
+
 	public List<Workload> getWorkloads() {
 		return workloads;
 	}

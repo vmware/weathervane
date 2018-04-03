@@ -83,20 +83,17 @@ public class RunController {
 	public HttpEntity<RunStateResponse> getRunState(@PathVariable String runName) {
 		logger.debug("getRun for run " + runName );
 		HttpStatus status = HttpStatus.OK;
-		Run.RunState theRunState = null;
 		RunStateResponse response = new RunStateResponse();
-		response.setMessage("Success");
-		response.setStatus("Success");
 		try {
-			theRunState = runService.getRunState(runName);
+			response = runService.getRunState(runName);
+			response.setMessage("Success");
+			response.setStatus("Success");
 		} catch (RunNotInitializedException e) {
 			status = HttpStatus.CONFLICT;
 			response.setMessage("Run not initialized");
 			response.setStatus("Failed");			
 		}
 		
-		response.setState(theRunState);
-
 		return new ResponseEntity<RunStateResponse>(response, status);
 	}
 

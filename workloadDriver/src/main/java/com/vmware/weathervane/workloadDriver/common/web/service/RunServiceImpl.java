@@ -38,6 +38,7 @@ import com.vmware.weathervane.workloadDriver.common.model.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 
 @Service
 public class RunServiceImpl implements RunService {
@@ -58,13 +59,13 @@ public class RunServiceImpl implements RunService {
 	}
 
 	@Override
-	public Run.RunState getRunState(String runName) throws RunNotInitializedException {
+	public RunStateResponse getRunState(String runName) throws RunNotInitializedException {
 		// Make sure that this run isn't already being handled
 		if (!runs.containsKey(runName)) {
 			throw new RunNotInitializedException("Run " + runName + " does not exist.");
 		}
 
-		return runs.get(runName).getState();
+		return runs.get(runName).getRunState();
 	}
 
 	@Override

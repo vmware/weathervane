@@ -26,6 +26,8 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.common.model.Workload;
+import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 @JsonTypeName(value = "fixed")
 public class FixedLoadPath extends LoadPath {
@@ -89,7 +91,17 @@ public class FixedLoadPath extends LoadPath {
 			 * At end of intervals, signal that loadPath is complete.
 			 * Keep returning the last interval
 			 */
-			workload.loadPathComplete();
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup("steadyState");
+			boolean prevIntervalPassed = false;
+			if (rollup != null) {
+				prevIntervalPassed = rollup.isIntervalPassed();			
+			} 
+			WorkloadStatus status = new WorkloadStatus();
+			status.setIntervalStatsSummaries(getIntervalStatsSummaries());
+			status.setMaxPassUsers(users);
+			status.setMaxPassIntervalName("steadyState");
+			status.setPassed(prevIntervalPassed);
+			workload.loadPathComplete(status);
 			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
 		} else {
 			nextInterval = uniformIntervals.get(nextIntervalIndex);
@@ -106,6 +118,8 @@ public class FixedLoadPath extends LoadPath {
 		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
 		UniformLoadInterval nextStatsInterval = new UniformLoadInterval();
 
+		String curIntervalName = null;
+
 		if (nextStatsIntervalIndex == 0) {
 			nextStatsInterval.setName("rampUp");
 			nextStatsInterval.setDuration(rampUp);
@@ -114,11 +128,24 @@ public class FixedLoadPath extends LoadPath {
 			nextStatsInterval.setName("steadyState");
 			nextStatsInterval.setDuration(steadyState);
 			nextStatsInterval.setUsers(users);
-		} else  {
+			curIntervalName = "rampUp";
+		} else if (nextStatsIntervalIndex == 2) {
 			nextStatsInterval.setName("rampDown");
 			nextStatsInterval.setDuration(rampDown);
 			nextStatsInterval.setUsers(users);
-		} 
+			curIntervalName = "steadyState";
+		} else {
+			curIntervalName = "rampDown";
+		}
+
+		if (curIntervalName != null) {
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+			boolean prevIntervalPassed = false;
+			if (rollup != null) {
+				prevIntervalPassed = rollup.isIntervalPassed();
+				getIntervalStatsSummaries().add(rollup);
+			}
+		}
 
 		nextStatsIntervalIndex++;
 

@@ -39,6 +39,8 @@ import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
 @JsonSubTypes({ 
@@ -96,6 +98,9 @@ public abstract class LoadPath implements Runnable {
 	@JsonIgnore
 	private StatsIntervalWatcher statsWatcher = null;
 
+	@JsonIgnore
+	protected List<StatsSummaryRollup> intervalStatsSummaries = new ArrayList<StatsSummaryRollup>();
+
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, 
 			int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
@@ -130,7 +135,6 @@ public abstract class LoadPath implements Runnable {
 
 	public void stop() {
 		finished = true;
-		workload.loadPathComplete();
 	}
 
 	@Override
@@ -212,6 +216,54 @@ public abstract class LoadPath implements Runnable {
 			nodeNumber++;
 		}
 
+	}
+
+	protected StatsSummaryRollup fetchStatsSummaryRollup(String intervalNum) {
+		/*
+		 * Get the statsSummaryRollup for the previous interval over all hosts and targets
+		 */
+		HttpHeaders requestHeaders = new HttpHeaders();
+		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+		String url = "http://" + statsHostName + ":" + portNumber + "/stats/run/" + runName + "/workload/" + workloadName 
+				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
+		logger.debug("intervalPassed  getting rollup from " + statsHostName + ", url = " + url);
+		
+		/*
+		 * Need to keep getting rollup for the interval until the stats server
+		 * has received the statsSummary from all of the nodes
+		 */
+		StatsSummaryRollupResponseMessage response = null;
+		boolean responseReady = false;
+		int retries = 20;
+		while (!responseReady && (retries > 0)) {
+			ResponseEntity<StatsSummaryRollupResponseMessage> responseEntity = restTemplate.getForEntity(url, StatsSummaryRollupResponseMessage.class);
+			response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error getting interval stats for " + url);
+				return null;
+			}
+
+			if (response.getNumSamplesExpected() == response.getNumSamplesReceived()) {
+				logger.debug("intervalPassed: Stats server has processed all samples");
+				responseReady = true;
+			} else {
+				logger.debug("intervalPassed: Stats server has not processed all samples.  expected = " + response.getNumSamplesExpected() 
+				+ ", received = " + response.getNumSamplesReceived());
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+				}
+			}
+			retries--;
+		}
+
+		if (response == null) {
+			logger.debug("intervalPassed: Did not get a valid response.  Returning false");
+			return null;
+		} else {
+			return response.getStatsSummaryRollup();
+		}
 	}
 
 	protected class StatsIntervalWatcher implements Runnable {
@@ -392,6 +444,14 @@ public abstract class LoadPath implements Runnable {
 
 	public void setNumActiveUsers(long numActiveUsers) {
 		this.numActiveUsers = numActiveUsers;
+	}
+
+	public List<StatsSummaryRollup> getIntervalStatsSummaries() {
+		return intervalStatsSummaries;
+	}
+
+	public void setIntervalStatsSummaries(List<StatsSummaryRollup> intervalStatsSummaries) {
+		this.intervalStatsSummaries = intervalStatsSummaries;
 	}
 
 	public boolean isFinished() {

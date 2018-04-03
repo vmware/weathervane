@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
  */
 public class StatsSummaryRollup {
 	
+	private String intervalName = null;
 	private double intervalDurationSec = 0;
 	private long totalNumOps = 0;
 	private long totalNumRTOps = 0;
@@ -28,7 +29,9 @@ public class StatsSummaryRollup {
 	private boolean intervalPassed = true;
 	private boolean intervalPassedRT = true;
 	private boolean intervalPassedMix = true;
-	
+	private long startActiveUsers = -1;
+	private long endActiveUsers = -1;
+
 	private Map<String, ComputedOpStatsSummary> computedOpStatsSummaries = new HashMap<String, ComputedOpStatsSummary>();
 	private static final Logger logger = LoggerFactory.getLogger(StatsSummaryRollup.class);
 
@@ -38,7 +41,10 @@ public class StatsSummaryRollup {
 			+ ", host " + statsSummary.getHostName() 
 			+ ", statsIntervalSpec " + statsSummary.getStatsIntervalSpecName());
 		setIntervalDurationSec((statsSummary.getIntervalEndTime() - statsSummary.getIntervalStartTime()) / 1000.0);
-
+		startActiveUsers = statsSummary.getStartActiveUsers();
+		endActiveUsers = statsSummary.getEndActiveUsers();
+		intervalName = statsSummary.getIntervalName();
+		
 		/*
 		 * First calculate the overall metrics.  We need these to calculate some of the 
 		 * per-op metrics
@@ -134,6 +140,14 @@ public class StatsSummaryRollup {
 		}
 		
 
+	}
+
+	public String getIntervalName() {
+		return intervalName;
+	}
+
+	public void setIntervalName(String intervalName) {
+		this.intervalName = intervalName;
 	}
 
 	public long getTotalNumOps() {
@@ -276,6 +290,22 @@ public class StatsSummaryRollup {
 		this.totalCycleTime = totalCycleTime;
 	}
 	
+	public long getStartActiveUsers() {
+		return startActiveUsers;
+	}
+
+	public void setStartActiveUsers(long startActiveUsers) {
+		this.startActiveUsers = startActiveUsers;
+	}
+
+	public long getEndActiveUsers() {
+		return endActiveUsers;
+	}
+
+	public void setEndActiveUsers(long endActiveUsers) {
+		this.endActiveUsers = endActiveUsers;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();

@@ -65,7 +65,7 @@ override 'start' => sub {
 	my $printHeader    = 1;
 
 	# TargetUtilization run strategy used fixed load-paths only
-	$self->setLoadPathType("fixed");
+	$self->runProcedure->setLoadPathType("fixed");
 
 	while ( !($foundMax) ) {
 

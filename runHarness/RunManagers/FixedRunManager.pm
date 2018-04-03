@@ -59,7 +59,7 @@ override 'start' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
 	# Fixed run strategy uses fixed load-paths only
-	$self->setLoadPathType("fixed");
+	$self->runProcedure->setLoadPathType("fixed");
 
 	$console_logger->info($self->name . " starting run.");
 

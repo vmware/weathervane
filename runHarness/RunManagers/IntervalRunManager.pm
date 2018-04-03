@@ -60,7 +60,7 @@ override 'start' => sub {
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
 
 	# TargetUtilization run strategy used fixed load-paths only
-	$self->setLoadPathType("interval");
+	$self->runProcedure->setLoadPathType("interval");
 
 	$console_logger->info($self->name . " starting run.");
 

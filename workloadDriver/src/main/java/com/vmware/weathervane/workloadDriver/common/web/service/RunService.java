@@ -22,6 +22,7 @@ import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersExcep
 import com.vmware.weathervane.workloadDriver.common.model.Run;
 import com.vmware.weathervane.workloadDriver.common.model.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 
 public interface RunService {
 
@@ -45,6 +46,6 @@ public interface RunService {
 
 	Run getRun(String runName);
 
-	RunState getRunState(String runName);
+	RunStateResponse getRunState(String runName);
 
 }

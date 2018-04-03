@@ -87,6 +87,13 @@ has 'operations' => (
 	},
 );
 
+# The final run status
+has 'runStatus' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 # Variables used to cache the results of parsing
 # the results.
 has 'resultsValid' => (
@@ -807,6 +814,7 @@ sub clearResults {
 	my ($self) = @_;
 
 	# Clear out the results of parsing any previous run
+	$self->runStatus({});
 	$self->resultsValid(0);
 	$self->opsSec(       {} );
 	$self->reqSec(       {} );
@@ -1298,6 +1306,7 @@ sub startRun {
 	# Now poll for a runState of COMPLETE 
 	# once every minute
 	my $runCompleted = 0;
+	my $endRunStatus = "";
 	while (!$runCompleted) {
 		$url = "http://$hostname:$port/run/$runName/state";
 		$logger->debug("Sending get to $url");
@@ -1306,15 +1315,17 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			my $jsonResponse = $json->decode( $res->content );			
-			if ( $jsonResponse->{"state"} eq "COMPLETED") {
+			my $endRunStatus = $json->decode( $res->content );			
+			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$runCompleted = 1;
 				last;
 			}
 		}
 		sleep 60;
 	}
-	
+	if ($endRunStatus) {
+		$self->runStatus($endRunStatus);
+	}
 	$console_logger->info("Run is complete");
 	
 
@@ -1779,9 +1790,9 @@ sub getWorkloadStatsSummary {
 		$appInstanceNum++
 	  )
 	{
-		$opsSec       += $self->opsSec->{$appInstanceNum};
-		$httpReqSec   += $self->reqSec->{$appInstanceNum};
-		$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
+		$opsSec       += $self->opsSec->{"appInstance".$appInstanceNum};
+		$httpReqSec   += $self->reqSec->{"appInstance".$appInstanceNum};
+		$overallAvgRT += $self->overallAvgRT->{"appInstance".$appInstanceNum};
 	}
 	$overallAvgRT /= $numAppInstances;
 
@@ -1887,93 +1898,93 @@ sub getWorkloadAppStatsSummary {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	tie( my %csv, 'Tie::IxHash' );
-	$self->parseStats($statsLogPath);
-
-	my $appInstancesRef = $self->workload->appInstancesRef;
-	my $numAppInstances = $#$appInstancesRef + 1;
-	my $passAll         = 1;
-	my $opsSec          = 0;
-	my $httpReqSec      = 0;
-	my $overallAvgRT    = 0;
-
-	my @operations = @{ $self->operations };
-	$logger->debug(
-"getWorkloadAppStatsSummary numAppInstances = $numAppInstances, operations: "
-		  . join( ", ", @operations ) );
-
-	for (
-		my $appInstanceNum = 1 ;
-		$appInstanceNum <= $numAppInstances ;
-		$appInstanceNum++
-	  )
-	{
-		$logger->debug(
-			"getWorkloadAppStatsSummary printing stats for appInstance "
-			  . $appInstanceNum );
-		my $aiSuffix = "";
-		if ( $numAppInstances > 1 ) {
-			$aiSuffix = "I" . $appInstanceNum . "-";
-		}
-
-		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
-			{
-				next;
-			}
-			$csv{"${aiSuffix}${op}_rtAvg"} =
-			  $self->rtAvg->{"$op-$appInstanceNum"};
-
-		}
-		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
-			{
-				next;
-			}
-			$csv{"${aiSuffix}${op}_pctPassRT"} =
-			  $self->pctPassRT->{"$op-$appInstanceNum"};
-		}
-
-		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
-			{
-				next;
-			}
-			$csv{"${aiSuffix}${op}_successes"} =
-			  $self->successes->{"$op-$appInstanceNum"};
-		}
-		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
-			{
-				next;
-			}
-			$csv{"${aiSuffix}${op}_Failures"} =
-			  $self->failures->{"$op-$appInstanceNum"};
-
-		}
-		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
-			{
-				next;
-			}
-			$csv{"${aiSuffix}${op}_Proportion"} =
-			  $self->proportion->{"$op-$appInstanceNum"};
-		}
-	}
-
-	#	open( LOG, "$statsLogPath/queryStats.txt" )
-	#	  || die "Error opening $statsLogPath/queryStats.txt:$!";
-	#
-	#	while ( my $inline = <LOG> ) {
-	#		if ( $inline =~ /^(\S*)\s*=\s*(\S*)$/ ) {
-	#			$csv{$1} = $2;
-	#		}
-	#	}
-	#	close LOG;
+#	$self->parseStats($statsLogPath);
+#
+#	my $appInstancesRef = $self->workload->appInstancesRef;
+#	my $numAppInstances = $#$appInstancesRef + 1;
+#	my $passAll         = 1;
+#	my $opsSec          = 0;
+#	my $httpReqSec      = 0;
+#	my $overallAvgRT    = 0;
+#
+#	my @operations = @{ $self->operations };
+#	$logger->debug(
+#"getWorkloadAppStatsSummary numAppInstances = $numAppInstances, operations: "
+#		  . join( ", ", @operations ) );
+#
+#	for (
+#		my $appInstanceNum = 1 ;
+#		$appInstanceNum <= $numAppInstances ;
+#		$appInstanceNum++
+#	  )
+#	{
+#		$logger->debug(
+#			"getWorkloadAppStatsSummary printing stats for appInstance "
+#			  . $appInstanceNum );
+#		my $aiSuffix = "";
+#		if ( $numAppInstances > 1 ) {
+#			$aiSuffix = "I" . $appInstanceNum . "-";
+#		}
+#
+#		foreach my $op (@operations) {
+#			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
+#				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+#			{
+#				next;
+#			}
+#			$csv{"${aiSuffix}${op}_rtAvg"} =
+#			  $self->rtAvg->{"$op-$appInstanceNum"};
+#
+#		}
+#		foreach my $op (@operations) {
+#			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
+#				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+#			{
+#				next;
+#			}
+#			$csv{"${aiSuffix}${op}_pctPassRT"} =
+#			  $self->pctPassRT->{"$op-$appInstanceNum"};
+#		}
+#
+#		foreach my $op (@operations) {
+#			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
+#				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+#			{
+#				next;
+#			}
+#			$csv{"${aiSuffix}${op}_successes"} =
+#			  $self->successes->{"$op-$appInstanceNum"};
+#		}
+#		foreach my $op (@operations) {
+#			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
+#				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+#			{
+#				next;
+#			}
+#			$csv{"${aiSuffix}${op}_Failures"} =
+#			  $self->failures->{"$op-$appInstanceNum"};
+#
+#		}
+#		foreach my $op (@operations) {
+#			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
+#				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+#			{
+#				next;
+#			}
+#			$csv{"${aiSuffix}${op}_Proportion"} =
+#			  $self->proportion->{"$op-$appInstanceNum"};
+#		}
+#	}
+#
+#	#	open( LOG, "$statsLogPath/queryStats.txt" )
+#	#	  || die "Error opening $statsLogPath/queryStats.txt:$!";
+#	#
+#	#	while ( my $inline = <LOG> ) {
+#	#		if ( $inline =~ /^(\S*)\s*=\s*(\S*)$/ ) {
+#	#			$csv{$1} = $2;
+#	#		}
+#	#	}
+#	#	close LOG;
 
 	return \%csv;
 }
@@ -2238,9 +2249,9 @@ sub isPassed {
 	if ($usedLoadPath) {
 
 		# Using a load path in steady state, so ignore proportions
-		return $self->passRT->{$appInstanceNum};
+		return $self->passRT->{"appInstance".$appInstanceNum};
 	}
-	return $self->passAll->{$appInstanceNum};
+	return $self->passAll->{"appInstance".$appInstanceNum};
 }
 
 sub parseStats {
@@ -2254,140 +2265,178 @@ sub parseStats {
 	if ( $self->resultsValid ) {
 		return;
 	}
-
-	my $anyUsedLoadPath = 0;
-	my $appInstancesRef = $self->workload->appInstancesRef;
-	foreach my $appInstance (@$appInstancesRef) {
-		my $userLoadPath = $appInstance->getLoadPath();
-		if ( $#$userLoadPath >= 0 ) {
-			$anyUsedLoadPath = 1;
-		}
-		my $configPath = $appInstance->getConfigPath();
-		if ( $#$configPath >= 0 ) {
-			$anyUsedLoadPath = 1;
-		}
-	}
-
-	my @operations = @{ $self->operations };
-
-	# Initialize the counters used for the csv output
-	for ( my $opCounter = 0 ; $opCounter <= $#operations ; $opCounter++ ) {
-		$self->proportion->{ $operations[$opCounter] } = 0;
-		$self->successes->{ $operations[$opCounter] }  = 0;
-		$self->failures->{ $operations[$opCounter] }   = 0;
-		$self->rtAvg->{ $operations[$opCounter] }      = 0;
-		$self->pctPassRT->{ $operations[$opCounter] }  = 0;
-	}
-
-	my $numAppInstances = $#$appInstancesRef + 1;
-	my $suffix          = "";
-	if ( $self->workload->useSuffix ) {
-		$suffix = $self->workload->suffix;
-	}
-	open( RESULTFILE, "$logDir/run$suffix.log" )
-	  or die "Can't open $logDir/run$suffix.log: $!";
-
-	while ( my $inline = <RESULTFILE> ) {
-
-		if ( $inline =~ /Summary Statistics for workload appInstance(\d+)\s*$/ )
-		{
-
-			my $appInstanceNum = $1;
-
-			# This is the section with the operation response-time data
-			# for appInstance $1
-			while ( $inline = <RESULTFILE> ) {
-
-				if ( $inline =~ /Interval: rampDown/ ) {
-					last;
-				}
-				elsif ( $inline =~ /Interval: steadyState/ ) {
-
-					# parse the steadystate results for appInstance $1
-					while ( $inline = <RESULTFILE> ) {
-						if ( $inline =~ /Passed:\strue/ ) {
-							$self->passAll->{$appInstanceNum} = 1;
-						}
-						elsif ( $inline =~ /Passed:\sfalse/ ) {
-							$self->passAll->{$appInstanceNum} = 0;
-						}
-						elsif ( $inline =~ /Passed Response-Time:\strue/ ) {
-							$self->passRT->{$appInstanceNum} = 1;
-						}
-						elsif ( $inline =~ /Passed Response-Time:\sfalse/ ) {
-							$self->passRT->{$appInstanceNum} = 0;
-						}
-						elsif ( $inline =~
-							/Average Response-Time:\s(\d+\.\d+)\ssec/ )
-						{
-							$self->overallAvgRT->{$appInstanceNum} = $1;
-						}
-						elsif ( $inline =~ /^\s*Throughput:\s(\d+\.\d+)\sops/ )
-						{
-							$self->opsSec->{$appInstanceNum} = $1;
-						}
-						elsif ( $inline =~
-							/^\s*Http\sOperation\sThroughput:\s+(\d+\.\d+)\sops/
-						  )
-						{
-							$logger->debug(
-								"Found Http Operation Throughput line: $1");
-							$self->reqSec->{$appInstanceNum} = $1;
-						}
-						elsif ( $inline =~ /\|\s+Name/ ) {
-
-							# Now can parse the per-operation stats
-							while ( $inline = <RESULTFILE> ) {
-								if ( $inline =~ /^\s*$/ ) {
-									last;
-								}
-								elsif ( $inline =~
-/\|\s*(\w+)\|[^\|]*\|\s*(true|false)\|\s*(true|false)\|[^\|]*\|\s*(\d+\.\d+)\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|\s*(\d+\.\d+)\|\s*(\d+\.\d+)\|\s*(\d+)\|\s*(\d+)\|/
-								  )
-								{
-
-									my $operation = $1;
-									my $opPassRT  = $2;
-									my $opPassMix = $3;
-
-									$self->rtAvg->{"$operation-$appInstanceNum"}
-									  = $4;
-									$self->proportion->{
-										"$operation-$appInstanceNum"} = $5;
-									$self->pctPassRT->{
-										"$operation-$appInstanceNum"} = $6;
-
-									$self->successes->{
-										"$operation-$appInstanceNum"} = $7;
-									$self->failures->{
-										"$operation-$appInstanceNum"} = $8;
-
-									if ( $opPassRT eq "false" ) {
-										$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation"
-										);
-									}
-									if (   ( $opPassMix eq "false" )
-										&& ( $anyUsedLoadPath == 0 ) )
-									{
-										$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation"
-										);
-									}
-
-								}
-							}
-						}
-						if ( $inline =~ /^\s*$/ ) {
-							last;
-						}
-					}
-				}
+	
+	my $runStatus = $self->runStatus;
+	my $workloadStati = $runStatus->{"workloadStati"};
+	foreach my $workloadStatus (@$workloadStati) {
+		# For each appinstance, get the statsRollup for the max passing loadInterval
+		my $appInstanceName = $workloadStatus->{"name"};
+		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
+		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
+		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
+		my $passed = $workloadStatus->{"passed"};
+		
+		my $maxPassStatsSummary = "";
+		for my $statsSummary (@$statsSummaries) {
+			if ($statsSummary->{"intervalName"} eq $maxPassIntervalName) {
+				$maxPassStatsSummary = $statsSummary;
 			}
 		}
+		
+		if (!$maxPassStatsSummary) {
+			$console_logger->warn("Could not find the max passing interval for appInstance " + $appInstanceName);
+			next;
+		}
+		
+		$self->passAll->{$appInstanceName} = $maxPassStatsSummary->{"intervalPassed"};
+		$self->passRT->{$appInstanceName} = $maxPassStatsSummary->{"intervalPassedRT"};
+		$self->overallAvgRT->{$appInstanceName} = $maxPassStatsSummary->{"avgRT"};
+		$self->opsSec->{$appInstanceName} = $maxPassStatsSummary->{"throughput"};
+		$self->reqSec->{$appInstanceName} = $maxPassStatsSummary->{"stepsThroughput"};
+		
+		my $resultString = " passed at $maxPassUsers in interval $maxPassIntervalName";
+		if (!$passed) {
+			$resultString = "failed";
+		}
+		
+		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName, $resultString");
+		
 	}
-	close RESULTFILE;
+	
 
+#	my $anyUsedLoadPath = 0;
+#	my $appInstancesRef = $self->workload->appInstancesRef;
+#	foreach my $appInstance (@$appInstancesRef) {
+#		my $userLoadPath = $appInstance->getLoadPath();
+#		if ( $#$userLoadPath >= 0 ) {
+#			$anyUsedLoadPath = 1;
+#		}
+#		my $configPath = $appInstance->getConfigPath();
+#		if ( $#$configPath >= 0 ) {
+#			$anyUsedLoadPath = 1;
+#		}
+#	}
+#
+#	my @operations = @{ $self->operations };
+#
+#	# Initialize the counters used for the csv output
+#	for ( my $opCounter = 0 ; $opCounter <= $#operations ; $opCounter++ ) {
+#		$self->proportion->{ $operations[$opCounter] } = 0;
+#		$self->successes->{ $operations[$opCounter] }  = 0;
+#		$self->failures->{ $operations[$opCounter] }   = 0;
+#		$self->rtAvg->{ $operations[$opCounter] }      = 0;
+#		$self->pctPassRT->{ $operations[$opCounter] }  = 0;
+#	}
+#
+#	my $numAppInstances = $#$appInstancesRef + 1;
+#	my $suffix          = "";
+#	if ( $self->workload->useSuffix ) {
+#		$suffix = $self->workload->suffix;
+#	}
+#	open( RESULTFILE, "$logDir/run$suffix.log" )
+#	  or die "Can't open $logDir/run$suffix.log: $!";
+#
+#	while ( my $inline = <RESULTFILE> ) {
+#
+#		if ( $inline =~ /Summary Statistics for workload appInstance(\d+)\s*$/ )
+#		{
+#
+#			my $appInstanceNum = $1;
+#
+#			# This is the section with the operation response-time data
+#			# for appInstance $1
+#			while ( $inline = <RESULTFILE> ) {
+#
+#				if ( $inline =~ /Interval: rampDown/ ) {
+#					last;
+#				}
+#				elsif ( $inline =~ /Interval: steadyState/ ) {
+#
+#					# parse the steadystate results for appInstance $1
+#					while ( $inline = <RESULTFILE> ) {
+#						if ( $inline =~ /Passed:\strue/ ) {
+#							$self->passAll->{$appInstanceNum} = 1;
+#						}
+#						elsif ( $inline =~ /Passed:\sfalse/ ) {
+#							$self->passAll->{$appInstanceNum} = 0;
+#						}
+#						elsif ( $inline =~ /Passed Response-Time:\strue/ ) {
+#							$self->passRT->{$appInstanceNum} = 1;
+#						}
+#						elsif ( $inline =~ /Passed Response-Time:\sfalse/ ) {
+#							$self->passRT->{$appInstanceNum} = 0;
+#						}
+#						elsif ( $inline =~
+#							/Average Response-Time:\s(\d+\.\d+)\ssec/ )
+#						{
+#							$self->overallAvgRT->{$appInstanceNum} = $1;
+#						}
+#						elsif ( $inline =~ /^\s*Throughput:\s(\d+\.\d+)\sops/ )
+#						{
+#							$self->opsSec->{$appInstanceNum} = $1;
+#						}
+#						elsif ( $inline =~
+#							/^\s*Http\sOperation\sThroughput:\s+(\d+\.\d+)\sops/
+#						  )
+#						{
+#							$logger->debug(
+#								"Found Http Operation Throughput line: $1");
+#							$self->reqSec->{$appInstanceNum} = $1;
+#						}
+#						elsif ( $inline =~ /\|\s+Name/ ) {
+#
+#							# Now can parse the per-operation stats
+#							while ( $inline = <RESULTFILE> ) {
+#								if ( $inline =~ /^\s*$/ ) {
+#									last;
+#								}
+#								elsif ( $inline =~
+#/\|\s*(\w+)\|[^\|]*\|\s*(true|false)\|\s*(true|false)\|[^\|]*\|\s*(\d+\.\d+)\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|\s*(\d+\.\d+)\|\s*(\d+\.\d+)\|\s*(\d+)\|\s*(\d+)\|/
+#								  )
+#								{
+#
+#									my $operation = $1;
+#									my $opPassRT  = $2;
+#									my $opPassMix = $3;
+#
+#									$self->rtAvg->{"$operation-$appInstanceNum"}
+#									  = $4;
+#									$self->proportion->{
+#										"$operation-$appInstanceNum"} = $5;
+#									$self->pctPassRT->{
+#										"$operation-$appInstanceNum"} = $6;
+#
+#									$self->successes->{
+#										"$operation-$appInstanceNum"} = $7;
+#									$self->failures->{
+#										"$operation-$appInstanceNum"} = $8;
+#
+#									if ( $opPassRT eq "false" ) {
+#										$console_logger->info(
+#"Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation"
+#										);
+#									}
+#									if (   ( $opPassMix eq "false" )
+#										&& ( $anyUsedLoadPath == 0 ) )
+#									{
+#										$console_logger->info(
+#"Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation"
+#										);
+#									}
+#
+#								}
+#							}
+#						}
+#						if ( $inline =~ /^\s*$/ ) {
+#							last;
+#						}
+#					}
+#				}
+#			}
+#		}
+#	}
+#	close RESULTFILE;
+#
 	$self->resultsValid(1);
 }
 

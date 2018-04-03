@@ -26,6 +26,8 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.common.model.Workload;
+import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 @JsonTypeName(value = "interval")
 public class IntervalLoadPath extends LoadPath {
@@ -41,6 +43,12 @@ public class IntervalLoadPath extends LoadPath {
 	
 	@JsonIgnore
 	private int nextStatsIntervalIndex = 0;
+	
+	@JsonIgnore
+	private long maxPassUsers = 0;
+	
+	@JsonIgnore
+	private String maxPassIntervalName = null;
 	
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber, RestTemplate restTemplate, 
@@ -158,17 +166,28 @@ public class IntervalLoadPath extends LoadPath {
 			logger.debug("getNextInterval returning null");
 			return null;
 		}
-
-		/* 
-		 * wrap at end of intervals
-		 */
+ 
 		UniformLoadInterval nextInterval;
 		if (nextIntervalIndex >= uniformIntervals.size()) {
 			/*
 			 * At end of intervals, signal that loadPath is complete.
 			 * Keep returning the last interval
 			 */
-			workload.loadPathComplete();
+			boolean passed = false;
+			if (maxPassUsers > 0) {
+				/*
+				 *  Pass up the maximum number of users that passed a steady
+				 *  interval.  This is not the real passing criteria for an
+				 *  interval load path, but may be useful info.				
+				 */
+				passed = true;
+			}
+			WorkloadStatus status = new WorkloadStatus();
+			status.setIntervalStatsSummaries(getIntervalStatsSummaries());
+			status.setMaxPassUsers(maxPassUsers);
+			status.setMaxPassIntervalName(maxPassIntervalName);
+			status.setPassed(passed);
+			workload.loadPathComplete(status);
 			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
 		} else {
 			nextInterval = uniformIntervals.get(nextIntervalIndex);
@@ -185,6 +204,27 @@ public class IntervalLoadPath extends LoadPath {
 	@Override
 	public LoadInterval getNextStatsInterval() {
 		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
+		
+		if (nextStatsIntervalIndex != 0) {
+			int curIntervalIndex = nextStatsIntervalIndex - 1;
+			String curIntervalName = loadIntervals.get(curIntervalIndex).getName();			
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+			boolean prevIntervalPassed = false;
+			if (rollup != null) {
+				prevIntervalPassed = rollup.isIntervalPassed();			
+				long startUsers = rollup.getStartActiveUsers();
+				long endUsers = rollup.getEndActiveUsers();
+
+				// Only non-ramp intervals can be passing
+				if ((startUsers == endUsers) && prevIntervalPassed && (endUsers > maxPassUsers)) {
+					maxPassUsers = endUsers;
+					maxPassIntervalName = curIntervalName;
+				}
+				
+				getIntervalStatsSummaries().add(rollup);
+			}
+
+		}
 		
 		LoadInterval nextStatsInterval;
 		if (nextStatsIntervalIndex >= loadIntervals.size()) {

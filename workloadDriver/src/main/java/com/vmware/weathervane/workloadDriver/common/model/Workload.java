@@ -335,13 +335,24 @@ public abstract class Workload implements UserFactory {
 	}
 	
 
-	public void loadPathComplete() {
+	public void loadPathComplete(WorkloadStatus status) {
 		if (!finished) {
 			this.stop();
 		}
-		run.workloadComplete(name);
+		status.setName(name);
+		status.setState(getState());
+		run.workloadComplete(status);
 	}
 
+	public WorkloadStatus getWorkloadStatus() {
+		WorkloadStatus status = new WorkloadStatus();
+		status.setName(name);
+		status.setState(state);
+		status.setIntervalStatsSummaries(loadPath.getIntervalStatsSummaries());
+		
+		return status;
+	}
+	
 	public String getName() {
 		return name;
 	}

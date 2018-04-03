@@ -30,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.common.model.Workload;
+import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
@@ -77,6 +78,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private long minFailUsers = Long.MAX_VALUE;
 	@JsonIgnore
 	private long maxPassUsers = 0;
+	@JsonIgnore
+	private String maxPassIntervalName = null;
+	
 	@JsonIgnore
 	private final long minRateStep = maxUsers / 100;
 	
@@ -130,17 +134,19 @@ public class FindMaxLoadPath extends LoadPath {
 		
 		boolean prevIntervalPassed = true;
 		if (intervalNum != 1) {
-			
+			String curIntervalName = curInterval.getName();
+
 			/*
 			 *  This is the not first interval.  Need to know whether the previous
 			 *  interval passed.
 			 *  Get the statsSummaryRollup for the previous interval
 			 */
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup("InitialRamp-" + (intervalNum-1));
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 
 			// For initial ramp, only interested in response-time
 			if (rollup != null) {
 				prevIntervalPassed = rollup.isIntervalPassedRT();			
+				getIntervalStatsSummaries().add(rollup);
 			} 
 			logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
 		} 
@@ -178,14 +184,16 @@ public class FindMaxLoadPath extends LoadPath {
 		
 		boolean prevIntervalPassed = false;
 		if (intervalNum != 1) {
+			String curIntervalName = curInterval.getName();
 			/*
 			 *  This is the not first interval.  Need to know whether the previous
 			 *  interval passed.
 			 *  Get the statsSummaryRollup for the previous interval
 			 */
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup("APPROXIMATE-" + (intervalNum-1));
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 			if (rollup != null) {
 				prevIntervalPassed = rollup.isIntervalPassedRT();			
+				getIntervalStatsSummaries().add(rollup);
 			} 
 		}		
 		logger.debug("getNextApproximateInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
@@ -196,7 +204,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 * we can run, so just end the run.
 			 */
 			logger.debug("getNextApproximateInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
-			workload.loadPathComplete();
+			loadPathComplete();
 			return curInterval;
 		} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
 			/*
@@ -209,6 +217,7 @@ public class FindMaxLoadPath extends LoadPath {
 		} else if (prevIntervalPassed) {
 			if (curUsers > maxPassUsers) {
 				maxPassUsers = curUsers;
+				maxPassIntervalName = curInterval.getName();
 			}
 			
 			/*
@@ -296,6 +305,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			minFailUsers = Long.MAX_VALUE;
 			maxPassUsers = 0;
+			maxPassIntervalName = null;
 			
 			/*
 			 * First interval of APPROXIMATE should just be a longer 
@@ -314,10 +324,12 @@ public class FindMaxLoadPath extends LoadPath {
 		 *  interval passed.
 		 *  Get the statsSummaryRollup for the previous interval
 		 */
-		StatsSummaryRollup rollup = fetchStatsSummaryRollup("NARROWIN-" + (intervalNum-1));
+		String curIntervalName = curInterval.getName();
+		StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 		boolean prevIntervalPassed = false;
 		if (rollup != null) {
 			prevIntervalPassed = rollup.isIntervalPassedRT();			
+			getIntervalStatsSummaries().add(rollup);
 		} 
 		logger.debug("getNextNarrowInInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
 
@@ -327,7 +339,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 * we can run, so just end the run.
 			 */
 			logger.debug("getNextNarrowInInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
-			workload.loadPathComplete();
+			loadPathComplete();
 			return curInterval;
 		} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
 			/*
@@ -340,6 +352,7 @@ public class FindMaxLoadPath extends LoadPath {
 		} else if (prevIntervalPassed) {
 			if (curUsers > maxPassUsers) {
 				maxPassUsers = curUsers;
+				maxPassIntervalName = curInterval.getName();
 			}
 			
 			/*
@@ -361,7 +374,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * Have found the maximum
 				 */
 				logger.debug("getNextNarrowInInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
-				workload.loadPathComplete();
+				loadPathComplete();
 				return curInterval;
 			}
 			
@@ -392,7 +405,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * Have found the maximum
 				 */
 				logger.debug("getNextApproximateInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
-				workload.loadPathComplete();
+				loadPathComplete();
 				return curInterval;
 			}
 			
@@ -418,52 +431,22 @@ public class FindMaxLoadPath extends LoadPath {
 		return curInterval;
 	}
 	
-	private StatsSummaryRollup fetchStatsSummaryRollup(String intervalNum) {
-		/*
-		 * Get the statsSummaryRollup for the previous interval over all hosts and targets
-		 */
-		HttpHeaders requestHeaders = new HttpHeaders();
-		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-		String url = "http://" + statsHostName + ":" + portNumber + "/stats/run/" + runName + "/workload/" + workloadName 
-				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
-		logger.debug("intervalPassed  getting rollup from " + statsHostName + ", url = " + url);
+	private void loadPathComplete() {
+		boolean passed = false;
+		if (maxPassUsers > 0) {
+			/*
+			 *  Pass up the maximum number of users that passed a steady
+			 *  interval.  	
+			 */
+			passed = true;
+		}
 		
-		/*
-		 * Need to keep getting rollup for the interval until the stats server
-		 * has received the statsSummary from all of the nodes
-		 */
-		StatsSummaryRollupResponseMessage response = null;
-		boolean responseReady = false;
-		int retries = 20;
-		while (!responseReady && (retries > 0)) {
-			ResponseEntity<StatsSummaryRollupResponseMessage> responseEntity = restTemplate.getForEntity(url, StatsSummaryRollupResponseMessage.class);
-			response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error getting interval stats for " + url);
-				return null;
-			}
-
-			if (response.getNumSamplesExpected() == response.getNumSamplesReceived()) {
-				logger.debug("intervalPassed: Stats server has processed all samples");
-				responseReady = true;
-			} else {
-				logger.debug("intervalPassed: Stats server has not processed all samples.  expected = " + response.getNumSamplesExpected() 
-				+ ", received = " + response.getNumSamplesReceived());
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-				}
-			}
-			retries--;
-		}
-
-		if (response == null) {
-			logger.debug("intervalPassed: Did not get a valid response.  Returning false");
-			return null;
-		} else {
-			return response.getStatsSummaryRollup();
-		}
+		WorkloadStatus status = new WorkloadStatus();
+		status.setIntervalStatsSummaries(getIntervalStatsSummaries());
+		status.setMaxPassUsers(maxPassUsers);
+		status.setMaxPassIntervalName(maxPassIntervalName);
+		status.setPassed(passed);
+		workload.loadPathComplete(status);
 	}
 
 	@JsonIgnore

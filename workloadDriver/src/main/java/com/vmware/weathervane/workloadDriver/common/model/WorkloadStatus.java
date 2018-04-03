@@ -13,43 +13,78 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.representation;
+package com.vmware.weathervane.workloadDriver.common.model;
 
 import java.util.List;
 
-import com.vmware.weathervane.workloadDriver.common.model.Run;
-import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
-public class RunStateResponse {
-	private String status;
-	private String message;
-	private Run.RunState state;
-	private List<WorkloadStatus> workloadStati;
+public class WorkloadStatus {
+
+	private String name;
+
+	private Workload.WorkloadState state;
+
+	private String maxPassIntervalName;
 	
-	public String getStatus() {
-		return status;
+	private long maxPassUsers;
+
+	private boolean passed;
+	
+	private List<StatsSummaryRollup> intervalStatsSummaries;
+	
+	public String getName() {
+		return name;
 	}
-	public void setStatus(String status) {
-		this.status = status;
+
+	public void setName(String name) {
+		this.name = name;
 	}
-	public String getMessage() {
-		return message;
-	}
-	public void setMessage(String message) {
-		this.message = message;
-	}
-	public Run.RunState getState() {
+
+
+	public Workload.WorkloadState getState() {
 		return state;
 	}
-	public void setState(Run.RunState state) {
+
+
+	public void setState(Workload.WorkloadState state) {
 		this.state = state;
 	}
-	public List<WorkloadStatus> getWorkloadStati() {
-		return workloadStati;
+
+
+	public String getMaxPassIntervalName() {
+		return maxPassIntervalName;
 	}
-	public void setWorkloadStati(List<WorkloadStatus> workloadStati) {
-		this.workloadStati = workloadStati;
+
+	public void setMaxPassIntervalName(String maxPassIntervalName) {
+		this.maxPassIntervalName = maxPassIntervalName;
 	}
-	
-	
+
+	public long getMaxPassUsers() {
+		return maxPassUsers;
+	}
+
+
+	public void setMaxPassUsers(long maxPassUsers) {
+		this.maxPassUsers = maxPassUsers;
+	}
+
+
+	public boolean isPassed() {
+		return passed;
+	}
+
+
+	public void setPassed(boolean passed) {
+		this.passed = passed;
+	}
+
+	public List<StatsSummaryRollup> getIntervalStatsSummaries() {
+		return intervalStatsSummaries;
+	}
+
+	public void setIntervalStatsSummaries(List<StatsSummaryRollup> intervalStatsSummaries) {
+		this.intervalStatsSummaries = intervalStatsSummaries;
+	}
+
 }

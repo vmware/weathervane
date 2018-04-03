@@ -11,15 +11,15 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package TargetUtilizationRunManager;
+package FixedRunManager;
 
 use Moose;
 use MooseX::Storage;
 use RunManagers::RunManager;
 use WeathervaneTypes;
-use Log::Log4perl qw(get_logger);
-use POSIX;
+use RunResults::RunResult;
 use Parameters qw(getParamValue);
+use Log::Log4perl qw(get_logger);
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 use strict;
@@ -30,69 +30,54 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Target-Utilization Run Strategy', );
+has '+name' => ( default => 'Fixed Run Strategy', );
 
 has '+description' => ( default => '', );
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
-	my $console_logger     = get_logger("Console");
 
-	# Check whether the runprocedure is valid for this run manager.
-	# The actual creation happens in the superclass
-	my $runProcedureType = $self->getParamValue( "runProcedure" );
+	super();
+};
+
+override 'setRunProcedure' => sub {
+	my ( $self, $runProcedureRef ) = @_;
+
+	my $runProcedureType = $runProcedureRef->getRunProcedureImpl();
 
 	my @runProcedures = @WeathervaneTypes::runProcedures;
-	if ( !( $runProcedureType ~~@runProcedures ) ) {
-		$console_logger->error("TargetUtilizationFixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures");
-		exit(-1);
+	if ( !( $runProcedureType ~~ @runProcedures ) ) {
+		die "SingleFixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
 	}
 
-	if ( $runProcedureType eq 'prepareOnly' ) {
-		$console_logger->error("$runProcedureType is not a valid run procedure for the TargetUtilization run manager");
-		exit(-1);
-	}
 
 	super();
 };
 
 override 'start' => sub {
 	my ($self) = @_;
-	my $console_logger     = get_logger("Console");
-	my $logger       = get_logger("Weathervane::RunManagers::FindMaxFixedRunManager");
-
-	my $foundMax       = 0;
-	my $printHeader    = 1;
-
-	# TargetUtilization run strategy used fixed load-paths only
+	my $console_logger = get_logger("Console");
+	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
+	# Fixed run strategy uses fixed load-paths only
 	$self->setLoadPathType("fixed");
 
-	while ( !($foundMax) ) {
+	$console_logger->info($self->name . " starting run.");
 
-		# now do the run
-		my $nextRunInfo = $self->runProcedure->getNextRunInfo();
-		$console_logger->info($self->name . " starting run" . $nextRunInfo);
+	my $runResult = $self->runProcedure->run();
 
-		my $runResult = $self->runProcedure->run( );
-		$console_logger->info($runResult->toString());
-
-		$self->printCsv( $runResult->resultsSummaryHashRef, $printHeader );
-		$printHeader = 0;
-
-		if ( $runResult->isRunError ) {
-
-			# Was some error in this run.
-			die "Was an error in the run.  Check the logs and try again\n";
-		}
-
-		$foundMax = $self->runProcedure->hitTargetUt();
-		if (!$foundMax) {
-			$self->runProcedure->adjustUsersForTargetUt();
-		}
-
-		Log::Log4perl->eradicate_appender("tmpdirConsoleFile");
-
+	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
+	if ( $runProcedureType eq 'prepareOnly' ) {
+		$console_logger->info("Application configured and running.  Connect with a browser to http://www.weathervane");
 	}
+	elsif ( $runProcedureType eq 'stop' ) {
+		$console_logger->info("Run stopped");
+	}
+	else {
+		$self->printCsv( $runResult->resultsSummaryHashRef, 1 );
+		$console_logger->info($runResult->toString());
+	}
+	Log::Log4perl->eradicate_appender("tmpdirConsoleFile");
+
 };
 
 __PACKAGE__->meta->make_immutable;

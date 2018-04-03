@@ -438,6 +438,18 @@ sub clearResults {
 	}
 }
 
+sub setLoadPathType {
+	my ( $self, $loadPathType ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	
+	$logger->debug("setLoadPathType for all workloads to $loadPathType");
+	
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		$workload->setLoadPathType($loadPathType);
+	}
+}
+
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");

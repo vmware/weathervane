@@ -15,8 +15,12 @@ package RunManagerFactory;
 
 use Moose;
 use MooseX::Storage;
-use RunManagers::SingleRunManager;
-use RunManagers::FindMaxRunManager;
+use RunManagers::FixedRunManager;
+use RunManagers::IntervalRunManager;
+use RunManagers::FindMaxSingleAIRunManager;
+use RunManagers::FindMaxMultiRunRunManager;
+use RunManagers::FindMaxSingleAIWithScalingRunManager;
+use RunManagers::FindMaxMultiAIRunManager;
 use RunManagers::TargetUtilizationRunManager;
 use Parameters qw(getParamValue);
 
@@ -29,11 +33,27 @@ sub getRunManager {
 
 	my $runManager;
 	my $runStrategy = $paramsHashRef->{'runStrategy'};
-	if ( $runStrategy eq 'single' ) {
+	if ( $runStrategy eq 'fixed' ) {
 		$runManager =
 		  SingleRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
-	elsif ( $runStrategy eq 'findMax' ) {
+	elsif ( $runStrategy eq 'interval' ) {
+		$runManager =
+		  IntervalRunManager->new( 'paramHashRef' => $paramsHashRef );
+	}
+	elsif ( $runStrategy eq 'findMaxSingleAI' ) {
+		$runManager =
+		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+	}
+	elsif ( $runStrategy eq 'findMaxSingleAIWithScaling' ) {
+		$runManager =
+		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+	}
+	elsif ( $runStrategy eq 'findMaxMultiAI' ) {
+		$runManager =
+		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+	}
+	elsif ( $runStrategy eq 'findMaxMultiRun' ) {
 		$runManager =
 		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}

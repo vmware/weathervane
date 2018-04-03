@@ -11,7 +11,7 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package FindMaxRunManager;
+package FindMaxMultiAIRunManager;
 
 use Moose;
 use MooseX::Storage;
@@ -58,6 +58,8 @@ override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger     = get_logger("Console");
 	my $logger       = get_logger("Weathervane::RunManagers::FindMaxFixedRunManager");
+
+	$self->setLoadPathType("findMax");
 
 	# Do the run/maximum-finding $repeatsAtMax+1 times.
 	# For maximum finding, on repeats the runs will start at the previous maximum.

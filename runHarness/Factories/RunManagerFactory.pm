@@ -43,19 +43,19 @@ sub getRunManager {
 	}
 	elsif ( $runStrategy eq 'findMaxSingleAI' ) {
 		$runManager =
-		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+		  FindMaxSingleAIRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxSingleAIWithScaling' ) {
 		$runManager =
-		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+		  FindMaxSingleAIWithScalingRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxMultiAI' ) {
 		$runManager =
-		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+		  FindMaxMultiAIRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxMultiRun' ) {
 		$runManager =
-		  FindMaxRunManager->new( 'paramHashRef' => $paramsHashRef );
+		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'targetUtilization' ) {
 		$runManager = TargetUtilizationRunManager->new(

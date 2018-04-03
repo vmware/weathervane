@@ -286,6 +286,16 @@ sub clearResults {
 	return $self->primaryDriver->clearResults();
 }
 
+sub setLoadPathType {
+	my ( $self, $loadPathType ) = @_;
+	my $logger         = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("setLoadPathType for all appInstances to $loadPathType");
+
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		$appInstance->setLoadPathType($loadPathType);
+	}
+}
 
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;

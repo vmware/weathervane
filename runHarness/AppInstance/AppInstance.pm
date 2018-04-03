@@ -977,6 +977,24 @@ sub unRegisterPortNumbers {
 	}
 }
 
+sub setLoadPathType {
+	my ( $self, $loadPathType ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	$logger->debug("setLoadPathType to $loadPathType");
+	
+	if (($loadPathType eq 'interval') && (!$self->hasLoadPath())) {
+		$logger->error("When using the interval run strategy, you must define a userLoadPath for all AppInstances");
+		exit 1;
+	}
+	
+	if (($loadPathType eq 'fixed') && ($self->hasLoadPath())) {
+		$logger->error("When using the fixed, targetUtilization, or findMaxMultiRun run strategy you must not define a userLoadPath for any AppInstances");
+		exit 1;
+	}
+	
+	$self->setParamValue('loadPathType', $loadPathType);
+}
+
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");

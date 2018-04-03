@@ -71,10 +71,11 @@ our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
-our @runStrategy   = ( 'single', 'findMax', 'targetUtilization' );
+our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleAI', 'findMaxSingleAIWithScaling',
+							'findMaxMultiAI', 'findMaxMultiRun', 'targetUtilization' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
-our @pinModes = ( 'all', 'odd', 'even');
+our @configurationSizes = ( 'micro', 'small', 'medium', 'large');
 
 # These are all of the workload profiles that are supported
 our %workloadProfiles = (

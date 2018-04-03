@@ -11,7 +11,7 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package SingleRunManager;
+package IntervalRunManager;
 
 use Moose;
 use MooseX::Storage;
@@ -30,7 +30,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Single-Run RunManager', );
+has '+name' => ( default => 'Interval Run Strategy', );
 
 has '+description' => ( default => '', );
 
@@ -58,6 +58,9 @@ override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
+
+	# TargetUtilization run strategy used fixed load-paths only
+	$self->setLoadPathType("interval");
 
 	$console_logger->info($self->name . " starting run.");
 

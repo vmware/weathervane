@@ -616,12 +616,6 @@ override 'configure' => sub {
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
 
-	# Save the configuration in file form
-	open( my $configFile, ">$tmpDir/run$suffix.json" )
-	  || die "Can't open $tmpDir/run$suffix.json for writing: $!";
-	print $configFile $json->encode($runRef) . "\n";
-	close $configFile;
-
 	$scpConnectString = $self->host->scpConnectString;
 	$scpHostString    = $self->host->scpHostString;
 `$scpConnectString $tmpDir/run$suffix.json root\@$scpHostString:/tmp/run$suffix.json`;
@@ -1013,6 +1007,14 @@ sub initializeRun {
 
 	my $runRef =
 	  $self->createRunConfigHash( $self->workload->appInstancesRef, $suffix );
+
+	# Save the configuration in file form
+	my $tmpDir              = $self->getParamValue('tmpDir');
+	open( my $configFile, ">$tmpDir/run$suffix.json" )
+	  || die "Can't open $tmpDir/run$suffix.json for writing: $!";
+	print $configFile $json->encode($runRef) . "\n";
+	close $configFile;
+
 	my $runContent = $json->encode($runRef);
 
 	$logger->debug("Run content for workload $workloadNum:\n$runContent\n");

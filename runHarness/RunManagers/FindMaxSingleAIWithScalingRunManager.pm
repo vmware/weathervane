@@ -30,7 +30,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Fixed Run Strategy', );
+has '+name' => ( default => 'Find Max/Single-AI With Scaling Run Strategy', );
 
 has '+description' => ( default => '', );
 
@@ -59,7 +59,7 @@ override 'start' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
 	# TargetUtilization run strategy used fixed load-paths only
-	$self->runProcedure->setLoadPathType("findMax");
+	$self->runProcedure->setLoadPathType("findmax");
 
 	$console_logger->info($self->name . " starting run.");
 

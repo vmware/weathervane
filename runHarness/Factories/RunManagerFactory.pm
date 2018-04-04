@@ -33,9 +33,9 @@ sub getRunManager {
 
 	my $runManager;
 	my $runStrategy = $paramsHashRef->{'runStrategy'};
-	if ( $runStrategy eq 'fixed' ) {
+	if (($runStrategy eq 'fixed' ) || ($runStrategy eq 'single' )) {
 		$runManager =
-		  SingleRunManager->new( 'paramHashRef' => $paramsHashRef );
+		  FixedRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'interval' ) {
 		$runManager =
@@ -53,7 +53,7 @@ sub getRunManager {
 		$runManager =
 		  FindMaxMultiAIRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
-	elsif ( $runStrategy eq 'findMaxMultiRun' ) {
+	elsif (( $runStrategy eq 'findMaxMultiRun' ) || ($runStrategy eq 'findMax' )) {
 		$runManager =
 		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}

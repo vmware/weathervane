@@ -60,13 +60,6 @@ has 'appInstances' => (
 	default => sub { [] },
 );
 
-# Holds the structure for the json run configuration
-has 'runRef' => (
-	is      => 'rw',
-	isa     => 'HashRef',
-	default => sub { {} },
-);
-
 has 'operations' => (
 	is      => 'ro',
 	isa     => 'ArrayRef',
@@ -622,9 +615,6 @@ override 'configure' => sub {
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
-
-	my $runRef = $self->createRunConfigHash( $appInstancesRef, $suffix );
-	$self->runRef($runRef);
 
 	# Save the configuration in file form
 	open( my $configFile, ">$tmpDir/run$suffix.json" )

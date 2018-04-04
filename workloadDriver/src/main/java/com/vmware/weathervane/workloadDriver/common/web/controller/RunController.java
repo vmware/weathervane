@@ -90,7 +90,7 @@ public class RunController {
 			response.setStatus("Success");
 		} catch (RunNotInitializedException e) {
 			status = HttpStatus.CONFLICT;
-			response.setMessage("Run not initialized");
+			response.setMessage(e.getMessage());
 			response.setStatus("Failed");			
 		}
 		

@@ -59,7 +59,7 @@ override 'start' => sub {
 	my $console_logger     = get_logger("Console");
 	my $logger       = get_logger("Weathervane::RunManagers::FindMaxFixedRunManager");
 
-	$self->runProcedure->setLoadPathType("findMax");
+	$self->runProcedure->setLoadPathType("findmax");
 
 	# Do the run/maximum-finding $repeatsAtMax+1 times.
 	# For maximum finding, on repeats the runs will start at the previous maximum.

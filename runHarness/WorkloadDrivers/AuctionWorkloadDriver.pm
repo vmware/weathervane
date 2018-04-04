@@ -611,15 +611,6 @@ override 'configure' => sub {
 		}
 	}
 
-	# Create the run.json structure for this workload
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	$scpConnectString = $self->host->scpConnectString;
-	$scpHostString    = $self->host->scpHostString;
-`$scpConnectString $tmpDir/run$suffix.json root\@$scpHostString:/tmp/run$suffix.json`;
-
 	# make sure nscd is not running
 	$self->host->stopNscd();
 	$secondariesRef = $self->secondaries;
@@ -1043,7 +1034,6 @@ sub initializeRun {
 	}
 
 	# Send the behaviorSpecs to all of the drivers
-	my $tmpDir = $self->getParamValue('tmpDir');
 	my $behaviorSpecDirName =
 	  "$tmpDir/configuration/workloadDriver/workload${workloadNum}";
 	my @behaviorSpecFiles = (

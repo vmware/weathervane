@@ -1313,7 +1313,7 @@ sub startRun {
 	$console_logger->info("Run is complete");
 	
 	# Get the stats files from the workloadDriver before shutting it down
-	my $destinationPath = $logPath . "/statistics/workloadDriver";
+	my $destinationPath = $logDir . "/statistics/workloadDriver";
 	$self->getStatsFiles($destinationPath);
 	
 	# Write the endRun status

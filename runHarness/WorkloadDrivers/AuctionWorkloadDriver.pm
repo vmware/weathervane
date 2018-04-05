@@ -1776,9 +1776,9 @@ sub getWorkloadStatsSummary {
 		$appInstanceNum++
 	  )
 	{
-		$opsSec       += $self->opsSec->{"appInstance".$appInstanceNum};
-		$httpReqSec   += $self->reqSec->{"appInstance".$appInstanceNum};
-		$overallAvgRT += $self->overallAvgRT->{"appInstance".$appInstanceNum};
+		$opsSec       += $self->opsSec->{$appInstanceNum};
+		$httpReqSec   += $self->reqSec->{$appInstanceNum};
+		$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
 	}
 	$overallAvgRT /= $numAppInstances;
 
@@ -2233,9 +2233,9 @@ sub isPassed {
 	if ($usedLoadPath) {
 
 		# Using a load path in steady state, so ignore proportions
-		return $self->passRT->{"appInstance".$appInstanceNum};
+		return $self->passRT->{$appInstanceNum};
 	}
-	return $self->passAll->{"appInstance".$appInstanceNum};
+	return $self->passAll->{$appInstanceNum};
 }
 
 sub parseStats {
@@ -2251,11 +2251,14 @@ sub parseStats {
 	foreach my $workloadStatus (@$workloadStati) {
 		# For each appinstance, get the statsRollup for the max passing loadInterval
 		my $appInstanceName = $workloadStatus->{"name"};
+		$appInstanceName =~ /appInstance(\d+)/;
+		my $appInstanceNum = $1;
 		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
-		$logger->debug("parseStats: Found workloadStatus for workload " . $appInstanceName);
+		$logger->debug("parseStats: Found workloadStatus for workload " . $appInstanceName 
+					. ", appInstanceNum = " . $appInstanceNum);
 		
 		my $maxPassStatsSummary = "";
 		for my $statsSummary (@$statsSummaries) {
@@ -2269,11 +2272,11 @@ sub parseStats {
 			next;
 		}
 		
-		$self->passAll->{$appInstanceName} = $maxPassStatsSummary->{"intervalPassed"};
-		$self->passRT->{$appInstanceName} = $maxPassStatsSummary->{"intervalPassedRT"};
-		$self->overallAvgRT->{$appInstanceName} = $maxPassStatsSummary->{"avgRT"};
-		$self->opsSec->{$appInstanceName} = $maxPassStatsSummary->{"throughput"};
-		$self->reqSec->{$appInstanceName} = $maxPassStatsSummary->{"stepsThroughput"};
+		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
+		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
+		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};
+		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
+		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
 		
 		my $resultString = "passed at $maxPassUsers in interval $maxPassIntervalName";
 		if (!$passed) {

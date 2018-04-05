@@ -158,11 +158,13 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		 * maxNumAsyncBehavior auctions.
 		 */
 		long globalOrderingId = _globalOrderingIdProvider.getItem("Id");
-		long auctionIdOffset = ((globalOrderingId - 1) /(_usersPerAuction * _maxNumAsyncBehaviors)) * _maxNumAsyncBehaviors;
+		long auctionIdOffset = (long) (Math.floor(((globalOrderingId - 1) * 1.0)/ _usersPerAuction)) * _maxNumAsyncBehaviors;
 		_auctionId = _firstAuctionId + auctionIdOffset;
 		int auctionIdsTried = 0;
-		logger.debug("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
-				+ _userId + ", globalOrderingId = " + globalOrderingId + ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
+		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
+				+ _userId + ", globalOrderingId = " + globalOrderingId + ", usersPerAuction = " 
+				+ _usersPerAuction + ", maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors 
+				+ ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
 				+ ", first try at auctionId = " + _auctionId);
 		while (_attendedAuctionsProvider.contains(_auctionId) && (auctionIdsTried < _maxNumAsyncBehaviors)) {
 			_auctionId++;
@@ -182,9 +184,6 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		
 		
 		SimpleUri uri = getOperationUri(UrlType.POST, 0);
-
-		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() 
-				+ " joining auction " + _auctionId );
 
 		int[] validResponseCodes = new int[] { 200 };
 		int[] abortResponseCodes = new int[] { 410 };
@@ -219,7 +218,7 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		// Join auction must also get the current item and bid for the auction
 		SimpleUri uri = getOperationUri(UrlType.GET, 1);
 
-		logger.info("getCurrentItemStep behaviorID = " + this.getBehaviorId());
+		logger.debug("getCurrentItemStep behaviorID = " + this.getBehaviorId());
 
 		String[] mustContainText = null;
 		DataListener[] dataListeners = new DataListener[] { _currentItemListener };

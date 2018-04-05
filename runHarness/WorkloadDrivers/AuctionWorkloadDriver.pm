@@ -2274,12 +2274,12 @@ sub parseStats {
 		$self->opsSec->{$appInstanceName} = $maxPassStatsSummary->{"throughput"};
 		$self->reqSec->{$appInstanceName} = $maxPassStatsSummary->{"stepsThroughput"};
 		
-		my $resultString = " passed at $maxPassUsers in interval $maxPassIntervalName";
+		my $resultString = "passed at $maxPassUsers in interval $maxPassIntervalName";
 		if (!$passed) {
 			$resultString = "failed";
 		}
 		
-		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName, $resultString");
+		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
 		
 	}
 	

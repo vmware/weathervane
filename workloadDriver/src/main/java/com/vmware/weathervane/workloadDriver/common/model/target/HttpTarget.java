@@ -34,9 +34,9 @@ public class HttpTarget extends Target {
 	private String httpsScheme = "https";
 
 	@Override
-	public void initialize(String workloadName,	long maxUsers, Integer nodeNumber, Integer numNodes, 
+	public void initialize(String workloadName,	long maxUsers, Integer nodeNumber, Integer numNodes, Integer targetNum, Integer numTargets, 
 			UserFactory userFactory, StatsCollector statsCollector) {
-		super.initialize(workloadName, maxUsers, nodeNumber, numNodes, userFactory, statsCollector);
+		super.initialize(workloadName, maxUsers, nodeNumber, numNodes, targetNum, numTargets, userFactory, statsCollector);
 	}
 
 	public String getHostname() {

@@ -18,6 +18,7 @@ package com.vmware.weathervane.workloadDriver.benchmarks.auction.operations;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,8 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		ContainsAttendedAuctions,  NeedsCurrentItem, NeedsCurrentBid, NeedsUsersPerAuction, 
 		NeedsFirstAuctionId, NeedsGlobalOrderingId {
 
+	private static Random _random = new Random();
+	
 	private CurrentAuctionListener _currentAuctionListener;
 	private CurrentItemListener _currentItemListener;
 	private CurrentBidListener _currentBidListener;
@@ -152,31 +155,46 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		
 		/*
 		 * Each user joins only a specific set of auctions.  The id of the auctions
-		 * are chosen so that there are at most _usersPerAuctions users attending each
+		 * are chosen so that there are at most (_maxNumAsyncBehaviors*_usersPerAuctions) users attending each
 		 * auction.  The auctionIdOffset is added to the firstAuctionId to get the actual
 		 * ID of the first auction that a user can attend.  A user can attend at most 
 		 * maxNumAsyncBehavior auctions.
 		 */
 		long globalOrderingId = _globalOrderingIdProvider.getItem("Id");
-		long auctionIdOffset = (long) (Math.floor(((globalOrderingId - 1) * 1.0)/ _usersPerAuction)) * _maxNumAsyncBehaviors;
-		_auctionId = _firstAuctionId + auctionIdOffset;
+		long auctionIdOffset = (long) (Math.floor(((globalOrderingId - 1) * 1.0)/ (_usersPerAuction * _maxNumAsyncBehaviors))) * _maxNumAsyncBehaviors;
+		long firstAllowedAuction = _firstAuctionId + auctionIdOffset;
+
+		/*
+		 * Make sure that the user is not already attending all allowed auctions.
+		 * This should be prevented by the transitionChoosers, but we check here as well.
+		 */
 		int auctionIdsTried = 0;
-		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
-				+ _userId + ", globalOrderingId = " + globalOrderingId + ", usersPerAuction = " 
-				+ _usersPerAuction + ", maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors 
-				+ ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
-				+ ", first try at auctionId = " + _auctionId);
-		while (_attendedAuctionsProvider.contains(_auctionId) && (auctionIdsTried < _maxNumAsyncBehaviors)) {
-			_auctionId++;
-			auctionIdsTried++;
+		for (int offset = 0; offset < _maxNumAsyncBehaviors; offset++) {
+			if (_attendedAuctionsProvider.contains(firstAllowedAuction + offset)) {
+				auctionIdsTried++;
+			}
 		}
-		if (auctionIdsTried >= _maxNumAsyncBehaviors) {
+		if (auctionIdsTried == _maxNumAsyncBehaviors) {
 			/*
 			 * This user is already attending the max allowable number of 
 			 * auctions.  This should not happen.
 			 */
 			throw new OperationFailedException("JoinAuctionOperation:initialStep User " + _userId + " with behaviorID = " + this.getBehaviorId()
 			+ " is already attending all allowed auction. maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors);
+		}
+
+		/*
+		 * Pick an auction to attend, out of the allowable set, at random
+		 */
+		_auctionId = firstAllowedAuction + _random.nextInt(_maxNumAsyncBehaviors);
+		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
+				+ _userId + ", globalOrderingId = " + globalOrderingId + ", usersPerAuction = " 
+				+ _usersPerAuction + ", maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors 
+				+ ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
+				+ ", first try at auctionId = " + _auctionId);
+		while (_attendedAuctionsProvider.contains(_auctionId)) {
+			_auctionId++;
+			auctionIdsTried++;
 		}
 		_bindVarsMap.put("auctionId", Long.toString(_auctionId));
 		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " Joining AuctionId = "

@@ -280,9 +280,9 @@ public class StatsSummary {
 
 	@JsonIgnore
 	public String getStatsIntervalHeader(boolean includeWorkload) {
-		String outputFormat = "|%12s|%10s|%8s|%8s|%8s|%25s| %s";
+		String outputFormat = "|%10s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
-			outputFormat = "|%12s" + outputFormat;
+			outputFormat = "|%10s" + outputFormat;
 		}
 		StringBuilder retVal = new StringBuilder();
 		if (includeWorkload) {
@@ -303,9 +303,9 @@ public class StatsSummary {
 		logger.debug("getStatsIntervalLine for statsSummary:" + this);
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
-		String outputFormat = "|%12s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
+		String outputFormat = "|%10s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
-			outputFormat = "|%12s" + outputFormat;
+			outputFormat = "|%10s" + outputFormat;
 		}
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("MMM d,yyyy HH:mm:ss z");
 		String timestamp = dateFormatter.format(new Date());

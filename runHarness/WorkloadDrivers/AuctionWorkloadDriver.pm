@@ -80,13 +80,6 @@ has 'operations' => (
 	},
 );
 
-# The final run status
-has 'runStatus' => (
-	is      => 'rw',
-	isa     => 'HashRef',
-	default => sub { {} },
-);
-
 # Variables used to cache the results of parsing
 # the results.
 has 'resultsValid' => (
@@ -789,7 +782,6 @@ sub clearResults {
 	my ($self) = @_;
 
 	# Clear out the results of parsing any previous run
-	$self->runStatus({});
 	$self->resultsValid(0);
 	$self->opsSec(       {} );
 	$self->reqSec(       {} );
@@ -1307,10 +1299,10 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	if ($endRunStatus) {
-		$self->runStatus($endRunStatus);
-	}
 	$console_logger->info("Run is complete");
+	
+	# Parse the results for later processing
+	$self->parseStats($logDir, $endRunStatus);
 	
 	# Get the stats files from the workloadDriver before shutting it down
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
@@ -1669,6 +1661,8 @@ sub getStatsFiles {
 		
 	if ( !( -e $destinationPath ) ) {
 		`mkdir -p $destinationPath`;
+	} else {
+		return;
 	}
 
 	my $logName = "$destinationPath/GetStatsFilesWorkloadDriver-$hostname-$name.log";
@@ -1758,8 +1752,6 @@ sub getResultMetrics {
 
 sub getWorkloadStatsSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
-
-	$self->parseStats($logDir);
 
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	my $numAppInstances = $#{$appInstancesRef} + 1;
@@ -1891,7 +1883,6 @@ sub getWorkloadAppStatsSummary {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	tie( my %csv, 'Tie::IxHash' );
-#	$self->parseStats($statsLogPath);
 #
 #	my $appInstancesRef = $self->workload->appInstancesRef;
 #	my $numAppInstances = $#$appInstancesRef + 1;
@@ -2220,7 +2211,6 @@ sub isPassed {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	$self->parseStats($logDir);
 	my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
 
 	my $usedLoadPath = 0;
@@ -2248,18 +2238,14 @@ sub isPassed {
 }
 
 sub parseStats {
-	my ( $self, $logDir ) = @_;
+	my ( $self, $logDir, $runStatus ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->getParamValue('workloadNum');
 
-	# If already have parsed results, don't do it again
-	if ( $self->resultsValid ) {
-		return;
-	}
+	$logger->debug("parseStats: Parsing stats");
 	
-	my $runStatus = $self->runStatus;
 	my $workloadStati = $runStatus->{"workloadStati"};
 	foreach my $workloadStatus (@$workloadStati) {
 		# For each appinstance, get the statsRollup for the max passing loadInterval
@@ -2268,6 +2254,7 @@ sub parseStats {
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
+		$logger->debug("parseStats: Found workloadStatus for workload " . $appInstanceName);
 		
 		my $maxPassStatsSummary = "";
 		for my $statsSummary (@$statsSummaries) {

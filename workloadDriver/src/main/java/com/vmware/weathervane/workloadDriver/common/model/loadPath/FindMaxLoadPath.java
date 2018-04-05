@@ -192,7 +192,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 			if (rollup != null) {
-				prevIntervalPassed = rollup.isIntervalPassedRT();			
+				prevIntervalPassed = rollup.isIntervalPassed();			
 				getIntervalStatsSummaries().add(rollup);
 			} 
 		}		
@@ -328,7 +328,7 @@ public class FindMaxLoadPath extends LoadPath {
 		StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 		boolean prevIntervalPassed = false;
 		if (rollup != null) {
-			prevIntervalPassed = rollup.isIntervalPassedRT();			
+			prevIntervalPassed = rollup.isIntervalPassed();			
 			getIntervalStatsSummaries().add(rollup);
 		} 
 		logger.debug("getNextNarrowInInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);

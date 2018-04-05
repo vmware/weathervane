@@ -1680,6 +1680,7 @@ sub getStatsFiles {
 		my $secHostname     = $secondary->host->hostName;
 		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
+		$name     = $secondary->getParamValue('dockerName');
 		$secondary->host->dockerScpFileFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
 	}
 

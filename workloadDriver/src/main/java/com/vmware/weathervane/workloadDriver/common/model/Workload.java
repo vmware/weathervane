@@ -205,9 +205,11 @@ public abstract class Workload implements UserFactory {
 		 * Initialize all of the targets in the workload
 		 */
 		List<String> targetNames = new ArrayList<String>();
+		int targetNum = 0;
 		for (Target target: getTargets()) {
-			target.initialize(name, maxUsers, nodeNumber, numNodes, this, statsCollector);
+			target.initialize(name, maxUsers, nodeNumber, numNodes, targetNum, getTargets().size(), this, statsCollector);
 			targetNames.add(target.getName());
+			targetNum++;
 		}
 
 		/*
@@ -353,6 +355,23 @@ public abstract class Workload implements UserFactory {
 		return status;
 	}
 	
+
+	private long adjustUserCount(long originalUserCount, int nodeNumber, int divisor) {
+
+		long adjustedUserCount = originalUserCount / divisor;
+
+		/*
+		 * Add an additional user from the remainder for the first
+		 * usersRemaining nodes
+		 */
+		long usersRemaining = originalUserCount - (divisor * adjustedUserCount);
+		if (usersRemaining > nodeNumber) {
+			adjustedUserCount++;
+		}
+
+		return adjustedUserCount;
+	}
+
 	public String getName() {
 		return name;
 	}

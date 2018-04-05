@@ -29,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <logger name="com.vmware" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.web.service.StatsServiceImpl" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.model.loadPath" level="WARN" />
-    <logger name="com.vmware.weathervane.workloadDriver.common.model.target" level="DEBUG" />
+    <logger name="com.vmware.weathervane.workloadDriver.common.model.target" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.benchmarks.auction.operations.JoinAuctionOperation" level="WARN" />
 
   <root level="warn">

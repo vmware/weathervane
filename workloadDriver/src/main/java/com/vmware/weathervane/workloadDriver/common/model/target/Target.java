@@ -48,7 +48,16 @@ public abstract class Target {
 	
 	@JsonIgnore
 	private Integer numNodes;
+
+	@JsonIgnore
+	private Integer targetNumber;
 	
+	@JsonIgnore
+	private Integer numTargets;
+	
+	@JsonIgnore
+	private Long maxUsers;
+
 	@JsonIgnore
 	private Queue<LoadProfileChangeCallback> loadProfileChangeCallbacks = new ConcurrentLinkedQueue<LoadProfileChangeCallback>();
 
@@ -77,24 +86,44 @@ public abstract class Target {
 	private StatsCollector statsCollector;
 	
 	public void initialize(String workloadName,	long maxUsers, Integer nodeNumber, Integer numNodes, 
-				UserFactory userFactory, StatsCollector statsCollector) {
+			Integer targetNumber, Integer numTargets, UserFactory userFactory, StatsCollector statsCollector) {
 		this.workloadName = workloadName;
 		this.nodeNumber = nodeNumber;
 		this.numNodes = numNodes;
+		this.targetNumber = targetNumber;
+		this.numTargets = numTargets;
 		this.userFactory = userFactory;	
 		this.statsCollector = statsCollector;
+		this.maxUsers = maxUsers;
+		
+		/*
+		 * Determine how many users to create based on maxUsers, the number of nodes,
+		 * the number of targets per node, and the targetNumber and nodeNumber of this
+		 * target.
+		 * In order to properly compute unique global ordering IDs that correspond to the 
+		 * ordering of users, we first create the same number of users per target, and 
+		 * then create any users in the remainder of maxUsers / (numNodes * numTargets)
+		 */
+		int targetOrderingId = targetNumber + (nodeNumber * numTargets);
+		long usersPerTarget = maxUsers / (numNodes * numTargets);
+		long excessUsers = maxUsers % (numNodes * numTargets);
+		long usersToCreate = usersPerTarget;
+		if (targetOrderingId < excessUsers) {
+			usersToCreate++;
+		}
 
-		for (long i = 1; i <= maxUsers; i++) {
+		int numOtherTargets = (numNodes * numTargets) - 1;
+		logger.info("initialize: Target " + name + " numOtherTargets = " + numOtherTargets + ", targetOrderingId = " + targetOrderingId + ", maxUsers = " + maxUsers);
+		for (long i = 1; i <= usersToCreate; i++) {
 			long userId = userIdCounter.getAndIncrement();
 			long orderingId = orderingIdCounter++;
-			long globalOrderingId = (nodeNumber + 1) + ((orderingId - 1) * numNodes);
-			logger.debug("initialize: Target " + name + " creating User with userId = " + userId + ", orderingId = " + orderingId + ", globalOrderingId = " + globalOrderingId );
+			long targetStep = (orderingId - 1) * numOtherTargets;
+			long globalOrderingId = orderingId + targetOrderingId + targetStep;
+			logger.info("initialize: Target " + name + " creating User with userId = " + userId + ", orderingId = " + orderingId + ", globalOrderingId = " + globalOrderingId );
 			User user = getUserFactory().createUser(userId, orderingId, globalOrderingId, this);
 			user.setStatsCollector(getStatsCollector());
 			this.registerLoadProfileChangeCallback(user);
-			
 		}
-
 	}
 		
 	public void stop() {
@@ -139,19 +168,19 @@ public abstract class Target {
 	}
 
 	public void setUserLoad(long numUsers) {
-		logger.info("setUserLoad for target " + this.name + " to " + numUsers + " users.");
+		logger.debug("setUserLoad for target " + this.name + " to " + numUsers + " users.");
 		numActiveUsers = numUsers;
 
 		// Call loadProfileChange callback for existing users
 		synchronized (loadProfileChangeCallbacks) {
-			logger.info("Calling loadProfileChanged callbacks");
+			logger.debug("Calling loadProfileChanged callbacks");
 			for (LoadProfileChangeCallback callbackObject : loadProfileChangeCallbacks) {
 				callbackObject.loadProfileChanged(numUsers);
 			}
-			logger.info("Called loadProfileChanged callbacks");
+			logger.debug("Called loadProfileChanged callbacks");
 		}
 		
-		logger.info("setUserLoad for target " + this.name + " exiting");
+		logger.debug("setUserLoad for target " + this.name + " exiting");
 
 	}
 

@@ -1289,6 +1289,7 @@ sub startRun {
 	# once every minute
 	my $runCompleted = 0;
 	my $endRunStatus = "";
+	my $endRunStatusRaw = "";
 	while (!$runCompleted) {
 		$url = "http://$hostname:$port/run/$runName/state";
 		$logger->debug("Sending get to $url");
@@ -1297,8 +1298,9 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			my $endRunStatus = $json->decode( $res->content );			
+			$endRunStatus = $json->decode( $res->content );			
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
+				$endRunStatusRaw = $res->content;
 				$runCompleted = 1;
 				last;
 			}
@@ -1310,12 +1312,21 @@ sub startRun {
 	}
 	$console_logger->info("Run is complete");
 	
+	# Get the stats files from the workloadDriver before shutting it down
+	my $destinationPath = $logPath . "/statistics/workloadDriver";
+	$self->getStatsFiles($destinationPath);
+	
+	# Write the endRun status
+	open( FILE, ">$destinationPath/FinalRunState.json" )
+		 or die "Couldn't open $destinationPath/FinalRunState.json: $!";
+	print FILE $endRunStatusRaw;
+	close FILE;
+	
 
 	# Now send the stats/complete message the primary driver which is also the statsService host
 	my $statsCompleteMsg = {};
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $json->encode($statsCompleteMsg);
-
 	$url      = "http://$hostname:$port/stats/complete/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -1655,7 +1666,7 @@ sub getStatsFiles {
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
 	my $workloadNum      = $self->getParamValue('workloadNum');
 	my $name               = $self->getParamValue('dockerName');
-	
+		
 	if ( !( -e $destinationPath ) ) {
 		`mkdir -p $destinationPath`;
 	}

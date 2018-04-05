@@ -88,6 +88,7 @@ public abstract class Target {
 			long userId = userIdCounter.getAndIncrement();
 			long orderingId = orderingIdCounter++;
 			long globalOrderingId = (nodeNumber + 1) + ((orderingId - 1) * numNodes);
+			logger.debug("initialize: Target " + name + " creating User with userId = " + userId + ", orderingId = " + orderingId + ", globalOrderingId = " + globalOrderingId );
 			User user = getUserFactory().createUser(userId, orderingId, globalOrderingId, this);
 			user.setStatsCollector(getStatsCollector());
 			this.registerLoadProfileChangeCallback(user);

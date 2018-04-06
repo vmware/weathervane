@@ -171,10 +171,10 @@ public class FindMaxLoadPath extends LoadPath {
 				// For initial ramp, only interested in response-time
 				if (rollup != null) {
 					/*
-					 * InitialRamp intervals pass if 95% of operations
-					 * pass response-time QOS
+					 * InitialRamp intervals pass if operations pass response-time QOS.
+					 * The mix QoS is not used in initialRamp
 					 */
-					prevIntervalPassed = (rollup.getPctPassing() >= 0.95);
+					prevIntervalPassed = rollup.isIntervalPassedRT();
 					getIntervalStatsSummaries().add(rollup);
 				} 
 				logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);

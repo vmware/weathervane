@@ -12,10 +12,12 @@ RUN \
   yum -y install perl && \
   yum -y install openssh-clients && \
   yum -y clean all && \
+  rm -rf /root/.ssh && \
   mkdir -p /root/.ssh && \
   mkdir -p /etc/pki/tls/certs && \
   mkdir -p /etc/pki/tls/private 
-  
+ 
+COPY ssh /root/.ssh
 COPY tls/certs/weathervane.crt /etc/pki/tls/certs/weathervane.crt
 COPY tls/private/weathervane.key /etc/pki/tls/private/weathervane.key
 COPY tls/private/weathervane.pem /etc/pki/tls/private/weathervane.pem

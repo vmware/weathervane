@@ -1605,12 +1605,22 @@ sub startStatsCollection {
 	$console_logger->info("Starting performance statistics collection on application services.\n");
 
 	# Start starts collection on services
+	my $startedKubectlTop = 0;
 	my $impl         = $self->getParamValue('workloadImpl');
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$service->startStatsCollection( $intervalLengthSec, $numIntervals );
+			if (!$startedKubectlTop && (self->host->paramHashRef->{'clusterName'})) {
+				# start kubectl top
+				my $tmpDir           = $self->getParamValue('tmpDir');
+				my $destinationDir = "$tmpDir/statistics/kubernetes";
+				`mkdir -p $destinationDir`;
+				$service->host->kubernetesTopPodAllNamespaces(15, $destinationDir);
+				$service->host->kubernetesTopNode(15, $destinationDir);
+				$startedKubectlTop = 1;
+			}
 		}
 	}
 }
@@ -1625,12 +1635,18 @@ sub stopStatsCollection {
 	);
 
 	# Start stops collection on services
+	my $stoppedKubectlTop = 0;
 	my $impl         = $self->getParamValue('workloadImpl');
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$service->stopStatsCollection();
+			if (!$stoppedKubectlTop && ($self->host->paramHashRef->{'clusterName'})) {
+				# stop kubectl top
+				$self->host->stopKubectlTop(1);
+				$stoppedKubectlTop = 1;
+			}
 		}
 	}
 

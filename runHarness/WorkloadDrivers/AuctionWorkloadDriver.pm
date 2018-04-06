@@ -1635,11 +1635,25 @@ sub stopStatsCollection {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$logger->debug("stopStatsCollection");
+	if ($self->host->paramHashRef->{'clusterName'}) {
+		# stop kubectl top
+		$self->host->stopKubectlTop(1);
+	}
+
 }
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $workloadNum = $self->getParamValue('workloadNum');
+	
+	if ($self->host->paramHashRef->{'clusterName'}) {
+		# start kubectl top
+		my $tmpDir           = $self->getParamValue('tmpDir');
+		my $destinationDir = "$tmpDir/statistics/kubernetes";
+		`mkdir -p $destinationDir`;
+		$self->host->kubernetesTopPodAllNamespaces(15, $destinationDir);
+		$self->host->kubernetesTopNode(15, $destinationDir);
+	}
 
 	my $hostname = $self->host->hostName;
 	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;

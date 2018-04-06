@@ -41,9 +41,17 @@ public class FindMaxLoadPath extends LoadPath {
 	private long maxUsers = 10000;
 
 	@JsonIgnore
+	private final long shortWarmupIntervalDurationSec = 60;
+	@JsonIgnore
 	private final long shortIntervalDurationSec = 60;
+	
+	@JsonIgnore
+	private final long mediumWarmupIntervalDurationSec = 300;
 	@JsonIgnore
 	private final long mediumIntervalDurationSec = 300;
+
+	@JsonIgnore
+	private final long longWarmupIntervalDurationSec = 300;
 	@JsonIgnore
 	private final long longIntervalDurationSec = 600;
 	
@@ -55,16 +63,23 @@ public class FindMaxLoadPath extends LoadPath {
 	 * - RAMPDOWN: Final ramp-down with small intervals to finish out run
 	 */
 	private enum Phase {INITIALRAMP, APPROXIMATE, NARROWIN, RAMPDOWN};
-	private enum Direction {INCREASING, DECREASING};
 
 	@JsonIgnore
 	private Phase curPhase = Phase.INITIALRAMP;
+
+	/*
+	 * Each interval in a  in a findMax run has two sub-intervals:
+	 * - WARMUP: Period used to let the users log in and get to a steady state
+	 * - DECISION: Period used to decide whether the interval passes the QOS requirements of the phase.
+	 */
+	private enum SubInterval {WARMUP, DECISION};
+
+	@JsonIgnore
+	private SubInterval nextSubInterval = SubInterval.WARMUP;
 	
 	@JsonIgnore
 	private long curUsers = 0;
 
-	@JsonIgnore
-	private Direction direction = Direction.INCREASING;
 	@JsonIgnore
 	private long intervalNum = 0;
 	
@@ -130,49 +145,72 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private UniformLoadInterval getNextInitialRampInterval() {
 		logger.debug("getNextInitialRampInterval ");
-		intervalNum++;
 		
-		boolean prevIntervalPassed = true;
-		if (intervalNum != 1) {
-			String curIntervalName = curInterval.getName();
+		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		if (nextSubInterval.equals(SubInterval.WARMUP)) {
+			// WARMUP starts a new interval 
+			intervalNum++;
+			logger.debug("getNextInitialRampInterval warmup subinterval for interval " + intervalNum);
 
 			/*
-			 *  This is the not first interval.  Need to know whether the previous
-			 *  interval passed.
-			 *  Get the statsSummaryRollup for the previous interval
+			 * Do the warmup interval for the current interval.
+			 * If this is not the first interval then we need to select the number of 
+			 * users based on the results of the previous interval
 			 */
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+			boolean prevIntervalPassed = true;
+			if (intervalNum != 1) {
+				String curIntervalName = curInterval.getName();
 
-			// For initial ramp, only interested in response-time
-			if (rollup != null) {
 				/*
-				 * InitialRamp intervals pass if 95% of operations
-				 * pass response-time QOS
+				 *  This is the not first interval.  Need to know whether the previous
+				 *  interval passed.
+				 *  Get the statsSummaryRollup for the previous interval
 				 */
-				prevIntervalPassed = (rollup.getPctPassing() >= 0.95);
-				getIntervalStatsSummaries().add(rollup);
-			} 
-			logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
-		} 
-		
-		/*
-		 * If we have reached max users, or the previous interval failed,
-		 * then to go to the APPROXIMATE phase
-		 */
-		if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
-			intervalNum = 0;
-			curPhase = Phase.APPROXIMATE;
-			curRateStep /= 2;
-			logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " 
-						+ curUsers + ", curRateStep = " + curRateStep);
-			return getNextApproximateInterval();
-		}
+				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 
-		curUsers += curRateStep;
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		nextInterval.setUsers(curUsers);
-		nextInterval.setDuration(shortIntervalDurationSec);
-		nextInterval.setName("InitialRamp-" + intervalNum);
+				// For initial ramp, only interested in response-time
+				if (rollup != null) {
+					/*
+					 * InitialRamp intervals pass if 95% of operations
+					 * pass response-time QOS
+					 */
+					prevIntervalPassed = (rollup.getPctPassing() >= 0.95);
+					getIntervalStatsSummaries().add(rollup);
+				} 
+				logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
+			} 
+			
+			/*
+			 * If we have reached max users, or the previous interval failed,
+			 * then to go to the APPROXIMATE phase
+			 */
+			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
+				intervalNum = 0;
+				curPhase = Phase.APPROXIMATE;
+				curRateStep /= 2;
+				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " 
+							+ curUsers + ", curRateStep = " + curRateStep);
+				return getNextApproximateInterval();
+			}
+
+			curUsers += curRateStep;
+			nextInterval.setUsers(curUsers);
+			nextInterval.setDuration(shortWarmupIntervalDurationSec);
+			nextInterval.setName("InitialRamp-Warmup-" + intervalNum);
+			nextSubInterval = SubInterval.DECISION;
+		} else {
+			logger.debug("getNextInitialRampInterval decision subinterval for interval " + intervalNum);
+			/*
+			 * Do the sub-interval used for decisions.  This is run at the same number of users
+			 * for the previous interval, but with the non-warmup duration
+			 */
+			nextInterval.setUsers(curUsers);
+			nextInterval.setDuration(shortIntervalDurationSec);
+			nextInterval.setName("InitialRamp-" + intervalNum);			
+			nextSubInterval = SubInterval.WARMUP;
+		}
+		
+
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);
 		return nextInterval;
 	}
@@ -184,113 +222,129 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextApproximateInterval() {
 		logger.debug("getNextApproximateInterval ");
 
-		intervalNum++;		
-		
-		boolean prevIntervalPassed = false;
-		if (intervalNum != 1) {
-			String curIntervalName = curInterval.getName();
-			/*
-			 *  This is the not first interval.  Need to know whether the previous
-			 *  interval passed.
-			 *  Get the statsSummaryRollup for the previous interval
-			 */
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-			if (rollup != null) {
-				prevIntervalPassed = rollup.isIntervalPassed();			
-				getIntervalStatsSummaries().add(rollup);
-			} 
-		}		
-		logger.debug("getNextApproximateInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
+		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		if (nextSubInterval.equals(SubInterval.WARMUP)) {
+			logger.debug("getNextApproximateInterval warmup subinterval for interval " + intervalNum);
+			// WARMUP starts a new interval 
+			intervalNum++;
 
-		if (prevIntervalPassed && (curUsers == maxUsers)) {
-			/*
-			 * Already passing at maxUsers.  The actual maximum must be higher than
-			 * we can run, so just end the run.
-			 */
-			logger.debug("getNextApproximateInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
-			loadPathComplete();
-			return curInterval;
-		} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
-			/*
-			 * Can't step up beyond maxUsers, so just go to maxUsers.
-			 * Reduce the curStep to halfway between curUsers and maxUsers
-			 */
-			logger.debug("getNextApproximateInterval: Next interval would have passed maxUsers, using maxUsers");
-			curRateStep = (maxUsers - curUsers) /2;
-			curUsers = maxUsers;
-		} else if (prevIntervalPassed) {
-			if (curUsers > maxPassUsers) {
-				maxPassUsers = curUsers;
-				maxPassIntervalName = curInterval.getName();
-			}
-			
-			/*
-			 * The next interval needs to be less than minFailUsers.  May need 
-			 * to shrink the step size in order to do this.
-			 */
-			long nextRateStep = curRateStep;
-			while ((curUsers + nextRateStep) > minFailUsers) {
-				nextRateStep /= 2;
-				if (nextRateStep < minRateStep) {
-					nextRateStep = minRateStep;
-					break;
-				}
-			}
-			
-			if ((curUsers + nextRateStep) >= minFailUsers) {
+			boolean prevIntervalPassed = false;
+			if (intervalNum != 1) {
+				String curIntervalName = curInterval.getName();
 				/*
-				 * Can't get closer to maximum with the minRateStep.
-				 * Go to the next phase.
+				 *  This is the not first interval.  Need to know whether the previous
+				 *  interval passed.
+				 *  Get the statsSummaryRollup for the previous interval
 				 */
-				logger.debug("getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
-				intervalNum = 0;
-				curPhase = Phase.NARROWIN;
-				curRateStep /= 2;
-				return getNextNarrowInInterval();
+				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+				if (rollup != null) {
+					prevIntervalPassed = rollup.isIntervalPassed();			
+					getIntervalStatsSummaries().add(rollup);
+				} 
+			}		
+			logger.debug("getNextApproximateInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
+
+			if (prevIntervalPassed && (curUsers == maxUsers)) {
+				/*
+				 * Already passing at maxUsers.  The actual maximum must be higher than
+				 * we can run, so just end the run.
+				 */
+				logger.debug("getNextApproximateInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
+				loadPathComplete();
+				return curInterval;
+			} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
+				/*
+				 * Can't step up beyond maxUsers, so just go to maxUsers.
+				 * Reduce the curStep to halfway between curUsers and maxUsers
+				 */
+				logger.debug("getNextApproximateInterval: Next interval would have passed maxUsers, using maxUsers");
+				curRateStep = (maxUsers - curUsers) /2;
+				curUsers = maxUsers;
+			} else if (prevIntervalPassed) {
+				if (curUsers > maxPassUsers) {
+					maxPassUsers = curUsers;
+					maxPassIntervalName = curInterval.getName();
+				}
+				
+				/*
+				 * The next interval needs to be less than minFailUsers.  May need 
+				 * to shrink the step size in order to do this.
+				 */
+				long nextRateStep = curRateStep;
+				while ((curUsers + nextRateStep) > minFailUsers) {
+					nextRateStep /= 2;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
+						break;
+					}
+				}
+				
+				if ((curUsers + nextRateStep) >= minFailUsers) {
+					/*
+					 * Can't get closer to maximum with the minRateStep.
+					 * Go to the next phase.
+					 */
+					logger.debug("getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
+					intervalNum = 0;
+					curPhase = Phase.NARROWIN;
+					curRateStep /= 2;
+					return getNextNarrowInInterval();
+				}
+				
+				curRateStep = nextRateStep;
+				curUsers +=  curRateStep;
+			} else {
+				// prevIntervalFailed
+				if (curUsers < minFailUsers) {
+					minFailUsers = curUsers;
+				}
+				
+				/*
+				 * The next interval needs to be less than minFailUsers.  May need 
+				 * to shrink the step size in order to do this.
+				 */
+				long nextRateStep = curRateStep;
+				while ((curUsers - nextRateStep) <= maxPassUsers) {
+					nextRateStep /= 2;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
+						break;
+					}
+				}
+				
+				if ((curUsers - nextRateStep) < maxPassUsers) {
+					/*
+					 * Can't get closer to maximum with the minRateStep.
+					 * Go to the next phase.
+					 */
+					logger.debug("getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
+					intervalNum = 0;
+					curPhase = Phase.NARROWIN;
+					curRateStep /= 2;
+					return getNextNarrowInInterval();
+				}
+				
+				curRateStep = nextRateStep;
+				curUsers -=  curRateStep;
+
 			}
 			
-			curRateStep = nextRateStep;
-			curUsers +=  curRateStep;
+			nextInterval.setUsers(curUsers);
+			nextInterval.setDuration(mediumWarmupIntervalDurationSec);
+			nextInterval.setName("APPROXIMATE-Warmup-" + intervalNum);
+
 		} else {
-			// prevIntervalFailed
-			if (curUsers < minFailUsers) {
-				minFailUsers = curUsers;
-			}
-			
+			logger.debug("getNextApproximateInterval decision subinterval for interval " + intervalNum);
 			/*
-			 * The next interval needs to be less than minFailUsers.  May need 
-			 * to shrink the step size in order to do this.
+			 * Do the sub-interval used for decisions.  This is run at the same number of users
+			 * for the previous interval, but with the non-warmup duration
 			 */
-			long nextRateStep = curRateStep;
-			while ((curUsers - nextRateStep) <= maxPassUsers) {
-				nextRateStep /= 2;
-				if (nextRateStep < minRateStep) {
-					nextRateStep = minRateStep;
-					break;
-				}
-			}
-			
-			if ((curUsers - nextRateStep) < maxPassUsers) {
-				/*
-				 * Can't get closer to maximum with the minRateStep.
-				 * Go to the next phase.
-				 */
-				logger.debug("getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
-				intervalNum = 0;
-				curPhase = Phase.NARROWIN;
-				curRateStep /= 2;
-				return getNextNarrowInInterval();
-			}
-			
-			curRateStep = nextRateStep;
-			curUsers -=  curRateStep;
-
+			nextInterval.setUsers(curUsers);
+			nextInterval.setDuration(mediumIntervalDurationSec);
+			nextInterval.setName("APPROXIMATE-" + intervalNum);
+			nextSubInterval = SubInterval.WARMUP;
 		}
 		
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		nextInterval.setUsers(curUsers);
-		nextInterval.setDuration(mediumIntervalDurationSec);
-		nextInterval.setName("APPROXIMATE-" + intervalNum);
 		logger.debug("getNextApproximateInterval. returning interval: " + nextInterval);
 		return nextInterval;
 	}
@@ -302,126 +356,141 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextNarrowInInterval() {
 		logger.debug("getNextNarrowInInterval ");
 
-		intervalNum++;
-		if (intervalNum == 1) {
-			/*
-			 * Reset the pass/fail bounds so that we can narrow in with longer runs.
-			 */
-			minFailUsers = Long.MAX_VALUE;
-			maxPassUsers = 0;
-			maxPassIntervalName = null;
+		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		if (nextSubInterval.equals(SubInterval.WARMUP)) {
+			logger.debug("getNextNarrowInInterval warmup subinterval for interval " + intervalNum);
+			// WARMUP starts a new interval 
+			intervalNum++;
+			
+			if (intervalNum == 1) {
+				/*
+				 * Reset the pass/fail bounds so that we can narrow in with longer runs.
+				 */
+				minFailUsers = Long.MAX_VALUE;
+				maxPassUsers = 0;
+				maxPassIntervalName = null;
+				
+				/*
+				 * First interval of APPROXIMATE should just be a longer 
+				 * run at the same level that INITIALRAMP ended on.
+				 */
+				nextInterval.setUsers(curUsers);
+				nextInterval.setDuration(longIntervalDurationSec);
+				nextInterval.setName("NARROWIN-" + intervalNum);
+				logger.debug("getNextNarrowInInterval first interval. returning interval: " + nextInterval);
+				return nextInterval;
+			}  
 			
 			/*
-			 * First interval of APPROXIMATE should just be a longer 
-			 * run at the same level that INITIALRAMP ended on.
+			 *  This is the not first interval.  Need to know whether the previous
+			 *  interval passed.
+			 *  Get the statsSummaryRollup for the previous interval
 			 */
-			UniformLoadInterval nextInterval = new UniformLoadInterval();
+			String curIntervalName = curInterval.getName();
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+			boolean prevIntervalPassed = false;
+			if (rollup != null) {
+				prevIntervalPassed = rollup.isIntervalPassed();			
+				getIntervalStatsSummaries().add(rollup);
+			} 
+			logger.debug("getNextNarrowInInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
+
+			if (prevIntervalPassed && (curUsers == maxUsers)) {
+				/*
+				 * Already passing at maxUsers.  The actual maximum must be higher than
+				 * we can run, so just end the run.
+				 */
+				logger.debug("getNextNarrowInInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
+				loadPathComplete();
+				return curInterval;
+			} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
+				/*
+				 * Can't step up beyond maxUsers, so just go to maxUsers.
+				 * Reduce the curStep to halfway between curUsers and maxUsers
+				 */
+				curRateStep = (maxUsers - curUsers) /2;
+				curUsers = maxUsers;
+				logger.debug("getNextNarrowInInterval: Next interval would have passed maxUsers, using maxUsers");
+			} else if (prevIntervalPassed) {
+				if (curUsers > maxPassUsers) {
+					maxPassUsers = curUsers;
+					maxPassIntervalName = curInterval.getName();
+				}
+				
+				/*
+				 * The next interval needs to be less than minFailUsers.  May need 
+				 * to shrink the step size in order to do this.
+				 */
+				long nextRateStep = curRateStep;
+				while ((curUsers + nextRateStep) > minFailUsers) {
+					nextRateStep /= 2;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
+						break;
+					}
+				}
+				
+				if ((curUsers + nextRateStep) >= minFailUsers) {
+					/*
+					 * Can't get closer to maximum with the minRateStep.
+					 * Have found the maximum
+					 */
+					logger.debug("getNextNarrowInInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
+					loadPathComplete();
+					return curInterval;
+				}
+				
+				curRateStep = nextRateStep;
+				curUsers +=  curRateStep;
+			} else {
+				// prevIntervalFailed
+				if (curUsers < minFailUsers) {
+					minFailUsers = curUsers;
+				}
+				
+				/*
+				 * The next interval needs to be less than minFailUsers.  May need 
+				 * to shrink the step size in order to do this.
+				 */
+				long nextRateStep = curRateStep;
+				while ((curUsers - nextRateStep) <= maxPassUsers) {
+					nextRateStep /= 2;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
+						break;
+					}
+				}
+				
+				if ((curUsers - nextRateStep) < maxPassUsers) {
+					/*
+					 * Can't get closer to maximum with the minRateStep.
+					 * Have found the maximum
+					 */
+					logger.debug("getNextApproximateInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
+					loadPathComplete();
+					return curInterval;
+				}
+				
+				curRateStep = nextRateStep;
+				curUsers -=  curRateStep;
+
+			}
+			
+			nextInterval.setUsers(curUsers);
+			nextInterval.setDuration(longWarmupIntervalDurationSec);
+			nextInterval.setName("NARROWIN-Warmup-" + intervalNum);
+		} else {
+			logger.debug("getNextNarrowInInterval decision subinterval for interval " + intervalNum);
+			/*
+			 * Do the sub-interval used for decisions.  This is run at the same number of users
+			 * for the previous interval, but with the non-warmup duration
+			 */
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(longIntervalDurationSec);
 			nextInterval.setName("NARROWIN-" + intervalNum);
-			logger.debug("getNextNarrowInInterval first interval. returning interval: " + nextInterval);
-			return nextInterval;
-		}  
-		
-		/*
-		 *  This is the not first interval.  Need to know whether the previous
-		 *  interval passed.
-		 *  Get the statsSummaryRollup for the previous interval
-		 */
-		String curIntervalName = curInterval.getName();
-		StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-		boolean prevIntervalPassed = false;
-		if (rollup != null) {
-			prevIntervalPassed = rollup.isIntervalPassed();			
-			getIntervalStatsSummaries().add(rollup);
-		} 
-		logger.debug("getNextNarrowInInterval: Interval " + intervalNum + " prevIntervalPassed = " + prevIntervalPassed);
-
-		if (prevIntervalPassed && (curUsers == maxUsers)) {
-			/*
-			 * Already passing at maxUsers.  The actual maximum must be higher than
-			 * we can run, so just end the run.
-			 */
-			logger.debug("getNextNarrowInInterval. At max users, so can't advance.  Ending workload and returning curInterval: " + curInterval);
-			loadPathComplete();
-			return curInterval;
-		} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
-			/*
-			 * Can't step up beyond maxUsers, so just go to maxUsers.
-			 * Reduce the curStep to halfway between curUsers and maxUsers
-			 */
-			curRateStep = (maxUsers - curUsers) /2;
-			curUsers = maxUsers;
-			logger.debug("getNextNarrowInInterval: Next interval would have passed maxUsers, using maxUsers");
-		} else if (prevIntervalPassed) {
-			if (curUsers > maxPassUsers) {
-				maxPassUsers = curUsers;
-				maxPassIntervalName = curInterval.getName();
-			}
-			
-			/*
-			 * The next interval needs to be less than minFailUsers.  May need 
-			 * to shrink the step size in order to do this.
-			 */
-			long nextRateStep = curRateStep;
-			while ((curUsers + nextRateStep) > minFailUsers) {
-				nextRateStep /= 2;
-				if (nextRateStep < minRateStep) {
-					nextRateStep = minRateStep;
-					break;
-				}
-			}
-			
-			if ((curUsers + nextRateStep) >= minFailUsers) {
-				/*
-				 * Can't get closer to maximum with the minRateStep.
-				 * Have found the maximum
-				 */
-				logger.debug("getNextNarrowInInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
-				loadPathComplete();
-				return curInterval;
-			}
-			
-			curRateStep = nextRateStep;
-			curUsers +=  curRateStep;
-		} else {
-			// prevIntervalFailed
-			if (curUsers < minFailUsers) {
-				minFailUsers = curUsers;
-			}
-			
-			/*
-			 * The next interval needs to be less than minFailUsers.  May need 
-			 * to shrink the step size in order to do this.
-			 */
-			long nextRateStep = curRateStep;
-			while ((curUsers - nextRateStep) <= maxPassUsers) {
-				nextRateStep /= 2;
-				if (nextRateStep < minRateStep) {
-					nextRateStep = minRateStep;
-					break;
-				}
-			}
-			
-			if ((curUsers - nextRateStep) < maxPassUsers) {
-				/*
-				 * Can't get closer to maximum with the minRateStep.
-				 * Have found the maximum
-				 */
-				logger.debug("getNextApproximateInterval: Can't get closer to maximum. Found maximum at " + maxPassUsers);
-				loadPathComplete();
-				return curInterval;
-			}
-			
-			curRateStep = nextRateStep;
-			curUsers -=  curRateStep;
-
+			nextSubInterval = SubInterval.WARMUP;
 		}
-		
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		nextInterval.setUsers(curUsers);
-		nextInterval.setDuration(longIntervalDurationSec);
-		nextInterval.setName("NARROWIN-" + intervalNum);
+
 		logger.debug("getNextNarrowInInterval. returning interval: " + nextInterval);
 		return nextInterval;
 	}

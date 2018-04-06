@@ -32,6 +32,18 @@ has 'stopKubectlTop' => (
 	default => 0,
 );
 
+has 'kubectlTopPodRunning' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
+has 'kubectlTopNodeRunning' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 		
@@ -442,6 +454,11 @@ sub kubernetesTopPod {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesTopPod namespace $namespace, intervalSec $intervalSec, destinationPath $destinationPath");
 	
+	if ($self->kubectlTopPodRunning) {
+		return;
+	}
+	$self->kubectlTopPodRunning(1);
+	
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
 	# Fork a process to run in the background
@@ -476,6 +493,11 @@ sub kubernetesTopPodAllNamespaces {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesTopPodAllNamespaces intervalSec $intervalSec, destinationPath $destinationPath");
 	
+	if ($self->kubectlTopPodRunning) {
+		return;
+	}
+	$self->kubectlTopPodRunning(1);
+	
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
 	# Fork a process to run in the background
@@ -509,6 +531,11 @@ sub kubernetesTopNode {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesTopNode intervalSec $intervalSec, destinationPath $destinationPath");
+	
+	if ($self->kubectlTopNodeRunning) {
+		return;
+	}
+	$self->kubectlTopNodeRunning(1);
 	
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 

@@ -224,9 +224,9 @@ public class FindMaxLoadPath extends LoadPath {
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
 		if (nextSubInterval.equals(SubInterval.WARMUP)) {
-			logger.debug("getNextApproximateInterval warmup subinterval for interval " + intervalNum);
 			// WARMUP starts a new interval 
 			intervalNum++;
+			logger.debug("getNextApproximateInterval warmup subinterval for interval " + intervalNum);
 
 			boolean prevIntervalPassed = false;
 			if (intervalNum != 1) {
@@ -332,7 +332,7 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(mediumWarmupIntervalDurationSec);
 			nextInterval.setName("APPROXIMATE-Warmup-" + intervalNum);
-
+			nextSubInterval = SubInterval.DECISION;
 		} else {
 			logger.debug("getNextApproximateInterval decision subinterval for interval " + intervalNum);
 			/*
@@ -358,9 +358,9 @@ public class FindMaxLoadPath extends LoadPath {
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
 		if (nextSubInterval.equals(SubInterval.WARMUP)) {
-			logger.debug("getNextNarrowInInterval warmup subinterval for interval " + intervalNum);
 			// WARMUP starts a new interval 
 			intervalNum++;
+			logger.debug("getNextNarrowInInterval warmup subinterval for interval " + intervalNum);
 			
 			if (intervalNum == 1) {
 				/*
@@ -479,6 +479,7 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(longWarmupIntervalDurationSec);
 			nextInterval.setName("NARROWIN-Warmup-" + intervalNum);
+			nextSubInterval = SubInterval.DECISION;
 		} else {
 			logger.debug("getNextNarrowInInterval decision subinterval for interval " + intervalNum);
 			/*

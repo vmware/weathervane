@@ -90,8 +90,8 @@ public abstract class Target {
 		this.workloadName = workloadName;
 		this.nodeNumber = nodeNumber;
 		this.numNodes = numNodes;
-		this.targetNumber = targetNumber;
-		this.numTargets = numTargets;
+		this.setTargetNumber(targetNumber);
+		this.setNumTargets(numTargets);
 		this.userFactory = userFactory;	
 		this.statsCollector = statsCollector;
 		this.maxUsers = maxUsers;
@@ -203,6 +203,22 @@ public abstract class Target {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Integer getTargetNumber() {
+		return targetNumber;
+	}
+
+	public void setTargetNumber(Integer targetNumber) {
+		this.targetNumber = targetNumber;
+	}
+
+	public Integer getNumTargets() {
+		return numTargets;
+	}
+
+	public void setNumTargets(Integer numTargets) {
+		this.numTargets = numTargets;
 	}
 
 	public UserFactory getUserFactory() {

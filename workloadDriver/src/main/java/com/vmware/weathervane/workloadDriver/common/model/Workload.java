@@ -314,17 +314,20 @@ public abstract class Workload implements UserFactory {
 		}
 				
 		/*
-		 * Divide the users among the targets and set the load per-target
+		 * Determine how many users to run based on maxUsers, the number of nodes,
+		 * the number of targets per node, and the targetNumber and nodeNumber of this
+		 * target.
 		 */
 		int numTargets = getTargets().size();
-		long baseUsersPerTarget = numUsers / numTargets;
-		long remainingUsers = numUsers - (baseUsersPerTarget * numTargets);
-		int targetNum = 0;
+		long usersPerTarget = numUsers / (numNodes * numTargets);
+		long excessUsers = numUsers % (numNodes * numTargets);
 		for (Target target : getTargets()) {
-			long targetNumUsers = baseUsersPerTarget;
-			if (remainingUsers > targetNum) {
-				targetNumUsers += 1;
+			int targetOrderingId = target.getTargetNumber() + (nodeNumber * numTargets);
+			long targetNumUsers = usersPerTarget;
+			if (targetOrderingId < excessUsers) {
+				targetNumUsers++;
 			}
+			
 			target.setUserLoad(targetNumUsers);
 		}
 	}
@@ -353,23 +356,6 @@ public abstract class Workload implements UserFactory {
 		status.setIntervalStatsSummaries(loadPath.getIntervalStatsSummaries());
 		
 		return status;
-	}
-	
-
-	private long adjustUserCount(long originalUserCount, int nodeNumber, int divisor) {
-
-		long adjustedUserCount = originalUserCount / divisor;
-
-		/*
-		 * Add an additional user from the remainder for the first
-		 * usersRemaining nodes
-		 */
-		long usersRemaining = originalUserCount - (divisor * adjustedUserCount);
-		if (usersRemaining > nodeNumber) {
-			adjustedUserCount++;
-		}
-
-		return adjustedUserCount;
 	}
 
 	public String getName() {

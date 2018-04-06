@@ -169,34 +169,16 @@ public abstract class LoadPath implements Runnable {
 
 	}
 
-	private long adjustUserCount(long originalUserCount, int nodeNumber) {
-
-		long adjustedUserCount = originalUserCount / hosts.size();
-
-		/*
-		 * Add an additional user from the remainder for the first
-		 * usersRemaining nodes
-		 */
-		long usersRemaining = originalUserCount - (hosts.size() * adjustedUserCount);
-		if (usersRemaining > nodeNumber) {
-			adjustedUserCount++;
-		}
-
-		return adjustedUserCount;
-	}
-
 	public void changeActiveUsers(long numUsers) {
 		logger.debug("changeActiveUsers to " + numUsers);
 		numActiveUsers = numUsers;
 		int nodeNumber = 0;
 		for (String hostname : hosts) {
-			long adjustedUsers = adjustUserCount(numActiveUsers, nodeNumber);
-			logger.debug("changeActiveUsers Host " + hostname + " will run " + adjustedUsers + " users");
 			/*
 			 * Send the changeusers message for the workload to the host
 			 */
 			ChangeUsersMessage changeUsersMessage = new ChangeUsersMessage();
-			changeUsersMessage.setActiveUsers(adjustedUsers);
+			changeUsersMessage.setActiveUsers(numUsers);
 
 			HttpHeaders requestHeaders = new HttpHeaders();
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);

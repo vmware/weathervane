@@ -4,20 +4,20 @@ MAINTAINER Hal Rosenberg <hrosenbe@vmware.com>
 
 COPY sysctl.conf /etc/sysctl.conf
 COPY updateResolveConf.pl /updateResolveConf.pl
+COPY ssh /root/.ssh
 
 RUN \
   chmod +x /updateResolveConf.pl && \
   yum -y install sudo && \
   yum -y install iproute && \
   yum -y install perl && \
+  yum -y install emacs && \
   yum -y install openssh-clients && \
   yum -y clean all && \
-  rm -rf /root/.ssh && \
-  mkdir -p /root/.ssh && \
+  chmod 600 /root/.ssh/* && \
   mkdir -p /etc/pki/tls/certs && \
   mkdir -p /etc/pki/tls/private 
  
-COPY ssh /root/.ssh
 COPY tls/certs/weathervane.crt /etc/pki/tls/certs/weathervane.crt
 COPY tls/private/weathervane.key /etc/pki/tls/private/weathervane.key
 COPY tls/private/weathervane.pem /etc/pki/tls/private/weathervane.pem

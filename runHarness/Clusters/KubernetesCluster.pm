@@ -26,6 +26,12 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Cluster';
 
+has 'stopKubectlTop' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 		
@@ -427,6 +433,109 @@ sub kubernetesGetLogs {
 	}
 	
 	return 0;
+}
+
+
+sub kubernetesTopPod {
+	my ( $self, $namespace, $intervalSec, $destinationPath ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesTopPod namespace $namespace, intervalSec $intervalSec, destinationPath $destinationPath");
+	
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	# Fork a process to run in the background
+	my $pid = fork();
+	if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+	} elsif ( $pid == 0 ) {
+
+		open( FILE, ">$destinationPath/kubectl_top_pod.txt" )
+			 or die "Couldn't open $destinationPath/kubectl_top_pod.txt: $!";		
+		
+		# ToDo: Need a way to stop process at end of run
+		while (!$self->stopKubectlTop) {
+	 		my $cmd;
+			my $outString;	
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --namespace=$namespace 2>&1";
+			$outString = `$cmd`;
+
+			print FILE $outString;
+			sleep $intervalSec;
+		}
+		close FILE;
+		exit;
+	}
+
+}
+
+sub kubernetesTopPodAllNamespaces {
+	my ( $self, $intervalSec, $destinationPath ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesTopPodAllNamespaces intervalSec $intervalSec, destinationPath $destinationPath");
+	
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	# Fork a process to run in the background
+	my $pid = fork();
+	if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+	} elsif ( $pid == 0 ) {
+
+		open( FILE, ">$destinationPath/kubectl_top_pod-all-ns.txt" )
+			 or die "Couldn't open $destinationPath/kubectl_top_pod--all-ns.txt: $!";		
+		
+		# ToDo: Need a way to stop process at end of run
+		while (!$self->stopKubectlTop) {
+	 		my $cmd;
+			my $outString;	
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --all-namespaces 2>&1";
+			$outString = `$cmd`;
+
+			print FILE $outString;
+			sleep $intervalSec;
+		}
+		close FILE;
+		exit;
+	}
+
+}
+
+sub kubernetesTopNode {
+	my ( $self, $intervalSec, $destinationPath ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesTopNode intervalSec $intervalSec, destinationPath $destinationPath");
+	
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	# Fork a process to run in the background
+	my $pid = fork();
+	if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+	} elsif ( $pid == 0 ) {
+
+		open( FILE, ">$destinationPath/kubectl_top_node.txt" )
+			 or die "Couldn't open $destinationPath/kubectl_top_node.txt: $!";		
+		
+		# ToDo: Need a way to stop process at end of run
+		while (!$self->stopKubectlTop) {
+	 		my $cmd;
+			my $outString;	
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node 2>&1";
+			$outString = `$cmd`;
+
+			print FILE $outString;
+			sleep $intervalSec;
+		}
+		close FILE;
+		exit;
+	}
+
 }
 
 __PACKAGE__->meta->make_immutable;

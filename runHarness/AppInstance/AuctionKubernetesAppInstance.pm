@@ -336,11 +336,19 @@ override 'getHostStatsSummary' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
+	# start kubectl top
+	my $tmpDir           = $self->getParamValue('tmpDir');
+	my $destinationDir = "$tmpDir/statistics/kubernetes";
+	`mkdir -p $destinationDir`;
+	$service->host->kubernetesTopPodAllNamespaces(15, $destinationDir);
+	$service->host->kubernetesTopNode(15, $destinationDir);
 
 };
 
 override 'stopStatsCollection' => sub {
 	my ( $self ) = @_;
+	# stop kubectl top
+	$service->host->stopKubectlTop(1);
 
 };
 

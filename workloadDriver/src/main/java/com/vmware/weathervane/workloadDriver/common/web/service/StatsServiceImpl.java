@@ -246,6 +246,7 @@ public class StatsServiceImpl implements StatsService {
 						specToSummaryWriterMap.put(statsIntervalSpecName, summaryWriter);
 					}
 					summaryWriter.write(intervalAggregatedStats.getStatsSummary() + "\n");
+					summaryWriter.flush();
 
 				}
 

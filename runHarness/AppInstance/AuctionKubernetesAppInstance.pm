@@ -337,6 +337,8 @@ override 'getHostStatsSummary' => sub {
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
 	# start kubectl top
+	my $servicesRef = $self->getActiveServicesByType('appServer');
+	my $service = $servicesRef->[0];
 	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $destinationDir = "$tmpDir/statistics/kubernetes";
 	`mkdir -p $destinationDir`;
@@ -348,6 +350,8 @@ override 'startStatsCollection' => sub {
 override 'stopStatsCollection' => sub {
 	my ( $self ) = @_;
 	# stop kubectl top
+	my $servicesRef = $self->getActiveServicesByType('appServer');
+	my $service = $servicesRef->[0];
 	$service->host->stopKubectlTop(1);
 
 };

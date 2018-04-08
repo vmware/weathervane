@@ -1611,14 +1611,6 @@ sub startStatsCollection {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$service->startStatsCollection( $intervalLengthSec, $numIntervals );
-			if ($service->host->paramHashRef->{'clusterName'}) {
-				# start kubectl top
-				my $tmpDir           = $self->getParamValue('tmpDir');
-				my $destinationDir = "$tmpDir/statistics/kubernetes";
-				`mkdir -p $destinationDir`;
-				$service->host->kubernetesTopPodAllNamespaces(15, $destinationDir);
-				$service->host->kubernetesTopNode(15, $destinationDir);
-			}
 		}
 	}
 }
@@ -1639,10 +1631,6 @@ sub stopStatsCollection {
 		my $servicesRef = $self->getActiveServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			$service->stopStatsCollection();
-			if ($service->host->paramHashRef->{'clusterName'}) {
-				# stop kubectl top
-				$service->host->stopKubectlTop(1);
-			}
 		}
 	}
 

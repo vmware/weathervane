@@ -477,6 +477,9 @@ sub kubernetesTopPod {
 			my $outString;	
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --namespace=$namespace 2>&1";
 			$outString = `$cmd`;
+			my $time = `date +%H:%M`;
+			chomp($time);
+			print FILE "$time\n";
 
 			print FILE $outString;
 			sleep $intervalSec;
@@ -516,6 +519,9 @@ sub kubernetesTopPodAllNamespaces {
 			my $outString;	
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --all-namespaces 2>&1";
 			$outString = `$cmd`;
+			my $time = `date +%H:%M`;
+			chomp($time);
+			print FILE "$time\n";
 
 			print FILE $outString;
 			sleep $intervalSec;
@@ -555,7 +561,9 @@ sub kubernetesTopNode {
 			my $outString;	
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node 2>&1";
 			$outString = `$cmd`;
-
+			my $time = `date +%H:%M`;
+			chomp($time);
+			print FILE "$time\n";
 			print FILE $outString;
 			sleep $intervalSec;
 		}

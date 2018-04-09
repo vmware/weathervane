@@ -1301,9 +1301,6 @@ sub startRun {
 	}
 	$console_logger->info("Run is complete");
 	
-	# Parse the results for later processing
-	$self->parseStats($logDir, $endRunStatus);
-	
 	# Get the stats files from the workloadDriver before shutting it down
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
 	$self->getStatsFiles($destinationPath);
@@ -1340,16 +1337,56 @@ sub startRun {
 		);
 		return 0;
 	}
+	close $logHandle;
 
+	my $impl = $self->getParamValue('workloadImpl');
+	$console_logger->info("Workload $workloadNum: $impl finished");
+
+	return 1;
+}
+
+sub stopRun {
+	my ( $self, $runNum, $logDir, $suffix ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger =
+	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+
+	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $runName                 = "runW${workloadNum}";
+	my $port = $self->portMap->{'http'};
+	my $hostname = $self->host->hostName;
+
+	my $logName = "$logDir/StopRun$suffix.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	# Create a list of all of the workloadDriver nodes including the primary
+	my $driversRef     = [];
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		push @$driversRef, $secondary;
+	}
+	push @$driversRef, $self;
+
+	my $json = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+	my $ua = LWP::UserAgent->new;
+	$ua->agent("Weathervane/1.0 ");
+	
+	
 	# Now send the shutdown message
-	$url      = "http://$hostname:$port/run/$runName/shutdown";
+	my $url      = "http://$hostname:$port/run/$runName/shutdown";
 	$logger->debug("Sending POST to $url");
-	$req = HTTP::Request->new( POST => $url );
+	my $req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
 
-	$res = $ua->request($req);
+	my $res = $ua->request($req);
 	$logger->debug( "Response status line: "
 		  . $res->status_line
 		  . " for url "
@@ -1375,11 +1412,8 @@ sub startRun {
 	}
 
 	close $logHandle;
-
-	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $workloadNum: $impl finished");
-
 	return 1;
+
 }
 
 sub isUp {
@@ -1755,6 +1789,10 @@ sub getResultMetrics {
 sub getWorkloadStatsSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
 
+	if (!$self->parseStats()) {
+		return;	
+	}
+
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	foreach my $appInstanceRef (@$appInstancesRef) {
@@ -1977,6 +2015,10 @@ sub getWorkloadAppStatsSummary {
 
 sub getStatsSummary {
 	my ( $self, $csvRef, $statsLogPath ) = @_;
+
+	if (!$self->parseStats()) {
+		return;	
+	}
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $gcviewerDir     = $self->getParamValue('gcviewerDir');
@@ -2213,6 +2255,10 @@ sub isPassed {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
+	if (!$self->parseStats()) {
+		return;	
+	}
+
 	my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
 
 	my $usedLoadPath = 0;
@@ -2244,7 +2290,33 @@ sub parseStats {
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $runName                 = "runW${workloadNum}";
+	my $port = $self->portMap->{'http'};
+	my $hostname = $self->host->hostName;
+
+	if ($self->resultsValid) {
+		return 1;
+	}
+	
+	# Get the final stats summary from the workload driver
+	my $json = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+	my $ua = LWP::UserAgent->new;
+	$ua->agent("Weathervane/1.0 ");
+	my $url = "http://$hostname:$port/run/$runName/state";
+	$logger->debug("Sending get to $url");
+	my $req = HTTP::Request->new( GET => $url );
+	my $res = $ua->request($req);
+	my $runStatus;
+	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
+	if ( $res->is_success ) {
+		$runStatus = $json->decode( $res->content );			
+	} else {
+		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
+		return 0;
+	}
 
 	$logger->debug("parseStats: Parsing stats");
 	
@@ -2288,6 +2360,8 @@ sub parseStats {
 		
 	}
 	
+	$self->resultsValid(1);
+	return 1;
 
 #	my $anyUsedLoadPath = 0;
 #	my $appInstancesRef = $self->workload->appInstancesRef;
@@ -2422,7 +2496,6 @@ sub parseStats {
 #	}
 #	close RESULTFILE;
 #
-	$self->resultsValid(1);
 }
 
 __PACKAGE__->meta->make_immutable;

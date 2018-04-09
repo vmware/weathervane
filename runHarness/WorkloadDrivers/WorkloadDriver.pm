@@ -166,9 +166,12 @@ sub initializeRun {
 
 }
 
-
 sub startRun {
-	die "Only PrimaryWorkloadDrivers implement run";
+	die "Only PrimaryWorkloadDrivers implement start";
+}
+
+sub stopRun {
+	die "Only PrimaryWorkloadDrivers implement stopRun";
 }
 
 sub isUp {

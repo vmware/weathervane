@@ -130,6 +130,17 @@ sub startRun {
 	return $self->primaryDriver->startRun( $seqnum, $tmpDir, $suffix );
 }
 
+sub stopRun {
+	my ( $self, $seqnum, $tmpDir ) = @_;
+	my $logger = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("stop: seqnum = $seqnum, tmpDir = $tmpDir");
+	my $suffix = "";
+	if ( $self->useSuffix ) {
+		$suffix = $self->suffix;
+	}
+	return $self->primaryDriver->stopRun( $seqnum, $tmpDir, $suffix );
+}
+
 # We have found the maximum if all appInstances have hit a maximum
 sub foundMax {
 	my ($self)   = @_;

@@ -1384,6 +1384,7 @@ sub stopRun {
 	my $req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
+	my $runContent = "{}";
 	$req->content($runContent);
 
 	my $res = $ua->request($req);
@@ -2286,7 +2287,7 @@ sub isPassed {
 }
 
 sub parseStats {
-	my ( $self, $logDir, $runStatus ) = @_;
+	my ( $self, $logDir ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");

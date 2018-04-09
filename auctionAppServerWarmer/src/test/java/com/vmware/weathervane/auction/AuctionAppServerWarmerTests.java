@@ -19,15 +19,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import com.vmware.weathervane.auction.AuctionConfigManagerApplication;
+import com.vmware.weathervane.auction.AuctionAppServerWarmer;
 
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = AuctionConfigManagerApplication.class)
+@SpringApplicationConfiguration(classes = AuctionAppServerWarmer.class)
 @WebAppConfiguration
-public class AuctionConfigManagerApplicationTests {
+public class AuctionAppServerWarmerTests {
 
 	@Test
 	public void contextLoads() {

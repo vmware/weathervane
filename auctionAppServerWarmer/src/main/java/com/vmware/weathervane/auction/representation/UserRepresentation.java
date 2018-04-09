@@ -57,8 +57,8 @@ public class UserRepresentation extends Representation  implements Serializable{
 		this.setFirstname(theUser.getFirstname());
 		this.setLastname(theUser.getLastname());
 		this.setCreditLimit(theUser.getCreditLimit());
-		this.setPassword(null);
-		this.setRepeatPassword(null);
+		this.setPassword(theUser.getPassword());
+		this.setRepeatPassword(theUser.getPassword());
 		this.setAuthorities(theUser.getAuthorities());
 		this.setEnabled(theUser.isEnabled());
 		/*

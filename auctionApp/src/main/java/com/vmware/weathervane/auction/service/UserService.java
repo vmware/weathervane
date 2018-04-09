@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.service;
 
 import com.vmware.weathervane.auction.rest.representation.UserRepresentation;
 import com.vmware.weathervane.auction.service.exception.DuplicateEntityException;
+import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 public interface UserService {
 
@@ -43,5 +44,7 @@ public interface UserService {
 	UserRepresentation updateUser(UserRepresentation newUser) throws DuplicateEntityException;
 
 	long getUserByAuthTokenMisses();
+
+	void deleteUser(UserRepresentation newUser) throws InvalidStateException;
 
 }

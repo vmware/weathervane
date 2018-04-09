@@ -222,45 +222,6 @@ project(':auctionConfigManager') {
 	
 }
 
-project(':auctionAppServerWarmer') {
-	description "Warmer Sidecar for Auction AppServer"	
-	apply plugin: 'spring-boot' 
-	apply plugin: "eclipse"
-	apply plugin: 'maven'
-	
-	jar {
-		baseName = 'auctionAppServerWarmer'
-		version = '1.0'
-	}
-	
-	dependencies {
-		compile "org.springframework.boot:spring-boot-starter-web"
-		compile "org.springframework.boot:spring-boot-starter-hateoas"
-		compile "org.springframework.boot:spring-boot-starter-data-jpa"
-		compile "com.jcabi:jcabi-ssh:1.5.2"
-		testCompile "org.springframework.boot:spring-boot-starter-test" 
-				runtime "com.h2database:h2"
-    	testCompile "com.jayway.jsonpath:json-path"
-	}
-
-	eclipse {
-		classpath {
-			 containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
-			 containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
-		}
-	}
-	
-	task release(dependsOn: build) << {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from jar.archivePath
-			into file("$rootDir/dist/")
-    		rename ('auctionAppServerWarmer-.*jar', 'auctionAppServerWarmer.jar')			 		
-		}
-	}
-	
-}
-
 project(':dbLoader') {
 	description "Database Loader for Auction"	
 		apply plugin: 'maven'

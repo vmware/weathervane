@@ -15,6 +15,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.statistics;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -303,6 +304,9 @@ public class StatsSummary {
 		logger.debug("getStatsIntervalLine for statsSummary:" + this);
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
+		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
+		doubleFormat3.setRoundingMode(RoundingMode.HALF_UP);
+
 		String outputFormat = "|%10s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
 			outputFormat = "|%10s" + outputFormat;
@@ -404,6 +408,8 @@ public class StatsSummary {
 
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
+		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
+		doubleFormat3.setRoundingMode(RoundingMode.HALF_UP);
 		StringBuilder allOpString = new StringBuilder();
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
@@ -476,6 +482,9 @@ public class StatsSummary {
 		NumberFormat doubleFormat0 = new DecimalFormat( "#0" );
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
+		doubleFormat0.setRoundingMode(RoundingMode.HALF_UP);
+		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
+		doubleFormat3.setRoundingMode(RoundingMode.HALF_UP);
 
 		/*
 		 * If the data hasn't already been computed (e.g. when printing in some other format),
@@ -561,6 +570,9 @@ public class StatsSummary {
 		StringBuilder retVal = new StringBuilder();
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
+		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
+		doubleFormat3.setRoundingMode(RoundingMode.HALF_UP);
+		
 		String opLineOutputFormat = "|%24s|%8s|%7s|%10s|%11s|%14s|%14s|%14s|%11s|%11s|%11s|%8s|%10s|%9s|%13s|\n";
 
 		String throughput = doubleFormat2.format(statsSummaryRollup.getThroughput());

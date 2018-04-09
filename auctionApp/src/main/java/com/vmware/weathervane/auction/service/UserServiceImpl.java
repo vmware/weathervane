@@ -30,6 +30,7 @@ import com.vmware.weathervane.auction.data.model.User;
 import com.vmware.weathervane.auction.data.model.User.UserState;
 import com.vmware.weathervane.auction.rest.representation.UserRepresentation;
 import com.vmware.weathervane.auction.service.exception.DuplicateEntityException;
+import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 public class UserServiceImpl implements UserService {
 
@@ -90,6 +91,28 @@ public class UserServiceImpl implements UserService {
 		userDao.save(theUser);
 
 		return new UserRepresentation(theUser);
+	}
+
+	@Override
+	public void deleteUser(UserRepresentation newUser) throws InvalidStateException {
+		logger.debug("UserServiceImpl::registerUser");
+
+		// Check on whether user is already registered
+		boolean existing = false;
+		User theUser = null;
+		try {
+			theUser = userDao.getUserByName(newUser.getUsername());
+		} catch (EmptyResultDataAccessException ex) {
+			logger.warn("UserServiceImpl::registerUser EmptyResultDataAccessException");
+			existing = true;
+		}
+
+		if (existing == false) {
+			throw new InvalidStateException("Username does not exist");
+		}
+		
+		userDao.delete(theUser);
+
 	}
 
 	@Override

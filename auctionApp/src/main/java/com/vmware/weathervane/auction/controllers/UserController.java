@@ -37,6 +37,7 @@ import com.vmware.weathervane.auction.rest.representation.UserRepresentation;
 import com.vmware.weathervane.auction.security.UserDetailsServiceImpl;
 import com.vmware.weathervane.auction.service.UserService;
 import com.vmware.weathervane.auction.service.exception.DuplicateEntityException;
+import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 @Controller
 @RequestMapping(value="/user")
@@ -97,6 +98,25 @@ public class UserController extends BaseController {
 
 		}
 								
+		return theUser;
+	}
+
+	@RequestMapping(method=RequestMethod.DELETE)
+	public @ResponseBody UserRepresentation deleteUser( @RequestBody UserRepresentation theUser, HttpServletResponse response) {
+		logger.info("UserController::deleteUser username = " + theUser.getUsername());
+		
+		Boolean suceeded = false;
+		while (!suceeded) {
+			try {
+				userService.deleteUser(theUser);
+				suceeded = true;
+			} catch (InvalidStateException e) {
+				theUser.setState(UserState.INCOMPLETE);
+				response.setStatus(HttpServletResponse.SC_CONFLICT);
+				return theUser;
+			}
+		}
+			
 		return theUser;
 	}
 	

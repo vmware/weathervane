@@ -191,6 +191,9 @@ override 'run' => sub {
 	my $isRunError = 0;
 
 	my $isPassed = $self->isPassed($tmpDir) && $sanityPassed;
+	
+	# Stop the workload drivers
+	$self->stopWorkloads( $seqnum, $tmpDir );
 
 	# Get rid of old results from previous run
 	$self->clearResults();

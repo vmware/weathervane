@@ -225,6 +225,9 @@ override 'run' => sub {
 	my $isRunError = 0;
 
 	my $isPassed = $self->isPassed($tmpDir) && $sanityPassed;
+	
+	# Stop the workload drivers
+	$self->stopWorkloads( $seqnum, $tmpDir );
 
 	my $runResult = RunResult->new(
 		'runNum'                => $seqnum,

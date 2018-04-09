@@ -241,6 +241,20 @@ sub runWorkloads {
 	return $success;
 }
 
+sub stopWorkloads {
+	my ( $self, $seqnum, $tmpDir ) = @_;
+	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$debug_logger->debug("stopWorkloads.  seqnum = $seqnum, tmpDir = $tmpDir");
+
+	my $success = callBooleanMethodOnObjectsParallel2( 'stopRun', $self->workloadsRef, $seqnum, $tmpDir );
+	if ( !$success ) {
+		return 0;
+	}
+	$debug_logger->debug("stopWorkloads suceeded.");
+
+	return $success;
+}
+
 ####################
 #
 # This method spawns a thread that manages activities that must take place

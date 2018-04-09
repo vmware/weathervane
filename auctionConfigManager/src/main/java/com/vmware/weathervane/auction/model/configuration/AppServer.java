@@ -418,7 +418,7 @@ public class AppServer extends Service {
 		final int iterationsPerWarmer = (int) Math.ceil(WARMER_ITERATIONS / (WARMER_THREADS_PER_APPSERVER * 1.0));
 		int lastWarmerId = startWarmerId + WARMER_THREADS_PER_APPSERVER - 1;
 		for (int i = startWarmerId; i <= lastWarmerId; i++) {
-			String username = "warmer" + i + "@auction.xyz";
+			String username = "warmer" + i + "@foobar.xyz";
 			AppServerWarmer appServerWarmer = new AppServerWarmer(username, iterationsPerWarmer);
 			Thread warmerThread = new Thread(appServerWarmer, "warmer" + i + "Thread");
 			warmupThreads.add(warmerThread);

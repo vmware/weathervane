@@ -372,16 +372,19 @@ public class StatsServiceImpl implements StatsService {
 		 */
 		for (Map<String, Writer> specToWriterMap : workloadAllSamplesCsvWriters.values()) {
 			for (Writer writer : specToWriterMap.values()) {
+				writer.flush();
 				writer.close();
 			}
 		}
 		for (Map<String, Writer> specToWriterMap : workloadAggregatedCsvWriters.values()) {
 			for (Writer writer : specToWriterMap.values()) {
+				writer.flush();
 				writer.close();
 			}
 		}
 		for (Map<String, Writer> specToWriterMap : workloadSummaryWriters.values()) {
 			for (Writer writer : specToWriterMap.values()) {
+				writer.flush();
 				writer.close();
 			}
 		}

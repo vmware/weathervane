@@ -187,7 +187,6 @@ public class FindMaxLoadPath extends LoadPath {
 			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
 				intervalNum = 0;
 				curPhase = Phase.APPROXIMATE;
-				curRateStep /= 2;
 				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " 
 							+ curUsers + ", curRateStep = " + curRateStep);
 				return getNextApproximateInterval();

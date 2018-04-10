@@ -15,7 +15,7 @@ perl /updateResolveConf.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-	java -jar ${JVMOPTS}  /auctionAppServerWarmer.jar --port=${PORT}
+	java -jar ${JVMOPTS}  /auctionAppServerWarmer.jar 
 fi
 
 pid="$!"

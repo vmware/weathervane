@@ -35,7 +35,7 @@ public class WarmerController  {
 	@Autowired
 	private WarmerService warmerService;
 
-	@RequestMapping(method = RequestMethod.GET)
+	@RequestMapping(value="/healthCheck", method = RequestMethod.GET )
 	@ResponseStatus( HttpStatus.OK )
 	@ResponseBody
 	public String healthCheck() {

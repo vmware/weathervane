@@ -81,6 +81,40 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
+      - image: hrosenbe/weathervane-auctionappserverwarmer:1.2.0
+        name: warmer
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 250m
+            memory: 1Gi
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - 'curl -s http://127.0.0.1:8888/warmer/healthCheck | grep -Eq alive'
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - 'curl -s http://127.0.0.1:8888/warmer/ready | grep -Eq ready'
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
 ---
 apiVersion: v1
 kind: Service

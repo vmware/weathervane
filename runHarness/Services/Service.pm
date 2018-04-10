@@ -338,9 +338,7 @@ sub start {
 		$logger->debug( "Start " . $service->getDockerName() . "\n" );
 		$service->startInstance($logPath);
 	}
-	
-	sleep 15;
-	
+		
 }
 
 
@@ -378,8 +376,6 @@ sub stop {
 		$logger->debug( "CleanStatsFiles " . $service->getDockerName() . "\n" );
 		$service->cleanStatsFiles();
 	}
-
-	sleep 15;
 	
 }
 

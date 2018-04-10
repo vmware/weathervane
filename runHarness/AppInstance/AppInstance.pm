@@ -1102,7 +1102,7 @@ sub isRunningAndUpDataServices {
 	}
 	$logger->debug(
 		"Checking that all $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsUp = $self->waitForServicesUp($serviceTier, 0, 8, 15, $logFile);
+	my $allIsUp = $self->waitForServicesUp($serviceTier, 15, 12, 30, $logFile);
 	if ( !$allIsUp ) {
 		$console_logger->error(
 			"Couldn't bring up all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );

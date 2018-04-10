@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
+my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -134,6 +134,9 @@ runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
 runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
 runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
 
+# appServerWarmer
+runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
+runAndLog($fileout, "cp ./dist/auctionAppServerWarmer.jar ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 # configurationManager
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
 runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationmanager/auctionConfigManager.jar");
@@ -234,6 +237,7 @@ foreach my $imageName (@imageNames) {
 # Clean up
 runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
+runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionAppServerWarmer.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");

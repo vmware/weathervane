@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,8 @@ public class WarmerServiceImpl implements WarmerService {
 	public static final int WARMER_THREADS_PER_APPSERVER = 10;
 	public static final int WARMER_ITERATIONS = 5000;
 
+	private List<Thread> warmupThreads = new ArrayList<Thread>();
+
 	private boolean warmingComplete = false;
 
 	private RestTemplate restTemplate;
@@ -67,7 +70,6 @@ public class WarmerServiceImpl implements WarmerService {
 	 */
 	@PostConstruct
 	public void warmUp() {
-		List<Thread> warmupThreads = new ArrayList<Thread>();
 		
 		logger.debug("warmUp. Warming appServer");
 		restTemplate = new RestTemplate();
@@ -105,15 +107,25 @@ public class WarmerServiceImpl implements WarmerService {
 			warmupThread.start();
 		}
 
-		for (Thread warmupThread : warmupThreads) {
-			try {
-				warmupThread.join();
-			} catch (InterruptedException e) {
-				logger.warn("warmUp thread " + warmupThread.getName() + " was interrupted before completing");
-			}
-		}
 		
-		setWarmingComplete(true);
+		Runnable warmerFollower = new Runnable() {
+			
+			@Override
+			public void run() {
+				for (Thread warmupThread : warmupThreads) {
+					try {
+						warmupThread.join();
+					} catch (InterruptedException e) {
+						logger.warn("warmUp thread " + warmupThread.getName() + " was interrupted before completing");
+					}
+				}
+				
+				setWarmingComplete(true);
+			}
+		};
+		
+		Thread warmerFollowerThread = new Thread(warmerFollower, "warmerFollowerThread");
+		warmerFollowerThread.start();
 
 	}
 	

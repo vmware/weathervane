@@ -97,7 +97,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - 'curl -s http://127.0.0.1:8888/warmer/healthCheck | grep -Eq alive'
+            - 'jps | grep -Eq jar'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10

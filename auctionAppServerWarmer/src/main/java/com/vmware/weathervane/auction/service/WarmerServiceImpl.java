@@ -83,9 +83,14 @@ public class WarmerServiceImpl implements WarmerService {
 			} catch (InterruptedException e) {
 				logger.warn("Got InterruptedException: " +  e.getMessage());
 			}
-			ResponseEntity<String> readyStringRE = restTemplate.getForEntity(readyUrl, String.class);
-			readyString = readyStringRE.getBody();
-			System.out.println("Got appserver status.  Response = " + readyString);
+			
+			try {
+				ResponseEntity<String> readyStringRE = restTemplate.getForEntity(readyUrl, String.class);
+				readyString = readyStringRE.getBody();
+				System.out.println("Got appserver status.  Response = " + readyString);
+			} catch (Exception e) {
+				logger.warn("Got Exception: " +  e.getMessage());
+			}
 		}
 		
 		final int iterationsPerWarmer = (int) Math.ceil(WARMER_ITERATIONS / (WARMER_THREADS_PER_APPSERVER * 1.0));

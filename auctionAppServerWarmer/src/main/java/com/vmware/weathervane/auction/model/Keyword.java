@@ -17,15 +17,6 @@ package com.vmware.weathervane.auction.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Version;
-
-@Entity
-@Table(name="keyword")
 public class Keyword implements Serializable, DomainObject {
 
 	private static final long serialVersionUID = 1L;
@@ -39,8 +30,6 @@ public class Keyword implements Serializable, DomainObject {
 
 	}
 
-	@Id
-	@GeneratedValue(strategy=GenerationType.TABLE)
 	public Long getId() {
 		return id;
 	}
@@ -49,7 +38,6 @@ public class Keyword implements Serializable, DomainObject {
 		this.id = id;
 	}
 
-	@Version
 	public Integer getVersion() {
 		return version;
 	}

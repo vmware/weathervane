@@ -101,7 +101,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private String maxPassIntervalName = null;
 
 	@JsonIgnore
-	private final long minRateStep = maxUsers / 100;
+	private final long approximateMinRateStep = maxUsers / 50;
+	@JsonIgnore
+	private final long narrowinMinRateStep = maxUsers / 100;
 
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined
@@ -297,8 +299,8 @@ public class FindMaxLoadPath extends LoadPath {
 				long nextRateStep = curRateStep;
 				while ((curUsers + nextRateStep) > minFailUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
+					if (nextRateStep < approximateMinRateStep) {
+						nextRateStep = approximateMinRateStep;
 						break;
 					}
 				}
@@ -330,8 +332,8 @@ public class FindMaxLoadPath extends LoadPath {
 				long nextRateStep = curRateStep;
 				while ((curUsers - nextRateStep) <= maxPassUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
+					if (nextRateStep < approximateMinRateStep) {
+						nextRateStep = approximateMinRateStep;
 						break;
 					}
 				}
@@ -451,8 +453,8 @@ public class FindMaxLoadPath extends LoadPath {
 				long nextRateStep = curRateStep;
 				while ((curUsers + nextRateStep) > minFailUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
+					if (nextRateStep < narrowinMinRateStep) {
+						nextRateStep = narrowinMinRateStep;
 						break;
 					}
 				}
@@ -482,8 +484,8 @@ public class FindMaxLoadPath extends LoadPath {
 				long nextRateStep = curRateStep;
 				while ((curUsers - nextRateStep) <= maxPassUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
+					if (nextRateStep < narrowinMinRateStep) {
+						nextRateStep = narrowinMinRateStep;
 						break;
 					}
 				}

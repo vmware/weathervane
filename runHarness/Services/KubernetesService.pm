@@ -127,11 +127,6 @@ override 'isStopped' => sub {
 	return !$self->host->kubernetesDoPodsExist("type=$serviceType", $namespace );
 };
 
-override 'isReachable' => sub {
-	my ($self, $fileout) = @_;
-	return 1;
-};
-
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;

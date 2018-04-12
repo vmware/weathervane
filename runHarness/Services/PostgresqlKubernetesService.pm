@@ -268,7 +268,7 @@ override 'stopStatsCollection' => sub {
 	close STATS;
 
 	open( STATS, ">>/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
-	my $cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
 	print STATS "After rampUp, max items sold per auction = $cmdout";
 	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select min(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
 	print STATS "After rampUp, min items sold per auction = $cmdout";
@@ -280,6 +280,7 @@ override 'stopStatsCollection' => sub {
 
 override 'getStatsFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
+	my $hostname         = $self->host->hostName;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("getStatsFiles");
 

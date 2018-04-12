@@ -1152,7 +1152,7 @@ sub startStatsCollection {
 
 	my $pid = fork();
 	if ( $pid == 0 ) {
-		$logger->debug("Starting mongostat on $hostname, numInetervals = ", $numIntervals,", intervalLengthSec = ", $intervalLengthSec);
+		$logger->debug("Starting mongostat on $hostname, numIntervals = ", $numIntervals,", intervalLengthSec = ", $intervalLengthSec);
 		my $out = `$sshConnectString \"mongostat --port $port -n $numIntervals $intervalLengthSec > /tmp/mongostat_${hostname}.txt\"`;
 		$logger->debug("mongostat ran on $hostname, result : ",$out);
 		exit;

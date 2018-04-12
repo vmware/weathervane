@@ -113,6 +113,27 @@ override 'isUp' => sub {
 	}
 };
 
+override 'stopStatsCollection' => sub {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
+	$logger->debug("stopStatsCollection");
+};
+
+override 'startStatsCollection' => sub {
+	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
+	my $hostname         = $self->host->hostName;
+	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
+	$logger->debug("startStatsCollection hostname = $hostname");
+
+};
+
+override 'getStatsFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
+	$logger->debug("getStatsFiles");
+
+};
+
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 }
@@ -123,7 +144,7 @@ sub clearDataAfterStart {
 
 sub cleanLogFiles {
 	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
+	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("cleanLogFiles");
 
 }

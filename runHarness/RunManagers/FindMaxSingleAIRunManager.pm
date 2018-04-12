@@ -30,7 +30,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Fixed Run Strategy', );
+has '+name' => ( default => 'Find Max/Single-AI Run Strategy', );
 
 has '+description' => ( default => '', );
 

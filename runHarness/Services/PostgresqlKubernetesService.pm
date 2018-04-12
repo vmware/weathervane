@@ -212,6 +212,8 @@ sub getConfigFiles {
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
 	my $hostname         = $self->host->hostName;
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
+	$logger->debug("startStatsCollection");
 
 	my $cluster = $self->host;
 	# Reset the stats tables
@@ -231,6 +233,8 @@ override 'startStatsCollection' => sub {
 
 override 'stopStatsCollection' => sub {
 	my ( $self ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
+	$logger->debug("stopStatsCollection");
 	# Get interesting views on the pg_stats table
 	my $hostname         = $self->host->hostName;
 	my $cluster = $self->host;
@@ -274,13 +278,15 @@ override 'stopStatsCollection' => sub {
 
 };
 
-sub getStatsFiles {
+override 'getStatsFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
+	$logger->debug("getStatsFiles");
 
 	my $out = `cp /tmp/postgresql_stats_$hostname.txt $destinationPath/. 2>&1`;
 	$out = `cp /tmp/postgresql_itemsSold_$hostname.txt $destinationPath/. 2>&1`;
 
-}
+};
 
 sub getConfigSummary {
 	my ($self) = @_;

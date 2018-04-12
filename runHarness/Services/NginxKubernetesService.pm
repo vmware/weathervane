@@ -115,6 +115,28 @@ override 'isUp' => sub {
 	}
 };
 
+override 'stopStatsCollection' => sub {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
+	$logger->debug("stopStatsCollection");
+};
+
+override 'startStatsCollection' => sub {
+	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
+	my $hostname         = $self->host->hostName;
+	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
+	$logger->debug("startStatsCollection hostname = $hostname");
+
+};
+
+override 'getStatsFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
+	$logger->debug("getStatsFiles");
+
+};
+
+
 sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");

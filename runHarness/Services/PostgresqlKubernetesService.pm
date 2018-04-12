@@ -208,6 +208,80 @@ sub getConfigFiles {
 
 }
 
+
+override 'startStatsCollection' => sub {
+	my ( $self ) = @_;
+	my $hostname         = $self->host->hostName;
+
+	my $cluster = $self->host;
+	# Reset the stats tables
+	$cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select pg_stat_reset();'", $self->namespace );
+	$cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
+
+	open( STATS, ">/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
+	my $cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, max items sold per auction = $cmdout";
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select min(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, min items sold per auction = $cmdout";
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select avg(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, avg items sold per auction = $cmdout";
+	close STATS;
+
+};
+
+override 'stopStatsCollection' => sub {
+	my ( $self ) = @_;
+	# Get interesting views on the pg_stats table
+	my $hostname         = $self->host->hostName;
+	my $cluster = $self->host;
+	
+	open( STATS, ">/tmp/postgresql_stats_$hostname.txt" ) or die "Error opening /tmp/postgresql_stats_$hostname.txt:$!";
+	
+	my $cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_activity;'", $self->namespace );
+	print STATS "$cmdout\n";
+	
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_bgwriter;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_database;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_database_conflicts;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_user_tables;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_statio_user_tables;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_user_indexes;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_statio_user_indexes;'", $self->namespace );
+	print STATS "$cmdout\n";
+
+	close STATS;
+
+	open( STATS, ">>/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
+	my $cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, max items sold per auction = $cmdout";
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select min(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, min items sold per auction = $cmdout";
+	$cmdout = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select avg(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	print STATS "After rampUp, avg items sold per auction = $cmdout";
+	close STATS;
+
+};
+
+sub getStatsFiles {
+	my ( $self, $destinationPath ) = @_;
+
+	my $out = `cp /tmp/postgresql_stats_$hostname.txt $destinationPath/. 2>&1`;
+	$out = `cp /tmp/postgresql_itemsSold_$hostname.txt $destinationPath/. 2>&1`;
+
+}
+
 sub getConfigSummary {
 	my ($self) = @_;
 	tie( my %csv, 'Tie::IxHash' );

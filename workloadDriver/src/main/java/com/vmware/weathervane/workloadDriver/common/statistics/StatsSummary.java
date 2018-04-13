@@ -568,6 +568,7 @@ public class StatsSummary {
 		}
 
 		StringBuilder retVal = new StringBuilder();
+		SimpleDateFormat dateFormatter = new SimpleDateFormat("MMM d,yyyy HH:mm:ss z");
 		NumberFormat doubleFormat2 = new DecimalFormat( "#0.00" );
 		NumberFormat doubleFormat3 = new DecimalFormat( "#0.000" );
 		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
@@ -595,7 +596,8 @@ public class StatsSummary {
 		retVal.append("\tHttp Operation Throughput: " + stepsThroughput + " ops/sec\n");
 		retVal.append("\tOverall passing percentage: " + doubleFormat2.format(statsSummaryRollup.getPctPassing() * 100.0) + "%\n");
 		retVal.append("\tInterval Duration (seconds): " + doubleFormat2.format(statsSummaryRollup.getIntervalDurationSec()) + "\n");
-		
+		retVal.append("\tInterval Start Time: " + dateFormatter.format(new Date(this.getIntervalStartTime())) + "\n");
+		retVal.append("\tInterval End Time: " + dateFormatter.format(new Date(this.getIntervalEndTime())) + "\n");
 		retVal.append(String.format(opLineOutputFormat, "Operation", "Passed?", "Passed", "Passed", "Throughput", "Avg Response-",
 				"Min Response-", "Max Response-", "Avg Cycle-", "Effective", "Mix", "Pass RT", "Total", "Total", "Total"));
 		retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"

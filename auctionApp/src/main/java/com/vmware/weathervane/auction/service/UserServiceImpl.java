@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.service;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.transaction.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class UserServiceImpl implements UserService {
 			logger.warn("UserServiceImpl::registerUser User already exists");
 			newUser.setState(UserState.DUPLICATE);
 		} catch (EmptyResultDataAccessException ex) {
-			logger.warn("UserServiceImpl::registerUser EmptyResultDataAccessException");
+			logger.info("UserServiceImpl::registerUser EmptyResultDataAccessException");
 			existing = false;
 		}
 
@@ -94,6 +95,7 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
+	@Transactional
 	public void deleteUser(UserRepresentation newUser) throws InvalidStateException {
 		logger.debug("UserServiceImpl::registerUser");
 

@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +95,7 @@ public class WarmerServiceImpl implements WarmerService {
 		}
 		
 		final int iterationsPerWarmer = (int) Math.ceil(WARMER_ITERATIONS / (WARMER_THREADS_PER_APPSERVER * 1.0));
-		for (int i = 1; i <= (WARMER_THREADS_PER_APPSERVER - 1); i++) {
+		for (int i = 1; i <= WARMER_THREADS_PER_APPSERVER; i++) {
 			String username = "warmer" + UUID.randomUUID() + "@auction.xyz";
 			AppServerWarmer appServerWarmer = new AppServerWarmer(username, iterationsPerWarmer);
 			Thread warmerThread = new Thread(appServerWarmer, "warmer" + i + "Thread");
@@ -209,8 +208,6 @@ public class WarmerServiceImpl implements WarmerService {
 									UserRepresentation.class);
 					logger.trace("Executed getUserProfile");	
 					
-					Thread.sleep(1000);
-					
 					UserRepresentation user = userRE.getBody();
 					user.setFirstname(UUID.randomUUID().toString());
 					user.setPassword(password);
@@ -222,8 +219,6 @@ public class WarmerServiceImpl implements WarmerService {
 									UserRepresentation.class);
 					logger.trace("Executed updateUserProfile");			
 					
-					Thread.sleep(1000);
-					
 					logger.trace("Executing getActiveAuctions with url " + getActiveAuctionsUrl);	
 					ResponseEntity<CollectionRepresentation<AuctionRepresentation>> auctionCollectionRE =
 							restTemplate.exchange(getActiveAuctionsUrl, HttpMethod.GET, requestEntity, 
@@ -231,22 +226,16 @@ public class WarmerServiceImpl implements WarmerService {
 					logger.trace("Executed getActiveAuctions");			
 					CollectionRepresentation<AuctionRepresentation> auctionCollection = auctionCollectionRE.getBody();
 					
-					Thread.sleep(1000);
-					
 					logger.trace("Executing getAuction with url " + getAuctionUrl);	
 					restTemplate.exchange(getAuctionUrl, HttpMethod.GET, requestEntity, AuctionRepresentation.class);
 					logger.trace("Executed getAuction");			
 					
-					Thread.sleep(1000);
-				
 					logger.trace("Executing getItemsForAuction with url " + getItemsForAuctionUrl);	
 					ResponseEntity<CollectionRepresentation<ItemRepresentation>> itemCollectionRE =
 							restTemplate.exchange(getItemsForAuctionUrl, HttpMethod.GET, requestEntity,
 									new ParameterizedTypeReference<CollectionRepresentation<ItemRepresentation>>() {});
 					logger.trace("Executed getItemsForAuction");			
 					
-					Thread.sleep(1000);
-
 					CollectionRepresentation<ItemRepresentation> itemCollection = itemCollectionRE.getBody();
 					if (itemCollection.getResults().size() > 0) {
 						ItemRepresentation item = itemCollection.getResults().get(0);
@@ -270,8 +259,6 @@ public class WarmerServiceImpl implements WarmerService {
 						
 					}
 					
-					Thread.sleep(1000);
-				
 					if (auctionCollection.getResults().size() > 0) {
 						AuctionRepresentation auction = auctionCollection.getResults().get(0);
 						
@@ -321,8 +308,6 @@ public class WarmerServiceImpl implements WarmerService {
 
 					}
 					
-					Thread.sleep(1000);
-
 					String getPurchaseHistoryUrl = baseUrl + "/item/user/" + user.getId() + "/purchased?page=0&pageSize=5";
 					logger.trace("Executing getPurchaseHistory with url " + getPurchaseHistoryUrl);	
 					itemCollectionRE =
@@ -330,33 +315,24 @@ public class WarmerServiceImpl implements WarmerService {
 									new ParameterizedTypeReference<CollectionRepresentation<ItemRepresentation>>() {});
 					logger.trace("Executed getPurchaseHistory");
 					
-					Thread.sleep(1000);
-
 					String getAttendanceHistoryUrl = baseUrl + "/attendance/user/" + user.getId();
 					logger.trace("Executing getAttendanceHistory with url " + getAttendanceHistoryUrl);	
 					restTemplate.exchange(getAttendanceHistoryUrl, HttpMethod.GET, requestEntity,
 								new ParameterizedTypeReference<CollectionRepresentation<AttendanceRecordRepresentation>>() {});
 					logger.trace("Executed getAttendanceHistory");
 					
-					Thread.sleep(1000);
-
 					String getbidHistoryUrl = baseUrl + "/bid/user/" + user.getId() + "?page=0&pageSize=5";
 					logger.trace("Executing getBidHistory with url " + getbidHistoryUrl);	
 					restTemplate.exchange(getbidHistoryUrl, HttpMethod.GET, requestEntity,
 								new ParameterizedTypeReference<CollectionRepresentation<BidRepresentation>>() {});
 					logger.trace("Executed getBidHistory");
 					
-					Thread.sleep(1000);
-					
 					logger.trace("Executing logout with url " + logoutUrl);	
 					restTemplate.exchange(logoutUrl, HttpMethod.GET, requestEntity, String.class);
 					logger.trace("Executed logout");
 					
-					Thread.sleep(1000);
 				} catch (RestClientException e) {
 					logger.warn("Got RestClientException: " +  e.getMessage());
-				} catch (InterruptedException e) {
-					logger.warn("Got InterruptedException: " +  e.getMessage());
 				}
 			}
 			

@@ -175,7 +175,7 @@ override 'getServiceConfigParameters' => sub {
 	my ( $self, $service, $serviceType ) = @_;
 	my %serviceParameters = ();
 
-	my $users = $self->users;
+	my $users = $self->getParamValue('maxUsers');
 
 	if ( $serviceType eq "appServer" ) {
 

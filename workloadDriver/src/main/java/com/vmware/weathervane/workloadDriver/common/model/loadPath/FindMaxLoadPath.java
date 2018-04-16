@@ -18,7 +18,6 @@ package com.vmware.weathervane.workloadDriver.common.model.loadPath;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 
@@ -58,7 +57,7 @@ public class FindMaxLoadPath extends LoadPath {
 	 * used to decide whether the interval passes the QOS requirements of the phase.
 	 */
 	private enum SubInterval {
-		RAMPUP, WARMUP, DECISION
+		RAMP, WARMUP, DECISION
 	};
 
 	@JsonIgnore
@@ -74,7 +73,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval curInterval = null;
 
 	@JsonIgnore
-	Deque<UniformLoadInterval> rampupIntervals = new ArrayDeque<UniformLoadInterval>();
+	Deque<UniformLoadInterval> rampIntervals = new ArrayDeque<UniformLoadInterval>();
 
 	@JsonIgnore
 	private long minFailUsers = Long.MAX_VALUE;
@@ -87,11 +86,11 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private long curRateStep = maxUsers / 20;
 	@JsonIgnore
-	private final long initialRampRateStep = 100;
+	private final long initialRampRateStep = 250;
 	@JsonIgnore
 	private final long approximateMinRateStep = maxUsers / 50;
 	@JsonIgnore
-	private final long narrowinMinRateStep = maxUsers / 100;
+	private final long narrowinMinRateStep = maxUsers / 200;
 
 	@JsonIgnore
 	private final long shortWarmupIntervalDurationSec = 10;
@@ -99,14 +98,14 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long shortIntervalDurationSec = 10;
 
 	@JsonIgnore
-	private final long mediumRampupIntervalDurationSec = 180;
+	private final long mediumRampIntervalDurationSec = 180;
 	@JsonIgnore
 	private final long mediumWarmupIntervalDurationSec = 120;
 	@JsonIgnore
 	private final long mediumIntervalDurationSec = 300;
 
 	@JsonIgnore
-	private final long longRampupIntervalDurationSec = 300;
+	private final long longRampIntervalDurationSec = 300;
 	@JsonIgnore
 	private final long longWarmupIntervalDurationSec = 120;
 	@JsonIgnore
@@ -158,7 +157,7 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("getNextInitialRampInterval ");
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		if (nextSubInterval.equals(SubInterval.WARMUP) || nextSubInterval.equals(SubInterval.RAMPUP)) {
+		if (nextSubInterval.equals(SubInterval.WARMUP) || nextSubInterval.equals(SubInterval.RAMP)) {
 			// WARMUP starts a new interval
 			intervalNum++;
 			logger.debug("getNextInitialRampInterval warmup subinterval for interval " + intervalNum);
@@ -184,7 +183,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
 					 * is not used in initialRamp
 					 */
-					prevIntervalPassed = (rollup.getPctPassing() > 0.99);
+					prevIntervalPassed = rollup.isIntervalPassedRT();
 					getIntervalStatsSummaries().add(rollup);
 				}
 				logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = "
@@ -197,12 +196,12 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
 				intervalNum = 0;
-				curPhase = Phase.APPROXIMATE;
-				// No rampup on first APPROXIMATE interval
+				curPhase = Phase.NARROWIN;
+				// No ramp on first APPROXIMATE interval
 				nextSubInterval = SubInterval.WARMUP;
 				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers
 						+ ", curRateStep = " + curRateStep);
-				return getNextApproximateInterval();
+				return getNextNarrowInInterval();
 			}
 
 			curUsers += initialRampRateStep;
@@ -234,12 +233,12 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("getNextApproximateInterval ");
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		if (nextSubInterval.equals(SubInterval.RAMPUP)) {
+		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			long prevCurUsers = curUsers;
 			
 			intervalNum++;
 
-			logger.debug("getNextApproximateInterval rampup subinterval for interval " + intervalNum);
+			logger.debug("getNextApproximateInterval ramp subinterval for interval " + intervalNum);
 
 			boolean prevIntervalPassed = false;
 			String curIntervalName = curInterval.getName();
@@ -285,7 +284,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * step size in order to do this.
 				 */
 				long nextRateStep = curRateStep;
-				while ((curUsers + nextRateStep) > minFailUsers) {
+				while ((curUsers + nextRateStep) >= minFailUsers) {
 					nextRateStep /= 2;
 					if (nextRateStep < approximateMinRateStep) {
 						nextRateStep = approximateMinRateStep;
@@ -327,7 +326,7 @@ public class FindMaxLoadPath extends LoadPath {
 					}
 				}
 
-				if ((curUsers - nextRateStep) < maxPassUsers) {
+				if ((curUsers - nextRateStep) <= maxPassUsers) {
 					/*
 					 * Can't get closer to maximum with the minRateStep. Go to the next phase.
 					 */
@@ -348,14 +347,14 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampupIntervals.addAll(generateRampIntervals("APPROXIMATE-Rampup-" + intervalNum + "-", mediumRampupIntervalDurationSec, 15, prevCurUsers, curUsers));
+			rampIntervals.addAll(generateRampIntervals("APPROXIMATE-Ramp-" + intervalNum + "-", mediumRampIntervalDurationSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
-			nextInterval = rampupIntervals.pop();
+			nextInterval = rampIntervals.pop();
 		} else if (nextSubInterval.equals(SubInterval.WARMUP)) {
 
 			if (intervalNum == 0) {
 				/* 
-				 * The first interval of APPROXIMATE is a warmup, not rampup
+				 * The first interval of APPROXIMATE is a warmup, not ramp
 				 */
 				intervalNum++;
 				
@@ -378,9 +377,9 @@ public class FindMaxLoadPath extends LoadPath {
 				return nextInterval;
 			}
 
-			if (!rampupIntervals.isEmpty()) {
-				logger.debug("getNextApproximateInterval returning next rampup subinterval for interval " + intervalNum);
-				nextInterval = rampupIntervals.pop();				
+			if (!rampIntervals.isEmpty()) {
+				logger.debug("getNextApproximateInterval returning next ramp subinterval for interval " + intervalNum);
+				nextInterval = rampIntervals.pop();				
 			} else {
 				logger.debug("getNextApproximateInterval warmup subinterval for interval " + intervalNum);
 				nextInterval.setUsers(curUsers);
@@ -398,7 +397,7 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(mediumIntervalDurationSec);
 			nextInterval.setName("APPROXIMATE-" + intervalNum);
-			nextSubInterval = SubInterval.RAMPUP;
+			nextSubInterval = SubInterval.RAMP;
 		}
 
 		logger.debug("getNextApproximateInterval. returning interval: " + nextInterval);
@@ -413,12 +412,12 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("getNextNarrowInInterval ");
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		if (nextSubInterval.equals(SubInterval.RAMPUP)) {
+		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			long prevCurUsers = curUsers;
 
-			// RAMPUP starts a new interval
+			// RAMP starts a new interval
 			intervalNum++;
-			logger.debug("getNextNarrowInInterval rampup subinterval for interval " + intervalNum);
+			logger.debug("getNextNarrowInInterval ramp subinterval for interval " + intervalNum);
 
 			/*
 			 * Need to know whether the previous interval
@@ -463,7 +462,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * step size in order to do this.
 				 */
 				long nextRateStep = curRateStep;
-				while ((curUsers + nextRateStep) > minFailUsers) {
+				while ((curUsers + nextRateStep) >= minFailUsers) {
 					nextRateStep /= 2;
 					if (nextRateStep < narrowinMinRateStep) {
 						nextRateStep = narrowinMinRateStep;
@@ -502,7 +501,7 @@ public class FindMaxLoadPath extends LoadPath {
 					}
 				}
 
-				if ((curUsers - nextRateStep) < maxPassUsers) {
+				if ((curUsers - nextRateStep) <= maxPassUsers) {
 					/*
 					 * Can't get closer to maximum with the minRateStep. Have found the maximum
 					 */
@@ -521,15 +520,15 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampupIntervals.addAll(generateRampIntervals("NARROWIN-Rampup-" + intervalNum + "-", longRampupIntervalDurationSec, 15, prevCurUsers, curUsers));
+			rampIntervals.addAll(generateRampIntervals("NARROWIN-Ramp-" + intervalNum + "-", longRampIntervalDurationSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
-			nextInterval = rampupIntervals.pop();
+			nextInterval = rampIntervals.pop();
 
 		} else  if (nextSubInterval.equals(SubInterval.WARMUP)) {
 			
 			if (intervalNum == 0) {
 				/* 
-				 * The first interval of NARROWIN is a warmup, not rampup
+				 * The first interval of NARROWIN is a warmup, not ramp
 				 */
 				intervalNum++;
 				
@@ -552,9 +551,9 @@ public class FindMaxLoadPath extends LoadPath {
 				return nextInterval;
 			}
 			
-			if (!rampupIntervals.isEmpty()) {
-				logger.debug("getNextNarrowInInterval returning next rampup subinterval for interval " + intervalNum);
-				nextInterval = rampupIntervals.pop();				
+			if (!rampIntervals.isEmpty()) {
+				logger.debug("getNextNarrowInInterval returning next ramp subinterval for interval " + intervalNum);
+				nextInterval = rampIntervals.pop();				
 			} else {
 				/*
 				 * Do the sub-interval used for decisions. This is run at the same number of
@@ -575,7 +574,7 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(longIntervalDurationSec);
 			nextInterval.setName("NARROWIN-" + intervalNum);
-			nextSubInterval = SubInterval.RAMPUP;
+			nextSubInterval = SubInterval.RAMP;
 		}
 
 		logger.debug("getNextNarrowInInterval. returning interval: " + nextInterval);

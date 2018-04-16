@@ -12,6 +12,7 @@ RUN \
   yum -y install iproute && \
   yum -y install perl && \
   yum -y install emacs && \
+  yum -y install bind-utils && \
   yum -y install openssh-clients && \
   yum -y clean all && \
   chmod 600 /root/.ssh/* && \

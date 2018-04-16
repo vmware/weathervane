@@ -93,9 +93,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long narrowinMinRateStep = maxUsers / 200;
 
 	@JsonIgnore
-	private final long shortWarmupIntervalDurationSec = 10;
+	private final long shortWarmupIntervalDurationSec = 15;
 	@JsonIgnore
-	private final long shortIntervalDurationSec = 10;
+	private final long shortIntervalDurationSec = 15;
 
 	@JsonIgnore
 	private final long mediumRampIntervalDurationSec = 180;

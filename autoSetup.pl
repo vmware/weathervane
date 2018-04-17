@@ -19,8 +19,49 @@
 #
 package AutoSetup;
 use strict;
+use Getopt::Long;
+
+sub usage {
+	print "Usage: ./autoSetup.pl [options]\n";
+	print "This script sets up a Centos 7 host to be a fully configured Weathervane host.\n";
+	print "It assumes that the script is being run by the root user. To run as non-root,\n";
+	print "you must specify --noroot, as well as the user's name (--username), home\n";
+	print "directory (--home). Installing as a non-root usermust be done using sudo.\n";
+	print "You must run this script from the directory containing the Weathervane release\n";
+    print " Options:\n";
+    print "     --help :         Print this help and exit.\n";
+    print "     --noroot :       Specifies that setup is being run by a non-root user.\n";
+    print "     --username:      The username for non-root user running setup.\n";
+    print "                      This must be provided if --noroot is used.\n";
+    print "     --home:          The home directory for the non-root user running setup.\n";
+    print "                      This must be provided if --noroot is used.\n";
+    print "     --accept:        Accept the license agreement non-interactively.\n";
+    print "If the list of image names is empty, then all images are built and pushed.\n";
+}
 
 my $pwd = $ENV{'PWD'};
+unless (-e "$pwd/weathervane.pl") {
+	print "You must run this script from the directory containing the Weathervane release\n\n";
+	usage();
+	exit;
+}
+
+my $help = '';
+my $isRoot = 1;
+my $username = "root";
+my $home = "/root";
+my $accept = 0;
+GetOptions('help' => \$help,
+			'root!' => \$isRoot,
+			'accept!' => \$accept,
+			'username=s' => \$username,
+			'home=s' => \$home,
+			);
+
+if ($help) {
+	usage();
+	exit;
+}
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
@@ -89,7 +130,7 @@ sub forceLicenseAccept {
 	}
 }
 
-unless (-e "$pwd/.accept-autosetup") {
+unless ((-e "$pwd/.accept-autosetup") || $accept) {
 	forceLicenseAccept();
 }
 
@@ -101,8 +142,8 @@ my $os             = setOS();
 
 my $serviceManager = setServiceManager($os);
 
-print "Performing autoSetup for a $os host.\n";
-print $fileout "Performing autoSetup for a $os host.\n";
+print "Performing autoSetup on a $os host for user $username with home directory $home.\n";
+print $fileout "Performing autoSetup on a $os host for user $username with home directory $home.\n";
 runAndLog( $fileout, "setenforce 0" );
 
 print "Installing Java\n";
@@ -213,15 +254,22 @@ runAndLog( $fileout, "cp configFiles/host/$os/rsyslog.conf /etc/" );
 runAndLog( $fileout, "cp configFiles/host/$os/config /etc/selinux/" );
 runAndLog( $fileout, "cp configFiles/host/$os/login /etc/pam.d/login" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits.conf /etc/security/limits.conf" );
-runAndLog( $fileout, "cp configFiles/host/$os/bashrc $pwd/../.bashrc" );
-runAndLog( $fileout, "rm -rf $pwd/../.ssh" );
-runAndLog( $fileout, "cp -r configFiles/host/$os/ssh $pwd/../.ssh" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/certs/weathervane.crt /etc/pki/tls/certs/weathervane.crt" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/private/weathervane.key /etc/pki/tls/private/weathervane.key" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/private/weathervane.pem /etc/pki/tls/private/weathervane.pem" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/openssl.cnf /etc/pki/tls/openssl.cnf" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/weathervane.jks /etc/pki/tls/weathervane.jks" );
-runAndLog( $fileout, "chmod -R 700 $pwd/../.ssh" );
+runAndLog( $fileout, "cp configFiles/host/$os/bashrc $home/.bashrc" );
+runAndLog( $fileout, "rm -rf $home/.ssh" );
+runAndLog( $fileout, "cp -r configFiles/host/$os/ssh $home/.ssh" );
+runAndLog( $fileout, "chmod -R 700 $home/.ssh" );
+if (!$isRoot) {
+	runAndLog( $fileout, "cp configFiles/host/$os/bashrc /root/.bashrc" );
+	runAndLog( $fileout, "rm -rf /root/.ssh" );
+	runAndLog( $fileout, "cp -r configFiles/host/$os/ssh /root/.ssh" );
+	runAndLog( $fileout, "chmod -R 700 /root/.ssh" );	
+}
+
 if ( $os eq "centos7" ) {
 	runAndLog( $fileout, "cp configFiles/host/$os/redhat-release /etc/." );
 }
@@ -526,6 +574,10 @@ runAndLog( $fileout, "chown root:named /etc/named.conf" );
 runAndLog( $fileout, "service named start" );
 
 close $fileout;
+
+if (!$isRoot) {
+	`chown -R $username:$username $home`;
+}
 
 print "AutoSetup Complete.\n";
 print "You still need to perform the following steps:\n";

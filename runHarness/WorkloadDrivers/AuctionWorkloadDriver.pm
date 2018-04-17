@@ -1810,7 +1810,7 @@ sub getWorkloadStatsSummary {
 	foreach my $appInstanceRef (@$appInstancesRef) {
 	{
 		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
-		$prefix = "-AI${appInstanceNum}";
+		my $prefix = "-AI${appInstanceNum}";
 
 		my $isPassed = $self->isPassed( $appInstanceRef, $logDir );
 		if ($isPassed) {

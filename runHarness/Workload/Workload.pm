@@ -656,17 +656,6 @@ sub getWorkloadStatsSummary {
 
 	#	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
 
-	my $appInstancesRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstancesRef) {
-		my $prefix = "";
-		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
-		}
-
-		$csv{ $prefix . "users" } = $appInstance->users;
-
-	}
-
 	$self->primaryDriver->getWorkloadStatsSummary( \%csv, $tmpDir );
 
 	return \%csv;

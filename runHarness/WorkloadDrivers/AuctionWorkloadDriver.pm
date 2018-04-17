@@ -100,6 +100,12 @@ has 'reqSec' => (
 	default => sub { {} },
 );
 
+has 'maxPassUsers' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 has 'passAll' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -784,6 +790,7 @@ sub clearResults {
 	# Clear out the results of parsing any previous run
 	$self->resultsValid(0);
 	$self->opsSec(       {} );
+	$self->maxPassUsers(   {} );
 	$self->reqSec(       {} );
 	$self->passAll(      {} );
 	$self->passRT(       {} );
@@ -1794,37 +1801,42 @@ sub getWorkloadStatsSummary {
 		return;	
 	}
 
-	my $appInstancesRef = $self->workload->appInstancesRef;
-	my $numAppInstances = $#{$appInstancesRef} + 1;
-	foreach my $appInstanceRef (@$appInstancesRef) {
-		my $appInstanceNum = $appInstanceRef->getParamValue("appInstanceNum");
-		my $isPassed = $self->isPassed( $appInstanceRef, $logDir );
-		if ($isPassed) {
-			$csvRef->{"pass-I$appInstanceNum"} = "Y";
-		}
-		else {
-			$csvRef->{"pass-I$appInstanceNum"} = "N";
-		}
-	}
-
+	my $totalUsers       = 0;
 	my $opsSec       = 0;
 	my $httpReqSec   = 0;
 	my $overallAvgRT = 0;
-	for (
-		my $appInstanceNum = 1 ;
-		$appInstanceNum <= $numAppInstances ;
-		$appInstanceNum++
-	  )
+
+	my $appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstanceRef (@$appInstancesRef) {
 	{
+		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+		$prefix = "-AI${appInstanceNum}";
+
+		my $isPassed = $self->isPassed( $appInstanceRef, $logDir );
+		if ($isPassed) {
+			$csvRef->{"pass$prefix"} = "Y";
+		}
+		else {
+			$csvRef->{"pass$prefix"} = "N";
+		}
+		$csvRef->{"users$prefix"}       = $self->maxPassUsers->{$appInstanceNum};
+		$csvRef->{"opsSec$prefix"}       = $self->opsSec->{$appInstanceNum};
+		$csvRef->{"httpReqSec$prefix"}   = $self->reqSec->{$appInstanceNum};
+		$csvRef->{"overallAvgRT$prefix"} = $self->overallAvgRT->{$appInstanceNum};
+
+		$totalUsers       += $self->maxPassUsers->{$appInstanceNum};
 		$opsSec       += $self->opsSec->{$appInstanceNum};
 		$httpReqSec   += $self->reqSec->{$appInstanceNum};
 		$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
 	}
+	
+	my $numAppInstances = $#{$appInstancesRef} + 1;
 	$overallAvgRT /= $numAppInstances;
 
-	$csvRef->{"opsSec"}       = $opsSec;
-	$csvRef->{"httpReqSec"}   = $httpReqSec;
-	$csvRef->{"overallAvgRT"} = $overallAvgRT;
+	$csvRef->{"users-total"}       = $totalUsers;
+	$csvRef->{"opsSec-total"}       = $opsSec;
+	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
+	$csvRef->{"overallAvgRT-total"} = $overallAvgRT;
 
 }
 
@@ -2346,6 +2358,7 @@ sub parseStats {
 			next;
 		}
 		
+		$self->maxPassUsers->{$appInstanceNum} = $maxPassUsers;
 		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
 		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
 		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};

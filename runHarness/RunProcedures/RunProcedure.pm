@@ -986,11 +986,12 @@ sub getStatsSummary {
 	# Need to strip commas out of the description field
 	my $description = $self->getParamValue('description');
 	$description =~ s/,/ /g;
-
+	my $runStrategy = $self->getParamValue("runStrategy");
 	%csv = (
 		"seqnum"      => $seqnum,
 		"description" => $description,
 		"timestamp"   => scalar localtime,
+		"runStrategy"   => $runStrategy,
 	);
 
 	# Get the csv data about the workloads

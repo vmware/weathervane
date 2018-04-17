@@ -93,9 +93,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long narrowinMinRateStep = maxUsers / 200;
 
 	@JsonIgnore
-	private final long shortWarmupIntervalDurationSec = 10;
+	private final long shortWarmupIntervalDurationSec = 20;
 	@JsonIgnore
-	private final long shortIntervalDurationSec = 10;
+	private final long shortIntervalDurationSec = 20;
 
 	@JsonIgnore
 	private final long mediumRampIntervalDurationSec = 180;
@@ -198,11 +198,15 @@ public class FindMaxLoadPath extends LoadPath {
 				intervalNum = 0;
 				curPhase = Phase.NARROWIN;
 				curUsers -= curRateStep;
+				if (curUsers <= 0) {
+					curRateStep /= 2;
+					curUsers += curRateStep;
+				}
 				// No ramp on first APPROXIMATE interval
 				nextSubInterval = SubInterval.WARMUP;
 				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers
 						+ ", curRateStep = " + curRateStep);
-				return getNextNarrowInInterval();
+				return getNextApproximateInterval();
 			}
 
 			curUsers += initialRampRateStep;

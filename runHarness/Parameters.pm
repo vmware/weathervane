@@ -1277,7 +1277,7 @@ $parameters{"harnessHostNtpServer"} = {
 
 $parameters{"configFile"} = {
 	"type"    => "=s",
-	"default" => "/root/weathervane/weathervane.config",
+	"default" => "weathervane.config",
 	"parent"  => "",
 	"usageText" =>
 "This is the name of the Weathervane configuration file.\n\tIt must either include the full path to the file\n\tor be relative to the directory from which the script is run",

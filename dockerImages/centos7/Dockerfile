@@ -11,6 +11,7 @@ RUN \
   yum -y install sudo && \
   yum -y install iproute && \
   yum -y install perl && \
+  yum -y install wget && \
   yum -y install emacs && \
   yum -y install bind-utils && \
   yum -y install openssh-clients && \

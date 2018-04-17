@@ -69,6 +69,11 @@ if (!$isRoot && !($home && $username)) {
 	exit;
 }
 
+if ($isRoot) {
+	$username = "root";
+	$home = "/root";	
+}
+
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 

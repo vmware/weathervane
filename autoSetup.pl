@@ -48,8 +48,8 @@ unless (-e "$pwd/weathervane.pl") {
 
 my $help = '';
 my $isRoot = 1;
-my $username = "root";
-my $home = "/root";
+my $username = "";
+my $home = "";
 my $accept = 0;
 GetOptions('help' => \$help,
 			'root!' => \$isRoot,
@@ -59,6 +59,11 @@ GetOptions('help' => \$help,
 			);
 
 if ($help) {
+	usage();
+	exit;
+}
+
+if (!$isRoot && !($home && $username)) {
 	usage();
 	exit;
 }

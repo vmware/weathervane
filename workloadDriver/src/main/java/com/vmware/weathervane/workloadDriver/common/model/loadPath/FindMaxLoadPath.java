@@ -196,7 +196,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
 				intervalNum = 0;
-				curPhase = Phase.NARROWIN;
+				curPhase = Phase.APPROXIMATE;
 				curUsers -= curRateStep;
 				if (curUsers <= 0) {
 					curRateStep /= 2;

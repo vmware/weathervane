@@ -40,6 +40,7 @@ sub usage {
 }
 
 my $pwd = `pwd`;
+chomp($pwd);
 unless (-e "$pwd/weathervane.pl") {
 	print "You must run this script from the directory containing the Weathervane release\n\n";
 	usage();

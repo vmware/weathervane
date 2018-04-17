@@ -20,6 +20,8 @@
 package AutoSetup;
 use strict;
 
+my $pwd = $ENV{'PWD'};
+
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 
@@ -64,7 +66,7 @@ sub setServiceManager {
 }
 
 sub forceLicenseAccept {
-	open( my $fileout, "/root/weathervane/Notice.txt" ) or die "Can't open file /root/weathervane/Notice.txt: $!\n";
+	open( my $fileout, "$pwd/Notice.txt" ) or die "Can't open file $pwd/Notice.txt: $!\n";
 	while (my $inline = <$fileout>) {
 		print $inline;
 	}
@@ -80,14 +82,14 @@ sub forceLicenseAccept {
 		$answer = lc($answer);
 	}
 	if ($answer eq "yes") {
-		open (my $file, ">/root/weathervane/.accept-autosetup") or die "Can't create file .accept-autosetup: $!\n";
+		open (my $file, ">$pwd/.accept-autosetup") or die "Can't create file .accept-autosetup: $!\n";
 		close $file;
 	} else {
 		exit -1;		
 	}
 }
 
-unless (-e "/root/weathervane/.accept-autosetup") {
+unless (-e "$pwd/.accept-autosetup") {
 	forceLicenseAccept();
 }
 
@@ -211,15 +213,15 @@ runAndLog( $fileout, "cp configFiles/host/$os/rsyslog.conf /etc/" );
 runAndLog( $fileout, "cp configFiles/host/$os/config /etc/selinux/" );
 runAndLog( $fileout, "cp configFiles/host/$os/login /etc/pam.d/login" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits.conf /etc/security/limits.conf" );
-runAndLog( $fileout, "cp configFiles/host/$os/bashrc /root/.bashrc" );
-runAndLog( $fileout, "rm -rf /root/.ssh" );
-runAndLog( $fileout, "cp -r configFiles/host/$os/ssh /root/.ssh" );
+runAndLog( $fileout, "cp configFiles/host/$os/bashrc $pwd/../.bashrc" );
+runAndLog( $fileout, "rm -rf $pwd/../.ssh" );
+runAndLog( $fileout, "cp -r configFiles/host/$os/ssh $pwd/../.ssh" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/certs/weathervane.crt /etc/pki/tls/certs/weathervane.crt" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/private/weathervane.key /etc/pki/tls/private/weathervane.key" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/private/weathervane.pem /etc/pki/tls/private/weathervane.pem" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/openssl.cnf /etc/pki/tls/openssl.cnf" );
 runAndLog( $fileout, "cp configFiles/host/$os/tls/weathervane.jks /etc/pki/tls/weathervane.jks" );
-runAndLog( $fileout, "chmod -R 700 /root/.ssh" );
+runAndLog( $fileout, "chmod -R 700 $pwd/../.ssh" );
 if ( $os eq "centos7" ) {
 	runAndLog( $fileout, "cp configFiles/host/$os/redhat-release /etc/." );
 }
@@ -309,8 +311,8 @@ runAndLog( $fileout, "mv apache-tomcat-8.5.$tomcat8vers /opt/" );
 runAndLog( $fileout, "ln -s /opt/apache-tomcat-8.5.$tomcat8vers /opt/apache-tomcat" );
 runAndLog( $fileout, "cp -r configFiles/host/$os/apache-tomcat-auction1 /opt/." );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/webapps" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.war /opt/apache-tomcat-auction1/webapps/." );
-runAndLog( $fileout, "cp /root/weathervane/dist/auction.war /opt/apache-tomcat-auction1/webapps/." );
+runAndLog( $fileout, "cp $pwd/dist/auctionWeb.war /opt/apache-tomcat-auction1/webapps/." );
+runAndLog( $fileout, "cp $pwd/dist/auction.war /opt/apache-tomcat-auction1/webapps/." );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/bin" );
 runAndLog( $fileout, "cp /opt/apache-tomcat/bin/tomcat-juli.jar /opt/apache-tomcat-auction1/bin/" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/work" );
@@ -330,7 +332,7 @@ runAndLog( $fileout, "yum install -y httpd" );
 runAndLog( $fileout, "mkdir /var/cache/apache" );
 runAndLog( $fileout, "chmod 777 /var/cache/apache" );
 runAndLog( $fileout, "mkdir -p /var/www/vhosts/auction/html" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.tgz /var/www/vhosts/auction/html/" );
+runAndLog( $fileout, "cp $pwd/dist/auctionWeb.tgz /var/www/vhosts/auction/html/" );
 runAndLog( $fileout, "cd /var/www/vhosts/auction/html; tar zxf auctionWeb.tgz 2>&1; rm -r auctionWeb.tgz" );
 runAndLog( $fileout, "mkdir /etc/systemd/system/httpd.service.d" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/httpd.service.d/limits.conf" );
@@ -346,8 +348,8 @@ runAndLog( $fileout, "yum install -y mod_ssl" );
 runAndLog( $fileout,
 	"curl -s http://www.dest-unreach.org/socat/download/socat-1.7.3.0.tar.gz -o /tmp/socat-1.7.3.0.tar.gz" );
 runAndLog( $fileout, "tar zxf /tmp/socat-1.7.3.0.tar.gz" );
-runAndLog( $fileout, "cd /root/weathervane/socat-1.7.3.0;./configure 2>&1;make 2>&1;make install" );
-runAndLog( $fileout, "rm -rf /root/weathervane/socat-1.7.3.0" );
+runAndLog( $fileout, "cd $pwd/socat-1.7.3.0;./configure 2>&1;make 2>&1;make install" );
+runAndLog( $fileout, "rm -rf $pwd/socat-1.7.3.0" );
 runAndLog( $fileout, "mkdir /etc/systemd/system/haproxy.service.d" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/haproxy.service.d/limits.conf" );
 
@@ -356,8 +358,8 @@ print $fileout "Installing sysstat\n";
 runAndLog( $fileout,
 	"curl -s http://sebastien.godard.pagesperso-orange.fr/sysstat-11.1.4.tar.gz -o /tmp/sysstat-11.1.4.tar.gz" );
 runAndLog( $fileout, "tar zxf /tmp/sysstat-11.1.4.tar.gz" );
-runAndLog( $fileout, "cd /root/weathervane/sysstat-11.1.4;./configure 2>&1;make 2>&1;make install" );
-runAndLog( $fileout, "rm -rf /root/weathervane/sysstat-11.1.4" );
+runAndLog( $fileout, "cd $pwd/sysstat-11.1.4;./configure 2>&1;make 2>&1;make install" );
+runAndLog( $fileout, "rm -rf $pwd/sysstat-11.1.4" );
 
 print "Installing nginx\n";
 print $fileout "Installing nginx\n";
@@ -373,7 +375,7 @@ runAndLog( $fileout, "yum install -y nginx" );
 runAndLog( $fileout, "mkdir /var/cache/nginx" );
 runAndLog( $fileout, "chown -R nginx:nginx /var/cache/nginx" );
 runAndLog( $fileout, "rm -r /usr/share/nginx/html/*" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.tgz /usr/share/nginx/html/" );
+runAndLog( $fileout, "cp $pwd/dist/auctionWeb.tgz /usr/share/nginx/html/" );
 runAndLog( $fileout, "cd /usr/share/nginx/html; tar zxf auctionWeb.tgz 2>&1; rm -r auctionWeb.tgz" );
 runAndLog( $fileout, "chown -R nginx:nginx /usr/share/nginx" );
 runAndLog( $fileout, "mkdir /etc/systemd/system/nginx.service.d" );
@@ -397,7 +399,7 @@ runAndLog( $fileout, "yum install -y mysql-community-server" );
 if ( $os eq "centos6" ) {
 	runAndLog( $fileout, "ln -s /etc/init.d/mysqld /etc/init.d/mysql" );
 }
-runAndLog( $fileout, "cp /root/weathervane/configFiles/mysql/my.cnf /etc/my.cnf" );
+runAndLog( $fileout, "cp $pwd/configFiles/mysql/my.cnf /etc/my.cnf" );
 runAndLog( $fileout, "chown -R mysql:mysql /mnt/dbData/mysql" );
 runAndLog( $fileout, "chown -R mysql:mysql /mnt/dbLogs/mysql" );
 runAndLog( $fileout, "service mysqld start" );
@@ -464,7 +466,7 @@ runAndLog( $fileout, "rm -f erlang-17.4-1.el6.x86_64.rpm" );
 runAndLog( $fileout,
 	"yum install -y http://www.rabbitmq.com/releases/rabbitmq-server/v3.5.3/rabbitmq-server-3.5.3-1.noarch.rpm" );
 
-#runAndLog($fileout, "yum install -y /root/weathervane/configFiles/host/$os/rabbitmq-server-3.3.5-1.noarch.rpm");
+#runAndLog($fileout, "yum install -y $pwd/configFiles/host/$os/rabbitmq-server-3.3.5-1.noarch.rpm");
 runAndLog( $fileout, "chkconfig rabbitmq-server off" );
 runAndLog( $fileout, "rabbitmq-plugins enable rabbitmq_management" );
 runAndLog( $fileout, "cp configFiles/host/$os/rabbitmqadmin /usr/local/bin/" );

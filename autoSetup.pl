@@ -39,7 +39,7 @@ sub usage {
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
 
-my $pwd = $ENV{'PWD'};
+my $pwd = `pwd`;
 unless (-e "$pwd/weathervane.pl") {
 	print "You must run this script from the directory containing the Weathervane release\n\n";
 	usage();

@@ -93,9 +93,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long narrowinMinRateStep = maxUsers / 200;
 
 	@JsonIgnore
-	private final long shortWarmupIntervalDurationSec = 15;
+	private final long shortWarmupIntervalDurationSec = 10;
 	@JsonIgnore
-	private final long shortIntervalDurationSec = 15;
+	private final long shortIntervalDurationSec = 10;
 
 	@JsonIgnore
 	private final long mediumRampIntervalDurationSec = 180;
@@ -183,7 +183,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
 					 * is not used in initialRamp
 					 */
-					prevIntervalPassed = rollup.isIntervalPassedRT();
+					prevIntervalPassed = (rollup.getPctPassing() > 0.99);
 					getIntervalStatsSummaries().add(rollup);
 				}
 				logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = "
@@ -197,6 +197,7 @@ public class FindMaxLoadPath extends LoadPath {
 			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
 				intervalNum = 0;
 				curPhase = Phase.NARROWIN;
+				curUsers -= curRateStep;
 				// No ramp on first APPROXIMATE interval
 				nextSubInterval = SubInterval.WARMUP;
 				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers

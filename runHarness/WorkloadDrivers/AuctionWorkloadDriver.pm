@@ -1808,7 +1808,6 @@ sub getWorkloadStatsSummary {
 
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
-	{
 		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
 		my $prefix = "-AI${appInstanceNum}";
 

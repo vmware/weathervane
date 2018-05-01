@@ -20,8 +20,10 @@ import java.util.Map;
 import java.util.Random;
 
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers.BidLeaveOtherTransitionChooser;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers.BidOtherTransitionChooser;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers.GetNextBidTransitionChooser;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers.LogoutJoinLeaveTransitionChooser;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers.OtherLogoutJoinTransitionChooser;
 import com.vmware.weathervane.workloadDriver.common.chooser.DefaultTransitionChooser;
 import com.vmware.weathervane.workloadDriver.common.chooser.TransitionChooser;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
@@ -44,6 +46,14 @@ public class AuctionTransitionChooserFactory implements TransitionChooserFactory
 		chooser = new BidLeaveOtherTransitionChooser(random);
 		chooser.setBehavior(behavior);
 		nameToTCMap.put("BidLeaveOther", chooser);
+		
+		chooser = new OtherLogoutJoinTransitionChooser(random);
+		chooser.setBehavior(behavior);
+		nameToTCMap.put("OtherLogoutJoin", chooser);
+		
+		chooser = new BidOtherTransitionChooser(random);
+		chooser.setBehavior(behavior);
+		nameToTCMap.put("BidOther", chooser);
 		
 		chooser = new GetNextBidTransitionChooser(random);
 		chooser.setBehavior(behavior);

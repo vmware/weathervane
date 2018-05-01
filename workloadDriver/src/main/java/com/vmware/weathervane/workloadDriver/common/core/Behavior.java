@@ -260,8 +260,6 @@ public class Behavior implements OperationCompleteCallback {
 				logger.debug(msg);
 			}
 
-			long now = System.currentTimeMillis();
-
 			/*
 			 * Check whether the just completed operation is one that causes a
 			 * reset of the user state (e.g. a logout)

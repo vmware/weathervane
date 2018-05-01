@@ -670,7 +670,7 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 			 * its primary behavior
 			 */
 			if (this.isFailed()) {
-				logger.warn("Operation:run restarting userId = " + _user.getId() + ", operation = "
+				logger.info("Operation:run restarting userId = " + _user.getId() + ", operation = "
 						+ getOperationName() + ", behavior UUID " + _behavior.getBehaviorId() 
 						+ " Failure Reason = " + this.getFailureReason());
 				this.getUser().startReset();

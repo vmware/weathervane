@@ -82,16 +82,17 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private String maxPassIntervalName = null;
 
-	// The initial step is 1/20 of maxUsers
 	@JsonIgnore
-	private long curRateStep = maxUsers / 20;
-	@JsonIgnore
-	private final long initialRampRateStep = 250;
-	@JsonIgnore
-	private final long approximateMinRateStep = maxUsers / 50;
-	@JsonIgnore
-	private final long narrowinMinRateStep = maxUsers / 200;
+	private final long initialRampRateStep = 500;
 
+	@JsonIgnore
+	private long curRateStep;
+	@JsonIgnore
+	private long minRateStep;
+
+	@JsonIgnore
+	private int numSucessiveIntervalsPassed = 0;
+	
 	@JsonIgnore
 	private final long shortWarmupIntervalDurationSec = 20;
 	@JsonIgnore
@@ -194,14 +195,23 @@ public class FindMaxLoadPath extends LoadPath {
 			 * If we have reached max users, or the previous interval failed, then to go to
 			 * the APPROXIMATE phase
 			 */
-			if (!prevIntervalPassed || ((curUsers + curRateStep) > maxUsers)) {
-				intervalNum = 0;
-				curPhase = Phase.APPROXIMATE;
+			if (!prevIntervalPassed || ((curUsers + initialRampRateStep) > maxUsers)) {
+				
+				/*
+				 * When moving to APPROXIMATE, the initial rateStep is 1/10 of curUsers, 
+				 * and the minRateStep is 1/20 of curUsers
+				 */
+				curRateStep = curUsers / 10;
+				minRateStep = curUsers / 20;
 				curUsers -= curRateStep;
 				if (curUsers <= 0) {
 					curRateStep /= 2;
 					curUsers += curRateStep;
 				}
+
+				intervalNum = 0;
+				curPhase = Phase.APPROXIMATE;
+				
 				// No ramp on first APPROXIMATE interval
 				nextSubInterval = SubInterval.WARMUP;
 				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers
@@ -284,15 +294,27 @@ public class FindMaxLoadPath extends LoadPath {
 					maxPassIntervalName = curInterval.getName();
 				}
 
+				long nextRateStep = curRateStep;
+				
+				numSucessiveIntervalsPassed++;
+				if (numSucessiveIntervalsPassed >= 2) {
+					/*
+					 * Have passed twice in a row, increase the rate step to possibly 
+					 * shorten run
+					 */
+					nextRateStep *= 2;
+					
+					numSucessiveIntervalsPassed = 0;
+				}
+
 				/*
 				 * The next interval needs to be less than minFailUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				long nextRateStep = curRateStep;
 				while ((curUsers + nextRateStep) >= minFailUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < approximateMinRateStep) {
-						nextRateStep = approximateMinRateStep;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
 						break;
 					}
 				}
@@ -303,10 +325,17 @@ public class FindMaxLoadPath extends LoadPath {
 					 */
 					logger.debug(
 							"getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
+					/*
+					 * When moving to NARROWIN, the initial rateStep is 1/20 of curUsers, 
+					 * and the minRateStep is 1/50 of curUsers
+					 */
+					curRateStep = curUsers / 20;
+					minRateStep = curUsers / 50;
+
 					intervalNum = 0;
+					numSucessiveIntervalsPassed = 0;
 					curPhase = Phase.NARROWIN;
 					nextSubInterval = SubInterval.WARMUP;
-					curRateStep /= 2;
 					return getNextNarrowInInterval();
 				}
 
@@ -318,15 +347,27 @@ public class FindMaxLoadPath extends LoadPath {
 					minFailUsers = curUsers;
 				}
 
+				long nextRateStep = curRateStep;
+				
+				numSucessiveIntervalsPassed--;
+				if (numSucessiveIntervalsPassed <= -2) {
+					/*
+					 * Have failed twice in a row, increase the rate step to possibly 
+					 * shorten run
+					 */
+					nextRateStep *= 2;
+					
+					numSucessiveIntervalsPassed = 0;
+				}
+				
 				/*
 				 * The next interval needs to be less than minFailUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				long nextRateStep = curRateStep;
 				while ((curUsers - nextRateStep) <= maxPassUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < approximateMinRateStep) {
-						nextRateStep = approximateMinRateStep;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
 						break;
 					}
 				}
@@ -337,10 +378,17 @@ public class FindMaxLoadPath extends LoadPath {
 					 */
 					logger.debug(
 							"getNextApproximateInterval: Can't get closer to maximum with minRateStep, going to next phase");
+					/*
+					 * When moving to NARROWIN, the initial rateStep is 1/20 of curUsers, 
+					 * and the minRateStep is 1/50 of curUsers
+					 */
+					curRateStep = curUsers / 20;
+					minRateStep = curUsers / 50;
+
 					intervalNum = 0;
+					numSucessiveIntervalsPassed = 0;
 					curPhase = Phase.NARROWIN;
 					nextSubInterval = SubInterval.WARMUP;
-					curRateStep /= 2;
 					return getNextNarrowInInterval();
 				}
 
@@ -462,15 +510,27 @@ public class FindMaxLoadPath extends LoadPath {
 					maxPassIntervalName = curInterval.getName();
 				}
 
+				long nextRateStep = curRateStep;
+				
+				numSucessiveIntervalsPassed++;
+				if (numSucessiveIntervalsPassed >= 2) {
+					/*
+					 * Have passed twice in a row, increase the rate step to possibly 
+					 * shorten run
+					 */
+					nextRateStep *= 2;
+					
+					numSucessiveIntervalsPassed = 0;
+				}
+
 				/*
 				 * The next interval needs to be less than minFailUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				long nextRateStep = curRateStep;
 				while ((curUsers + nextRateStep) >= minFailUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < narrowinMinRateStep) {
-						nextRateStep = narrowinMinRateStep;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
 						break;
 					}
 				}
@@ -493,15 +553,26 @@ public class FindMaxLoadPath extends LoadPath {
 					minFailUsers = curUsers;
 				}
 
+				long nextRateStep = curRateStep;
+				numSucessiveIntervalsPassed--;
+				if (numSucessiveIntervalsPassed <= -2) {
+					/*
+					 * Have failed twice in a row, increase the rate step to possibly 
+					 * shorten run
+					 */
+					nextRateStep *= 2;
+					
+					numSucessiveIntervalsPassed = 0;
+				}
+
 				/*
 				 * The next interval needs to be less than minFailUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				long nextRateStep = curRateStep;
 				while ((curUsers - nextRateStep) <= maxPassUsers) {
 					nextRateStep /= 2;
-					if (nextRateStep < narrowinMinRateStep) {
-						nextRateStep = narrowinMinRateStep;
+					if (nextRateStep < minRateStep) {
+						nextRateStep = minRateStep;
 						break;
 					}
 				}

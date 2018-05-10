@@ -3214,6 +3214,14 @@ $parameters{"workloadProfile"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"appInstanceSize"} = {
+	"type"      => "=s",
+	"default"   => "custom",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"auctions"} = {
 	"type"      => "=i",
 	"default"   => 0,

@@ -177,7 +177,13 @@ override 'checkConfig' => sub {
 
 	my $validWorkloadProfilesRef = $WeathervaneTypes::workloadProfiles->{"auction"};
 	if ( $self->getParamValue('workloadProfile') ~~ @$validWorkloadProfilesRef ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The Workload-Profile for Auction must be one of: @$validWorkloadProfilesRef");
+		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The Workload-Profile for the Auction workload must be one of: @$validWorkloadProfilesRef");
+		return 0;
+	}
+
+	my $validAppInstanceSizes = $WeathervaneTypes::appInstanceSizes->{"auction"};
+	if ( $self->getParamValue('appInstanceSize') ~~ @$validAppInstanceSizes ) {
+		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
 		return 0;
 	}
 

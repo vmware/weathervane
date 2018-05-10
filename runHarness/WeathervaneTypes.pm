@@ -79,10 +79,7 @@ our @configurationSizes = ( 'micro', 'small', 'medium', 'large');
 
 # These are all of the workload profiles that are supported
 our %workloadProfiles = (
-	"auction" => 
-	["official",      "attendAuctions",       "addItem",            "getImageForItem",
-	"getBidHistory", "getAttendanceHistory", "getPurchaseHistory", "getItemDetail",
-	"loginLogout",   "addImageForItem",      "joinLeave",          "noAddImages"],
+	"auction" => ["official", "revised"],
 	);
 
 # Define a ServiceType to be one of a set of strings

@@ -304,7 +304,6 @@ sub createRunConfigHash {
 	my $workloadNum    = $self->getParamValue('workloadNum');
 
 	my $tmpDir           = $self->getParamValue('tmpDir');
-	my $workloadProfile  = $self->getParamValue('workloadProfile');
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $steadyState      = $self->getParamValue('steadyState');
 	my $rampDown         = $self->getParamValue('rampDown');
@@ -315,6 +314,12 @@ sub createRunConfigHash {
 	my $rampupInterval = $self->getParamValue('rampupInterval');
 	my $useVirtualIp   = $self->getParamValue('useVirtualIp');
 	my $secondariesRef = $self->secondaries;
+
+	my $workloadProfile  = $self->getParamValue('workloadProfile');
+	my $behaviorSpecName = "auctionMainUser";
+	if ($workloadProfile eq "revised") {
+		$behaviorSpecName = "auctionRevisedMainUser";
+	}
 
 	my $port = $self->portMap->{'http'};
 
@@ -343,7 +348,7 @@ sub createRunConfigHash {
 
 		my $workload = {};
 		$workload->{'name'}             = "appInstance" . $instanceNum;
-		$workload->{"behaviorSpecName"} = "auctionMainUser";
+		$workload->{"behaviorSpecName"} = $behaviorSpecName;
 		$workload->{"maxUsers"}         = $appInstance->getMaxLoadedUsers();
 
 		if ( $self->getParamValue('useThinkTime') ) {
@@ -493,7 +498,6 @@ override 'configure' => sub {
 	$self->appInstances($appInstancesRef);
 
 	my $workloadProfileHome = $self->getParamValue('workloadProfileDir');
-	my $workloadProfile     = $self->getParamValue('workloadProfile');
 	my $rampUp              = $self->getParamValue('rampUp');
 	my $steadyState         = $self->getParamValue('steadyState');
 	my $rampDown            = $self->getParamValue('rampDown');
@@ -576,11 +580,13 @@ override 'configure' => sub {
 
 		# The passingPct was not set, just use the default that is in the
 		# behaviorSpec by copying the specs
+`cp $sourceBehaviorSpecDirName/auction.revisedMainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
 	}
 	else {
 		my @behaviorSpecFiles = (
+			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
 			'auction.followAuction.behavior.json'
 		);
@@ -1037,6 +1043,7 @@ sub initializeRun {
 	  "$tmpDir/configuration/workloadDriver/workload${workloadNum}";
 	my @behaviorSpecFiles = (
 		'auction.mainUser.behavior.json',
+		'auction.revisedMainUser.behavior.json',
 		'auction.followAuction.behavior.json'
 	);
 	foreach my $behaviorSpec (@behaviorSpecFiles) {

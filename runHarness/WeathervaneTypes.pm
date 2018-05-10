@@ -77,9 +77,14 @@ our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 our @configurationSizes = ( 'micro', 'small', 'medium', 'large');
 
-# These are all of the workload profiles that are supported
+# These are all of the workload profiles that are supported for each workload
 our %workloadProfiles = (
 	"auction" => ["official", "revised"],
+	);
+
+# These are all of the appInstance sizes that are supported for each workload
+our %appInstanceSizes = (
+	"auction" => ["custom", "small", "medium", "large"],
 	);
 
 # Define a ServiceType to be one of a set of strings

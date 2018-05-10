@@ -396,7 +396,7 @@ if ( $logger->is_debug() ) {
 }
 my $runManager = RunManagerFactory->getRunManager($runManagerParamHashRef);
 
-# Start by building the runManager.  It holds the entire structure needed for the run(s)
+# Build the runProcedure
 my $runProcedureParamHashRef =
   Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runManagerParamHashRef, "runProcInstance",
 	$runManagerParamHashRef->{'useAllSuffixes'} );

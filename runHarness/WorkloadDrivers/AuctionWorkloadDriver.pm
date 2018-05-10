@@ -2308,7 +2308,7 @@ sub isPassed {
 }
 
 sub parseStats {
-	my ( $self, $logDir ) = @_;
+	my ( $self ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -2316,6 +2316,7 @@ sub parseStats {
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->hostName;
+	my $tmpDir = $self->getParamValue( 'tmpDir' );
 
 	if ($self->resultsValid) {
 		return 1;
@@ -2404,8 +2405,8 @@ sub parseStats {
 		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
 		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
 		
-		open( RESULTFILE, "$logDir/run$suffix.log" )
-		  or die "Can't open $logDir/run$suffix.log: $!";
+		open( RESULTFILE, "$tmpDir/run$suffix.log" )
+		  or die "Can't open $tmpDir/run$suffix.log: $!";
 
 		while ( my $inline = <RESULTFILE> ) {
 	

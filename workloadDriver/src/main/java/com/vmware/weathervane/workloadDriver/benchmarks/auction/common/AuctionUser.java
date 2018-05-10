@@ -124,6 +124,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.I
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.LoginResponse;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.UserRepresentation;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.BidStrategy;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.LowerRandomBidStrategy;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.RandomBidStrategy;
 import com.vmware.weathervane.workloadDriver.common.chooser.Chooser;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs;
@@ -249,7 +250,7 @@ public class AuctionUser extends User {
 		
 		_randomGenerator = new Random();
 
-		_allBidStrategies.add(new RandomBidStrategy());
+		_allBidStrategies.add(new LowerRandomBidStrategy());
 	}
 
 	@Override

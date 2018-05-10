@@ -79,10 +79,11 @@ public class OtherLogoutJoinTransitionChooser extends DefaultTransitionChooser i
 			/*
 			 * Not attending max number of auctions. Join an auction
 			 */
+			logger.debug("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 2.");
 			selectedTransitionMatrix = 2;
 		} else {
-			logger.debug("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 1.");
-			selectedTransitionMatrix = 1;
+			logger.debug("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 0.");
+			selectedTransitionMatrix = 0;
 		}
 
 		TransitionChooserResponse response = new TransitionChooserResponse(selectedTransitionMatrix, behaviorsToStopAtStart, behaviorsToStopAtEnd, behaviorToUseAsDataSource);

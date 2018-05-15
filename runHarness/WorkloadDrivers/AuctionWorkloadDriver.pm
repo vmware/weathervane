@@ -1783,12 +1783,6 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $suffix           = $self->suffix;
-
-	`mkdir -p $destinationPath`;
-`$scpConnectString root\@$scpHostString:/tmp/run${suffix}.json $destinationPath/.`;
 }
 
 sub getResultMetrics {

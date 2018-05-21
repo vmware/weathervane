@@ -73,6 +73,9 @@ override 'getCpuMemConfig' => sub {
 	my $cpuInfo =
 `ssh  -o 'StrictHostKeyChecking no' root\@$hostname cat /proc/cpuinfo 2>&1`;
 	my $numCpus = () = $cpuInfo =~ /processor\s+\:\s+\d/gi;
+	if (!$numCpus || ($numCpus < 0)) {
+		$numCpus = 1;
+	}
 	$logger->debug("In getCpuMemConfig for $hostname. numCpus = $numCpus");
 	$self->cpus($numCpus);
 

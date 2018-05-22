@@ -251,6 +251,7 @@ public class AuctionUser extends User {
 		_randomGenerator = new Random();
 
 		_allBidStrategies.add(new LowerRandomBidStrategy());
+		_allBidStrategies.add(new RandomBidStrategy());
 	}
 
 	@Override

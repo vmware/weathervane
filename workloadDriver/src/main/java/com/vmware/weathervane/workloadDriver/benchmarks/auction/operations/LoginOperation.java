@@ -18,6 +18,7 @@ package com.vmware.weathervane.workloadDriver.benchmarks.auction.operations;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.omg.CosNaming._BindingIteratorImplBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,8 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PasswordProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PersonNameProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.BidStrategy;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.LowerRandomBidStrategy;
+import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.RandomBidStrategy;
 import com.vmware.weathervane.workloadDriver.common.chooser.Chooser;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
@@ -91,7 +94,13 @@ public class LoginOperation extends AuctionOperation implements  NeedsPersonName
 
 		// Choose a new bidding strategy to be used for the duration of this
 		// user's login
-		_bidStrategyChooser.chooseRandom();
+		BidStrategy choice = null;
+		if (this.getBehavior().getBehaviorSpec().getName().equals("auctionRevisedMainUser")) {
+			choice = new LowerRandomBidStrategy();
+		} else {
+			choice = new RandomBidStrategy();
+		}
+		_bidStrategyChooser.setChosen(choice);
 
 		logger.info("LoginOperation:loginStep behaviorID = " + this.getBehaviorId() + ", get password for userName =  " + _userName);
 		String pwd = _passwordProvider.getPasswordForPerson(_userName);

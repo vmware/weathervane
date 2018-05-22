@@ -27,12 +27,12 @@ public class Chooser<T> {
 	private static final Logger logger = LoggerFactory.getLogger(Chooser.class);
 
 	List<T> choices;
-	Holder<T> choosen;
+	Holder<T> chosen;
 	Random randGen;
 
 	public Chooser(List<T> choices, Holder<T> choosen, Random randGen) {
 		this.choices = choices;
-		this.choosen = choosen;
+		this.chosen = choosen;
 		this.randGen = randGen;
 	}
 
@@ -44,8 +44,15 @@ public class Chooser<T> {
 		int choice = (int) Math.floor(randVal * numChoices);
 		logger.debug("chooseRandom numChoices = " + choices.size() + ", randVal = " + randVal
 				+ ", choice = " + choice);
-		synchronized (choosen) {
-			choosen.set(choices.get(choice));
+		synchronized (chosen) {
+			chosen.set(choices.get(choice));
+		}
+	}
+
+	public void setChosen(T choice) {
+		logger.debug("setChosen ");
+		synchronized (chosen) {
+			chosen.set(choice);
 		}
 	}
 

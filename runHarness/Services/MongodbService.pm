@@ -359,7 +359,7 @@ sub startMongodServers {
 		$logger->debug("Starting mongod on $hostname, isReplicated = $isReplicated");
 		my $sshConnectString = $nosqlServer->host->sshConnectString;
 
-		my $cmdString = "$sshConnectString mongod -f /etc/mongod.conf ";
+		my $cmdString = "$sshConnectString mongod -f /etc/mongod.conf --bind_ip_all ";
 		if ($isReplicated) {
 			my $replicaName      = "auction" . $self->shardNum;
 			$cmdString .= " --replSet=$replicaName ";
@@ -400,8 +400,8 @@ sub startMongocServers {
 			# Start a config server on this host
 			print $dblog "Starting configserver$curCfgSvr on $mongoHostname, port $configPort\n";
 			$logger->debug("Starting configserver$curCfgSvr on $mongoHostname, port $configPort");
-			my $cmdOut = `$sshConnectString mongod -f /etc/mongoc$curCfgSvr.conf 2>&1`;
-			print $dblog "$sshConnectString mongod -f /etc/mongoc$curCfgSvr.conf 2>&1\n";
+			my $cmdOut = `$sshConnectString mongod -f /etc/mongoc$curCfgSvr.conf --bind_ip_all  2>&1`;
+			print $dblog "$sshConnectString mongod -f /etc/mongoc$curCfgSvr.conf --bind_ip_all  2>&1\n";
 			print $dblog $cmdOut;
 			if ( !( $cmdOut =~ /success/ ) ) {
 				die "Couldn't start configserver$curCfgSvr on $mongoHostname : $cmdOut\n";

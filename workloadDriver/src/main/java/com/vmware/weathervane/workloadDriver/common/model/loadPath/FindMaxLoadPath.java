@@ -52,9 +52,15 @@ public class FindMaxLoadPath extends LoadPath {
 	private Phase curPhase = Phase.INITIALRAMP;
 
 	/*
-	 * Each interval in a in a findMax run has two sub-intervals: - WARMUP: Period
-	 * used to let the users log in and get to a steady state - DECISION: Period
-	 * used to decide whether the interval passes the QOS requirements of the phase.
+	 * Each interval in a in a findMax run has up to three sub-intervals: 
+	 * - RAMP: Transition period between intervals to avoid large jumps in the 
+	 *   number of users. In the NARROWING pahase, if the last interval failed, 
+	 *   then the RAMP sub-interval will start with a recovery interval at a lower 
+	 *   load in order to allow the SUT to clear any backlogs before the DECISION
+	 *   phase
+	 * - WARMUP: Period used to let the users log in and get to a steady state
+	 * - DECISION: Period used to decide whether the interval passes the 
+	 *   QOS requirements of the phase.
 	 */
 	private enum SubInterval {
 		RAMP, WARMUP, DECISION
@@ -96,7 +102,7 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private final long shortWarmupIntervalDurationSec = 20;
 	@JsonIgnore
-	private final long shortIntervalDurationSec = 20;
+	private final long shortIntervalDurationSec = 120;
 
 	@JsonIgnore
 	private final long mediumRampIntervalDurationSec = 180;
@@ -400,6 +406,14 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
+			long rampStartUsers = prevCurUsers;
+			if (!prevIntervalPassed) {
+				// Add a recovery interval before the ramp intervals
+				rampStartUsers /= 2;
+				UniformLoadInterval recoveryInterval = new UniformLoadInterval(rampStartUsers, 600);
+				recoveryInterval.setName("APPROXIMATE-Recovery-" + intervalNum);
+				rampIntervals.add(recoveryInterval);
+			}
 			rampIntervals.addAll(generateRampIntervals("APPROXIMATE-Ramp-" + intervalNum + "-", mediumRampIntervalDurationSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
@@ -596,7 +610,15 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampIntervals.addAll(generateRampIntervals("NARROWIN-Ramp-" + intervalNum + "-", longRampIntervalDurationSec, 15, prevCurUsers, curUsers));
+			long rampStartUsers = prevCurUsers;
+			if (!prevIntervalPassed) {
+				// Add a recovery interval before the ramp intervals
+				rampStartUsers /= 2;
+				UniformLoadInterval recoveryInterval = new UniformLoadInterval(rampStartUsers, 600);
+				recoveryInterval.setName("NARROWIN-Recovery-" + intervalNum);
+				rampIntervals.add(recoveryInterval);
+			}
+			rampIntervals.addAll(generateRampIntervals("NARROWIN-Ramp-" + intervalNum + "-", longRampIntervalDurationSec, 15, rampStartUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
 

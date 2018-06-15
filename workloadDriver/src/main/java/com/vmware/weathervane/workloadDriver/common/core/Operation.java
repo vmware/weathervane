@@ -767,7 +767,7 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 		_requestsOutstanding.decrementAndGet();
 		
 		// Record the failure and then reschedule the operation
-		// so that the failure is recorded in the Scoreboard
+		// so that the failure is recorded 
 		_currentResponseStatus = null;
 		_currentResponseHeaders = null;
 		_currentResponseContent = null;
@@ -780,12 +780,12 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 			if (outstandingGets > 0) {
 				// There are other GETs outstanding. Just clean this one up and
 				// return
-				logger.warn("httpGetRequestFailed for behavior UUID " + _behavior.getBehaviorId() + " outstandingGets is still greater than zero: "
+				logger.info("httpGetRequestFailed for behavior UUID " + _behavior.getBehaviorId() + " outstandingGets is still greater than zero: "
 						+ outstandingGets);
 				return;
 			}
 		}
-		logger.debug("httpRequestFailed for behavior UUID " + _behavior.getBehaviorId() + ", rescheduling operation ");
+		logger.info("httpRequestFailed for behavior UUID " + _behavior.getBehaviorId() + ", rescheduling operation. ex = " + ex.getMessage());
 
 		/*
 		 * Schedule the operation for immediate re-execution.

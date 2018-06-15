@@ -326,7 +326,7 @@ project(':workloadDriver') {
 	}
 	
 	ext {
-		nettyVersion = "4.1.6.Final"
+		nettyVersion = "4.1.25.Final"
 		apacheCommonsMathVersion = "3.5"
 		coltVersion = "1.2.0"
 		commonsPoolVersion = "1.5.6"
@@ -338,8 +338,8 @@ project(':workloadDriver') {
 	dependencies { 
 
 		compile "io.netty:netty-all:$nettyVersion"
-		compile "io.netty:netty-tcnative:1.1.33.Fork23:linux-x86_64-fedora"
-		compile "io.netty:netty-tcnative:1.1.33.Fork23:linux-x86_64"
+		compile "io.netty:netty-tcnative:2.0.8.Final:linux-x86_64-fedora"
+		compile "io.netty:netty-tcnative:2.0.8.Final:linux-x86_64"
 
 		compile "org.springframework.boot:spring-boot-starter-web"
 		testCompile "org.springframework.boot:spring-boot-starter-test" 

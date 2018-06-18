@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:repository="http://www.springframework.org/schema/data/repository"
+	xsi:schemaLocation="http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+		http://www.springframework.org/schema/data/repository http://www.springframework.org/schema/data/repository/spring-repository.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<bean id="readPreferenceSecondary" class="com.mongodb.ReadPreference"
+			factory-method="secondary"/>
+	<bean id="readPreferencePrimary" class="com.mongodb.ReadPreference"
+			factory-method="primary"/>
+	
+	<bean id="auctionMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="auction" />
+		<property name="readPreference" ref="readPreferencePrimary"/>
+	</bean>
+
+	<bean id="bidMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="bid" />
+		<property name="readPreference" ref="readPreferencePrimary"/>
+	</bean>
+
+	<bean id="attendanceRecordMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="attendanceRecord" />
+		<property name="readPreference" ref="readPreferencePrimary"/>
+	</bean>
+
+
+	<bean id="imageInfoMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="imageInfo" />
+		<property name="readPreference" ref="readPreferencePrimary"/>
+	</bean>
+
+	<bean id="fullImageMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="auctionFullImages" />
+		<property name="readPreference" ref="readPreferenceSecondary"/>
+	</bean>
+
+	<bean id="previewImageMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="auctionPreviewImages" />
+		<property name="readPreference" ref="readPreferenceSecondary"/>
+	</bean>
+
+	<bean id="thumbnailImageMongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg ref="auctionMongo" />
+		<constructor-arg name="databaseName" value="auctionThumbnailImages" />
+		<property name="readPreference" ref="readPreferenceSecondary"/>
+	</bean>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="auctionMongoTemplate">
+		<repository:include-filter type="regex" expression=".*BenchmarkInfo.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="bidMongoTemplate">
+		<repository:include-filter type="regex" expression=".*Bid.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="attendanceRecordMongoTemplate">
+		<repository:include-filter type="regex" expression=".*AttendanceRecord.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="imageInfoMongoTemplate">
+		<repository:include-filter type="regex" expression=".*ImageInfo.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="fullImageMongoTemplate">
+		<repository:include-filter type="regex" expression=".*ImageFull.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="previewImageMongoTemplate">
+		<repository:include-filter type="regex" expression=".*ImagePreview.*"/>
+	</mongo:repositories>
+
+	<mongo:repositories base-package="com.vmware.weathervane.auction.data.repository" mongo-template-ref="thumbnailImageMongoTemplate">
+		<repository:include-filter type="regex" expression=".*ImageThumbnail.*"/>
+	</mongo:repositories>
+
+	<bean id="mongoOptions" class="com.vmware.weathervane.auction.data.repository.MongoClientOptionsFactoryBean">
+		<property name="connectionsPerHost" value="400" />
+		<property name="threadsAllowedToBlockForConnectionMultiplier" value="4" />
+	</bean>
+	
+	<beans profile="singleMongo">
+		<bean id="serverAddress" class="com.mongodb.ServerAddress">
+			<constructor-arg name="host" value="${MONGODB_HOST:LiveAuctionNosql1}"/>
+			<constructor-arg name="port" value="${MONGODB_PORT:27017}"/>		
+		</bean>
+	
+		<bean id="auctionMongo" class="com.mongodb.MongoClient">
+			<constructor-arg name="addr" ref="serverAddress"/>
+			<constructor-arg name="options" ref="mongoOptions"/>
+		</bean>
+	</beans>
+
+	<beans profile="shardedMongo">
+		<bean id="serverAddress" class="com.mongodb.ServerAddress">
+			<constructor-arg name="host" value="${MONGODB_HOST:localhost}"/>
+			<constructor-arg name="port" value="${MONGODB_PORT:27017}"/>		
+		</bean>
+	
+		<bean id="auctionMongo" class="com.mongodb.MongoClient">
+			<constructor-arg name="addr" ref="serverAddress"/>
+			<constructor-arg name="options" ref="mongoOptions"/>
+		</bean>
+	</beans>
+	
+	<beans profile="replicatedMongo">
+		<mongo:mongo-client id="auctionMongo" replica-set="${MONGODB_REPLICA_SET}">
+			<mongo:client-options 
+			connections-per-host="400"
+			threads-allowed-to-block-for-connection-multiplier="4"
+			write-concern="ACKNOWLEDGED"
+			/>
+		</mongo:mongo-client>
+	</beans>
+	
+</beans>

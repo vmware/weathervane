@@ -264,46 +264,44 @@ override 'getServiceConfigParameters' => sub {
 		}
 		$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
 
-		if ($serviceType eq "appServer") {	
-			if ( $service->getParamValue('randomizeImages') ) {
-				$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
-			}
-			else {
-				$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
-			}
-		
-			my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
-			if (!$newBidQueueConcurrency) {
-				$newBidQueueConcurrency = $numCpus;
-			}		
-			$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
-
-			# Turn on imageWriters in the application
-			if ( $service->getParamValue('useImageWriterThreads') ) {
-				if ( $service->getParamValue('imageWriterThreads') ) {
-	
-					# value was set, overriding the default
-					$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $service->getParamValue('imageWriterThreads') . " ";
-				}
-				else {
-	
-					my $iwThreads = floor( $numCpus / 2.0 );
-					if ( $iwThreads < 1 ) {
-						$iwThreads = 1;
-					}
-					$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $iwThreads . " ";
-
-				}
-
-				$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=true ";
-			}
-			else {
-				$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=false ";
-			}
-			
-			$jvmOpts .= " -DNUMAUCTIONEERTHREADS=" . $service->getParamValue('numAuctioneerThreads') . " ";
-			
+		if ( $service->getParamValue('randomizeImages') ) {
+			$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
 		}
+		else {
+			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
+		}
+		
+		my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
+		if (!$newBidQueueConcurrency) {
+			$newBidQueueConcurrency = $numCpus;
+		}		
+		$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
+
+		# Turn on imageWriters in the application
+		if ( $service->getParamValue('useImageWriterThreads') ) {
+			if ( $service->getParamValue('imageWriterThreads') ) {
+	
+				# value was set, overriding the default
+				$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $service->getParamValue('imageWriterThreads') . " ";
+			}
+			else {
+
+				my $iwThreads = floor( $numCpus / 2.0 );
+				if ( $iwThreads < 1 ) {
+					$iwThreads = 1;
+				}
+				$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $iwThreads . " ";
+
+			}
+
+			$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=true ";
+		}
+		else {
+			$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=false ";
+		}
+			
+		$jvmOpts .= " -DNUMAUCTIONEERTHREADS=" . $service->getParamValue('numAuctioneerThreads') . " ";
+			
 		
 		$jvmOpts .= " -DNUMCLIENTUPDATETHREADS=" . $service->getParamValue('numClientUpdateThreads') . " ";
 

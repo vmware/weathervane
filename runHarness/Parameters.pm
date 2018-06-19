@@ -1914,7 +1914,7 @@ $parameters{"ssl"} = {
 $parameters{"randomizeImages"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls whether to add random noise to images before writing them to the imageStore.",
 	"showUsage" => 0,
 };
@@ -1922,7 +1922,7 @@ $parameters{"randomizeImages"} = {
 $parameters{"useImageWriterThreads"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls whether to use separate threads for writing images in the Auction application.",
 	"showUsage" => 0,
 };
@@ -1930,7 +1930,6 @@ $parameters{"useImageWriterThreads"} = {
 $parameters{"imageWriterThreads"} = {
 	"type"    => "=i",
 	"default" => 0,
-	"parent"  => "appServer",
 	"usageText" =>
 "Controls how many threads to use for writing images out by the Auction application.  Setting this overrides the default, which is 5 threads/cpu on the app server.",
 	"showUsage" => 0,
@@ -1947,7 +1946,7 @@ $parameters{"numClientUpdateThreads"} = {
 $parameters{"numAuctioneerThreads"} = {
 	"type"      => "=i",
 	"default"   => 2,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls how many threads to use for running auctioneers in the Auction application. ",
 	"showUsage" => 0,
 };

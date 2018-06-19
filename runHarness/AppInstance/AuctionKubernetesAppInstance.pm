@@ -262,6 +262,7 @@ override 'getServiceConfigParameters' => sub {
 		if (!$highBidQueueConcurrency) {
 			$highBidQueueConcurrency = $numCpus;
 		}
+		$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
 
 		if ($serviceType eq "appServer") {	
 			if ( $service->getParamValue('randomizeImages') ) {
@@ -275,7 +276,6 @@ override 'getServiceConfigParameters' => sub {
 			if (!$newBidQueueConcurrency) {
 				$newBidQueueConcurrency = $numCpus;
 			}		
-			$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
 			$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
 
 			# Turn on imageWriters in the application

@@ -24,12 +24,8 @@ package com.vmware.weathervane.auction.service.exception;
  * @author Hal
  *
  */
-public class AuctionNotActiveException extends LiveAuctionServiceException {
+public class AuctionNotActiveException extends BidServiceException {
 
-	public AuctionNotActiveException() {
-		super();
-	}
-	
 	public AuctionNotActiveException(String msg) {
 		super(msg);
 	}

@@ -23,17 +23,11 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 	<http pattern="/images/**" security="none"/>
 
 	<http create-session="stateless" entry-point-ref="entryPoint" use-expressions="true">
-		<intercept-url pattern="/login" access="permitAll" />
 		<intercept-url pattern="/javasimon/**" access="permitAll" />
 		<intercept-url pattern="/healthCheck" access="permitAll" />
 		<intercept-url pattern="/**" access="permitAll" method="OPTIONS" />
-		<intercept-url pattern="/item/*/image/*" access="permitAll" method="GET" />
-		<intercept-url pattern="/item/*/image/*/cacheable" access="permitAll" method="GET" />
-		<intercept-url pattern="/live/auction/isMaster" access="permitAll" method="GET" />
-		<intercept-url pattern="/live/auction/prepareForShutdown" access="permitAll" method="GET" />
-		<intercept-url pattern="/live/auction/release" access="permitAll" method="GET" />
-		<intercept-url pattern="/user" access="permitAll" method="POST" />
-		<intercept-url pattern="/image/**" access="permitAll" method="GET" />
+		<intercept-url pattern="/bid/prepareForShutdown" access="permitAll" method="GET" />
+		<intercept-url pattern="/bid/release" access="permitAll" method="GET" />
 		<intercept-url pattern="/**" access="hasRole('watcher')" />
 		<custom-filter ref="restPreauthFilter" position="PRE_AUTH_FILTER" />
 	</http>

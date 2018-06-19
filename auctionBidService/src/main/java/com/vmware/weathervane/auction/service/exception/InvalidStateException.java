@@ -24,12 +24,8 @@ package com.vmware.weathervane.auction.service.exception;
  * @author Hal
  *
  */
-public class InvalidStateException extends LiveAuctionServiceException {
+public class InvalidStateException extends BidServiceException {
 
-	public InvalidStateException() {
-		super();
-	}
-	
 	public InvalidStateException(String msg) {
 		super(msg);
 	}

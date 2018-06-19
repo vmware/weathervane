@@ -34,36 +34,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<rabbit:template id="liveAuctionRabbitTemplate" connection-factory="rabbitConnectionFactory"
 		reply-timeout="10000" />
 
-	<rabbit:queue id="auctionStartedQueue"  />
-	<rabbit:queue id="auctionEndedQueue"  />
-	<rabbit:queue id="startAuctioneerQueue"  />
 	<rabbit:queue id="highBidQueue"  />
 	<rabbit:queue id="newBidQueue"  />
 	
 	<rabbit:topic-exchange name="liveAuctionMgmtExchange">
 		<rabbit:bindings>
-			<rabbit:binding queue="auctionStartedQueue" pattern="auctionStarted.#"/>
-			<rabbit:binding queue="startAuctioneerQueue" pattern="startAuctioneer.${nodeNumber}"/>
-			<rabbit:binding queue="auctionEndedQueue" pattern="auctionEnded.#"/>
 			<rabbit:binding queue="highBidQueue" pattern="highBid.#"/>
 		</rabbit:bindings>
 	</rabbit:topic-exchange>
 	
-	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="2">
-    	<rabbit:listener queues="auctionStartedQueue" ref="liveAuctionService" method="handleAuctionStartedMessage"  />
-    	<rabbit:listener queues="auctionEndedQueue" ref="liveAuctionService" method="handleAuctionEndedMessage"  />
-    	<rabbit:listener queues="startAuctioneerQueue" ref="liveAuctionService" method="handleStartAuctioneerMessage"  />
-	</rabbit:listener-container>
-
 	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${HIGHBIDQUEUECONCURRENCY}">
-    	<rabbit:listener queues="highBidQueue" ref="liveAuctionService" method="handleHighBidMessage"  />
+    	<rabbit:listener queues="highBidQueue" ref="bidService" method="handleHighBidMessage"  />
 	</rabbit:listener-container>
 
-	
-	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${NEWBIDQUEUECONCURRENCY}">
-    	<rabbit:listener id="newBidListenerContainer" queues="newBidQueue" 
-    		ref="liveAuctionService" method="handleNewBidMessage" />
-	</rabbit:listener-container>
 	
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
 	<beans profile="singleRabbit">

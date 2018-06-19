@@ -27,49 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		   >
              <cacheEventListenerFactory class="com.vmware.weathervane.auction.service.AuthTokenCacheEventListenerFactory" listenFor="all"/>
 	</cache>
-		 
- 	<cache name="activeAuctionCache"
-           maxEntriesLocalHeap="${ACTIVEAUCTIONCACHESIZE}" 	
-		   eternal="false"
-		   timeToIdleSeconds="30"
-           timeToLiveSeconds="30">
-		</cache>
-		 
- 	<cache name="itemsForAuctionCache"
-           maxEntriesLocalHeap="${ITEMSFORAUCTIONCACHESIZE}" 	
-		   eternal="true">
-	</cache>
-
- 	<cache name="itemCache"
-           maxEntriesLocalHeap="${ITEMCACHESIZE}" 	
-		   eternal="true">
-		</cache>
-		 
- 	<cache name="auctionRepresentationCache"
-           maxEntriesLocalHeap="${AUCTIONREPRESENTATIONCACHESIZE}" 	
-		   eternal="true">
-		</cache>
-
- 	<cache name="imageInfoCache"
-           maxEntriesLocalHeap="${IMAGEINFOCACHESIZE}" 	
-		   eternal="true">
-	</cache>
-
- 	<cache name="itemThumbnailImageCache"
-           maxEntriesLocalHeap="${ITEMTHUMBNAILIMAGECACHESIZE}" 	
-		   eternal="true">
-	</cache>
-
- 	<cache name="itemPreviewImageCache"
-           maxEntriesLocalHeap="${ITEMPREVIEWIMAGECACHESIZE}" 	
-		   eternal="true">
-	</cache>
-
- 	<cache name="itemFullImageCache"
-           maxEntriesLocalHeap="${ITEMFULLIMAGECACHESIZE}" 	
-		   eternal="true">
-	</cache>
-		 
+		 		 
     <defaultCache
            maxEntriesLocalHeap="0"
            eternal="true">

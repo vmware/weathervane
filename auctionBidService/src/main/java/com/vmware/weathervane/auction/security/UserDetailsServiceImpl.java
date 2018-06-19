@@ -67,7 +67,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	private static long userByAuthTokenGets = 0;
 
-
 	@Inject
 	@Named("userService")
 	private UserService userService;		

@@ -24,6 +24,13 @@ package com.vmware.weathervane.auction.service.exception;
  * @author Hal
  *
  */
-public class BidServiceException extends LiveAuctionServiceException {
+public class BidServiceException extends Exception {
+
+	public BidServiceException(String msg) {
+		super(msg);
+	}
+
+	public BidServiceException() {
+	}
 
 }

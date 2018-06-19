@@ -58,6 +58,7 @@ sub configure {
 	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
 
 	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
+	my $numAuctionBidServers = $self->appInstance->getNumActiveOfServiceType('auctionBidServer');
 
 	open( FILEIN,  "$configDir/kubernetes/nginx.yaml" ) or die "$configDir/kubernetes/nginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/nginx-$namespace.yaml" )             or die "Can't open file /tmp/nginx-$namespace.yaml: $!\n";
@@ -78,6 +79,13 @@ sub configure {
 		}
 		elsif ( $inline =~ /IMAGESTORETYPE:/ ) {
 			print FILEOUT "  IMAGESTORETYPE: \"" . $self->getParamValue('imageStoreType') . "\"\n";
+		}
+		elsif ( $inline =~ /BIDSERVERS:/ ) {
+			if ($numAuctionBidServers > 0) {
+				print FILEOUT "  BIDSERVERS: \"auctionbidservice:8080\"\n";				
+			} else {
+				print FILEOUT "  BIDSERVERS: \"tomcat:8080\"\n";								
+			}
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

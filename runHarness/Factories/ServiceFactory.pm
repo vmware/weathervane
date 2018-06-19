@@ -108,11 +108,11 @@ sub getServiceByType {
 				);
 			}		
 		} elsif ($docker) {
-			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes")
+			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes");
 			exit(-1);
 		}
 		else {
-			$console_logger->error("There is no regular implementation for the AuctionBidServer, only Kubernetes")
+			$console_logger->error("There is no regular implementation for the AuctionBidServer, only Kubernetes");
 			exit(-1);
 		}
 	}

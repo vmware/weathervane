@@ -40,9 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vmware.weathervane.auction.mvc.AsyncDispatcherServletListener;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.service.BidService;
-import com.vmware.weathervane.auction.service.exception.AuctionNotActiveException;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
@@ -171,33 +169,6 @@ public class BidController extends BaseController {
 		// Spring 3.1 can't handle async servlets.
 		completeAsyncGetNextBid(bidRepresentation, ac);
 
-	}
-
-	@RequestMapping(value = "/current/auction/{auctionId}", method = RequestMethod.GET)
-	public @ResponseBody
-	ItemRepresentation getCurrentItem(@PathVariable long auctionId, HttpServletResponse response) {
-		String username = this.getSecurityUtil().getUsernameFromPrincipal();
-
-		logger.info("ItemController::getCurrentItem auctionId = " + auctionId + ", username = " + username);
-
-		ItemRepresentation returnItem = null;
-		try {
-			returnItem = bidService.getCurrentItem(auctionId);
-		} catch (AuctionNotActiveException ex) {
-			response.setStatus(HttpServletResponse.SC_GONE);
-			response.setContentType("text/html");
-			try {
-				PrintWriter responseWriter = response.getWriter();
-				responseWriter.print("AuctionComplete");
-				responseWriter.close();
-				return null;
-			} catch (IOException e1) {
-				logger.warn("ItemController::getCurrentItem: got IOException when writing AuctionComplete message to reponse"
-						+ e1.getMessage());
-			}
-		}
-		
-		return returnItem;
 	}
 
 	@RequestMapping(value="/prepareForShutdown", method = RequestMethod.GET)

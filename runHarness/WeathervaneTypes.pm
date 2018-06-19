@@ -28,12 +28,12 @@ our @workloadImpls = ('auction');
 
 # valid service types 
 our %serviceTypes = ( 
-	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'appServer'], 
+	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'appServer', 'auctionBidServer'], 
 );
 
 # services that can be run on docker
 our %dockerServiceTypes = ( 
-	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'coordinationServer', 'configurationManager'], 
+	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer', 'coordinationServer', 'configurationManager'], 
 );
 
 
@@ -44,7 +44,7 @@ our %dockerServiceTypes = (
 our %workloadToServiceTypes = ('auction' => {
 	'infrastructure' => ['configurationManager', 'elasticityService'],
 	'data' => ['dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'coordinationServer'],
-	'backend' => ['appServer'],
+	'backend' => ['appServer', 'auctionBidServer'],
 	'frontend' => ['webServer', 'lbServer', 'ipManager'],
 	}
 );
@@ -58,6 +58,7 @@ our %serviceImpls = (
 	'lbServer'    => ['haproxy', 'nginx-ingress-controller'],
 	'webServer'   => [ 'httpd', 'nginx' ],
 	'appServer'   => [ 'tomcat' ],
+	'auctionBidServer'   => [ 'tomcat' ],
 	'dbServer'    => [ 'mysql', 'postgresql' ],
 	'nosqlServer' => ['mongodb'],
 	'msgServer'   => ['rabbitmq'],

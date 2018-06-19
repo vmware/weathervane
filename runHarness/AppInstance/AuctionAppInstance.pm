@@ -548,7 +548,7 @@ sub getServiceConfigParameters {
 
 	my $users = $self->getParamValue('maxUsers');
 
-	if ( $serviceType eq "appServer" ) {
+	if ( ($serviceType eq "appServer") || ($serviceType eq 'auctionBidServer') ) {
 
 		# For the app Servers, Auction needs to provide JVM options
 		my $jvmOpts = "";

@@ -249,14 +249,7 @@ override 'getServiceConfigParameters' => sub {
 		$jvmOpts .= " -DITEMTHUMBNAILIMAGECACHESIZE=$itemThumbnailImageCacheSize ";
 		$jvmOpts .= " -DITEMPREVIEWIMAGECACHESIZE=$itemPreviewImageCacheSize ";
 		$jvmOpts .= " -DITEMFULLIMAGECACHESIZE=$itemFullImageCacheSize ";
-
-		if ( $service->getParamValue('randomizeImages') ) {
-			$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
-		}
-		else {
-			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
-		}
-
+		
 		my $numCpus;
 		if ( $service->getParamValue('dockerCpus')) {
 			$numCpus = $service->getParamValue('dockerCpus');
@@ -264,43 +257,54 @@ override 'getServiceConfigParameters' => sub {
 		else {
 			$numCpus = 2;
 		}
-		
-		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
-		if (!$highBidQueueConcurrency) {
-			$highBidQueueConcurrency = $numCpus;
-		}
-		my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
-		if (!$newBidQueueConcurrency) {
-			$newBidQueueConcurrency = $numCpus;
-		}		
-		$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
-		$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
 
-		# Turn on imageWriters in the application
-		if ( $service->getParamValue('useImageWriterThreads') ) {
-			if ( $service->getParamValue('imageWriterThreads') ) {
-
-				# value was set, overriding the default
-				$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $service->getParamValue('imageWriterThreads') . " ";
+		if ($serviceType eq "appServer") {	
+			if ( $service->getParamValue('randomizeImages') ) {
+				$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
 			}
 			else {
-
-				my $iwThreads = floor( $numCpus / 2.0 );
-				if ( $iwThreads < 1 ) {
-					$iwThreads = 1;
-				}
-				$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $iwThreads . " ";
-
+				$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
 			}
+		
+			my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
+			if (!$highBidQueueConcurrency) {
+				$highBidQueueConcurrency = $numCpus;
+			}
+			my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
+			if (!$newBidQueueConcurrency) {
+				$newBidQueueConcurrency = $numCpus;
+			}		
+			$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
+			$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
 
-			$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=true ";
-		}
-		else {
-			$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=false ";
-		}
+			# Turn on imageWriters in the application
+			if ( $service->getParamValue('useImageWriterThreads') ) {
+				if ( $service->getParamValue('imageWriterThreads') ) {
+	
+					# value was set, overriding the default
+					$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $service->getParamValue('imageWriterThreads') . " ";
+				}
+				else {
+	
+					my $iwThreads = floor( $numCpus / 2.0 );
+					if ( $iwThreads < 1 ) {
+						$iwThreads = 1;
+					}
+					$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $iwThreads . " ";
 
+				}
+
+				$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=true ";
+			}
+			else {
+				$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=false ";
+			}
+			
+			$jvmOpts .= " -DNUMAUCTIONEERTHREADS=" . $service->getParamValue('numAuctioneerThreads') . " ";
+			
+		}
+		
 		$jvmOpts .= " -DNUMCLIENTUPDATETHREADS=" . $service->getParamValue('numClientUpdateThreads') . " ";
-		$jvmOpts .= " -DNUMAUCTIONEERTHREADS=" . $service->getParamValue('numAuctioneerThreads') . " ";
 
 		$jvmOpts .= " -DRABBITMQ_HOST=rabbitmq -DRABBITMQ_PORT=5672 ";
 

@@ -1847,7 +1847,7 @@ $parameters{"appServerCacheImpl"} = {
 };
 $parameters{"auctionBidServerImpl"} = {
 	"type"      => "=s",
-	"default"   => "tomcat",
+	"default"   => "bidservice",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which AuctionBidServer implementation to use.\n\t" . "Currently only tomcat is supported.",
 	"showUsage" => 0,

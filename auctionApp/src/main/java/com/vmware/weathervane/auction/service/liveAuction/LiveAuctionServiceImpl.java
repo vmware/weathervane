@@ -50,6 +50,7 @@ import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -191,6 +192,9 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 	@Inject
 	ImageStoreFacade imageStoreFacade;
+	
+	@Value("${spring.profiles.active:Unknown}")
+	private String activeProfile;
 
 	private TakeLeadershipHandler _takeLeadershipHandler;
 
@@ -282,14 +286,18 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 		}, 60, TimeUnit.SECONDS);
 		
-		// Create ClientBidUpdaters for auctions that are already running
-		logger.info("Create ClientBidUpdaters for auctions that are already running");
-		List<HighBid> highBids = _highBidDao.getActiveHighBids();
-		for (HighBid aHighBid : highBids) {
-			_clientBidUpdaterMap.put(aHighBid.getAuctionId(),
-					new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, _clientUpdateExecutorService, imageStoreFacade));
+		if (activeProfile.contains("noBidService")) {
+			/*
+			 *  If we are running without a separate bidService, then 
+			 *  create ClientBidUpdaters for auctions that are already running
+			 */
+			logger.info("Create ClientBidUpdaters for auctions that are already running");
+			List<HighBid> highBids = _highBidDao.getActiveHighBids();
+			for (HighBid aHighBid : highBids) {
+				_clientBidUpdaterMap.put(aHighBid.getAuctionId(),
+						new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, _clientUpdateExecutorService, imageStoreFacade));
+			}
 		}
-
 	}
 
 	@PreDestroy

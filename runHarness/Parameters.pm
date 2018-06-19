@@ -2511,7 +2511,7 @@ $parameters{"nfsClientAsync"} = {
 $parameters{"appServerEnableJprofiler"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };

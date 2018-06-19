@@ -287,7 +287,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		List<HighBid> highBids = _highBidDao.getActiveHighBids();
 		for (HighBid aHighBid : highBids) {
 			_clientBidUpdaterMap.put(aHighBid.getAuctionId(),
-					new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, _auctioneerExecutorService, imageStoreFacade));
+					new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, _clientUpdateExecutorService, imageStoreFacade));
 		}
 
 	}

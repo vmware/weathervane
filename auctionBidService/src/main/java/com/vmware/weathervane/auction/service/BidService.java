@@ -13,18 +13,53 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.service;
+package com.vmware.weathervane.auction.service.liveAuction;
 
-import java.util.Date;
+import javax.servlet.AsyncContext;
 
+import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
+import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
+import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
+import com.vmware.weathervane.auction.service.exception.AuctionNotActiveException;
+import com.vmware.weathervane.auction.service.exception.AuthenticationException;
+import com.vmware.weathervane.auction.service.exception.InvalidStateException;
+import com.vmware.weathervane.auction.service.liveAuction.message.StartAuctioneer;
 
-public interface BidService {
+public interface LiveAuctionService {
 	
-	public BidRepresentation getBid(String bidId);
+	public CollectionRepresentation<AuctionRepresentation> getActiveAuctions(Integer page, Integer pageSize);
 
-	public CollectionRepresentation<BidRepresentation> getBidsForUser(Long userId,
-			Date fromDate, Date toDate, Integer page, Integer pageSize);
-		
+	/**
+	 * @param record
+	 * @return
+	 * @throws InvalidStateException 
+	 * @throws AuthenticationException 
+	 */
+	public AttendanceRecordRepresentation joinAuction(AttendanceRecordRepresentation record) throws InvalidStateException, AuctionNotActiveException;
+
+	public AttendanceRecordRepresentation leaveAuction(long userId, long auctionId) throws InvalidStateException;
+	
+	public ItemRepresentation getCurrentItem(long auctionId) throws AuctionNotActiveException;
+	
+	long getActiveAuctionsMisses();
+
+	void handleAuctionEndedMessage(AuctionRepresentation anAuction);
+	void handleHighBidMessage(BidRepresentation newHighBid);
+	void handleNewBidMessage(BidRepresentation theBid);
+
+	int getAuctionMaxIdleTime();
+	
+	BidRepresentation getNextBid(Long auctionId, Long itemId, Integer lastBidCount, AsyncContext ac) throws InvalidStateException, AuthenticationException;	
+	BidRepresentation postNewBid(BidRepresentation theBid) throws InvalidStateException;
+
+	Boolean isMaster();
+
+	void handleStartAuctioneerMessage(StartAuctioneer startAuction);
+
+	void prepareForShutdown();
+
+	public void releaseGetNextBid();
+
 }

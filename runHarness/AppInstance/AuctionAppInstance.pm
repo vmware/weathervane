@@ -530,6 +530,14 @@ sub getSpringProfilesActive {
 	if ($performanceMonitor) {
 		$springProfilesActive .= ",performanceMonitor";
 	}
+
+	my $numBidServers = $self->getNumActiveOfServiceType('auctionBidServer');
+	if ($numBidServers > 0) {
+		$springProfilesActive .= ",bidService";
+	} else {
+		$springProfilesActive .= ",noBidService";
+	}
+
 	$logger->debug(
 		"getSpringProfilesActive finished for workload ",
 		$self->getParamValue('workloadNum'),

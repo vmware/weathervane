@@ -99,7 +99,7 @@ sub getServiceByType {
 			);
 		}
 	}
-	elseif ( $serviceName eq "bidservice" ) {
+	elsif ( $serviceName eq "bidservice" ) {
 		if ($paramHashRef->{'clusterName'}) {
 			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
 				$service = AuctionBidKubernetesService->new(

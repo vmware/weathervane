@@ -258,6 +258,11 @@ override 'getServiceConfigParameters' => sub {
 			$numCpus = 2;
 		}
 
+		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
+		if (!$highBidQueueConcurrency) {
+			$highBidQueueConcurrency = $numCpus;
+		}
+
 		if ($serviceType eq "appServer") {	
 			if ( $service->getParamValue('randomizeImages') ) {
 				$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
@@ -266,10 +271,6 @@ override 'getServiceConfigParameters' => sub {
 				$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
 			}
 		
-			my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
-			if (!$highBidQueueConcurrency) {
-				$highBidQueueConcurrency = $numCpus;
-			}
 			my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
 			if (!$newBidQueueConcurrency) {
 				$newBidQueueConcurrency = $numCpus;

@@ -26,6 +26,7 @@ use Services::NginxDockerService;
 use Services::TomcatService;
 use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
+use Services::AuctionBidKubernetesService;
 use Services::MysqlService;
 use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
@@ -96,6 +97,23 @@ sub getServiceByType {
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
+		}
+	}
+	elseif ( $serviceName eq "bidservice" ) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = AuctionBidKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} elsif ($docker) {
+			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes")
+			exit(-1);
+		}
+		else {
+			$console_logger->error("There is no regular implementation for the AuctionBidServer, only Kubernetes")
+			exit(-1);
 		}
 	}
 	elsif ( $serviceName eq "keepalived" ) {

@@ -3111,6 +3111,13 @@ $parameters{"appServerSuffix"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+$parameters{"auctionBidServerSuffix"} = {
+	"type"      => "=s",
+	"default"   => "Bid",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
 $parameters{"webServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Web",

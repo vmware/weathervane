@@ -8,6 +8,8 @@ my $keepaliveTimeout     = $ENV{'KEEPALIVETIMEOUT'};
 my $maxKeepaliveRequests = $ENV{'MAXKEEPALIVEREQUESTS'};
 my $appServersString     = $ENV{'APPSERVERS'};
 my @appServers           = split( /,/, $appServersString );
+my $bidServersString     = $ENV{'BIDSERVERS'};
+my @bidServers           = split( /,/, $bidServersString );
 my $imageStoreType       = $ENV{'IMAGESTORETYPE'};
 my $httpPort             = $ENV{'HTTPPORT'};
 my $httpsPort            = $ENV{'HTTPSPORT'};
@@ -19,7 +21,7 @@ open( FILEOUT, ">/tmp/nginx.conf" )
   or die "Can't open file /tmp/nginx.conf: $!";
 
 while ( my $inline = <FILEIN> ) {
-	if ( $inline =~ /[^\$]upstream/ ) {
+	if ( $inline =~ /[^\$]upstream\sapp/ ) {
 		print FILEOUT $inline;
 		print FILEOUT "least_conn;\n";
 		do {
@@ -29,6 +31,27 @@ while ( my $inline = <FILEIN> ) {
 		# Add the balancer lines for each app server
 		foreach my $appServer (@appServers) {
 			print FILEOUT "      server $appServer max_fails=0 ;\n";
+		}
+		print FILEOUT "      keepalive 1000;";
+		print FILEOUT "    }\n";
+	}
+	elsif ( $inline =~ /[^\$]upstream\sbid/ ) {
+		print FILEOUT $inline;
+		print FILEOUT "least_conn;\n";
+		do {
+			$inline = <FILEIN>;
+		} while ( !( $inline =~ /}/ ) );
+		
+		if ($#bidServers >= 0) {
+			# Add the balancer lines for each bid server
+			foreach my $bidServer (@bidServers) {
+				print FILEOUT "      server $bidServer max_fails=0 ;\n";
+			}
+		} else {
+			# if no bid server, then bid requests go to app servers
+			foreach my $appServer (@appServers) {
+				print FILEOUT "      server $appServer max_fails=0 ;\n";
+			}			
 		}
 		print FILEOUT "      keepalive 1000;";
 		print FILEOUT "    }\n";

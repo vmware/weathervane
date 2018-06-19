@@ -85,8 +85,8 @@ sub configure {
 	
 	my $numAuctionBidServers = $self->appInstance->getNumActiveOfServiceType('auctionBidServer');
 
-	open( FILEIN,  "$configDir/kubernetes/tomcat.yaml" ) or die "$configDir/kubernetes/tomcat.yaml: $!\n";
-	open( FILEOUT, ">/tmp/tomcat-$namespace.yaml" )             or die "Can't open file /tmp/tomcat-$namespace.yaml: $!\n";
+	open( FILEIN,  "$configDir/kubernetes/bidservice.yaml" ) or die "$configDir/kubernetes/bidservice.yaml: $!\n";
+	open( FILEOUT, ">/tmp/bidservice-$namespace.yaml" )             or die "Can't open file /tmp/bidservice-$namespace.yaml: $!\n";
 	
 	while ( my $inline = <FILEIN> ) {
 

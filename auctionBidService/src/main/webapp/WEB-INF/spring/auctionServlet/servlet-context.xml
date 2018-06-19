@@ -38,10 +38,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<beans:bean id="jacksonObjectMapper" class="com.fasterxml.jackson.databind.ObjectMapper">
 	</beans:bean>
 
-	<!-- Handles HTTP GET requests for /resources/** by efficiently serving 
-		up static resources in the ${webappRoot}/resources directory -->
-	<resources mapping="/images/**" location="file:/mnt/imageStore/" />
-
 	<!-- Resolves views selected for rendering by @Controllers to .jsp resources 
 		in the /WEB-INF/views directory -->
 	<beans:bean
@@ -52,25 +48,4 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 	<context:component-scan base-package="com.vmware.weathervane.auction.controllers" />
 
-	<interceptors>
-		<beans:bean
-			class="org.springframework.web.servlet.mvc.WebContentInterceptor"
-			p:cacheSeconds="0" p:alwaysUseFullPath="true">
-			<beans:property name="cacheMappings">
-				<beans:props>
-					<!-- cache for one month -->
-					<beans:prop key="/item/*/image/**">2592000</beans:prop>
-				</beans:props>
-			</beans:property>
-		</beans:bean>
-		<interceptor>
-			<mapping path="/**" />
-			<beans:bean
-				class="com.vmware.weathervane.auction.interceptors.NodeNumHeaderInterceptor" />
-		</interceptor>
-		<!-- <interceptor> -->
-		<!-- <mapping path="/**"/> -->
-		<!-- <beans:bean class="com.vmware.weathervane.auction.interceptors.CorsInterceptor"/> -->
-		<!-- </interceptor> -->
-	</interceptors>
 </beans:beans>

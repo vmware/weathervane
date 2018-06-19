@@ -35,30 +35,18 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
-import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.AuthenticationRequestRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.ImageInfoRepresentation;
 import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
-import com.vmware.weathervane.auction.rest.representation.LoginResponse;
 import com.vmware.weathervane.auction.rest.representation.UserRepresentation;
-import com.vmware.weathervane.auction.service.CacheWarmerService;
 
 
 @Controller
 @RequestMapping(value = "/healthCheck")
 public class HealthCheckController extends BaseController {
 	private static final Logger logger = LoggerFactory.getLogger(HealthCheckController.class);
-
-	private CacheWarmerService cacheWarmerService;
-
-	@Inject
-	@Named("cacheWarmerService")
-	public void setCacheWarmerService(CacheWarmerService service) {
-		this.cacheWarmerService = service;
-	}
 	
 	@Inject
 	@Named("jacksonObjectMapper")
@@ -80,11 +68,7 @@ public class HealthCheckController extends BaseController {
 		ItemRepresentation anItem = objectMapper.readValue("{\"id\": 1}", ItemRepresentation.class);
 		jsonString = objectMapper.writeValueAsString(anItem);
 		logger.debug("Initialized ItemRepresentation de/serializer: " + jsonString );
-		
-		AttendanceRecordRepresentation aRecord = objectMapper.readValue("{\"id\": \"unused\"}", AttendanceRecordRepresentation.class);
-		jsonString = objectMapper.writeValueAsString(aRecord);
-		logger.debug("Initialized AttendanceRecordRepresentation de/serializer: " + jsonString );
-		
+				
 		AuthenticationRequestRepresentation aRequest = objectMapper.readValue("{\"username\": \"unused\"}", AuthenticationRequestRepresentation.class);
 		jsonString = objectMapper.writeValueAsString(aRequest);
 		logger.debug("Initialized AuthenticationRequestRepresentation de/serializer: " + jsonString );
@@ -93,20 +77,6 @@ public class HealthCheckController extends BaseController {
 		jsonString = objectMapper.writeValueAsString(aUser);
 		logger.debug("Initialized UserRepresentation de/serializer: " + jsonString );
 
-		AuctionRepresentation anAuction = objectMapper.readValue("{\"id\": 1}", AuctionRepresentation.class);
-		jsonString = objectMapper.writeValueAsString(anAuction);
-		logger.debug("Initialized AuctionRepresentation de/serializer: " + jsonString );
-
-		LoginResponse aLoginResponse = objectMapper.readValue("{\"id\": 1}", LoginResponse.class);
-		jsonString = objectMapper.writeValueAsString(aLoginResponse);
-		logger.debug("Initialized LoginResponse de/serializer: " + jsonString );
-
-		CollectionRepresentation<AttendanceRecordRepresentation>  aRecordCollection 
-			= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"unused\"}]}", 
-					new TypeReference<CollectionRepresentation<AttendanceRecordRepresentation>>() { });
-		jsonString = objectMapper.writeValueAsString(aRecordCollection);
-		logger.debug("Initialized CollectionRepresentation<AttendanceRecordRepresentation> de/serializer: " + jsonString );
-		
 		CollectionRepresentation<BidRepresentation>  aBidCollection 
 		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"unused\"}]}", 
 				new TypeReference<CollectionRepresentation<BidRepresentation>>() { });
@@ -119,12 +89,6 @@ public class HealthCheckController extends BaseController {
 		jsonString = objectMapper.writeValueAsString(anItemCollection);
 		logger.debug("Initialized CollectionRepresentation<ItemRepresentation> de/serializer: " + jsonString );
 		
-		CollectionRepresentation<AuctionRepresentation>  anAuctionCollection 
-		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": 1}]}", 
-				new TypeReference<CollectionRepresentation<AuctionRepresentation>>() { });
-		jsonString = objectMapper.writeValueAsString(anAuctionCollection);
-		logger.debug("Initialized CollectionRepresentation<AuctionRepresentation> de/serializer: " + jsonString );
-
 		List<ImageInfoRepresentation>  anImageInfoList = objectMapper.readValue("[{\"id\": \"unused\"}]", 
 						new TypeReference<List<ImageInfoRepresentation>>() { });
 		jsonString = objectMapper.writeValueAsString(anImageInfoList);
@@ -140,7 +104,7 @@ public class HealthCheckController extends BaseController {
 	public String healthCheck() {
 		logger.info("healthCheck");
 		
-		if (objectMapperInitialized && cacheWarmerService.isReady()) {
+		if (objectMapperInitialized) {
 			return "alive";
 		} else {
 			return "initializing";

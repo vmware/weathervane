@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.service.liveAuction;
+package com.vmware.weathervane.auction.service;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -44,7 +44,6 @@ import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
-import com.vmware.weathervane.auction.service.NextBidQueueEntry;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 

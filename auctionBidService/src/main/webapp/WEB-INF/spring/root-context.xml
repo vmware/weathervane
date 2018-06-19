@@ -57,63 +57,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		<constructor-arg value="yyyy-MM-dd:HH-mm" />
 	</bean>
 
-	<!-- Create the instance of the GregorianCalendar that starts at a fixed 
-		time every run -->
-	<bean id="fixedOffsetCalendarFactory"
-		class="com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory">
-		<constructor-arg name="simulatedDate">
-			<bean factory-bean="dateFormat" factory-method="parse">
-				<constructor-arg value="2020-02-02:12-00" />
-			</bean>
-		</constructor-arg>
-	</bean>
-	<bean id="liveAuctionService"
-		class="com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceImpl">
-		<property name="auctionQueueUpdateDelay" value="60" />
-		<property name="liveAuctionNodeHeartbeatDelay" value="20" />
-		<property name="numAuctioneerExecutorThreads" value="${NUMAUCTIONEERTHREADS:1}" />
+	<bean id="bidService"
+		class="com.vmware.weathervane.auction.service.BidServiceImpl">
 		<property name="numClientUpdateExecutorThreads" value="${NUMCLIENTUPDATETHREADS:1}" />
 		<property name="auctionMaxIdleTime" value="30" />
-	</bean>
-
-	<bean id="liveAuctionServiceTx"
-		class="com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceTxImpl">
-	</bean>
-
-	<bean id="auctioneerTx"
-		class="com.vmware.weathervane.auction.service.liveAuction.AuctioneerTxImpl">
-	</bean>
-
-	<bean id="bidService" class="com.vmware.weathervane.auction.service.BidServiceImpl">
-	</bean>
-
-	<bean id="auctionService"
-		class="com.vmware.weathervane.auction.service.AuctionServiceImpl">
 	</bean>
 
 	<bean id="userService" class="com.vmware.weathervane.auction.service.UserServiceImpl">
 	</bean>
 
 	<bean id="userDetailsService" class="com.vmware.weathervane.auction.security.UserDetailsServiceImpl">
-	</bean>
-
-	<bean id="itemService" class="com.vmware.weathervane.auction.service.ItemServiceImpl">
-	</bean>
-
-	<bean id="attendanceService"
-		class="com.vmware.weathervane.auction.service.AttendanceServiceImpl">
-	</bean>
-
-	<bean id="cacheWarmerService"
-		class="com.vmware.weathervane.auction.service.CacheWarmerServiceImpl">
-	</bean>
-
-	<bean id="authenticationService"
-		class="com.vmware.weathervane.auction.service.AuthenticationServiceImpl">
-	</bean>
-
-	<bean id="groupMembershipService"
-		class="com.vmware.weathervane.auction.service.GroupMembershipServiceImpl">
 	</bean>
 
 	<bean id="imageInfoCacheFacade" class="com.vmware.weathervane.auction.data.imageStore.ImageInfoCacheFacade"/>
@@ -139,12 +92,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
 			p:config-location="classpath:ehcache.xml" />
 	</beans>
-
-	<beans profile="ignite">
-		<bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
-			<property name="configurationPath" value="ignitecache.xml" />
-		</bean>
-	</beans>	
 
 	<beans profile="imagesInMemory">
 		<bean id="imageStoreFacade"

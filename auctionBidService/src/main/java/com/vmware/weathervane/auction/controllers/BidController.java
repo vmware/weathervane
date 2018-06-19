@@ -18,7 +18,6 @@ package com.vmware.weathervane.auction.controllers;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -36,67 +35,29 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vmware.weathervane.auction.mvc.AsyncDispatcherServletListener;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
+import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.service.BidService;
+import com.vmware.weathervane.auction.service.exception.AuctionNotActiveException;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
-import com.vmware.weathervane.auction.service.liveAuction.LiveAuctionService;
 
 @Controller
 @RequestMapping(value = "/bid")
 public class BidController extends BaseController {
 	private static final Logger logger = LoggerFactory.getLogger(BidController.class);
 
-	private BidService bidService;
-
 	@Inject
 	@Named("bidService")
-	public void setBidService(BidService bidService) {
-		this.bidService = bidService;
-	}
-
-	private LiveAuctionService liveAuctionService;
-
-	@Inject
-	@Named("liveAuctionService")
-	public void setLiveAuctionService(LiveAuctionService liveAuctionService) {
-		this.liveAuctionService = liveAuctionService;
-	}
+	private BidService bidService;
 
 	@Inject
 	@Named("jacksonObjectMapper")
 	private ObjectMapper objectMapper;
-
-	@RequestMapping(value = "/user/{userId}", method = RequestMethod.GET)
-	public @ResponseBody
-	CollectionRepresentation<BidRepresentation> getBidsForUser(
-			@PathVariable long userId,
-			@RequestParam(value = "page", required = false) Integer page,
-			@RequestParam(value = "pageSize", required = false) Integer pageSize,
-			@RequestParam(value = "fromDate", required = false) Date fromDate,
-			@RequestParam(value = "toDate", required = false) Date toDate,
-			HttpServletResponse response) {
-		String username = this.getSecurityUtil().getUsernameFromPrincipal();
-
-		logger.info("BidController::getBidsForUser userId = " + userId + ", username = " + username);
-		
-		// Can only get history for the authenticated user
-		try {
-			this.getSecurityUtil().checkAccount(userId);
-		} catch (AccessDeniedException ex) {
-			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-			return null;	
-		}
-
-		CollectionRepresentation<BidRepresentation> bidsPage = bidService.getBidsForUser(userId, fromDate, toDate, page, pageSize);
-		return bidsPage;
-	}
 
 	@RequestMapping(method = RequestMethod.POST)
 	public @ResponseBody
@@ -116,7 +77,7 @@ public class BidController extends BaseController {
 		while (bidRepresentation == null) {
 			try {
 				// Post the new bid
-				bidRepresentation = liveAuctionService.postNewBid(theBid);
+				bidRepresentation = bidService.postNewBid(theBid);
 
 				logger.info("BidController:postNewBid itemId=" + bidRepresentation.getItemId() + " userId="
 						+ bidRepresentation.getUserId() + " got Bid from bidService with id "
@@ -128,7 +89,7 @@ public class BidController extends BaseController {
 				logger.warn("BidController:postNewBid: got CannotAcquireLockException with message "
 						+ ex.getMessage());
 			} catch (InvalidStateException ex) {
-				// Create a bidepresentation with the error message
+				// Create a bidrepresentation with the error message
 				bidRepresentation = new BidRepresentation(null, null);
 				bidRepresentation.setId("error");
 				bidRepresentation.setMessage(ex.getMessage());
@@ -153,7 +114,7 @@ public class BidController extends BaseController {
 		 * asyncContext timeout to twice that value ( to leave room for
 		 * something being delayed).
 		 */
-		int maxIdleTime = liveAuctionService.getAuctionMaxIdleTime();
+		int maxIdleTime = bidService.getAuctionMaxIdleTime();
 		ac.setTimeout(4 * maxIdleTime * 1000);
 		ac.addListener(new AsyncDispatcherServletListener());
 
@@ -162,7 +123,7 @@ public class BidController extends BaseController {
 		while (!completedSucesssfully) {
 			try {
 				// Queue up the aync request for the next bid
-				bidRepresentation = liveAuctionService.getNextBid(auctionId, itemId, bidCount, ac);
+				bidRepresentation = bidService.getNextBid(auctionId, itemId, bidCount, ac);
 				completedSucesssfully = true;
 			} catch (ObjectOptimisticLockingFailureException ex) {
 				logger.info("BidController:getNextBid: got ObjectOptimisticLockingFailureException with message "
@@ -210,6 +171,51 @@ public class BidController extends BaseController {
 		// Spring 3.1 can't handle async servlets.
 		completeAsyncGetNextBid(bidRepresentation, ac);
 
+	}
+
+	@RequestMapping(value = "/current/auction/{auctionId}", method = RequestMethod.GET)
+	public @ResponseBody
+	ItemRepresentation getCurrentItem(@PathVariable long auctionId, HttpServletResponse response) {
+		String username = this.getSecurityUtil().getUsernameFromPrincipal();
+
+		logger.info("ItemController::getCurrentItem auctionId = " + auctionId + ", username = " + username);
+
+		ItemRepresentation returnItem = null;
+		try {
+			returnItem = bidService.getCurrentItem(auctionId);
+		} catch (AuctionNotActiveException ex) {
+			response.setStatus(HttpServletResponse.SC_GONE);
+			response.setContentType("text/html");
+			try {
+				PrintWriter responseWriter = response.getWriter();
+				responseWriter.print("AuctionComplete");
+				responseWriter.close();
+				return null;
+			} catch (IOException e1) {
+				logger.warn("ItemController::getCurrentItem: got IOException when writing AuctionComplete message to reponse"
+						+ e1.getMessage());
+			}
+		}
+		
+		return returnItem;
+	}
+
+	@RequestMapping(value="/prepareForShutdown", method = RequestMethod.GET)
+	public @ResponseBody Boolean shutdown()  {
+		bidService.prepareForShutdown();
+		return true;
+	}
+
+	/**
+	 * Tell LiveAuctionService to release all pending async requests
+	 * (GetNextBid)
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value="/release", method = RequestMethod.GET)
+	public @ResponseBody Boolean release()  {
+		bidService.releaseGetNextBid();
+		return true;
 	}
 
 	public void completeAsyncGetNextBid(BidRepresentation theBid, AsyncContext theAsyncContext) {

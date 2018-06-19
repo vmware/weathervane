@@ -28,7 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			/WEB-INF/spring/root-context.xml
 			/WEB-INF/spring/datasource-context.xml
 			/WEB-INF/spring/jpa-context.xml
-			/WEB-INF/spring/mongo-context.xml
 			/WEB-INF/spring/auction-security-context.xml
 			/WEB-INF/spring/auction-rabbitmq-context.xml
 		</param-value>

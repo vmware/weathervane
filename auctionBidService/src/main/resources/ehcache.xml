@@ -27,8 +27,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		   >
              <cacheEventListenerFactory class="com.vmware.weathervane.auction.service.AuthTokenCacheEventListenerFactory" listenFor="all"/>
 	</cache>
-		 		 
-    <defaultCache
+
+ 	<cache name="imageInfoCache"
+           maxEntriesLocalHeap="${IMAGEINFOCACHESIZE}" 	
+		   eternal="true">
+	</cache>
+
+ 	<cache name="itemThumbnailImageCache"
+           maxEntriesLocalHeap="${ITEMTHUMBNAILIMAGECACHESIZE}" 	
+		   eternal="true">
+	</cache>
+
+ 	<cache name="itemPreviewImageCache"
+           maxEntriesLocalHeap="${ITEMPREVIEWIMAGECACHESIZE}" 	
+		   eternal="true">
+	</cache>
+
+ 	<cache name="itemFullImageCache"
+           maxEntriesLocalHeap="${ITEMFULLIMAGECACHESIZE}" 	
+		   eternal="true">
+	</cache>
+	
+	 <defaultCache
            maxEntriesLocalHeap="0"
            eternal="true">
     </defaultCache>

@@ -131,10 +131,7 @@ override 'isUp' => sub {
 	my $cluster = $self->host;
 	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace );
 	if ( $response =~ /alive/ ) {
-		$response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace );
-		if ( $response =~ /ready/ ) {
 			return 1;
-		}
 	}
 
 	return 0;

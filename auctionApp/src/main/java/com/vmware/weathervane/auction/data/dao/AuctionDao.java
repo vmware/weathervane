@@ -33,6 +33,7 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 	Item getFirstItem(Auction theAuction);
 	Item getNextItem(Auction theAuction, Long itemId);
 	List<Auction> getActiveAuctions();
+	Long countActiveAuctions();
 	List<Auction> getAuctionsPage(int page, int pageSize, Auction.AuctionState state);
 
 	Auction addAuctionForAuctioneer(Auction anAuction, Long userId);
@@ -68,5 +69,6 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 	void setToActivated(Auction auction);
 
 	Item getNextUnsoldItem(Auction theAuction);
+
 	
 }

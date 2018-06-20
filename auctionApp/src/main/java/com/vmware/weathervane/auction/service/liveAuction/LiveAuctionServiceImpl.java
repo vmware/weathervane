@@ -378,7 +378,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		CollectionRepresentation<AuctionRepresentation> colRep = new CollectionRepresentation<AuctionRepresentation>();
 
 		// Get the total number of active auctions
-		int totalRecords = _clientBidUpdaterMap.size();
+		long totalRecords = auctionDao.countActiveAuctions();
 
 		if (totalRecords == 0) {
 			colRep.setPage(0);

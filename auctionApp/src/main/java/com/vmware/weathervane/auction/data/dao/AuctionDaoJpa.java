@@ -124,6 +124,29 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 		return theQuery.getResultList();
 
 	}
+	
+	/**
+	 * 
+	 * Method to count how many auctions are currently running
+	 * 
+	 * @author hrosenbe
+	 */
+	@Override
+	@Transactional(readOnly = true)
+	public Long countActiveAuctions() {
+
+		logger.info("countActiveAuctions.");
+
+		String theQueryString = "SELECT count(e) FROM Auction e " + "WHERE e.state = :state ";
+
+		logger.info("countActiveAuctions. theQueryString = " + theQueryString);
+
+		Query theQuery = entityManager.createQuery(theQueryString)
+				.setParameter("state", AuctionState.RUNNING);
+
+		return (Long) theQuery.getResultList().get(0);
+
+	}
 
 	public Long getItemCountforAuction(Auction theAuction) {
 		logger.info("getItemCountForAuction. ");

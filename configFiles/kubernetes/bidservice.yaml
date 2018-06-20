@@ -5,7 +5,7 @@ metadata:
   labels:
     app: auction
     tier: backend
-    type: appServer
+    type: auctionBidServer
     impl: auctionbidservice
 data: 
   TOMCAT_USE_TLS: "0"
@@ -33,7 +33,7 @@ spec:
       labels:
         app: auction
         tier: backend
-        type: appServer
+        type: auctionBidServer
         impl: auctionbidservice
     spec:
       containers:
@@ -96,5 +96,5 @@ spec:
   selector:
     app: auction
     tier: backend
-    type: appServer
+    type: auctionBidServer
     impl: auctionbidservice

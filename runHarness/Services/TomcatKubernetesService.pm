@@ -72,10 +72,17 @@ sub configure {
 		$maxConnections = 100;
 	}
 
+
+	my $warmerJvmOpts = "-Xmx250m -Xms250m -XX:+AlwaysPreTouch";
+	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+	$warmerJvmOpts .= " -Dspring.profiles.active=$springProfilesActive ";
+
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
 	if ( $self->getParamValue('appServerEnableJprofiler') ) {
 		$completeJVMOpts .=
+		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
+		$warmerJvmOpts .=
 		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
 	}
 
@@ -85,10 +92,6 @@ sub configure {
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
 	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
-
-	my $warmerJvmOpts = "-Xmx250m -Xms250m -XX:+AlwaysPreTouch";
-	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
-	$warmerJvmOpts .= " -Dspring.profiles.active=$springProfilesActive ";
 
 	open( FILEIN,  "$configDir/kubernetes/tomcat.yaml" ) or die "$configDir/kubernetes/tomcat.yaml: $!\n";
 	open( FILEOUT, ">/tmp/tomcat-$namespace.yaml" )             or die "Can't open file /tmp/tomcat-$namespace.yaml: $!\n";

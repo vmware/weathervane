@@ -8,6 +8,4 @@ RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \
     chmod +x /entrypoint.sh
 
-ENV JVMOPTS="-Xmx250m -Xms250m -XX:+AlwaysPreTouch"
-
 ENTRYPOINT ["/entrypoint.sh"]

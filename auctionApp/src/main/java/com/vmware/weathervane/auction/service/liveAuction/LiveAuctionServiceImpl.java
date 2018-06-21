@@ -286,7 +286,6 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 		}, 60, TimeUnit.SECONDS);
 		
-		System.out.println("activeProfile = " + activeProfile);
 		if (activeProfile.contains("noBidService")) {
 			/*
 			 *  If we are running without a separate bidService, then 

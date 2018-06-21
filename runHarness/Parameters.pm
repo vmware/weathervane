@@ -2191,7 +2191,7 @@ $parameters{"auctionBidServerJdbcConnections"} = {
 
 $parameters{"auctionBidServerJvmOpts"} = {
 	"type"      => "=s",
-	"default"   => "-Xmx4G -Xms4G -XX:+AlwaysPreTouch",
+	"default"   => "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
 	"parent"    => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 1,

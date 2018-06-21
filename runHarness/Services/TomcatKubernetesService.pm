@@ -82,8 +82,6 @@ sub configure {
 	if ( $self->getParamValue('appServerEnableJprofiler') ) {
 		$completeJVMOpts .=
 		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-		$warmerJvmOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
 	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
@@ -101,7 +99,7 @@ sub configure {
 		if ( $inline =~ /TOMCAT_JVMOPTS:/ ) {
 			print FILEOUT "  TOMCAT_JVMOPTS: \"$completeJVMOpts\"\n";
 		}
-		if ( $inline =~ /TOMCAT_WARMER_JVMOPTS:/ ) {
+		elsif ( $inline =~ /TOMCAT_WARMER_JVMOPTS:/ ) {
 			print FILEOUT "  TOMCAT_WARMER_JVMOPTS: \"$warmerJvmOpts\"\n";
 		}
 		elsif ( $inline =~ /TOMCAT_THREADS:/ ) {

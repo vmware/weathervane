@@ -2711,7 +2711,7 @@ $parameters{"postgresqlHome"} = {
 
 $parameters{"postgresqlServiceName"} = {
 	"type"      => "=s",
-	"default"   => "postgresql-9.3",
+	"default"   => "postgresql-9.5",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

@@ -33,11 +33,6 @@ import com.vmware.weathervane.auction.service.exception.InvalidStateException;
  */
 public interface AuctioneerTx {
 
-	/**
-	 * @param theBid
-	 */
-	void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids);
-
 	HighBid startNextItem(HighBid curHighBid);
 
 	/**
@@ -70,5 +65,7 @@ public interface AuctioneerTx {
 	HighBid postNewHighBidTx(Bid theBid) throws InvalidStateException;
 
 	HighBid makeForwardProgress(HighBid highBid);
+
+	void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids, Long nodeNumber);
 
 }

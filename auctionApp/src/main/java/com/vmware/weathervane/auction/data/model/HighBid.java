@@ -80,6 +80,24 @@ public class HighBid implements Serializable, DomainObject {
 
 	}
 
+	public HighBid(HighBid that) {
+		this.id = that.id;
+		this.amount = that.amount;
+		this.state = that.state;
+		this.bidCount = that.bidCount;
+		this.biddingStartTime = that.biddingStartTime;
+		this.biddingEndTime = that.biddingEndTime;
+		this.currentBidTime = that.currentBidTime;
+		this.auction = that.auction;
+		this.item = that.item;
+		this.bidder = that.bidder;
+		this.bidId = that.bidId;
+		this.auctionId = that.auctionId;
+		this.itemId = that.itemId;
+		this.bidderId = that.bidderId;
+		this.preloaded = that.preloaded;
+	}
+
 	@Id
 	@GeneratedValue(strategy=GenerationType.TABLE)
 	public Long getId() {

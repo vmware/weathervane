@@ -80,8 +80,6 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	@Named("bidCompletionDelayDao")
 	private BidCompletionDelayDao bidCompletionDelayDao;
 	
-	private Long nodeNumber = Long.getLong("nodeNumber", -1L);
-
 	@Override
 	@Transactional
 	public HighBid makeForwardProgress(HighBid curHighBid) {
@@ -142,10 +140,22 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 			highBid.setState(HighBidState.SOLD);
 			currentItem.setState(ItemState.SOLD);
 
-			// Don't adjust the credit limit of the unsold user
 			if (!purchaser.getEmail().equals("unsold@auction.xyz")) {
+				// Adjust the credit limit of the user
 				purchaser.setCreditLimit(purchaser.getCreditLimit() - highBid.getAmount());
-			}			
+			} else {
+				/*
+				 * The item was unsold. Return it to its original state so that 
+				 * it can be re-auctioned at a later time.
+				 */
+				logger.info("MakeForwardProgress: auctionId = " + auctionId + ". Item " + currentItem.getId() + " was not sold" );
+				HighBid returnedHighBid = new HighBid(highBid);
+				highBidDao.delete(highBid);
+				currentItem.setState(ItemState.INAUCTION);
+				currentItem.setHighbid(null);
+				
+				return returnedHighBid;
+			}
 			return highBid;
 			
 		} else {
@@ -159,7 +169,6 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	public HighBid startNextItem(HighBid curHighBid) {
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 
-		Item currentItem = curHighBid.getItem();
 		Auction currentAuction = curHighBid.getAuction();
 		
 		logger.info("startNextItem: auctionId = " + currentAuction.getId());
@@ -167,7 +176,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		// Get the next item for the auction.
 		Item nextItem = null;
 		try {
-			nextItem = auctionDao.getNextItem(currentAuction, currentItem.getId());
+			nextItem = auctionDao.getNextUnsoldItem(currentAuction);
 			logger.info("startNextItem: found nextItem " + nextItem.getId() + " for auction "
 					+ currentAuction.getId());
 		} catch (EmptyResultDataAccessException ex) {
@@ -184,7 +193,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		} catch (NonUniqueResultException ex) {
 			throw new RuntimeException(
 					"In startNextItem: Got multiple next items for auction "
-							+ currentAuction.getId() + " and item " + currentItem.getId());
+							+ currentAuction.getId());
 		}
 
 		logger.debug("startNextItem: Making item " + nextItem.getId()
@@ -239,7 +248,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 	@Override
 	@Transactional
-	public void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids) {
+	public void storeBidCompletionDelay(BidRepresentation acceptedBid, long numCompletedBids, Long nodeNumber) {
 		
 		Calendar now = FixedOffsetCalendarFactory.getCalendar();
 		BidCompletionDelay delayRecord = new BidCompletionDelay();
@@ -378,8 +387,8 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 		Item firstItem = null;
 		try {
-			firstItem = auctionDao.getFirstItem(theAuction);
-			logger.info("startAuction: got first item " + firstItem.toString() + " for auction "
+			firstItem = auctionDao.getNextUnsoldItem(theAuction);
+			logger.info("startAuction: got unsold item " + firstItem.toString() + " for auction "
 					+ theAuction.toString());
 		} catch (EmptyResultDataAccessException ex) {
 			throw new AuctionNoItemsException("Can't start auction " + theAuction.getId() + ". It has no items.");

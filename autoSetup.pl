@@ -416,42 +416,42 @@ elsif ( $os eq "centos7" ) {
 	runAndLog( $fileout, "systemctl disable mysqld" );
 }
 
-print "Installing postgresql93\n";
-print $fileout "Installing postgresql93\n";
+print "Installing postgresql95\n";
+print $fileout "Installing postgresql95\n";
 runAndLog( $fileout, "echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo" );
 if ( $os eq "centos6" ) {
 	runAndLog( $fileout,
-		"yum localinstall -y http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-3.noarch.rpm" );
+		"yum install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm" );
 }
 elsif ( $os eq "centos7" ) {
 	runAndLog( $fileout,
-		"yum localinstall -y http://yum.postgresql.org/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-3.noarch.rpm" );
+		"yum install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm" );
 }
-runAndLog( $fileout, "yum install -y postgresql93" );
-runAndLog( $fileout, "yum install -y postgresql93-server" );
+runAndLog( $fileout, "yum install -y postgresql95" );
+runAndLog( $fileout, "yum install -y postgresql95-server" );
 if ( $os eq "centos6" ) {
-	runAndLog( $fileout, "service postgresql-9.3 initdb" );
+	runAndLog( $fileout, "service postgresql-9.5 initdb" );
 }
 elsif ( $os eq "centos7" ) {
-	runAndLog( $fileout, "/usr/pgsql-9.3/bin/postgresql93-setup initdb" );
+	runAndLog( $fileout, "/usr/pgsql-9.5/bin/postgresql93-setup initdb" );
 }
-runAndLog( $fileout, "mv /var/lib/pgsql/9.3/data/* /mnt/dbData/postgresql" );
+runAndLog( $fileout, "mv /var/lib/pgsql/9.5/data/* /mnt/dbData/postgresql" );
 runAndLog( $fileout, "mv /mnt/dbData/postgresql/pg_xlog/* /mnt/dbLogs/postgresql" );
 runAndLog( $fileout, "cp configFiles/host/$os/pg_hba.conf /mnt/dbData/postgresql" );
-runAndLog( $fileout, "rmdir /var/lib/pgsql/9.3/data; ln -s /mnt/dbData/postgresql /var/lib/pgsql/9.3/data" );
+runAndLog( $fileout, "rmdir /var/lib/pgsql/9.5/data; ln -s /mnt/dbData/postgresql /var/lib/pgsql/9.5/data" );
 runAndLog( $fileout,
 	"rmdir /mnt/dbData/postgresql/pg_xlog; ln -s /mnt/dbLogs/postgresql /mnt/dbData/postgresql/pg_xlog" );
 runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql;chown -R postgres:postgres /mnt/dbData/postgresql" );
 runAndLog( $fileout, "chown -R postgres:postgres /mnt/dbLogs/postgresql" );
-runAndLog( $fileout, "service postgresql-9.3 start" );
+runAndLog( $fileout, "service postgresql-9.5 start" );
 runAndLog( $fileout,
 	"psql -U postgres -c \"create role auction with superuser createdb login password 'auction;'\"" );
 runAndLog( $fileout, "psql -U postgres -c \"create database auction owner auction\"" );
-runAndLog( $fileout, "service postgresql-9.3 stop" );
+runAndLog( $fileout, "service postgresql-9.5 stop" );
 runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql" );
 runAndLog( $fileout, "chmod -R 777 /mnt/dbLogs/postgresql" );
-runAndLog( $fileout, "mkdir /etc/systemd/system/postgresql-9.3.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/postgresql-9.3.service.d/limits.conf" );
+runAndLog( $fileout, "mkdir /etc/systemd/system/postgresql-9.5.service.d" );
+runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/postgresql-9.5.service.d/limits.conf" );
 
 print "Installing RabbitMQ\n";
 print $fileout "Installing RabbitMQ\n";

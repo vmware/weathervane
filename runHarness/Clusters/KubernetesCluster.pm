@@ -475,7 +475,7 @@ sub kubernetesTopPod {
 		while (!$self->stopKubectlTop) {
 	 		my $cmd;
 			my $outString;	
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --namespace=$namespace 2>&1";
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --heapster-scheme=https --namespace=$namespace 2>&1";
 			$outString = `$cmd`;
 			my $time = `date +%H:%M`;
 			chomp($time);
@@ -517,7 +517,7 @@ sub kubernetesTopPodAllNamespaces {
 		while (!$self->stopKubectlTop) {
 	 		my $cmd;
 			my $outString;	
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --all-namespaces 2>&1";
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --heapster-scheme=https --all-namespaces 2>&1";
 			$outString = `$cmd`;
 			my $time = `date +%H:%M`;
 			chomp($time);
@@ -559,7 +559,7 @@ sub kubernetesTopNode {
 		while (!$self->stopKubectlTop) {
 	 		my $cmd;
 			my $outString;	
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node 2>&1";
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node --heapster-scheme=https 2>&1";
 			$outString = `$cmd`;
 			my $time = `date +%H:%M`;
 			chomp($time);

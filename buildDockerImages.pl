@@ -204,4 +204,8 @@ foreach my $imageName (@imageNames) {
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version);	
 }
 
+runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
+runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+
 1;

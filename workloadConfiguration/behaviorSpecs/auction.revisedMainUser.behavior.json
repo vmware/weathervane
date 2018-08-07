@@ -61,7 +61,7 @@
 				"meanCycleTimes" : [ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
 				"responseTimeLimits" : [ 2, 2, 3, 2, 2, 2, 2, 3, 3, 60, 2, 2, 2, 2, 2, 2, 5, 2, 5, 3, 9999999 ],
 				"responseTimeLimitsPercentile" : [ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 ],
-				"mixPercentage" : [ 0.83, 0.0, 0.83, 12.09, 9.77, 1.21, 1.63, 1.67, 2.93, 49.61, 2.48, 0, 0.81, 0.82, 0.81, 10.66, 0.46, 2.33, 0.23, 0.82, 0.0 ],
+				"mixPercentage" : [ 0.82, 0.0, 0.82, 12.05, 9.77, 1.19, 1.63, 1.65, 2.77, 48.88, 2.48, 0, 0.81, 0.82, 0.81, 10.66, 0.46, 2.33, 0.23, 0.82, 0.0 ],
 				"mixPercentageTolerance" : 0.10,
 				"useResponseTime" : [ true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, false ]
 }

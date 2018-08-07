@@ -15,7 +15,7 @@ perl /updateResolveConf.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-	java -jar ${JVMOPTS} -DWA=W${WORKLOADNUM}I${APPINSTANCENUM} /auctionConfigManager.jar --port=${PORT}
+	setsid java -jar ${JVMOPTS} -DWA=W${WORKLOADNUM}I${APPINSTANCENUM} /auctionConfigManager.jar --port=${PORT}
 fi
 
 pid="$!"

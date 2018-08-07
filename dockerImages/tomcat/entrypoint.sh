@@ -27,7 +27,7 @@ perl /configure.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-    /opt/apache-tomcat/bin/startup.sh &
+    setsid /opt/apache-tomcat/bin/startup.sh &
 fi
 
 if [ ! -e "/fifo" ]; then

@@ -51,7 +51,7 @@ perl /configure.pl
 if [ $numArgs -gt 0 ]; then
 	eval "$cmd &"
 else
-	/usr/bin/mongod -f /etc/mongod.conf &
+	setsid /usr/bin/mongod -f /etc/mongod.conf &
 fi
 
 if [ ! -e "/fifo" ]; then

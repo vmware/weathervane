@@ -21,7 +21,7 @@ perl /waitForNodes.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-    cd /mnt/zookeeper ; /opt/zookeeper/bin/zkServer.sh start
+    cd /mnt/zookeeper ; setsid /opt/zookeeper/bin/zkServer.sh start
     tail -F -n1 /mnt/zookeeper/zookeeper.out
 fi
 

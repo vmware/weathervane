@@ -1,1 +1,0 @@
-<%= auction.utils.printCurrency(amount) %>

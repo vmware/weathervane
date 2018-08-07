@@ -32,7 +32,7 @@ if [ $# -gt 0 ]; then
 	eval "$* &"
 else
 	perl /configure.pl
-	/usr/sbin/nginx  &
+	setsid /usr/sbin/nginx  &
 fi
 
 pid="$!"

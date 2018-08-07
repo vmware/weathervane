@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Auction</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/auction.css" rel="stylesheet">
+<link href="css/magnific-popup.css" rel="stylesheet">
+<link href="css/jquery.ui.theme.css" rel="stylesheet">
+<link href="css/jquery.Jcrop.css" rel="stylesheet">
+<link href="css/jquery.fileupload-ui.css" rel="stylesheet">
+</head>
+<body>
+	<div id="mainNavbar" class="navbar navbar-fixed-top navbar-inverse"></div>
+
+	<div class="container page">
+		<div id="attendedAuctionDisplay" class="outerDisplay">
+			<div class="row">
+				<div class="col-lg-9">
+					<div id="attendedAuctionTeaser">
+						<div id="teaserDiv" class="jumbotron"></div>
+					</div>
+					<div id="attendedAuctions" class="row">
+						<div id="attendedAuction1" class="col-lg-4"></div>
+						<div id="attendedAuction2" class="col-lg-4"></div>
+						<div id="attendedAuction3" class="col-lg-4"></div>
+					</div>
+				</div>
+				<div id="activeAuctionSmallTable" class="col-lg-3"></div>
+			</div>
+		</div>
+
+		<div id="infoDisplay" class="outerDisplay">
+			<div id="attendedAuctionSummary" class="row">
+				<div id="attendedAuctionSummary1" class="col-lg-3"></div>
+				<div id="attendedAuctionSummary2" class="col-lg-3"></div>
+				<div id="attendedAuctionSummary3" class="col-lg-3"></div>
+				<div id="attendedAuctionSummaryButton" class="col-lg-3"></div>
+			</div>
+
+			<div id="exploreAuctionsDisplay" class="infoDisplayInner"></div>
+
+			<div id="userInfoDisplay" class="infoDisplayInner"></div>
+
+			<div id="manageAuctionsDisplay" class="infoDisplayInner"></div>
+
+			<div id="dashboardDisplay" class="infoDisplayInner"></div>
+
+		</div>
+
+		<div id="loginDisplay" class="outerDisplay">
+			<div id="nc-login"></div>
+			<div id="nc-registration"></div>
+		</div>
+
+	</div>
+	<div id="nc-footer"></div>
+	<script src="js/jquery.min.js"></script>
+	<script src="js/jquery-ui.js"></script>
+	<script src="js/jquery.json.js"></script>
+	<script src="js/jquery.cookie.js"></script>
+	<script src="js/jquery.ui.widget.js"></script>
+	<script src="js/canvas-to-blob.js"></script>
+	<script src="js/load-image.js"></script>
+	<script src="js/load-image-meta.js"></script>
+	<script src="js/jquery.Jcrop.js"></script>	
+	<script src="js/jquery.iframe-transport.js"></script>
+	<script src="js/jquery.fileupload.js"></script>
+	<script src="js/jquery.fileupload-process.js"></script>
+	<script src="js/jquery.fileupload-image.js"></script>
+	<script src="js/jquery.fileupload-audio.js"></script>
+	<script src="js/jquery.fileupload-video.js"></script>
+	<script src="js/jquery.fileupload-validate.js"></script>
+	<script src="js/magnific-popup.min.js"></script>
+	<script src="js/underscore.js"></script>
+	<script src="js/backbone.js"></script>
+	<script src="js/bootstrap.js"></script>
+	<script src="js/auction.utils.js"></script>
+	<script src="js/auction.configuration.js"></script>
+	<script src="js/auction.strings.js"></script>
+	<script src="js/auction.models.js"></script>
+	<script src="js/views/exploreAuctions.js"></script>
+	<script src="js/views/userInfo.js"></script>
+	<script src="js/views/manageAuctions.js"></script>
+	<script src="js/views/auctionTable.js"></script>
+	<script src="js/views/auctionTableRow.js"></script>
+	<script src="js/views/activeAuctionTable.js"></script>
+	<script src="js/views/activeAuctionTableRow.js"></script>
+	<script src="js/views/activeAuctionSmallTable.js"></script>
+	<script src="js/views/activeAuctionSmallTableRow.js"></script>
+	<script src="js/views/auctionDetail.js"></script>
+	<script src="js/views/itemDetail.js"></script>
+	<script src="js/views/attendedAuctionDetails.js"></script>
+	<script src="js/views/attendedAuctionDetailsSummary.js"></script>
+	<script src="js/views/itemTable.js"></script>
+	<script src="js/views/itemRow.js"></script>
+	<script src="js/views/purchasedItemTable.js"></script>
+	<script src="js/views/purchasedItemRow.js"></script>
+	<script src="js/views/bidHistoryTable.js"></script>
+	<script src="js/views/bidHistoryRow.js"></script>
+	<script src="js/views/attendanceHistoryTable.js"></script>
+	<script src="js/views/attendanceHistoryRow.js"></script>
+	<script src="js/views/navbarBottomHalf.js"></script>
+	<script src="js/views/attendedAuction.js"></script>
+	<script src="js/views/attendedAuctionSummary.js"></script>
+	<script src="js/views/attendedAuctionSummaryButton.js"></script>
+	<script src="js/views/currentItem.js"></script>
+	<script src="js/views/currentItemSummary.js"></script>
+	<script src="js/views/nextBid.js"></script>
+	<script src="js/views/nextBidSummary.js"></script>
+	<script src="js/views/postBid.js"></script>
+	<script src="js/views/userProfile.js"></script>
+	<script src="js/views/updateProfile.js"></script>
+	<script src="js/views/addItem.js"></script>
+	<script src="js/views/editItem.js"></script>
+	<script src="js/views/myItemsTable.js"></script>
+	<script src="js/views/myItemsRow.js"></script>
+
+	<script src="js/views/paginator.js"></script>
+	<script src="js/views/teaser.js"></script>
+	<script src="js/views/navbar.js"></script>
+	<script src="js/views/login.js"></script>
+	<script src="js/views/footer.js"></script>
+	<script src="js/views/registration.js"></script>
+	<script src="js/views/profile.js"></script>
+	<script src="js/views/contact.js"></script>
+	<script src="js/auction.router.js"></script>
+
+</body>
+</html>

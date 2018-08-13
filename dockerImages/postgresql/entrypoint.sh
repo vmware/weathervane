@@ -17,7 +17,7 @@ if [ $# -gt 0 ]; then
 	eval "$* &"
 else
 	echo "start postgresql"
-	/pg-init.sh &
+	setsid /pg-init.sh &
 fi
 
 pid="$!"

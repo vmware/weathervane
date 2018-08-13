@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat);
+my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer haproxy mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat auctionbidservice);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -145,11 +145,19 @@ runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb");
-runAndLog($fileout, "cp ./dist/auction*.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
+runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
+runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
 runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction/");
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
 runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
+# auctionBidService
+runAndLog($fileout, "rm -rf ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction");
+runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction.war");
+runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction/auction.war");
+runAndLog($fileout, "cd ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
 
 # workload driver
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
@@ -224,7 +232,7 @@ foreach my $imageName (@imageNames) {
 		$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
 		my $zookeeperVers = $1;
 		push @buildArgs, "ZOOKEEPER_VERSION=$zookeeperVers";
-	} elsif ($imageName eq "tomcat") {
+	} elsif (($imageName eq "tomcat") || ($imageName eq "auctionbidservice")) {
 		my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
 		$tomcat8get =~ />v8\.5\.(\d+)\//;
 		my $tomcat8vers = $1;
@@ -239,6 +247,7 @@ runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionAppServerWarmer.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
 runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");

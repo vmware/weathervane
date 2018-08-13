@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/amqp http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!-- RabbitMQ General Configuration -->
+	<rabbit:template id="liveAuctionRabbitTemplate" connection-factory="rabbitConnectionFactory"
+		reply-timeout="10000" />
+
+	<rabbit:queue id="highBidQueue"  />
+	<rabbit:queue id="newBidQueue"  />
+	
+	<rabbit:topic-exchange name="liveAuctionMgmtExchange">
+		<rabbit:bindings>
+			<rabbit:binding queue="highBidQueue" pattern="highBid.#"/>
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+	
+	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${HIGHBIDQUEUECONCURRENCY}">
+    	<rabbit:listener queues="highBidQueue" ref="bidService" method="handleHighBidMessage"  />
+	</rabbit:listener-container>
+
+	
+	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+	<beans profile="singleRabbit">
+		<rabbit:connection-factory id="rabbitConnectionFactory"
+			host="${RABBITMQ_HOST}" port="${RABBITMQ_PORT}" 
+			username="auction" password="auction" virtual-host="auction" 
+			/>
+			
+	</beans>
+
+	<beans profile="clusteredRabbit">
+		<rabbit:connection-factory id="rabbitConnectionFactory" 
+			addresses="${RABBITMQ_HOSTS}" 
+			username="auction" password="auction" virtual-host="auction" 
+			/>
+	</beans>
+</beans>

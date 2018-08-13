@@ -530,6 +530,14 @@ sub getSpringProfilesActive {
 	if ($performanceMonitor) {
 		$springProfilesActive .= ",performanceMonitor";
 	}
+
+	my $numBidServers = $self->getNumActiveOfServiceType('auctionBidServer');
+	if ($numBidServers > 0) {
+		$springProfilesActive .= ",bidService";
+	} else {
+		$springProfilesActive .= ",noBidService";
+	}
+
 	$logger->debug(
 		"getSpringProfilesActive finished for workload ",
 		$self->getParamValue('workloadNum'),
@@ -548,7 +556,7 @@ sub getServiceConfigParameters {
 
 	my $users = $self->getParamValue('maxUsers');
 
-	if ( $serviceType eq "appServer" ) {
+	if ( ($serviceType eq "appServer") || ($serviceType eq 'auctionBidServer') ) {
 
 		# For the app Servers, Auction needs to provide JVM options
 		my $jvmOpts = "";

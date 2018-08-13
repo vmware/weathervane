@@ -54,11 +54,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     	<rabbit:listener queues="auctionEndedQueue" ref="liveAuctionService" method="handleAuctionEndedMessage"  />
     	<rabbit:listener queues="startAuctioneerQueue" ref="liveAuctionService" method="handleStartAuctioneerMessage"  />
 	</rabbit:listener-container>
-
-	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${HIGHBIDQUEUECONCURRENCY}">
-    	<rabbit:listener queues="highBidQueue" ref="liveAuctionService" method="handleHighBidMessage"  />
-	</rabbit:listener-container>
-
 	
 	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${NEWBIDQUEUECONCURRENCY}">
     	<rabbit:listener id="newBidListenerContainer" queues="newBidQueue" 
@@ -66,6 +61,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	</rabbit:listener-container>
 	
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+	
+	<beans profile="noBidService">
+		<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${HIGHBIDQUEUECONCURRENCY}">
+    		<rabbit:listener queues="highBidQueue" ref="liveAuctionService" method="handleHighBidMessage"  />
+		</rabbit:listener-container>
+	</beans>	
+
 	<beans profile="singleRabbit">
 		<rabbit:connection-factory id="rabbitConnectionFactory"
 			host="${RABBITMQ_HOST}" port="${RABBITMQ_PORT}" 

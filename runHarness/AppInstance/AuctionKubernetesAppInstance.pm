@@ -177,7 +177,7 @@ override 'getServiceConfigParameters' => sub {
 
 	my $users = $self->getParamValue('maxUsers');
 
-	if ( $serviceType eq "appServer" ) {
+	if ( ($serviceType eq "appServer") || ($serviceType eq 'auctionBidServer') ) {
 
 		# For the app Servers, Auction needs to provide JVM options
 		my $jvmOpts = "";
@@ -249,14 +249,7 @@ override 'getServiceConfigParameters' => sub {
 		$jvmOpts .= " -DITEMTHUMBNAILIMAGECACHESIZE=$itemThumbnailImageCacheSize ";
 		$jvmOpts .= " -DITEMPREVIEWIMAGECACHESIZE=$itemPreviewImageCacheSize ";
 		$jvmOpts .= " -DITEMFULLIMAGECACHESIZE=$itemFullImageCacheSize ";
-
-		if ( $service->getParamValue('randomizeImages') ) {
-			$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
-		}
-		else {
-			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
-		}
-
+		
 		my $numCpus;
 		if ( $service->getParamValue('dockerCpus')) {
 			$numCpus = $service->getParamValue('dockerCpus');
@@ -264,22 +257,30 @@ override 'getServiceConfigParameters' => sub {
 		else {
 			$numCpus = 2;
 		}
-		
+
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
 		if (!$highBidQueueConcurrency) {
 			$highBidQueueConcurrency = $numCpus;
 		}
+		$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
+
+		if ( $service->getParamValue('randomizeImages') ) {
+			$jvmOpts .= " -DRANDOMIZEIMAGES=true ";
+		}
+		else {
+			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
+		}
+		
 		my $newBidQueueConcurrency = $service->getParamValue('newBidQueueConcurrency');
 		if (!$newBidQueueConcurrency) {
 			$newBidQueueConcurrency = $numCpus;
 		}		
-		$jvmOpts .= " -DHIGHBIDQUEUECONCURRENCY=$highBidQueueConcurrency ";
 		$jvmOpts .= " -DNEWBIDQUEUECONCURRENCY=$newBidQueueConcurrency ";
 
 		# Turn on imageWriters in the application
 		if ( $service->getParamValue('useImageWriterThreads') ) {
 			if ( $service->getParamValue('imageWriterThreads') ) {
-
+	
 				# value was set, overriding the default
 				$jvmOpts .= " -DIMAGEWRITERTHREADS=" . $service->getParamValue('imageWriterThreads') . " ";
 			}
@@ -298,9 +299,11 @@ override 'getServiceConfigParameters' => sub {
 		else {
 			$jvmOpts .= " -DUSEIMAGEWRITERTHREADS=false ";
 		}
-
-		$jvmOpts .= " -DNUMCLIENTUPDATETHREADS=" . $service->getParamValue('numClientUpdateThreads') . " ";
+			
 		$jvmOpts .= " -DNUMAUCTIONEERTHREADS=" . $service->getParamValue('numAuctioneerThreads') . " ";
+			
+		
+		$jvmOpts .= " -DNUMCLIENTUPDATETHREADS=" . $service->getParamValue('numClientUpdateThreads') . " ";
 
 		$jvmOpts .= " -DRABBITMQ_HOST=rabbitmq -DRABBITMQ_PORT=5672 ";
 

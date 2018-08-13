@@ -39,7 +39,7 @@ my @instancesWithConstructedNames = (
 	"coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
 	"appServers",    "fileServers",      "viHosts",      "viMgmtHostInstance",
-	"dataManagerInstance"
+	"auctionBidServers", "dataManagerInstance"
 );
 
 my @dockerNameParameters = ( "dockerName" );
@@ -48,7 +48,7 @@ my @instancesWithDockerName = (
 	"ipManagers",    "configurationManagers",    "elasticityServices",
 	"coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "fileServers",	"dataManagerInstance"
+	"appServers",    "auctionBidServers", "fileServers",	"dataManagerInstance"
 );
 
 my @constructedAppInstanceNameParameters     = ("appInstanceName");
@@ -1012,6 +1012,23 @@ $parameters{"appServers"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"auctionBidServer"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"auctionBidServers"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "auctionBidServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"hostName"} = {
 	"type"      => "=s",
 	"default"   => "",
@@ -1475,6 +1492,7 @@ $parameters{"dockerServiceImages"} = {
 	"default" => {
 		"nginx"      => "weathervane-nginx",
 		"tomcat"     => "weathervane-tomcat",
+		"auctionbidservice"     => "weathervane-auctionbidservice",
 		"haproxy"    => "weathervane-haproxy",
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
@@ -1607,6 +1625,15 @@ $parameters{"numAppServers"} = {
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "appServer",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"numAuctionBidServers"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "appInstance",
+	"isa"       => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1818,6 +1845,20 @@ $parameters{"appServerCacheImpl"} = {
 	"usageText" => "Controls which cache provider to use in the Application Server.\n\t" . "Currently ehcache and ignite are supported.",
 	"showUsage" => 0,
 };
+$parameters{"auctionBidServerImpl"} = {
+	"type"      => "=s",
+	"default"   => "auctionbidservice",
+	"parent"    => "appInstance",
+	"usageText" => "Controls which AuctionBidServer implementation to use.\n\t" . "Currently only tomcat is supported.",
+	"showUsage" => 0,
+};
+$parameters{"auctionBidServerCacheImpl"} = {
+	"type"      => "=s",
+	"default"   => "ehcache",
+	"parent"    => "appInstance",
+	"usageText" => "Controls which cache provider to use for the auctionBidService.\n\t" . "Currently ehcache is supported.",
+	"showUsage" => 0,
+};
 $parameters{"webServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "nginx",
@@ -1873,7 +1914,7 @@ $parameters{"ssl"} = {
 $parameters{"randomizeImages"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls whether to add random noise to images before writing them to the imageStore.",
 	"showUsage" => 0,
 };
@@ -1881,7 +1922,7 @@ $parameters{"randomizeImages"} = {
 $parameters{"useImageWriterThreads"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls whether to use separate threads for writing images in the Auction application.",
 	"showUsage" => 0,
 };
@@ -1889,7 +1930,6 @@ $parameters{"useImageWriterThreads"} = {
 $parameters{"imageWriterThreads"} = {
 	"type"    => "=i",
 	"default" => 0,
-	"parent"  => "appServer",
 	"usageText" =>
 "Controls how many threads to use for writing images out by the Auction application.  Setting this overrides the default, which is 5 threads/cpu on the app server.",
 	"showUsage" => 0,
@@ -1898,7 +1938,7 @@ $parameters{"imageWriterThreads"} = {
 $parameters{"numClientUpdateThreads"} = {
 	"type"      => "=i",
 	"default"   => 2,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls how many threads to use for running client bid updates in the Auction application. ",
 	"showUsage" => 0,
 };
@@ -1906,7 +1946,7 @@ $parameters{"numClientUpdateThreads"} = {
 $parameters{"numAuctioneerThreads"} = {
 	"type"      => "=i",
 	"default"   => 2,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "Controls how many threads to use for running auctioneers in the Auction application. ",
 	"showUsage" => 0,
 };
@@ -2129,6 +2169,30 @@ $parameters{"appServerJvmOpts"} = {
 	"type"      => "=s",
 	"default"   => "-Xmx2G -Xms2G -XX:+AlwaysPreTouch",
 	"parent"    => "appServer",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"auctionBidServerThreads"} = {
+	"type"      => "=i",
+	"default"   => 48,
+	"parent"    => "auctionBidServer",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"auctionBidServerJdbcConnections"} = {
+	"type"      => "=i",
+	"default"   => 49,
+	"parent"    => "auctionBidServer",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"auctionBidServerJvmOpts"} = {
+	"type"      => "=s",
+	"default"   => "-Xmx6G -Xms6G -XX:+AlwaysPreTouch",
+	"parent"    => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -2446,7 +2510,7 @@ $parameters{"nfsClientAsync"} = {
 $parameters{"appServerEnableJprofiler"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "appServer",
+	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -3042,6 +3106,13 @@ $parameters{"lbServerSuffix"} = {
 $parameters{"appServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "App",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"auctionBidServerSuffix"} = {
+	"type"      => "=s",
+	"default"   => "Bid",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

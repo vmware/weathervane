@@ -72,6 +72,11 @@ sub configure {
 		$maxConnections = 100;
 	}
 
+
+	my $warmerJvmOpts = "-Xmx250m -Xms250m -XX:+AlwaysPreTouch";
+	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+	$warmerJvmOpts .= " -Dspring.profiles.active=$springProfilesActive ";
+
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
 	if ( $self->getParamValue('appServerEnableJprofiler') ) {
@@ -93,6 +98,9 @@ sub configure {
 
 		if ( $inline =~ /TOMCAT_JVMOPTS:/ ) {
 			print FILEOUT "  TOMCAT_JVMOPTS: \"$completeJVMOpts\"\n";
+		}
+		elsif ( $inline =~ /TOMCAT_WARMER_JVMOPTS:/ ) {
+			print FILEOUT "  TOMCAT_WARMER_JVMOPTS: \"$warmerJvmOpts\"\n";
 		}
 		elsif ( $inline =~ /TOMCAT_THREADS:/ ) {
 			print FILEOUT "  TOMCAT_THREADS: \"$threads\"\n";

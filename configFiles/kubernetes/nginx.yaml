@@ -16,6 +16,7 @@ data:
   HTTPPORT: "80"
   HTTPSPORT: "443"
   APPSERVERS: "tomcat:8080"
+  BIDSERVERS: "tomcat:8080"
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment

@@ -10,6 +10,7 @@ metadata:
 data: 
   TOMCAT_USE_TLS: "0"
   TOMCAT_JVMOPTS: "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer  -Dspring.profiles.active=postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit  -DAUTHTOKENCACHESIZE=2000 -DACTIVEAUCTIONCACHESIZE=134  -DAUCTIONREPRESENTATIONCACHESIZE=134  -DIMAGEINFOCACHESIZE=6700 -DITEMSFORAUCTIONCACHESIZE=134  -DITEMCACHESIZE=1340  -DAUTHTOKENCACHEMODE=REPLICATED -DZOOKEEPERCONNECTIONSTRING=zookeeper:2181  -DITEMTHUMBNAILIMAGECACHESIZE=67  -DITEMPREVIEWIMAGECACHESIZE=1  -DITEMFULLIMAGECACHESIZE=1  -DRANDOMIZEIMAGES=true  -DHIGHBIDQUEUECONCURRENCY=2  -DNEWBIDQUEUECONCURRENCY=2  -DIMAGEWRITERTHREADS=1  -DUSEIMAGEWRITERTHREADS=true  -DNUMCLIENTUPDATETHREADS=2  -DNUMAUCTIONEERTHREADS=2  -DRABBITMQ_HOST=rabbitmq -DRABBITMQ_PORT=5672  -DMONGODB_HOST=mongodb -DMONGODB_PORT=27017  -DDBHOSTNAME=postgresql -DDBPORT=5432  -XX:CompileThreshold=2000  -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/opt/apache-tomcat-auction1/logs/gc.log  -DnodeNumber=1 "
+  TOMCAT_WARMER_JVMOPTS: "-Xmx250m -Xms250 -XX:+AlwaysPreTouch -XX:+PreserveFramePointer  -Dspring.profiles.active=postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit "
   TOMCAT_SHUTDOWN_PORT: "8005"
   TOMCAT_CONNECTIONS: "5000"
   TOMCAT_THREADS: "96"
@@ -50,6 +51,9 @@ spec:
         - containerPort: 8443
           name: httpsport
           protocol: TCP
+        - containerPort: 8849
+          name: jprofilerport
+          protocol: TCP
         resources:
           requests:
             cpu: 1
@@ -84,6 +88,9 @@ spec:
       - image: hrosenbe/weathervane-auctionappserverwarmer:1.2.0
         name: warmer
         imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: tomcat-config
         resources:
           requests:
             cpu: 100m
@@ -127,6 +134,8 @@ spec:
     name: httpport
   - port: 8443
     name: httpsport
+  - port: 8849
+    name: jprofilerport
   selector:
     app: auction
     tier: backend

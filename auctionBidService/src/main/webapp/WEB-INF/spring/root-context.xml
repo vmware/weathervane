@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<context:property-placeholder
+		location="/WEB-INF/classes/META-INF/spring/*.properties" />
+
+	<context:annotation-config/>
+
+	<cache:annotation-driven />
+
+	<bean
+		class="org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor" />
+	<bean
+		class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" />
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<context:component-scan base-package="com.vmware.weathervane.auction.data.dao" />
+	<context:component-scan base-package="com.vmware.weathervane.auction.data.model" />
+	<context:component-scan base-package="com.vmware.weathervane.auction.data.statsModel" />
+	<context:component-scan base-package="com.vmware.weathervane.auction.service" />
+	<context:component-scan base-package="com.vmware.weathervane.auction.security" />
+
+	<!-- Date formatter used to create the date for the fixedStartCelendar -->
+	<bean id="dateFormat" class="java.text.SimpleDateFormat">
+		<constructor-arg value="yyyy-MM-dd:HH-mm" />
+	</bean>
+
+	<bean id="bidService"
+		class="com.vmware.weathervane.auction.service.BidServiceImpl">
+		<property name="numClientUpdateExecutorThreads" value="${NUMCLIENTUPDATETHREADS:1}" />
+		<property name="auctionMaxIdleTime" value="30" />
+	</bean>
+
+	<bean id="userService" class="com.vmware.weathervane.auction.service.UserServiceImpl">
+	</bean>
+
+	<bean id="userDetailsService" class="com.vmware.weathervane.auction.security.UserDetailsServiceImpl">
+	</bean>
+
+	<bean id="imageInfoCacheFacade" class="com.vmware.weathervane.auction.data.imageStore.ImageInfoCacheFacade"/>
+
+	<beans profile="performanceMonitor">
+		<!-- Javasimon Configuration for Performance Monitoring -->
+		<bean id="monitoringInterceptor" class="org.javasimon.spring.MonitoringInterceptor"/>
+	
+		<aop:config>
+   			<aop:pointcut id="jamonMonitoringPointcut" 
+   			expression="execution(* com.vmware.weathervane.auction.service.*.*(..)) || execution(* com.vmware.weathervane.auction.data.repository.*.*(..)) || execution(* com.vmware.weathervane.auction.data.dao.*.*(..)) || execution(* com.vmware.weathervane.auction.controllers.*.*(..)) || execution(* com.vmware.weathervane.auction.imageStore.*.*(..))"/>
+        	<aop:advisor pointcut-ref="jamonMonitoringPointcut" advice-ref="monitoringInterceptor"/>
+		</aop:config>
+	</beans>
+
+
+	<beans profile="ehcache">
+		<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager"
+			p:cache-manager-ref="ehcache" />
+
+		<!-- EhCache library setup -->
+		<bean id="ehcache"
+			class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
+			p:config-location="classpath:ehcache.xml" />
+	</beans>
+
+	<beans profile="imagesInMemory">
+		<bean id="imageStoreFacade"
+			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeInMemoryImpl">
+			<property name="imageFormat" value="jpg" />
+			<property name="thumbnailWidth" value="100" />
+			<property name="thumbnailHeight" value="100" />
+			<property name="previewWidth" value="350" />
+			<property name="previewHeight" value="350" />
+			<property name="numImageWriters" value="${IMAGEWRITERTHREADS:10}" />
+			<property name="useImageWriters" value="${USEIMAGEWRITERS:true}" />
+			<property name="randomizeImages" value="${RANDOMIZEIMAGES:true}" />
+			<property name="addImageQueueSize" value="${ADDIMAGEQUEUESIZE:4000}" />
+		</bean>
+	</beans>
+
+	<beans profile="imagesInFilesystem">
+		<bean id="imageStoreFacade"
+			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeFilesystemImpl">
+			<property name="baseDirectory" value="/mnt/imageStore" />
+			<property name="imageFormat" value="jpg" />
+			<property name="thumbnailWidth" value="100" />
+			<property name="thumbnailHeight" value="100" />
+			<property name="previewWidth" value="350" />
+			<property name="previewHeight" value="350" />
+			<property name="numImageWriters" value="${IMAGEWRITERTHREADS:10}" />
+			<property name="useImageWriters" value="${USEIMAGEWRITERS:true}" />
+			<property name="randomizeImages" value="${RANDOMIZEIMAGES:true}" />
+			<property name="addImageQueueSize" value="${ADDIMAGEQUEUESIZE:4000}" />
+		</bean>
+	</beans>
+
+
+	<beans profile="imagesInMongo">
+		<bean id="imageStoreFacade"
+			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeMongodbImpl">
+			<property name="imageFormat" value="jpg" />
+			<property name="thumbnailWidth" value="100" />
+			<property name="thumbnailHeight" value="100" />
+			<property name="previewWidth" value="350" />
+			<property name="previewHeight" value="350" />
+			<property name="numImageWriters" value="${IMAGEWRITERTHREADS:10}" />
+			<property name="useImageWriters" value="${USEIMAGEWRITERS:true}" />
+			<property name="randomizeImages" value="${RANDOMIZEIMAGES:true}" />
+			<property name="addImageQueueSize" value="${ADDIMAGEQUEUESIZE:4000}" />
+		</bean>
+	</beans>
+
+</beans>

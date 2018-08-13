@@ -17,7 +17,7 @@ perl /configure.pl
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-	/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg &
+	setsid /usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg &
 fi
 
 pid="$!"

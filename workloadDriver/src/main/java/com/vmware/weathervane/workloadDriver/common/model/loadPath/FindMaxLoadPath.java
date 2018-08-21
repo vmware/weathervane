@@ -64,7 +64,7 @@ public class FindMaxLoadPath extends LoadPath {
 	};
 
 	@JsonIgnore
-	private SubInterval nextSubInterval = SubInterval.WARMUP;
+	private SubInterval nextSubInterval = SubInterval.DECISION;
 
 	@JsonIgnore
 	private long curUsers = 0;
@@ -97,9 +97,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private int numSucessiveIntervalsPassed = 0;
 	
 	@JsonIgnore
-	private final long shortWarmupIntervalDurationSec = 20;
-	@JsonIgnore
-	private final long shortIntervalDurationSec = 120;
+	private final long initialRampIntervalSec = 120;
 
 	@JsonIgnore
 	private final long mediumRampIntervalDurationSec = 180;
@@ -161,83 +159,68 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("getNextInitialRampInterval ");
 
 		UniformLoadInterval nextInterval = new UniformLoadInterval();
-		if (nextSubInterval.equals(SubInterval.WARMUP) || nextSubInterval.equals(SubInterval.RAMP)) {
-			// WARMUP starts a new interval
-			intervalNum++;
-			logger.debug("getNextInitialRampInterval warmup subinterval for interval " + intervalNum);
+		intervalNum++;
+		logger.debug("getNextInitialRampInterval interval " + intervalNum);
+
+		/*
+		 * If this is not the first interval then we need to select the number of users
+		 * based on the results of the previous interval
+		 */
+		boolean prevIntervalPassed = true;
+		if (intervalNum != 1) {
+			String curIntervalName = curInterval.getName();
 
 			/*
-			 * Do the warmup interval for the current interval. If this is not the first
-			 * interval then we need to select the number of users based on the results of
-			 * the previous interval
+			 * This is the not first interval. Need to know whether the previous interval
+			 * passed. Get the statsSummaryRollup for the previous interval
 			 */
-			boolean prevIntervalPassed = true;
-			if (intervalNum != 1) {
-				String curIntervalName = curInterval.getName();
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 
+			// For initial ramp, only interested in response-time
+			if (rollup != null) {
 				/*
-				 * This is the not first interval. Need to know whether the previous interval
-				 * passed. Get the statsSummaryRollup for the previous interval
+				 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
+				 * is not used in initialRamp
 				 */
-				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-
-				// For initial ramp, only interested in response-time
-				if (rollup != null) {
-					/*
-					 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
-					 * is not used in initialRamp
-					 */
-					prevIntervalPassed = rollup.isIntervalPassedRT();
-					getIntervalStatsSummaries().add(rollup);
-				}
-				logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = "
-						+ prevIntervalPassed);
+				prevIntervalPassed = rollup.isIntervalPassedRT();
+				getIntervalStatsSummaries().add(rollup);
 			}
-
-			/*
-			 * If we have reached max users, or the previous interval failed, then to go to
-			 * the APPROXIMATE phase
-			 */
-			if (!prevIntervalPassed || ((curUsers + initialRampRateStep) > maxUsers)) {
-				
-				/*
-				 * When moving to APPROXIMATE, the initial rateStep is 1/10 of curUsers, 
-				 * and the minRateStep is 1/20 of curUsers
-				 */
-				curRateStep = curUsers / 10;
-				minRateStep = curUsers / 20;
-				curUsers -= curRateStep;
-				if (curUsers <= 0) {
-					curRateStep /= 2;
-					curUsers += curRateStep;
-				}
-
-				intervalNum = 0;
-				curPhase = Phase.APPROXIMATE;
-				
-				// No ramp on first APPROXIMATE interval
-				nextSubInterval = SubInterval.WARMUP;
-				logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers
-						+ ", curRateStep = " + curRateStep);
-				return getNextApproximateInterval();
-			}
-
-			curUsers += initialRampRateStep;
-			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(shortWarmupIntervalDurationSec);
-			nextInterval.setName("InitialRamp-Warmup-" + intervalNum);
-			nextSubInterval = SubInterval.DECISION;
-		} else {
-			logger.debug("getNextInitialRampInterval decision subinterval for interval " + intervalNum);
-			/*
-			 * Do the sub-interval used for decisions. This is run at the same number of
-			 * users for the previous interval, but with the non-warmup duration
-			 */
-			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(shortIntervalDurationSec);
-			nextInterval.setName("InitialRamp-" + intervalNum);
-			nextSubInterval = SubInterval.WARMUP;
+			logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = "
+					+ prevIntervalPassed);
 		}
+
+		/*
+		 * If we have reached max users, or the previous interval failed, then to go to
+		 * the APPROXIMATE phase
+		 */
+		if (!prevIntervalPassed || ((curUsers + initialRampRateStep) > maxUsers)) {
+
+			/*
+			 * When moving to APPROXIMATE, the initial rateStep is 1/10 of curUsers, and the
+			 * minRateStep is 1/20 of curUsers
+			 */
+			curRateStep = curUsers / 10;
+			minRateStep = curUsers / 20;
+			curUsers -= curRateStep;
+			if (curUsers <= 0) {
+				curRateStep /= 2;
+				curUsers += curRateStep;
+			}
+
+			intervalNum = 0;
+			curPhase = Phase.APPROXIMATE;
+
+			// No ramp on first APPROXIMATE interval
+			nextSubInterval = SubInterval.WARMUP;
+			logger.debug("getNextInitialRampInterval: Moving to APPROXIMATE phase.  curUsers = " + curUsers
+					+ ", curRateStep = " + curRateStep);
+			return getNextApproximateInterval();
+		}
+
+		curUsers += initialRampRateStep;
+		nextInterval.setUsers(curUsers);
+		nextInterval.setDuration(initialRampIntervalSec);
+		nextInterval.setName("InitialRamp-" + intervalNum);
 
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);
 		return nextInterval;

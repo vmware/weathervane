@@ -209,7 +209,7 @@ public abstract class LoadPath implements Runnable {
 
 		String url = "http://" + statsHostName + ":" + portNumber + "/stats/run/" + runName + "/workload/" + workloadName 
 				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
-		logger.debug("intervalPassed  getting rollup from " + statsHostName + ", url = " + url);
+		logger.debug("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
 		
 		/*
 		 * Need to keep getting rollup for the interval until the stats server
@@ -222,15 +222,15 @@ public abstract class LoadPath implements Runnable {
 			ResponseEntity<StatsSummaryRollupResponseMessage> responseEntity = restTemplate.getForEntity(url, StatsSummaryRollupResponseMessage.class);
 			response = responseEntity.getBody();
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error getting interval stats for " + url);
+				logger.error("fetchStatsSummaryRollup: Error getting interval stats for " + url);
 				return null;
 			}
 
 			if (response.getNumSamplesExpected() == response.getNumSamplesReceived()) {
-				logger.debug("intervalPassed: Stats server has processed all samples");
+				logger.debug("fetchStatsSummaryRollup: Stats server has processed all samples");
 				responseReady = true;
 			} else {
-				logger.debug("intervalPassed: Stats server has not processed all samples.  expected = " + response.getNumSamplesExpected() 
+				logger.debug("fetchStatsSummaryRollup: Stats server has not processed all samples.  expected = " + response.getNumSamplesExpected() 
 				+ ", received = " + response.getNumSamplesReceived());
 				try {
 					Thread.sleep(500);
@@ -241,7 +241,7 @@ public abstract class LoadPath implements Runnable {
 		}
 
 		if (response == null) {
-			logger.debug("intervalPassed: Did not get a valid response.  Returning false");
+			logger.debug("fetchStatsSummaryRollup: Did not get a valid response.  Returning false");
 			return null;
 		} else {
 			return response.getStatsSummaryRollup();

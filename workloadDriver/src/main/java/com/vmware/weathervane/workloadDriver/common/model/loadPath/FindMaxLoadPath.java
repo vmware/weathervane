@@ -104,14 +104,14 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private final long findFirstRampIntervalSec = 180;
 	@JsonIgnore
-	private final long findFirstWarmupIntervalSec = 120;
+	private final long findFirstWarmupIntervalSec = 300;
 	@JsonIgnore
 	private final long findFirstIntervalSec = 300;
 
 	@JsonIgnore
 	private final long verifyMaxRampIntervalSec = 180;
 	@JsonIgnore
-	private final long verifyMaxWarmupIntervalSec = 120;
+	private final long verifyMaxWarmupIntervalSec = 300;
 	@JsonIgnore
 	private final long verifyMaxIntervalSec = 300;
 	@JsonIgnore
@@ -214,7 +214,7 @@ public class FindMaxLoadPath extends LoadPath {
 		 * minRateStep is 1/20 of curUsers
 		 */
 		curRateStep = curUsers / 10;
-		minRateStep = curUsers / 20;
+		minRateStep = curUsers / 100;
 		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
@@ -430,11 +430,11 @@ public class FindMaxLoadPath extends LoadPath {
 
 	private UniformLoadInterval moveToVerifyMax() {
 		/*
-		 * When moving to VERIFYMAX, the initial rateStep is 1/20 of curUsers, 
-		 * and the minRateStep is 1/50 of curUsers
+		 * When moving to VERIFYMAX, the initial rateStep is 1/20 of maxPassUsers, 
+		 * and the minRateStep is 1/100 of maxPassUsers
 		 */
-		curRateStep = curUsers / 20;
-		minRateStep = curUsers / 50;
+		curRateStep = maxPassUsers / 20;
+		minRateStep = maxPassUsers / 100;
 		curUsers = maxPassUsers;
 
 		intervalNum = 0;
@@ -478,13 +478,9 @@ public class FindMaxLoadPath extends LoadPath {
 				logger.debug("getNextVerifyMaxInterval returning next ramp subinterval for interval " + intervalNum);
 				nextInterval = rampIntervals.pop();				
 			} else {
-				/*
-				 * Do the sub-interval used for decisions. This is run at the same number of
-				 * users for the previous interval, but with the non-warmup duration
-				 */
 				logger.debug("getNextVerifyMaxInterval warmup subinterval for interval " + intervalNum);
 				nextInterval.setUsers(curUsers);
-				nextInterval.setDuration(verifyMaxIntervalSec);
+				nextInterval.setDuration(verifyMaxWarmupIntervalSec);
 				nextInterval.setName("VERIFYMAX-Warmup-" + intervalNum);
 				nextSubInterval = SubInterval.VERIFYFIRST;
 			}

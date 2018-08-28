@@ -37,17 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<rabbit:queue id="auctionStartedQueue"  />
 	<rabbit:queue id="auctionEndedQueue"  />
 	<rabbit:queue id="startAuctioneerQueue"  />
-	<rabbit:queue id="highBidQueue"  />
 	<rabbit:queue id="newBidQueue"  />
-	
-	<rabbit:topic-exchange name="liveAuctionMgmtExchange">
-		<rabbit:bindings>
-			<rabbit:binding queue="auctionStartedQueue" pattern="auctionStarted.#"/>
-			<rabbit:binding queue="startAuctioneerQueue" pattern="startAuctioneer.${nodeNumber}"/>
-			<rabbit:binding queue="auctionEndedQueue" pattern="auctionEnded.#"/>
-			<rabbit:binding queue="highBidQueue" pattern="highBid.#"/>
-		</rabbit:bindings>
-	</rabbit:topic-exchange>
 	
 	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="2">
     	<rabbit:listener queues="auctionStartedQueue" ref="liveAuctionService" method="handleAuctionStartedMessage"  />
@@ -63,9 +53,30 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
 	
 	<beans profile="noBidService">
+		<rabbit:queue id="highBidQueue"  />
+		<rabbit:topic-exchange name="liveAuctionMgmtExchange">
+			<rabbit:bindings>
+				<rabbit:binding queue="auctionStartedQueue" pattern="auctionStarted.#"/>
+				<rabbit:binding queue="startAuctioneerQueue" pattern="startAuctioneer.${nodeNumber}"/>
+				<rabbit:binding queue="auctionEndedQueue" pattern="auctionEnded.#"/>
+				<rabbit:binding queue="highBidQueue" pattern="highBid.#"/>
+			</rabbit:bindings>
+		</rabbit:topic-exchange>
+	
 		<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${HIGHBIDQUEUECONCURRENCY}">
     		<rabbit:listener queues="highBidQueue" ref="liveAuctionService" method="handleHighBidMessage"  />
 		</rabbit:listener-container>
+	</beans>	
+
+	
+	<beans profile="bidService">
+		<rabbit:topic-exchange name="liveAuctionMgmtExchange">
+			<rabbit:bindings>
+				<rabbit:binding queue="auctionStartedQueue" pattern="auctionStarted.#"/>
+				<rabbit:binding queue="startAuctioneerQueue" pattern="startAuctioneer.${nodeNumber}"/>
+				<rabbit:binding queue="auctionEndedQueue" pattern="auctionEnded.#"/>
+			</rabbit:bindings>
+		</rabbit:topic-exchange>	
 	</beans>	
 
 	<beans profile="singleRabbit">

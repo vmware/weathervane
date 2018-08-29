@@ -94,9 +94,11 @@ public class FindMaxLoadPath extends LoadPath {
 
 	@JsonIgnore
 	private int numVerifyMaxRepeatsPassed = 0;
-	
+	 
 	@JsonIgnore
 	private int numSucessiveIntervalsPassed = 0;
+	@JsonIgnore
+	private int numSucessiveIntervalsFailed = 0;
 	
 	@JsonIgnore
 	private final long initialRampIntervalSec = 120;
@@ -531,6 +533,11 @@ public class FindMaxLoadPath extends LoadPath {
 				/*
 				 * Reduce the number of users by minRateStep and try again.
 				 */
+				numSucessiveIntervalsFailed++;
+				if (numSucessiveIntervalsFailed >= 2) {
+					numSucessiveIntervalsFailed = 0;
+					minRateStep *= 2;
+				}
 				maxPassUsers -= minRateStep;
 				nextSubInterval = SubInterval.RAMP;
 				return getNextVerifyMaxInterval();

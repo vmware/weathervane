@@ -115,9 +115,9 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private final long verifyMaxWarmupIntervalSec = 300;
 	@JsonIgnore
-	private final long verifyMaxIntervalSec = 300;
+	private final long verifyMaxIntervalSec = 600;
 	@JsonIgnore
-	private final int numRequiredVerifyMaxRepeats = 5;
+	private final int numRequiredVerifyMaxRepeats = 3;
 	
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined

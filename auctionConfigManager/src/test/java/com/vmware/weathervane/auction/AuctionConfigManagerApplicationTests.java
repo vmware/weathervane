@@ -21,11 +21,11 @@ import org.springframework.test.context.web.WebAppConfiguration;
 
 import com.vmware.weathervane.auction.AuctionConfigManagerApplication;
 
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = AuctionConfigManagerApplication.class)
+@SpringBootTest(classes = AuctionConfigManagerApplication.class)
 @WebAppConfiguration
 public class AuctionConfigManagerApplicationTests {
 

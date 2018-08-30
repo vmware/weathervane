@@ -250,11 +250,11 @@ sub configure {
 	$logger->debug("$sshConnectString ln -s $logDir $dataDir/pg_xlog");
 	$out = `$sshConnectString ln -s $logDir $dataDir/pg_xlog`;
 	$logger->debug($out);
-	$logger->debug("$sshConnectString rm -f /var/lib/pgsql/9.3/data");
-	$out = `$sshConnectString rm -f /var/lib/pgsql/9.3/data`;
+	$logger->debug("$sshConnectString rm -f /var/lib/pgsql/9.5/data");
+	$out = `$sshConnectString rm -f /var/lib/pgsql/9.5/data`;
 	$logger->debug($out);
-	$logger->debug("$sshConnectString ln -s $dataDir /var/lib/pgsql/9.3/data");
-	$out = `$sshConnectString ln -s $dataDir /var/lib/pgsql/9.3/data`;
+	$logger->debug("$sshConnectString ln -s $dataDir /var/lib/pgsql/9.5/data");
+	$out = `$sshConnectString ln -s $dataDir /var/lib/pgsql/9.5/data`;
 	$logger->debug($out);
 
 

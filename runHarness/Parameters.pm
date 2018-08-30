@@ -2703,7 +2703,7 @@ $parameters{"postgresqlConfDir"} = {
 
 $parameters{"postgresqlHome"} = {
 	"type"      => "=s",
-	"default"   => "/usr/pgsql-9.3",
+	"default"   => "/usr/pgsql-9.5",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

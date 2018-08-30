@@ -104,11 +104,11 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long initialRampIntervalSec = 120;
 
 	@JsonIgnore
-	private final long findFirstRampIntervalSec = 180;
+	private final long findFirstMaxRampIntervalSec = 180;
 	@JsonIgnore
-	private final long findFirstWarmupIntervalSec = 300;
+	private final long findFirstMaxWarmupIntervalSec = 300;
 	@JsonIgnore
-	private final long findFirstIntervalSec = 300;
+	private final long findFirstMaxIntervalSec = 600;
 
 	@JsonIgnore
 	private final long verifyMaxRampIntervalSec = 180;
@@ -373,7 +373,7 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampIntervals.addAll(generateRampIntervals("FINDFIRSTMAX-Ramp-" + intervalNum + "-", findFirstRampIntervalSec, 15, prevCurUsers, curUsers));
+			rampIntervals.addAll(generateRampIntervals("FINDFIRSTMAX-Ramp-" + intervalNum + "-", findFirstMaxRampIntervalSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
 		} else if (nextSubInterval.equals(SubInterval.WARMUP)) {
@@ -397,7 +397,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				nextInterval.setUsers(curUsers);
 				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
-				nextInterval.setDuration(findFirstWarmupIntervalSec);
+				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
 				nextSubInterval = SubInterval.DECISION;
 				logger.debug("getNextFindFirstMaxInterval first interval. returning interval: " + nextInterval);
 				return nextInterval;
@@ -409,7 +409,7 @@ public class FindMaxLoadPath extends LoadPath {
 			} else {
 				logger.debug("getNextFindFirstMaxInterval warmup subinterval for interval " + intervalNum);
 				nextInterval.setUsers(curUsers);
-				nextInterval.setDuration(findFirstWarmupIntervalSec);
+				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
 				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
 				nextSubInterval = SubInterval.DECISION;
 			}
@@ -421,7 +421,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 * users for the previous interval, but with the non-warmup duration
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(findFirstIntervalSec);
+			nextInterval.setDuration(findFirstMaxIntervalSec);
 			nextInterval.setName("FINDFIRSTMAX-" + intervalNum);
 			nextSubInterval = SubInterval.RAMP;
 		}

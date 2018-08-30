@@ -318,7 +318,7 @@ runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar -o /opt/apache-tomcat-auction1/lib/mysql-connector-java-5.1.41.jar"
 );
 runAndLog( $fileout,
-"curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-auction1/lib/postgresql-9.4.1212.jre7.jar"
+"curl -s http://central.maven.org/maven2/org/postgresql/postgresql/42.2.5.jre7/postgresql-42.2.5.jre7.jar -o /opt/apache-tomcat-auction1/lib/postgresql-42.2.5.jre7.jar"
 );
 
 print "Fetching and installing Httpd\n";
@@ -433,7 +433,7 @@ if ( $os eq "centos6" ) {
 	runAndLog( $fileout, "service postgresql-9.5 initdb" );
 }
 elsif ( $os eq "centos7" ) {
-	runAndLog( $fileout, "/usr/pgsql-9.5/bin/postgresql93-setup initdb" );
+	runAndLog( $fileout, "/usr/pgsql-9.5/bin/postgresql95-setup initdb" );
 }
 runAndLog( $fileout, "mv /var/lib/pgsql/9.5/data/* /mnt/dbData/postgresql" );
 runAndLog( $fileout, "mv /mnt/dbData/postgresql/pg_xlog/* /mnt/dbLogs/postgresql" );
@@ -445,7 +445,7 @@ runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql;chown -R postgres:postgre
 runAndLog( $fileout, "chown -R postgres:postgres /mnt/dbLogs/postgresql" );
 runAndLog( $fileout, "service postgresql-9.5 start" );
 runAndLog( $fileout,
-	"psql -U postgres -c \"create role auction with superuser createdb login password 'auction;'\"" );
+	"psql -U postgres -c \"create role auction with superuser createdb login password 'auction';\"" );
 runAndLog( $fileout, "psql -U postgres -c \"create database auction owner auction\"" );
 runAndLog( $fileout, "service postgresql-9.5 stop" );
 runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql" );

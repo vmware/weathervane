@@ -50,7 +50,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'dbLoader' 
 		junitVersion = "4.12"
 		mockitoVersion = "1.10.19"
 		mysqlConnectorVersion = "5.1.41"
-		postgreSQLJdbcVersion = "9.4.1212.jre7"
+		postgreSQLJdbcVersion = "42.2.5.jre7"
 		dbcpVersion = "1.4"
 		springDataMongoVersion = "1.9.1.RELEASE"
 		mongodbJavaDriverVersion = "3.2.1"

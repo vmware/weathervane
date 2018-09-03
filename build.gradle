@@ -185,7 +185,7 @@ project(':auctionApp') {
 
 project(':auctionConfigManager') {
 	description "Configuration Manager for Auction"	
-	apply plugin: 'spring-boot' 
+	apply plugin: 'org.springframework.boot' 
 	apply plugin: "eclipse"
 	apply plugin: 'maven'
 	
@@ -274,7 +274,7 @@ project(':dbLoader') {
 project(':workloadDriver') {
 	description "Workload Driver for Weathervane"	
 	apply plugin: 'maven'
-	apply plugin: 'spring-boot' 
+	apply plugin: 'org.springframework.boot' 
 
 	configurations {
 		all*.exclude group: 'commons-logging', module: 'commons-logging'

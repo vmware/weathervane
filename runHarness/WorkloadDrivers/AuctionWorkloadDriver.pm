@@ -904,7 +904,7 @@ sub initializeRun {
 		my $pid              = fork();
 		if ( $pid == 0 ) {
 			my $cmdString =
-"$sshConnectString \"java $driverJvmOpts -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run_$hostname$suffix.log\" > $logDir/run_$hostname$suffix.log 2>&1";
+"$sshConnectString \"java $driverJvmOpts -cp $driverClasspath org.springframework.boot.loader.JarLauncher --port=$port | tee /tmp/run_$hostname$suffix.log\" > $logDir/run_$hostname$suffix.log 2>&1";
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname: $cmdString");
 			`$cmdString`;
 			exit;
@@ -916,7 +916,7 @@ sub initializeRun {
 	my $sshConnectString = $self->host->sshConnectString;
 	if ( $pid == 0 ) {
 		my $cmdString =
-"$sshConnectString \"java $driverJvmOpts -DwkldNum=$workloadNum -cp $driverClasspath com.vmware.weathervane.workloadDriver.WorkloadDriverApplication --port=$port | tee /tmp/run$suffix.log\" > $logDir/run$suffix.log 2>&1 ";
+"$sshConnectString \"java $driverJvmOpts -DwkldNum=$workloadNum -cp $driverClasspath org.springframework.boot.loader.JarLauncher --port=$port | tee /tmp/run$suffix.log\" > $logDir/run$suffix.log 2>&1 ";
 		$logger->debug("Running primary driver for workload $workloadNum: $cmdString");
 		`$cmdString`;
 		exit;

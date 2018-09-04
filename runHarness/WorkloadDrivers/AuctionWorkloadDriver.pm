@@ -1071,7 +1071,7 @@ sub startRun {
 	my $pid;
 	my $out = `$sshConnectString ps x`;
 	$logger->debug("Looking for pid of driver$suffix: $out");
-	if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-DwkldNum=$workloadNum.*WorkloadDriverApplication/m ) {
+	if ( $out =~ /^\s*(\d+)\s\?.*\d\d\sjava.*-DwkldNum=$workloadNum.*JarLauncher/m ) {
 		$pid = $1;
 		$logger->debug("Found pid $pid for workload driver$suffix");
 	}

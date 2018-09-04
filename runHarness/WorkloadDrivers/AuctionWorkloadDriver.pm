@@ -808,7 +808,7 @@ sub killOld {
 	my @cmdOut = split /\n/, $cmdOut;
 	foreach $cmdOut (@cmdOut) {
 		$logger->debug("killOld: jps output line: $cmdOut");
-		if ( $cmdOut =~ /^(\d+)\s+WorkloadDriverApplication/ ) {
+		if ( $cmdOut =~ /^(\d+)\s+JarLauncher/ ) {
 			$logger->debug("killOld: killing pid $1");
 			`ssh  -o 'StrictHostKeyChecking no'  root\@$hostname kill -9 $1`;
 		}
@@ -823,7 +823,7 @@ sub killOld {
 		@cmdOut = split /\n/, $cmdOut;
 		foreach $cmdOut (@cmdOut) {
 			$logger->debug("killOld: secondary $hostname jps output line: $cmdOut");
-			if ( $cmdOut =~ /^(\d+)\s+WorkloadDriverApplication/ ) {
+			if ( $cmdOut =~ /^(\d+)\s+JarLauncher/ ) {
 				$logger->debug("killOld: secondary $hostname jps killing pid $1");
 				`ssh  -o 'StrictHostKeyChecking no'  root\@$hostname kill -9 $1 2>&1`;
 			}

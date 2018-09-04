@@ -62,7 +62,7 @@ public class AddImageForItemOperation extends AuctionOperation implements NeedsL
 	private static final List<FileUploadInfo> fileUploads = new ArrayList<FileUploadInfo>();
 	
 	static {
-		fileUploadInfo = new FileUploadInfo(getResourceAsFile("itemImage.jpg"), "itemImage.jpg", "image/jpeg", false);
+		fileUploadInfo = new FileUploadInfo(getResourceAsFile("BOOT-INF/classes/itemImage.jpg"), "itemImage.jpg", "image/jpeg", false);
 		fileUploads.add(fileUploadInfo);
 	}
 	
@@ -135,28 +135,9 @@ public class AddImageForItemOperation extends AuctionOperation implements NeedsL
 
 	public static File getResourceAsFile(String resourcePath) {
 	    try {
-	    	InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath);
-	        if (in == null) {
-	        	logger.error("Can't find resource " + resourcePath);
-	            return null;
-	        }
-
-	        File tempFile = File.createTempFile(String.valueOf(in.hashCode()), ".tmp");
-			tempFile.deleteOnExit();
-
-			FileOutputStream out = new FileOutputStream(tempFile);
-			// copy stream
-			byte[] buffer = new byte[1024];
-			int bytesRead;
-			while ((bytesRead = in.read(buffer)) != -1) {
-				out.write(buffer, 0, bytesRead);
-			}
-			
-			out.close();
-			in.close();
-	        return tempFile;
+	    	return new ClassPathResource(resourcePath).getFile();
 	    } catch (IOException e) {
-	        e.printStackTrace();
+	    	logger.error("Couldn't find file " + resourcePath + " in classPath: " + e);
 	        return null;
 	    }
 	}

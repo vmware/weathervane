@@ -135,7 +135,26 @@ public class AddImageForItemOperation extends AuctionOperation implements NeedsL
 
 	public static File getResourceAsFile(String resourcePath) {
 	    try {
-	    	return new ClassPathResource(resourcePath).getFile();
+	    	InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath);
+	        if (in == null) {
+	        	logger.error("Can't find resource " + resourcePath);
+	            return null;
+	        }
+
+	        File tempFile = File.createTempFile(String.valueOf(in.hashCode()), ".tmp");
+			tempFile.deleteOnExit();
+
+			FileOutputStream out = new FileOutputStream(tempFile);
+			// copy stream
+			byte[] buffer = new byte[1024];
+			int bytesRead;
+			while ((bytesRead = in.read(buffer)) != -1) {
+				out.write(buffer, 0, bytesRead);
+			}
+			
+			out.close();
+			in.close();
+	        return tempFile;
 	    } catch (IOException e) {
 	        e.printStackTrace();
 	        return null;

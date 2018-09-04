@@ -62,7 +62,7 @@ public class AddImageForItemOperation extends AuctionOperation implements NeedsL
 	private static final List<FileUploadInfo> fileUploads = new ArrayList<FileUploadInfo>();
 	
 	static {
-		fileUploadInfo = new FileUploadInfo(getResourceAsFile("BOOT-INF/classes/itemImage.jpg"), "itemImage.jpg", "image/jpeg", false);
+		fileUploadInfo = new FileUploadInfo(getResourceAsFile("itemImage.jpg"), "itemImage.jpg", "image/jpeg", false);
 		fileUploads.add(fileUploadInfo);
 	}
 	

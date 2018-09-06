@@ -225,24 +225,24 @@ elsif ( $os eq "centos7" ) {
 }
 
 if ( $os eq "centos6" ) {
-	runAndLog( $fileout, "service postgresql-9.3 initdb" );
+	runAndLog( $fileout, "service postgresql-9.5 initdb" );
 }
 elsif ( $os eq "centos7" ) {
-	runAndLog( $fileout, "/usr/pgsql-9.3/bin/postgresql93-setup initdb" );
+	runAndLog( $fileout, "/usr/pgsql-9.5/bin/postgresql95-setup initdb" );
 }
-runAndLog( $fileout, "mv /var/lib/pgsql/9.3/data/* /mnt/dbData/postgresql" );
+runAndLog( $fileout, "mv /var/lib/pgsql/9.5/data/* /mnt/dbData/postgresql" );
 runAndLog( $fileout, "mv /mnt/dbData/postgresql/pg_xlog/* /mnt/dbLogs/postgresql" );
 runAndLog( $fileout, "cp configFiles/host/$os/pg_hba.conf /mnt/dbData/postgresql" );
-runAndLog( $fileout, "rmdir /var/lib/pgsql/9.3/data; ln -s /mnt/dbData/postgresql /var/lib/pgsql/9.3/data" );
+runAndLog( $fileout, "rmdir /var/lib/pgsql/9.5/data; ln -s /mnt/dbData/postgresql /var/lib/pgsql/9.5/data" );
 runAndLog( $fileout,
 	"rmdir /mnt/dbData/postgresql/pg_xlog; ln -s /mnt/dbLogs/postgresql /mnt/dbData/postgresql/pg_xlog" );
 runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql;chown -R postgres:postgres /mnt/dbData/postgresql" );
 runAndLog( $fileout, "chown -R postgres:postgres /mnt/dbLogs/postgresql" );
-runAndLog( $fileout, "service postgresql-9.3 start" );
+runAndLog( $fileout, "service postgresql-9.5 start" );
 runAndLog( $fileout,
 	"psql -U postgres -c \"create role auction with superuser createdb login password 'auction;'\"" );
 runAndLog( $fileout, "psql -U postgres -c \"create database auction owner auction\"" );
-runAndLog( $fileout, "service postgresql-9.3 stop" );
+runAndLog( $fileout, "service postgresql-9.5 stop" );
 runAndLog( $fileout, "chmod 700 /mnt/dbData/postgresql" );
 runAndLog( $fileout, "chmod -R 777 /mnt/dbLogs/postgresql" );
 

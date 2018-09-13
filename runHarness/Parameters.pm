@@ -1097,7 +1097,7 @@ $parameters{"users"} = {
 $parameters{"maxUsers"} = {
 	"type"    => "=i",
 	"default" => 1000,
-	"parent"  => "dataManager",
+	"parent"  => "appInstance",
 	"usageText" =>
 "This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load.\n",
 	"showUsage" => 1,

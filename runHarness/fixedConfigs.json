@@ -1,27 +1,110 @@
 {
  
 "micro" : {
+  "maxUsers" : 1000,
+  "maxDuration" : 3600, 
+
+  "numDrivers" : 1,
+
   "numWebServers" : 1,
   "webServerCpus" : 0.1,
   "webServerMem"  : "500Mi",
-
-  "numAppServers" : 1,
-  "appServerCpus" : 0.1,
-  "appServerMem" : "1Gi",
-  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 20,
-  "appServerJdbcConnections" : 21,
+  "webServerImpl" : "nginx",
 
   "numAuctionBidServers" : 1,
-  "auctionBidServerCpus" : 0.1,
+  "auctionBidServerCpus" : "100m",
   "auctionBidServerMem" : "1Gi",
+  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
+  "auctionBidServerThreads" : 20,
+  "auctionBidServerJdbcConnections" : 21,
+  "highBidQueueConcurrency" : 2,
+  "newBidQueueConcurrency" : 2,
+  "numClientUpdateThreads" : 2,
+  "auctionBidServerImpl" : "auctionbidservice",
+  
+  "numAppServers" : 1,
+  "appServerCpus" : "100m",
+  "appServerMem" : "1Gi",
+  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 20,
+  "appServerJdbcConnections" : 21,
+  "numAuctioneerThreads" : 1,  
+  "appServerImpl" : "tomcat",
+
+  "numCoordinationServers" : 1, 
+  "coordinationServerCpus" : "100m",
+  "coordinationServerMem" : "200Mi",
+  "coordinationServerImpl" : "zookeeper",
+  
+  "numMsgServers" : 1, 
+  "msgServerCpus" : "100m",
+  "msgServerMem" : "200Mi",
+  "msgServerImpl" : "rabbitmq",
+
+  "numDbServers" : 1, 
+  "dbServerCpus" : "100m",
+  "dbServerMem" : "200Mi",
+  "dbServerImpl" : "postgresql",
+
+  "numNosqlServers" : 1, 
+  "nosqlServerCpus" : "100m",
+  "nosqlServerMem" : "1Gi",
+  "nosqlServerImpl" : "mongodb",
+  
+},
+
+"small" : {
+  "maxUsers" : 10000,
+  "maxDuration" : 7200, 
+
+  "numDrivers" : 4,
+
+  "numWebServers" : 1,
+  "webServerCpus" : "2",
+  "webServerMem"  : "10Gi",
+  "webServerImpl" : "nginx",
+
+  "numAuctionBidServers" : 1,
+  "auctionBidServerCpus" : "2",
+  "auctionBidServerMem" : "7Gi",
   "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 20,
   "auctionBidServerJdbcConnections" : 21,
+  "highBidQueueConcurrency" : 2,
+  "newBidQueueConcurrency" : 2,
+  "numClientUpdateThreads" : 2,
+  "auctionBidServerImpl" : "auctionbidservice",
   
-  "numCoordinationServers" : 1, 
+  "numAppServers" : 3,
+  "appServerCpus" :"2",
+  "appServerMem" : "7Gi",
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 20,
+  "appServerJdbcConnections" : 21,
+  "numAuctioneerThreads" : 1,  
+  "appServerImpl" : "tomcat",
+
+  "numCoordinationServers" : 3, 
+  "coordinationServerCpus" : "500m",
+  "coordinationServerMem" : "500Mi",
+  "coordinationServerImpl" : "zookeeper",
   
+  "numMsgServers" : 1, 
+  "msgServerCpus" : "1",
+  "msgServerMem" : "2Gi",
+  "msgServerImpl" : "rabbitmq",
+
+  "numDbServers" : 1, 
+  "dbServerCpus" : "2",
+  "dbServerMem" : "8Gi",
+  "dbServerImpl" : "postgresql",
+
+  "numNosqlServers" : 1, 
+  "nosqlServerCpus" : "2",
+  "nosqlServerMem" : "32Gi",
+  "nosqlServerImpl" : "mongodb",
   
-}
+},
+
 
 }

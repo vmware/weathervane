@@ -224,6 +224,16 @@ foreach my $key ( keys %$paramConfig ) {
 
 my $paramsHashRef = mergeParameters( \%paramCommandLine, $paramConfig );
 
+# Read in the fixed configuration
+open( FIXEDCONFIGFILE, "<fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
+$paramJson = "";
+while (<FIXEDCONFIGFILE>) {
+	$paramJson .= $_;
+}
+close FIXEDCONFIGFILE;
+my $fixedConfigs = $json->decode($paramJson);
+
+
 # Set up the loggers
 my $weathervaneHome = getParamValue( $paramsHashRef, 'weathervaneHome' );
 my $console_logger = get_logger("Console");
@@ -617,6 +627,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 		push @appInstances, $appInstance;
 
+		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
+		if ($configSize ne "custom") {
+			$appInstanceParamHashRef = $fixedConfigs->{$configSize};
+		}
+		
 		# Create and add all of the services for the appInstance.
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
 		foreach my $serviceType (@$serviceTypesRef) {

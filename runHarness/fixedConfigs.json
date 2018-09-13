@@ -4,8 +4,6 @@
   "maxUsers" : 1000,
   "maxDuration" : 3600, 
 
-  "numDrivers" : 1,
-
   "numWebServers" : 1,
   "webServerCpus" : 0.1,
   "webServerMem"  : "500Mi",
@@ -54,10 +52,8 @@
 },
 
 "small" : {
-  "maxUsers" : 10000,
+  "maxUsers" : 20000,
   "maxDuration" : 7200, 
-
-  "numDrivers" : 4,
 
   "numWebServers" : 1,
   "webServerCpus" : "2",

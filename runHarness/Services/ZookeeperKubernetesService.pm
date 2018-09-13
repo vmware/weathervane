@@ -62,6 +62,12 @@ sub configure {
 		if ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+			print FILEOUT "            cpu: " . $self->getParamValue('coordinationServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+			print FILEOUT "            memory: " . $self->getParamValue('coordinationServerMem') . "\n";
+		}
 		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";

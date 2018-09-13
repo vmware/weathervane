@@ -122,6 +122,12 @@ sub configure {
 			}
 			print FILEOUT "  POSTGRESMAXCONNECTIONS: \"$maxConn\"\n";
 		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+			print FILEOUT "            cpu: " . $self->getParamValue('dbServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+			print FILEOUT "            memory: " . $self->getParamValue('dbServerMem') . "\n";
+		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}

@@ -108,6 +108,12 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAuctionBidServers\n";
 		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+			print FILEOUT "            cpu: " . $self->getParamValue('auctionBidServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+			print FILEOUT "            memory: " . $self->getParamValue('auctionBidServerMem') . "\n";
+		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}

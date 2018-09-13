@@ -2106,6 +2106,126 @@ $parameters{"driverJvmDnsTtl"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"maxLogLines"} = {
+	"type"      => "=i",
+	"default"   => 4000,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"webServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"webServerMem"} = {
+	"type"      => "=s",
+	"default"   => "10Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"appServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"appServerMem"} = {
+	"type"      => "=s",
+	"default"   => "7Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"auctionBidServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"auctionBidServerMem"} = {
+	"type"      => "=s",
+	"default"   => "7Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"coordinationServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"coordinationServerMem"} = {
+	"type"      => "=s",
+	"default"   => "1Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"msgServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"msgServerMem"} = {
+	"type"      => "=s",
+	"default"   => "2Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"dbServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"dbServerMem"} = {
+	"type"      => "=s",
+	"default"   => "4Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nosqlServerCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nosqlServerMem"} = {
+	"type"      => "=s",
+	"default"   => "16Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 # Parameters specific to the configuration service
 $parameters{"configurationManagerJvmOpts"} = {
 	"type"      => "=s",
@@ -2113,14 +2233,6 @@ $parameters{"configurationManagerJvmOpts"} = {
 	"parent"    => "configurationManager",
 	"usageText" => "",
 	"showUsage" => 1,
-};
-
-$parameters{"maxLogLines"} = {
-	"type"      => "=i",
-	"default"   => 4000,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
 };
 
 # Parameters specific to App Servers

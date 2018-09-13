@@ -627,9 +627,17 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 		push @appInstances, $appInstance;
 
+		# Overwrite the appInstance's parameters with those specified by the configuration size.
 		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
 		if ($configSize ne "custom") {
-			$appInstanceParamHashRef = $fixedConfigs->{$configSize};
+			if (!($configSize ~~ (keys $fixedConfigs))) {
+				$console_logger->error("Error: For appInstance " . $appInstanceNum 
+					.  " configurationSize " . $configSize + " does not exist.");
+			}
+			my $config = $fixedConfigs->{$configSize};
+			foreach my $key (keys %$fixedConfigs) {
+				$appInstanceParamHashRef->{$key} = $config->{$key};
+			}
 		}
 		
 		# Create and add all of the services for the appInstance.

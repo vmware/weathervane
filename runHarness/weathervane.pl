@@ -225,7 +225,7 @@ foreach my $key ( keys %$paramConfig ) {
 my $paramsHashRef = mergeParameters( \%paramCommandLine, $paramConfig );
 
 # Read in the fixed configuration
-open( FIXEDCONFIGFILE, "<fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
+open( FIXEDCONFIGFILE, "<./runHarness/fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
 $paramJson = "";
 while (<FIXEDCONFIGFILE>) {
 	$paramJson .= $_;

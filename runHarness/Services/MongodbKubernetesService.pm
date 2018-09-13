@@ -137,6 +137,12 @@ sub configure {
 		elsif ( $inline =~ /ISMONGOS:/ ) {
 			print FILEOUT "  ISMONGOS: \"0\"\n";
 		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+			print FILEOUT "            cpu: " . $self->getParamValue('nosqlServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+			print FILEOUT "            memory: " . $self->getParamValue('nosqlServerMem') . "\n";
+		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}

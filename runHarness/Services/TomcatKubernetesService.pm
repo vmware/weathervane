@@ -114,6 +114,12 @@ sub configure {
 		elsif ( $inline =~ /TOMCAT_CONNECTIONS:/ ) {
 			print FILEOUT "  TOMCAT_CONNECTIONS: \"$maxConnections\"\n";
 		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+			print FILEOUT "            cpu: " . $self->getParamValue('appServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+			print FILEOUT "            memory: " . $self->getParamValue('appServerMem') . "\n";
+		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAppServers\n";
 		}

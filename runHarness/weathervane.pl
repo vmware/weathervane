@@ -635,7 +635,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					.  " configurationSize " . $configSize + " does not exist.");
 			}
 			my $config = $fixedConfigs->{$configSize};
-			foreach my $key (keys %$configs) {
+			foreach my $key (keys %$config) {
 				$appInstanceParamHashRef->{$key} = $config->{$key};
 			}
 		}

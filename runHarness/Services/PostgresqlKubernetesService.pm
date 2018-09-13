@@ -128,6 +128,18 @@ sub configure {
 		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
 			print FILEOUT "            memory: " . $self->getParamValue('dbServerMem') . "\n";
 		}
+		elsif ( $inline =~ /\s\sname:\spostgresql-data/ ) {
+			while (!($inline =~ /(\s+)storage:/ )) {
+				print FILEOUT $inline;
+			}
+			print FILEOUT "${1}storage: " . $self->getParamValue('postgresqlDataVolumeSize') . "\n";
+		}
+		elsif ( $inline =~ /\s\sname:\spostgresql-logs/ ) {
+			while (!($inline =~ /(\s+)storage:/ )) {
+				print FILEOUT $inline;
+			}
+			print FILEOUT "${1}storage: " . $self->getParamValue('postgresqlLogVolumeSize') . "\n";
+		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}

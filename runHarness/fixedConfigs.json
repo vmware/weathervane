@@ -1,0 +1,27 @@
+{
+ 
+"micro" : {
+  "numWebServers" : 1,
+  "webServerCpus" : 0.1,
+  "webServerMem"  : "500Mi",
+
+  "numAppServers" : 1,
+  "appServerCpus" : 0.1,
+  "appServerMem" : "1Gi",
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 20,
+  "appServerJdbcConnections" : 21,
+
+  "numAuctionBidServers" : 1,
+  "auctionBidServerCpus" : 0.1,
+  "auctionBidServerMem" : "1Gi",
+  "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
+  "auctionBidServerThreads" : 20,
+  "auctionBidServerJdbcConnections" : 21,
+  
+  "numCoordinationServers" : 1, 
+  
+  
+}
+
+}

@@ -128,28 +128,6 @@ sub configure {
 		elsif ( $inline =~ /(\s+)memory:/ ) {
 			print FILEOUT "${1}memory: " . $self->getParamValue('dbServerMem') . "\n";
 		}
-		elsif ( $inline =~ /^\s+name:\spostgresql-data/ ) {
-			print FILEOUT $inline;
-			while ( my $inline = <FILEIN> ) {
-				if (!($inline =~ /(\s+)storage:/ )) {
-					print FILEOUT $inline;
-				} else {
-					print FILEOUT "${1}storage: $dataVolumeSize\n";
-					last;
-				}
-			}
-		}
-		elsif ( $inline =~ /^\s+name:\spostgresql-logs/ ) {
-			print FILEOUT $inline;
-			while ( my $inline = <FILEIN> ) {
-				if (!($inline =~ /^(\s+)storage:/ )) {
-					print FILEOUT $inline;
-				} else {
-					print FILEOUT "${1}storage: $logVolumeSize\n";
-					last;
-				}
-			}
-		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
@@ -167,6 +145,8 @@ sub configure {
 							my $storageClass = $self->getParamValue("postgresqlDataStorageClass");
 							print FILEOUT "${1}storageClassName: $storageClass\n";
 							last;
+						} elsif ($inline =~ /^(\s+)storage:/ ) {
+							print FILEOUT "${1}storage: $dataVolumeSize\n";
 						} else {
 							print FILEOUT $inline;
 						}	
@@ -178,6 +158,8 @@ sub configure {
 							my $storageClass = $self->getParamValue("postgresqlLogStorageClass");
 							print FILEOUT "${1}storageClassName: $storageClass\n";
 							last;
+						} elsif ($inline =~ /^(\s+)storage:/ ) {
+							print FILEOUT "${1}storage: $logVolumeSize\n";
 						} else {
 							print FILEOUT $inline;
 						}	
@@ -209,7 +191,7 @@ sub configure {
 		$cluster->kubernetesDelete("pvc", "postgresql-data-postgresql-0", $self->namespace);
 	}	
 	$curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-logs-postgresql-0", $self->namespace);
-	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+	if (($curPvcSize ne "") && ($curPvcSize ne $logVolumeSize)) {
 		$cluster->kubernetesDelete("pvc", "postgresql-logs-postgresql-0", $self->namespace);
 	}	
 

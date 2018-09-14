@@ -2924,7 +2924,7 @@ $parameters{"postgresqlDataVolume"} = {
 
 $parameters{"postgresqlDataVolumeSize"} = {
 	"type"      => "=s",
-	"default"   => "20GB",
+	"default"   => "20Gi",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2956,7 +2956,7 @@ $parameters{"postgresqlLogVolume"} = {
 
 $parameters{"postgresqlLogVolumeSize"} = {
 	"type"      => "=s",
-	"default"   => "20GB",
+	"default"   => "20Gi",
 	"usageText" => "",
 	"parent"    => "appInstance",
 	"showUsage" => 0,
@@ -3020,7 +3020,7 @@ $parameters{"mongodbDataVolume"} = {
 
 $parameters{"mongodbDataVolumeSize"} = {
 	"type"      => "=s",
-	"default"   => "200GB",
+	"default"   => "200Gi",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

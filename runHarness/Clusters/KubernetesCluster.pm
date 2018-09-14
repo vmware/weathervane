@@ -354,6 +354,30 @@ sub kubernetesGetNodePortForPortNumber {
 		
 }
 
+sub kubernetesGetSizeForPVC {
+	my ( $self, $pvcName, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetSizeForPVC pvcName kubernetesGetSizeForPVC, namespace $namespace");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pvc $pvcName -o=jsonpath='{.spec.resources.requests}' --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	if ($outString =~ /not\sfound/) {
+		$logger->info("kubernetesGetSizeForPVC: There are no pvcs named $pvcName in namespace $namespace");
+		return "";		
+	}
+
+	$logger->info("kubernetesGetSizeForPVC: Returning $outString for pvcName $pvcName in namespace $namespace");
+	return $outString;
+		
+}
+
 sub kubernetesAreAllPodRunning {
 	my ( $self, $podLabelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

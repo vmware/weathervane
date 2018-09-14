@@ -5,13 +5,13 @@
   "maxDuration" : 3600, 
 
   "numWebServers" : 1,
-  "webServerCpus" : 0.1,
-  "webServerMem"  : "500Mi",
+  "webServerCpus" : "100m",
+  "webServerMem"  : "2Gi",
   "webServerImpl" : "nginx",
 
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "100m",
-  "auctionBidServerMem" : "1Gi",
+  "auctionBidServerMem" : "2Gi",
   "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 20,
   "auctionBidServerJdbcConnections" : 21,
@@ -22,7 +22,7 @@
   
   "numAppServers" : 1,
   "appServerCpus" : "100m",
-  "appServerMem" : "1Gi",
+  "appServerMem" : "2Gi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,
@@ -31,24 +31,24 @@
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "100m",
-  "coordinationServerMem" : "200Mi",
+  "coordinationServerMem" : "2Gi",
   "coordinationServerImpl" : "zookeeper",
   
   "numMsgServers" : 1, 
   "msgServerCpus" : "100m",
-  "msgServerMem" : "200Mi",
+  "msgServerMem" : "2Gi",
   "msgServerImpl" : "rabbitmq",
 
   "numDbServers" : 1, 
   "dbServerCpus" : "100m",
-  "dbServerMem" : "200Mi",
+  "dbServerMem" : "2Gi",
   "dbServerImpl" : "postgresql",
   "postgresqlDataVolumeSize" : "5Gi",
   "postgresqlLogVolumeSize" : "5Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "100m",
-  "nosqlServerMem" : "1Gi",
+  "nosqlServerMem" : "2Gi",
   "nosqlServerImpl" : "mongodb",
   "mongodbDataVolumeSize" : "5Gi",
   

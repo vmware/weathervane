@@ -78,14 +78,14 @@ sub configure {
 
 	my $memString = $self->getParamValue('dbServerMem');
 	$logger->debug("dbServerMem is set to $memString, using this to tune postgres.");
-	$memString =~ /(\d+)\s*(\w)/;
+	$memString =~ /(\d+)\s*(\w+)/;
 	my $totalMemory = $1;
 	my $totalMemoryUnit = $2;
 	if (lc($totalMemoryUnit) eq "gi") {
 		$totalMemoryUnit = "GB";
-	} else if (lc($totalMemoryUnit) eq "mi") {
+	} elsif (lc($totalMemoryUnit) eq "mi") {
 		$totalMemoryUnit = "MB";
-	} else if (lc($totalMemoryUnit) eq "ki") {
+	} elsif (lc($totalMemoryUnit) eq "ki") {
 		$totalMemoryUnit = "kB";
 	}
 
@@ -128,17 +128,27 @@ sub configure {
 		elsif ( $inline =~ /(\s+)memory:/ ) {
 			print FILEOUT "${1}memory: " . $self->getParamValue('dbServerMem') . "\n";
 		}
-		elsif ( $inline =~ /\s\sname:\spostgresql-data/ ) {
-			while (!($inline =~ /(\s+)storage:/ )) {
-				print FILEOUT $inline;
+		elsif ( $inline =~ /^\s+name:\spostgresql-data/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if (!($inline =~ /(\s+)storage:/ )) {
+					print FILEOUT $inline;
+				} else {
+					print FILEOUT "${1}storage: $dataVolumeSize\n";
+					last;
+				}
 			}
-			print FILEOUT "${1}storage: $dataVolumeSize\n";
 		}
-		elsif ( $inline =~ /\s\sname:\spostgresql-logs/ ) {
-			while (!($inline =~ /(\s+)storage:/ )) {
-				print FILEOUT $inline;
+		elsif ( $inline =~ /^\s+name:\spostgresql-logs/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if (!($inline =~ /^(\s+)storage:/ )) {
+					print FILEOUT $inline;
+				} else {
+					print FILEOUT "${1}storage: $logVolumeSize\n";
+					last;
+				}
 			}
-			print FILEOUT "${1}storage: $logVolumeSize\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

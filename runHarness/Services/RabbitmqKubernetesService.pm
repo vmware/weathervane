@@ -88,11 +88,11 @@ sub configure {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('msgServerCpus') . "\n";
+		elsif ( $inline =~ /^(\s+)cpu:/ ) {
+			print FILEOUT "${1}cpu: " . $self->getParamValue('msgServerCpus') . "\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('msgServerMem') . "\n";
+		elsif ( $inline =~ /^(\s+)memory:/ ) {
+			print FILEOUT "${1}memory: " . $self->getParamValue('msgServerMem') . "\n";
 		}
 		else {
 			print FILEOUT $inline;

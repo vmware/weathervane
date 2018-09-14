@@ -43,11 +43,14 @@
   "dbServerCpus" : "100m",
   "dbServerMem" : "200Mi",
   "dbServerImpl" : "postgresql",
+  "postgresqlDataVolumeSize" : "5Gi",
+  "postgresqlLogVolumeSize" : "5Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "100m",
   "nosqlServerMem" : "1Gi",
   "nosqlServerImpl" : "mongodb",
+  "mongodbDataVolumeSize" : "5Gi",
   
 },
 
@@ -94,11 +97,14 @@
   "dbServerCpus" : "2",
   "dbServerMem" : "8Gi",
   "dbServerImpl" : "postgresql",
+  "postgresqlDataVolumeSize" : "20Gi",
+  "postgresqlLogVolumeSize" : "20Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "2",
   "nosqlServerMem" : "32Gi",
   "nosqlServerImpl" : "mongodb",
+  "mongodbDataVolumeSize" : "200Gi",
   
 },
 

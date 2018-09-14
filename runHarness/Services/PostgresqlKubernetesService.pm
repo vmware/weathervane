@@ -76,25 +76,25 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 
-	my $totalMemory;
-	my $totalMemoryUnit;
-	if (   ( exists $self->dockerConfigHashRef->{'memory'} )
-		&&  $self->dockerConfigHashRef->{'memory'}  )
-	{
-		my $memString = $self->dockerConfigHashRef->{'memory'};
-		$logger->debug("docker memory is set to $memString, using this to tune postgres.");
-		$memString =~ /(\d+)\s*(\w)/;
-		$totalMemory = $1;
-		$totalMemoryUnit = $2;
-	} else {
-		$totalMemory = 0;
-		$totalMemoryUnit = 0;		
+	my $memString = $self->getParamValue('dbServerMem');
+	$logger->debug("dbServerMem is set to $memString, using this to tune postgres.");
+	$memString =~ /(\d+)\s*(\w)/;
+	my $totalMemory = $1;
+	my $totalMemoryUnit = $2;
+	if (lc($totalMemoryUnit) eq "gi") {
+		$totalMemoryUnit = "GB";
+	} else if (lc($totalMemoryUnit) eq "mi") {
+		$totalMemoryUnit = "MB";
+	} else if (lc($totalMemoryUnit) eq "ki") {
+		$totalMemoryUnit = "kB";
 	}
-		
+
+	my $dataVolumeSize = $self->getParamValue('postgresqlDataVolumeSize');
+	my $logVolumeSize = $self->getParamValue('postgresqlLogVolumeSize');
+
 
 	open( FILEIN,  "$configDir/kubernetes/postgresql.yaml" ) or die "$configDir/kubernetes/postgresql.yaml: $!\n";
-	open( FILEOUT, ">/tmp/postgresql-$namespace.yaml" )             or die "Can't open file /tmp/postgresql-$namespace.yaml: $!\n";
-	
+	open( FILEOUT, ">/tmp/postgresql-$namespace.yaml" )             or die "Can't open file /tmp/postgresql-$namespace.yaml: $!\n";	
 	while ( my $inline = <FILEIN> ) {
 
 		if ( $inline =~ /POSTGRESTOTALMEM:/ ) {
@@ -122,23 +122,23 @@ sub configure {
 			}
 			print FILEOUT "  POSTGRESMAXCONNECTIONS: \"$maxConn\"\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('dbServerCpus') . "\n";
+		elsif ( $inline =~ /(\s+)cpu:/ ) {
+			print FILEOUT "${1}cpu: " . $self->getParamValue('dbServerCpus') . "\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('dbServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)memory:/ ) {
+			print FILEOUT "${1}memory: " . $self->getParamValue('dbServerMem') . "\n";
 		}
 		elsif ( $inline =~ /\s\sname:\spostgresql-data/ ) {
 			while (!($inline =~ /(\s+)storage:/ )) {
 				print FILEOUT $inline;
 			}
-			print FILEOUT "${1}storage: " . $self->getParamValue('postgresqlDataVolumeSize') . "\n";
+			print FILEOUT "${1}storage: $dataVolumeSize\n";
 		}
 		elsif ( $inline =~ /\s\sname:\spostgresql-logs/ ) {
 			while (!($inline =~ /(\s+)storage:/ )) {
 				print FILEOUT $inline;
 			}
-			print FILEOUT "${1}storage: " . $self->getParamValue('postgresqlLogVolumeSize') . "\n";
+			print FILEOUT "${1}storage: $logVolumeSize\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
@@ -189,7 +189,19 @@ sub configure {
 	close FILEIN;
 	close FILEOUT;
 	
-		
+	# Delete the pvcs for postgresqlDataVolume  and postregresqlLogVolume
+	# if the size doesn't match the requested size.  
+	# This is to make sure that we are running the
+	# correct configuration size
+	my $cluster = $self->host;
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-data-postgresql-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDelete("pvc", "postgresql-data-postgresql-0", $self->namespace);
+	}	
+	$curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-logs-postgresql-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDelete("pvc", "postgresql-logs-postgresql-0", $self->namespace);
+	}	
 
 }
 

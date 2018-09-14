@@ -114,7 +114,7 @@ sub configure {
 	my $namespace = $self->namespace;
 	my $numShards = $self->numNosqlShards;
 	my $numReplicas = $self->numNosqlReplicas;
-	
+	my $dataVolumeSize = $self->getParamValue('mongodbDataVolumeSize');
 	my $configDir        = $self->getParamValue('configDir');
 
 	open( FILEIN,  "$configDir/kubernetes/mongodb.yaml" ) or die "$configDir/kubernetes/mongodb.yaml: $!\n";
@@ -144,7 +144,7 @@ sub configure {
 			print FILEOUT "${1}memory: " . $self->getParamValue('nosqlServerMem') . "\n";
 		}
 		elsif ( $inline =~ /(\s+)storage:/ ) {
-			print FILEOUT "${1}storage: " . $self->getParamValue('mongodbDataVolumeSize') . "\n";
+			print FILEOUT "${1}storage: $dataVolumeSize\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
@@ -165,6 +165,15 @@ sub configure {
 	
 	close FILEIN;
 	close FILEOUT;
+	
+	# Delete the pvc for mongodbDataVolume if the size doesn't match
+	# the requested size.  This is to make sure that we are running the
+	# correct configuration size
+	my $cluster = $self->host;
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("mongodb-data-mongodb-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDelete("pvc", "mongodb-data-mongodb-0", $self->namespace);
+	}
 }
 
 override 'isUp' => sub {

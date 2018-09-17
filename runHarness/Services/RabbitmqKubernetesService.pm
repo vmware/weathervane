@@ -61,19 +61,17 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 
-	my $totalMemory;
-	my $totalMemoryUnit;
-	if (   ( exists $self->dockerConfigHashRef->{'memory'} )
-		&&  $self->dockerConfigHashRef->{'memory'}  )
-	{
-		my $memString = $self->dockerConfigHashRef->{'memory'};
-		$logger->debug("docker memory is set to $memString, using this to tune postgres.");
-		$memString =~ /(\d+)\s*(\w)/;
-		$totalMemory = $1;
-		$totalMemoryUnit = $2;
-	} else {
-		$totalMemory = 0;
-		$totalMemoryUnit = 0;		
+	my $memString = $self->getParamValue('msgServerMem');
+	$logger->debug("msgServerMem is set to $memString.");
+	$memString =~ /(\d+)\s*(\w+)/;
+	my $totalMemory = $1;
+	my $totalMemoryUnit = $2;
+	if (lc($totalMemoryUnit) eq "gi") {
+		$totalMemoryUnit = "GB";
+	} elsif (lc($totalMemoryUnit) eq "mi") {
+		$totalMemoryUnit = "MB";
+	} elsif (lc($totalMemoryUnit) eq "ki") {
+		$totalMemoryUnit = "kB";
 	}
 
 	open( FILEIN,  "$configDir/kubernetes/rabbitmq.yaml" ) or die "$configDir/kubernetes/rabbitmq.yaml: $!\n";
@@ -87,6 +85,9 @@ sub configure {
 		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";
+		}
+		elsif ( $inline =~ /RABBITMQ_MEMORY:/ ) {
+			print FILEOUT "  RABBITMQ_MEMORY: \"$totalMemory$totalMemoryUnit\"\n";
 		}
 		elsif ( $inline =~ /^(\s+)cpu:/ ) {
 			print FILEOUT "${1}cpu: " . $self->getParamValue('msgServerCpus') . "\n";

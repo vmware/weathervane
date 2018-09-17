@@ -25,7 +25,11 @@ chmod 600 /var/lib/rabbitmq/.erlang.cookie
 chmod 600 /root/.erlang.cookie
 
 hostname="$(hostname)"
+
+echo "NODENAME=rabbit@${hostname}"
 echo "NODENAME=rabbit@${hostname}" > /etc/rabbitmq/rabbitmq-env.conf
+echo "[{rabbit, [{total_memory_available_override_value, ${RABBITMQ_MEMORY}] }]."
+echo "[{rabbit, [{total_memory_available_override_value, ${RABBITMQ_MEMORY}] }]." > /etc/rabbitmq/rabbitmq.conf
 
 if [ $# -gt 0 ]; then
 	eval "$* &"

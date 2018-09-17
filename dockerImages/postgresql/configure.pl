@@ -49,15 +49,26 @@ while ( my $inline = <FILEIN> ) {
 
 		}
 		elsif ($postgresqlSharedBuffersPct) {
+			print "Setting shared_buffers based on totalMem = $totalMem, totalMemUnit = $totalMemUnit, postgresqlSharedBuffersPct = $postgresqlSharedBuffersPct\n";
 
-			my $bufferMem = floor( $totalMem * $postgresqlSharedBuffersPct );
-
-			if ( $bufferMem > $totalMem ) {
+			if ( $postgresqlSharedBuffersPct > 1 ) {
 				die "postgresqlSharedBuffersPct must be less than 1";
 			}
 
-#					print $self->meta->name
-#					  . " In postgresqlService::configure setting shared_buffers to $bufferMem$totalMemUnit\n";
+			my $bufferMem = $totalMem * $postgresqlSharedBuffersPct;
+			if ($bufferMem < 1.0) {
+				$totalMem *= 1024;
+				$bufferMem *= 1024;
+				if ($totalMemUnit eq "GB") {
+					$totalMemUnit = "MB";
+				} elsif ($totalMemUnit eq "MB") {
+					$totalMemUnit = "kB";
+				}
+			}
+			$bufferMem = floor($bufferMem);
+			print "shared_buffers = $bufferMem, totalMemUnit = $totalMemUnit\n";
+
+			print " In postgresqlService::configure setting shared_buffers to $bufferMem$totalMemUnit\n";
 			print FILEOUT "shared_buffers = $bufferMem$totalMemUnit\n";
 
 		}
@@ -78,13 +89,24 @@ while ( my $inline = <FILEIN> ) {
 
 		}
 		elsif ($postgresqlEffectiveCacheSizePct) {
+			print "Setting effective_cache_size based on totalMem = $totalMem, totalMemUnit = $totalMemUnit, postgresqlEffectiveCacheSizePct = $postgresqlEffectiveCacheSizePct\n";
 
-			my $bufferMem =
-			  floor( $totalMem * $postgresqlEffectiveCacheSizePct );
-
-			if ( $bufferMem > $totalMem ) {
+			if ( $postgresqlEffectiveCacheSizePct > 1 ) {
 				die "postgresqlEffectiveCacheSizePct must be less than 1";
 			}
+
+			my $bufferMem = $totalMem * $postgresqlEffectiveCacheSizePct ;
+			if ($bufferMem < 1.0) {
+				$totalMem *= 1024;
+				$bufferMem *= 1024;
+				if ($totalMemUnit eq "GB") {
+					$totalMemUnit = "MB";
+				} elsif ($totalMemUnit eq "MB") {
+					$totalMemUnit = "kB";
+				}
+			}
+			$bufferMem = floor($bufferMem);
+			print "effective_cache_size = $bufferMem, totalMemUnit = $totalMemUnit\n";
 
 			print FILEOUT "effective_cache_size = $bufferMem$totalMemUnit\n";
 

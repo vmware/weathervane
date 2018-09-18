@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.servlet.AsyncContext;
@@ -85,16 +85,17 @@ public class ClientBidUpdater {
 		 * Initialize our knowledge of existing high bids for this auction so
 		 * that we can handle delayed requests.
 		 */
+		/*
 		List<HighBid> existingHighBids = _highBidDao.findByAuctionId(_auctionId);
 		for (HighBid aHighBid : existingHighBids) {
 			_itemHighBidMap.put(aHighBid.getItemId(), new BidRepresentation(aHighBid));
 			if (!aHighBid.getState().equals(HighBidState.SOLD)) {
 				_nextBidRequestQueueMap.put(aHighBid.getItemId(),
-						new LinkedBlockingQueue<NextBidQueueEntry>());
+						new ConcurrentLinkedQueue<NextBidQueueEntry>());
 				_currentItemId = aHighBid.getItemId();
 			}
 		}
-
+*/
 	}
 
 	public void release() {
@@ -113,7 +114,6 @@ public class ClientBidUpdater {
 	}
 
 	public void handleHighBidMessage(BidRepresentation newHighBid) {
-		logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid);
 
 		if (!newHighBid.getAuctionId().equals(_auctionId)) {
 			logger.warn("ClientBidUpdater for auction " + _auctionId
@@ -122,7 +122,16 @@ public class ClientBidUpdater {
 		}
 
 		Long itemId = newHighBid.getItemId();
+		BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
+		if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())) {
+			logger.info("handleHighBidMessage skipping bid because curBidCount {} is higher than newBidCount {}",
+					curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
+			return;
+		}
+		
 		_itemHighBidMap.put(itemId, newHighBid);
+		logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid
+				+ ", itemid = " + itemId + ", currentItemId = " + _currentItemId);
 
 		if ((_currentItemId == null)
 				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && !itemId
@@ -131,16 +140,6 @@ public class ClientBidUpdater {
 			 * This highBid is for a different item. Update the current item id
 			 */
 			_currentItemId = itemId;
-		}
-
-		Queue<NextBidQueueEntry> itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-		if ((itemNextBidRequestQueue == null) || (itemNextBidRequestQueue.peek() == null)) {
-			/*
-			 * No client is waiting for an update for this item
-			 */
-			logger.debug("clientBidUpdater:handleHighBid no clients are waiting for updates on auction "
-					+ _auctionId);
-			return;
 		}
 
 		_scheduledExecutorService.execute(new NextBidRequestCompleter(newHighBid));
@@ -180,8 +179,8 @@ public class ClientBidUpdater {
 			 * If there is a more recent high bid, or if the bidding is complete
 			 * on the item, or if the service is shutting down, then just return last high bid.
 			 */
-			logger.debug("getNextBid: There is already a more recent bid.  Returning it.  _shuttingDown = " + _shuttingDown);
 			returnBidRepresentation = highBidRepresentation;
+			logger.debug("getNextBid: There is already a more recent bid.  Returning it.  returnBidRepresentation = " + returnBidRepresentation);
 		}
 
 		if (returnBidRepresentation == null) {
@@ -198,12 +197,14 @@ public class ClientBidUpdater {
 					/*
 					 * Don't yet have a nextBidRequestQueue for this item.
 					 */
-					itemNextBidRequestQueue = new LinkedBlockingQueue<NextBidQueueEntry>();
+					itemNextBidRequestQueue = new ConcurrentLinkedQueue<NextBidQueueEntry>();
 					_nextBidRequestQueueMap.put(itemId, itemNextBidRequestQueue);
 				}
+				logger.debug("getNextBid adding request to itemNextBidRequestQueue for auctionId = " + auctionId + ", itemId = " + itemId
+						+ ", lastBidCount = " + lastBidCount);
+				itemNextBidRequestQueue.add(new NextBidQueueEntry(ac, lastBidCount, false, itemId));
 			}
 
-			itemNextBidRequestQueue.add(new NextBidQueueEntry(ac, lastBidCount, false, itemId));
 		}
 		return returnBidRepresentation;
 
@@ -278,65 +279,67 @@ public class ClientBidUpdater {
 			logger.info("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
 					+ theHighBid.toString());
 
-			Queue<NextBidQueueEntry> nextBidRequestQueue = _nextBidRequestQueueMap.get(theHighBid
-					.getItemId());
-			if (nextBidRequestQueue == null) {
-				// No client is actually waiting
-				return;
-			}
-
 			String jsonResponse = getJsonBidRepresentation(theHighBid);
 
-			synchronized (nextBidRequestQueue) {
+			/*
+			 *  Get the current nextBidRequestQueue for this item and replace it with an
+			 *  empty queue
+			 */
+			Long itemId = theHighBid.getItemId();
+			Queue<NextBidQueueEntry> nextBidRequestQueue;
+			synchronized (_nextBidRequestQueueMap) {
+				nextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
+				if (nextBidRequestQueue == null) {
+					// No client is actually waiting
+					return;
+				}
+				_nextBidRequestQueueMap.put(itemId, new ConcurrentLinkedQueue<NextBidQueueEntry>());
+			}
 
-				NextBidQueueEntry nextQueueEntry = nextBidRequestQueue.peek();
+			NextBidQueueEntry nextQueueEntry = nextBidRequestQueue.peek();
 
-				while ((nextQueueEntry != null)		&& 
-						((nextQueueEntry.getLastBidCount() <= theHighBid.getLastBidCount())
-								|| _shuttingDown  || _release)) {
-					logger.debug("ClientBidUpdater run nextQueueEntry is " + nextQueueEntry);
+			while (nextQueueEntry != null) {
+				logger.debug("ClientBidUpdater run nextQueueEntry is " + nextQueueEntry);
 
-					nextQueueEntry = nextBidRequestQueue.poll();
-					if (nextQueueEntry == null) {
-						_release = false;
-						return;
+				nextQueueEntry = nextBidRequestQueue.poll();
+				if (nextQueueEntry == null) {
+					_release = false;
+					return;
+				}
+
+				AsyncContext theAsyncContext = nextQueueEntry.getAsyncCtxt();
+
+				// get the response from the async context
+				HttpServletResponse response = (HttpServletResponse) theAsyncContext.getResponse();
+				if (response.isCommitted()) {
+					logger.warn("Found an asyncContext whose response has already been committed for auctionId = "
+							+_auctionId + ", itemId = " + _currentItemId + ". ");
+				} else {
+
+					// Fill in the content
+					response.setContentType("application/json");
+
+					PrintWriter out;
+					try {
+						out = response.getWriter();
+						out.print(jsonResponse);
+					} catch (IOException ex) {
+						logger.error("Exception when getting writer from response: " + ex);
 					}
 
-					AsyncContext theAsyncContext = nextQueueEntry.getAsyncCtxt();
-
-					// get the response from the async context
-					HttpServletResponse response = (HttpServletResponse) theAsyncContext
-							.getResponse();
-					if (response.isCommitted()) {
-						logger.info("Found an asyncContext whose response has already been committed.");
-					} else {
-
-						// Fill in the content
-						response.setContentType("application/json");
-
-						PrintWriter out;
-						try {
-							out = response.getWriter();
-							out.print(jsonResponse);
-						} catch (IOException ex) {
-							logger.error("Exception when getting writer from response: " + ex);
-						}
-
-						HttpServletRequest request = (HttpServletRequest) theAsyncContext
-								.getRequest();
-						logger.info("Completing asyncContext with URL "
-								+ request.getRequestURL().toString() + " with response: "
-								+ jsonResponse.toString());
-						// Complete the async request
-						theAsyncContext.complete();
-
-					}
-
-					nextQueueEntry = nextBidRequestQueue.peek();
+					HttpServletRequest request = (HttpServletRequest) theAsyncContext.getRequest();
+					logger.info("Completing asyncContext with URL " + request.getRequestURL().toString()
+							+ " with response: " + jsonResponse.toString());
+					// Complete the async request
+					theAsyncContext.complete();
 
 				}
-				_release = false;
+
+				nextQueueEntry = nextBidRequestQueue.peek();
+
 			}
+			_release = false;
+
 		}
 	}
 }

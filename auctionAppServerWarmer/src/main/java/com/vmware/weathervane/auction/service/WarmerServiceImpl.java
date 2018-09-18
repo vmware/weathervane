@@ -51,9 +51,8 @@ import com.vmware.weathervane.auction.representation.UserRepresentation;
 public class WarmerServiceImpl implements WarmerService {
 	private static final Logger logger = LoggerFactory.getLogger(WarmerServiceImpl.class);
 
-	public static final int NUM_WARMER_USERS = 40;
-	public static final int WARMER_THREADS_PER_APPSERVER = 10;
-	public static final int WARMER_ITERATIONS = 5000;
+	public static final int WARMER_THREADS_PER_APPSERVER = 1;
+	public static final int WARMER_ITERATIONS = 500;
 
 	private List<Thread> warmupThreads = new ArrayList<Thread>();
 
@@ -359,7 +358,7 @@ public class WarmerServiceImpl implements WarmerService {
 			HttpEntity<UserRepresentation> deleteRequestEntity = new HttpEntity<UserRepresentation>(
 					newUserRepresentation, requestHeaders);
 			ResponseEntity<UserRepresentation> deleteUserRepresentationEntity = restTemplate.exchange(registerUrl,
-					HttpMethod.DELETE, registerRequestEntity, UserRepresentation.class);
+					HttpMethod.DELETE, deleteRequestEntity, UserRepresentation.class);
 
 		}
 

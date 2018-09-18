@@ -108,14 +108,14 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private final long findFirstMaxWarmupIntervalSec = 300;
 	@JsonIgnore
-	private final long findFirstMaxIntervalSec = 600;
+	private final long findFirstMaxIntervalSec = 300;
 
 	@JsonIgnore
 	private final long verifyMaxRampIntervalSec = 180;
 	@JsonIgnore
 	private final long verifyMaxWarmupIntervalSec = 300;
 	@JsonIgnore
-	private final long verifyMaxIntervalSec = 600;
+	private final long verifyMaxIntervalSec = 300;
 	@JsonIgnore
 	private final int numRequiredVerifyMaxRepeats = 3;
 	

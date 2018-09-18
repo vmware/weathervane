@@ -28,15 +28,17 @@ hostname="$(hostname)"
 
 echo "NODENAME=rabbit@${hostname}"
 echo "NODENAME=rabbit@${hostname}" > /etc/rabbitmq/rabbitmq-env.conf
-echo "[{rabbit, [{total_memory_available_override_value, ${RABBITMQ_MEMORY}] }]."
-echo "[{rabbit, [{total_memory_available_override_value, ${RABBITMQ_MEMORY}] }]." > /etc/rabbitmq/rabbitmq.conf
+printf "total_memory_available_override_value = ${RABBITMQ_MEMORY}\n"
+printf "total_memory_available_override_value = ${RABBITMQ_MEMORY}\n" > /etc/rabbitmq/rabbitmq.conf
+printf "vm_memory_high_watermark.relative = 0.8\n"
+printf "vm_memory_high_watermark.relative = 0.8\n" > /etc/rabbitmq/rabbitmq.conf
 
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
     echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &"
 	setsid sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &
-	sleep 15
+	sleep 120
 	rabbitmqctl add_user auction auction
 	rabbitmqctl set_user_tags auction administrator
 	rabbitmqctl add_vhost auction

@@ -158,10 +158,10 @@ public class BidController extends BaseController {
 		// If we got null back without an exception, then just return as
 		// the request will be completed asynchronously later.
 		if (bidRepresentation == null) {
-			logger.trace("BidController:getNextBid: CompletedSuccessfully bidRepresentation = null ");
+			logger.debug("BidController:getNextBid: CompletedSuccessfully bidRepresentation = null ");
 			return;
 		} else {
-			logger.trace("BidController:getNextBid: CompletedSuccessfully bidRepresentation = "
+			logger.debug("BidController:getNextBid: CompletedSuccessfully bidRepresentation = "
 					+ bidRepresentation.toString());
 		}
 

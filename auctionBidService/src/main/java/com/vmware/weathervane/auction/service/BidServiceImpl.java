@@ -223,7 +223,7 @@ public class BidServiceImpl implements BidService {
 
 		if (clientBidUpdater == null) {
 			// Create a ClientBidUpdater for this auction
-			logger.warn("HighBidDispatcher creating ClientBidUpdater for highBid " + newHighBid);
+			logger.warn("handleHighBidMessage creating ClientBidUpdater for highBid " + newHighBid);
 			clientBidUpdater = new ClientBidUpdater(newHighBid.getAuctionId(), _highBidDao, _itemDao, _clientUpdateExecutorService, imageStoreFacade);
 
 			_clientBidUpdaterMap.put(auctionId, clientBidUpdater);

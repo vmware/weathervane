@@ -85,7 +85,6 @@ public class ClientBidUpdater {
 		 * Initialize our knowledge of existing high bids for this auction so
 		 * that we can handle delayed requests.
 		 */
-		/*
 		List<HighBid> existingHighBids = _highBidDao.findByAuctionId(_auctionId);
 		for (HighBid aHighBid : existingHighBids) {
 			_itemHighBidMap.put(aHighBid.getItemId(), new BidRepresentation(aHighBid));
@@ -95,7 +94,6 @@ public class ClientBidUpdater {
 				_currentItemId = aHighBid.getItemId();
 			}
 		}
-*/
 	}
 
 	public void release() {
@@ -124,21 +122,27 @@ public class ClientBidUpdater {
 		Long itemId = newHighBid.getItemId();
 		BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
 		if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())) {
-			logger.info("handleHighBidMessage skipping bid because curBidCount {} is higher than newBidCount {}",
-					curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
-			return;
+				/*
+				 * Add a special case to allow old bids for items that did not receive any bids and 
+				 * are being put back up for auction.
+				 */
+				if (!curHighBid.getBiddingState().equals(BiddingState.SOLD) || (curHighBid.getLastBidCount() != 3)
+						|| (newHighBid.getLastBidCount() != 1)) {
+					logger.info("handleHighBidMessage skipping bid because curBidCount {} is higher than newBidCount {}",
+							curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
+					return;
+				}
 		}
 		
 		_itemHighBidMap.put(itemId, newHighBid);
 		logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid
 				+ ", itemid = " + itemId + ", currentItemId = " + _currentItemId);
-
 		if ((_currentItemId == null)
-				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && !itemId
-						.equals(_currentItemId))) {
+				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId > _currentItemId))) {
 			/*
 			 * This highBid is for a different item. Update the current item id
 			 */
+			logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId, itemId);
 			_currentItemId = itemId;
 		}
 
@@ -232,6 +236,7 @@ public class ClientBidUpdater {
 		if (_auctionId == null) {				
 			logger.warn("getCurrentItem: _auctionId is null. auctionId = " + auctionId);
 		}
+		
 		logger.info("getCurrentItem. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
 		if ((_currentItemRepresentation == null) || 
 				!_currentItemRepresentation.getId().equals(_currentItemId)) {
@@ -239,9 +244,11 @@ public class ClientBidUpdater {
 			 * Update the current item
 			 */
 			if (_itemDao == null) {
-				logger.info("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
+				logger.warn("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
 				return _currentItemRepresentation;
 			}
+			logger.info("getCurrentItem:Getting the currentItem from the itemDao. current itemId = " 
+					+ _currentItemId + ", auctionId = " + auctionId);
 			Item theItem = _itemDao.get(_currentItemId);
 			List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
 					Item.class.getSimpleName(), _currentItemId);
@@ -313,7 +320,7 @@ public class ClientBidUpdater {
 				HttpServletResponse response = (HttpServletResponse) theAsyncContext.getResponse();
 				if (response.isCommitted()) {
 					logger.warn("Found an asyncContext whose response has already been committed for auctionId = "
-							+_auctionId + ", itemId = " + _currentItemId + ". ");
+							+_auctionId + ", itemId = " + itemId + ". ");
 				} else {
 
 					// Fill in the content

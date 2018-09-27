@@ -24,6 +24,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
@@ -57,12 +60,19 @@ public class ClientBidUpdater {
 	Long _currentItemId = null;
 	private ItemRepresentation _currentItemRepresentation = null;
 
-	private Map<Long, Queue<NextBidQueueEntry>> _nextBidRequestQueueMap = new ConcurrentHashMap<Long, Queue<NextBidQueueEntry>>();
+	private Queue<AsyncContext> _nextBidRequestQueue = new ConcurrentLinkedQueue<AsyncContext>();
+	private final ReadWriteLock _nextBidRequestQueueRWLock = new ReentrantReadWriteLock();
+	private final Lock _nextBidRequestQueueReadLock = _nextBidRequestQueueRWLock.readLock();
+	private final Lock _nextBidRequestQueueWriteLock = _nextBidRequestQueueRWLock.writeLock();
+
 	/*
 	 * Map from itemId to the last bid for that item
 	 */
 	private Map<Long, BidRepresentation> _itemHighBidMap = new ConcurrentHashMap<Long, BidRepresentation>();
-
+	private final ReadWriteLock _highBidRWLock = new ReentrantReadWriteLock();
+	private final Lock _highBidReadLock = _highBidRWLock.readLock();
+	private final Lock _highBidWriteLock = _highBidRWLock.writeLock();
+	
 	private HighBidDao _highBidDao;
 	private ItemDao _itemDao;
 	private ScheduledExecutorService _scheduledExecutorService;
@@ -89,8 +99,6 @@ public class ClientBidUpdater {
 		for (HighBid aHighBid : existingHighBids) {
 			_itemHighBidMap.put(aHighBid.getItemId(), new BidRepresentation(aHighBid));
 			if (!aHighBid.getState().equals(HighBidState.SOLD)) {
-				_nextBidRequestQueueMap.put(aHighBid.getItemId(),
-						new ConcurrentLinkedQueue<NextBidQueueEntry>());
 				_currentItemId = aHighBid.getItemId();
 			}
 		}
@@ -118,29 +126,37 @@ public class ClientBidUpdater {
 					+ " got a high bid message for auction " + newHighBid.getAuctionId());
 			return;
 		}
-
 		Long itemId = newHighBid.getItemId();
-		BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
-		if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())) {
+
+		_highBidWriteLock.lock();
+		try {
+			BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
+			if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())) {
 				/*
-				 * Add a special case to allow old bids for items that did not receive any bids and 
-				 * are being put back up for auction.
+				 * Add a special case to allow old bids for items that did not receive any bids
+				 * and are being put back up for auction.
 				 */
 				if (!curHighBid.getBiddingState().equals(BiddingState.SOLD) || (curHighBid.getLastBidCount() != 3)
 						|| (newHighBid.getLastBidCount() != 1)) {
-					logger.info("handleHighBidMessage skipping bid because curBidCount {} is higher than newBidCount {}",
+					logger.info(
+							"handleHighBidMessage using existing bid because curBidCount {} is higher than newBidCount {}",
 							curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
-					return;
+					newHighBid = curHighBid;
 				}
+			}
+
+			logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid + ", itemid = " + itemId
+					+ ", currentItemId = " + _currentItemId);
+			_itemHighBidMap.put(itemId, newHighBid);
+
+		} finally {
+			_highBidWriteLock.unlock();
 		}
 		
-		_itemHighBidMap.put(itemId, newHighBid);
-		logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid
-				+ ", itemid = " + itemId + ", currentItemId = " + _currentItemId);
 		if ((_currentItemId == null)
 				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId > _currentItemId))) {
 			/*
-			 * This highBid is for a different item. Update the current item id
+			 * This highBid is for a new item. Update the current item id
 			 */
 			logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId, itemId);
 			_currentItemId = itemId;
@@ -172,44 +188,48 @@ public class ClientBidUpdater {
 			throw new InvalidStateException(msg);
 		}
 
-		BidRepresentation highBidRepresentation = _itemHighBidMap.get(itemId);
 		BidRepresentation returnBidRepresentation = null;
-		if (((highBidRepresentation != null)
-				&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue()) || highBidRepresentation
-						.getBiddingState().equals(BiddingState.SOLD)))
-				|| _shuttingDown || _release) {
-		
-			/*
-			 * If there is a more recent high bid, or if the bidding is complete
-			 * on the item, or if the service is shutting down, then just return last high bid.
-			 */
-			returnBidRepresentation = highBidRepresentation;
-			logger.debug("getNextBid: There is already a more recent bid.  Returning it.  returnBidRepresentation = " + returnBidRepresentation);
-		}
+		_highBidReadLock.lock();
+		try {
+			BidRepresentation highBidRepresentation = _itemHighBidMap.get(itemId);
+			if (((highBidRepresentation != null)
+					&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue())
+							|| highBidRepresentation.getBiddingState().equals(BiddingState.SOLD)))
+					|| _shuttingDown || _release) {
 
-		if (returnBidRepresentation == null) {
-			/*
-			 * Need to wait for the next high bid. Place the async context on
-			 * the nextBidRequest queue and return null. The nextBidRequest will
-			 * be completed by the ClientBidUpdater when a new high bid is
-			 * posted
-			 */
-			Queue<NextBidQueueEntry> itemNextBidRequestQueue;
-			synchronized (_nextBidRequestQueueMap) {
-				itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-				if (itemNextBidRequestQueue == null) {
-					/*
-					 * Don't yet have a nextBidRequestQueue for this item.
-					 */
-					itemNextBidRequestQueue = new ConcurrentLinkedQueue<NextBidQueueEntry>();
-					_nextBidRequestQueueMap.put(itemId, itemNextBidRequestQueue);
-				}
-				logger.debug("getNextBid adding request to itemNextBidRequestQueue for auctionId = " + auctionId + ", itemId = " + itemId
-						+ ", lastBidCount = " + lastBidCount);
-				itemNextBidRequestQueue.add(new NextBidQueueEntry(ac, lastBidCount, false, itemId));
+				/*
+				 * If there is a more recent high bid, or if the bidding is complete on the
+				 * item, or if the service is shutting down, then just return last high bid.
+				 */
+				returnBidRepresentation = highBidRepresentation;
+				logger.debug(
+						"getNextBid: There is already a more recent bid.  Returning it.  returnBidRepresentation = "
+								+ returnBidRepresentation);
 			}
 
+			if (returnBidRepresentation == null) {
+				/*
+				 * Need to wait for the next high bid. Place the async context on the
+				 * nextBidRequest queue and return null. The nextBidRequest will be completed by
+				 * the ClientBidUpdater when a new high bid is posted.
+				 * This uses a read lock even though it appears to be a write because it is actually
+				 * the reading/writing of the _nextBidRequestQueue reference, and not writing to the
+				 * queue, that we are synchronizing.
+				 */
+				_nextBidRequestQueueReadLock.lock();
+				try {
+					logger.debug("getNextBid adding request to itemNextBidRequestQueue for auctionId = " + auctionId
+							+ ", itemId = " + itemId + ", lastBidCount = " + lastBidCount);
+					_nextBidRequestQueue.add(ac);					
+				} finally {
+					_nextBidRequestQueueReadLock.unlock();
+				}
+
+			}
+		} finally {
+			_highBidReadLock.unlock();
 		}
+		
 		return returnBidRepresentation;
 
 	}
@@ -282,39 +302,39 @@ public class ClientBidUpdater {
 
 		@Override
 		public void run() {
-
 			logger.info("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
 					+ theHighBid.toString());
-
-			String jsonResponse = getJsonBidRepresentation(theHighBid);
-
-			/*
-			 *  Get the current nextBidRequestQueue for this item and replace it with an
-			 *  empty queue
-			 */
-			Long itemId = theHighBid.getItemId();
-			Queue<NextBidQueueEntry> nextBidRequestQueue;
-			synchronized (_nextBidRequestQueueMap) {
-				nextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-				if (nextBidRequestQueue == null) {
-					// No client is actually waiting
-					return;
-				}
-				_nextBidRequestQueueMap.put(itemId, new ConcurrentLinkedQueue<NextBidQueueEntry>());
+			if ((_nextBidRequestQueue == null) || (_nextBidRequestQueue.isEmpty())) {
+				// No client is actually waiting
+				logger.debug("nextBidRequestCompleter run return due to empty queue for auction " 
+						+ _auctionId);
+				return;
 			}
 
-			NextBidQueueEntry nextQueueEntry = nextBidRequestQueue.peek();
+			/*
+			 *  Get the current nextBidRequestQueue replace it with an empty queue
+			 */
+			Long itemId = theHighBid.getItemId();
+			Queue<AsyncContext> nextBidRequestQueue;
+			_nextBidRequestQueueWriteLock.lock();
+			try {
+				nextBidRequestQueue = _nextBidRequestQueue;
+				_nextBidRequestQueue = new ConcurrentLinkedQueue<AsyncContext>();
+				
+			} finally {
+				_nextBidRequestQueueWriteLock.unlock();
+			}
 
-			while (nextQueueEntry != null) {
-				logger.debug("ClientBidUpdater run nextQueueEntry is " + nextQueueEntry);
+			String jsonResponse = getJsonBidRepresentation(theHighBid);
+			AsyncContext theAsyncContext = nextBidRequestQueue.peek();
+			while (theAsyncContext != null) {
+				logger.debug("ClientBidUpdater run nextQueueEntry is " + theAsyncContext);
 
-				nextQueueEntry = nextBidRequestQueue.poll();
-				if (nextQueueEntry == null) {
+				theAsyncContext = nextBidRequestQueue.poll();
+				if (theAsyncContext == null) {
 					_release = false;
 					return;
 				}
-
-				AsyncContext theAsyncContext = nextQueueEntry.getAsyncCtxt();
 
 				// get the response from the async context
 				HttpServletResponse response = (HttpServletResponse) theAsyncContext.getResponse();
@@ -342,7 +362,7 @@ public class ClientBidUpdater {
 
 				}
 
-				nextQueueEntry = nextBidRequestQueue.peek();
+				theAsyncContext = nextBidRequestQueue.peek();
 
 			}
 			_release = false;

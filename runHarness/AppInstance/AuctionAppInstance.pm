@@ -406,9 +406,7 @@ override 'redeploy' => sub {
 		}
 		
 		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostSt
-		
-		ring;
+		my $scpHostString    = $server->host->scpHostString;
 		my $serverImpl    = $server->getParamValue('auctionBidServerImpl');
 		my $warDestination;
 		if ( $serverImpl eq 'auctionbidservice' ) {

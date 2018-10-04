@@ -27,6 +27,7 @@ use Services::TomcatService;
 use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
+use Services::AuctionBidService;
 use Services::MysqlService;
 use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
@@ -112,8 +113,10 @@ sub getServiceByType {
 			exit(-1);
 		}
 		else {
-			$console_logger->error("There is no regular implementation for the AuctionBidServer, only Kubernetes");
-			exit(-1);
+				$service = AuctionBidService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
 		}
 	}
 	elsif ( $serviceName eq "keepalived" ) {

@@ -60,7 +60,7 @@ sub configure {
 
 	my $threads            = $self->getParamValue('auctionBidServerThreads');
 	my $connections        = $self->getParamValue('auctionBidServerJdbcConnections');
-	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
+	my $tomcatCatalinaBase = $self->getParamValue('bidServiceCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('auctionBidServerJdbcConnections') / 2);
 	my $nodeNum = $self->getParamValue('instanceNum');
 	my $maxConnections =

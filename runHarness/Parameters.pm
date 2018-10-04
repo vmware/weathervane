@@ -1857,7 +1857,7 @@ $parameters{"auctionBidServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "auctionbidservice",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which AuctionBidServer implementation to use.\n\t" . "Currently only tomcat is supported.",
+	"usageText" => "Controls which AuctionBidServer implementation to use.\n\t" . "Currently only auctionbidservice is supported.",
 	"showUsage" => 0,
 };
 $parameters{"auctionBidServerCacheImpl"} = {
@@ -2855,14 +2855,14 @@ $parameters{"appServerPortStep"} = {
 $parameters{"auctionBidServerPortOffset"} = {
 	"type"      => "=i",
 	"default"   => 10000,
-	"parent"    => "appServer",
+	"parent"    => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 $parameters{"auctionBidServerPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
-	"parent"    => "appServer",
+	"parent"    => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };

@@ -121,7 +121,7 @@ redirectPort="8443"/>
       <Host name="localhost"  appBase="webapps"
             unpackWARs="true" autoDeploy="false">
 
-		<Context path="auction" docBase="auction" debug="0" reloadable="true"></Context>
+		<Context path="/auction" docBase="auctionBidService" debug="0" reloadable="true"></Context>
         <!-- SingleSignOn valve, share authentication between web applications
              Documentation at: /docs/config/valve.html -->
         <!--

@@ -388,6 +388,45 @@ override 'redeploy' => sub {
 		}
 	}
 
+	my $bidServicesRef = $self->getAllServicesByType('auctionBidServer');
+	foreach my $server ($bidServicesRef) {
+		if ( $server->useDocker() ) {
+			next;
+		}
+		my $host = $server->host;
+		my $hostname = $host->hostName;
+		my $sshConnectString = $host->sshConnectString;
+		if ($host->isNonDocker()) {			
+			my $ls          = `$sshConnectString \"ls\" 2>&1`;
+			if ( $ls =~ /No route/ ) {
+				# This host is not up so can't redeploy
+				$logger->debug("Don't redeploy to $hostname as it is not up.");
+				next;
+			}
+		}
+		
+		my $scpConnectString = $server->host->scpConnectString;
+		my $scpHostString    = $server->host->scpHostString;
+		my $serverImpl    = $server->getParamValue('auctionBidServerImpl');
+		my $warDestination;
+		if ( $serverImpl eq 'auctionbidservice' ) {
+			$warDestination = $self->getParamValue('bidServiceCatalinaBase') . "/webapps";
+
+			print $logfile "$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"\n";
+			my $out = `$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"`;
+			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
+			print $logfile $out;
+
+			print $logfile "$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.\n";
+			$out = `$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.`;
+			$logger->debug("$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.  out = $out");
+			print $logfile $out;
+		}
+		else {
+			die "AuctionAppInstance::redeploy: Only auctionbidservice is supported as bid server.\n";
+		}
+	}
+
 	my $webServicesRef = $self->getAllServicesByType('webServer');
 	foreach my $server (@$webServicesRef) {
 		if ( $server->useDocker() ) {

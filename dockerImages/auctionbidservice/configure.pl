@@ -19,8 +19,8 @@ my $shutdownPort  = $ENV{'TOMCAT_SHUTDOWN_PORT'};
 print "configure tomcat. \n";
 
 # Configure setenv.sh
-open( FILEIN,  "/root/apache-tomcat-auction1/bin/setenv.sh" ) or die "Can't open file /root/apache-tomcat-auction1/bin/setenv.sh: $!\n";
-open( FILEOUT, ">/opt/apache-tomcat-auction1/bin/setenv.sh" ) or die "Can't open file /opt/apache-tomcat-auction1/bin/setenv.sh: $!\n";
+open( FILEIN,  "/root/apache-tomcat-bid/bin/setenv.sh" ) or die "Can't open file /root/apache-tomcat-bid/bin/setenv.sh: $!\n";
+open( FILEOUT, ">/opt/apache-tomcat-bid/bin/setenv.sh" ) or die "Can't open file /opt/apache-tomcat-bid/bin/setenv.sh: $!\n";
 while ( my $inline = <FILEIN> ) {
 	if ( $inline =~ /^CATALINA_OPTS="(.*)"/ ) {
 		print FILEOUT "CATALINA_OPTS=\"$completeJVMOpts\"\n";
@@ -49,8 +49,8 @@ elsif ( $db eq "postgresql" ) {
 	$dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
 }
 
-open( FILEIN,  "/root/apache-tomcat-auction1/conf/server.xml") or die "Can't open file /root/apache-tomcat-auction1/conf/server.xml: $!\n";
-open( FILEOUT, ">/opt/apache-tomcat-auction1/conf/server.xml" ) or die "Can't open file /opt/apache-tomcat-auction1/conf/server.xml: $!\n";
+open( FILEIN,  "/root/apache-tomcat-bid/conf/server.xml") or die "Can't open file /root/apache-tomcat-bid/conf/server.xml: $!\n";
+open( FILEOUT, ">/opt/apache-tomcat-bid/conf/server.xml" ) or die "Can't open file /opt/apache-tomcat-bid/conf/server.xml: $!\n";
 while ( my $inline = <FILEIN> ) {
 
 	if ( $inline =~ /<Server port="8005" shutdown="SHUTDOWN">/ ) {
@@ -157,8 +157,8 @@ close FILEOUT;
 # if we are using tls we need to add a security
 # constraint to Tomcat's web.xml so all traffic is redirected to ssl
 if ($useTls) {
-	open( FILEIN,  "/root/apache-tomcat-auction1/conf/web.xml" );
-	open( FILEOUT, ">/opt/apache-tomcat-auction1/conf/web.xml" );
+	open( FILEIN,  "/root/apache-tomcat-bid/conf/web.xml" );
+	open( FILEOUT, ">/opt/apache-tomcat-bid/conf/web.xml" );
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /<\/web-app>/ )
 		{

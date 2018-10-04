@@ -1515,6 +1515,14 @@ $parameters{"appServerPerformanceMonitor"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"auctionBidServerPerformanceMonitor"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"mustPass"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
@@ -2627,6 +2635,31 @@ $parameters{"appServerEnableJprofiler"} = {
 	"showUsage" => 0,
 };
 
+# parameters specific to the bid service
+$parameters{"bidServiceCatalinaHome"} = {
+	"type"      => "=s",
+	"default"   => "/opt/apache-tomcat",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"bidServiceCatalinaBase"} = {
+	"type"      => "=s",
+	"default"   => "/opt/apache-tomcat-bid",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"auctionBidServiceEnableJprofiler"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 # parameters specific to tomcat
 $parameters{"tomcatCatalinaHome"} = {
 	"type"      => "=s",
@@ -2812,6 +2845,21 @@ $parameters{"appServerPortOffset"} = {
 	"showUsage" => 0,
 };
 $parameters{"appServerPortStep"} = {
+	"type"      => "=i",
+	"default"   => 1,
+	"parent"    => "appServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"auctionBidServerPortOffset"} = {
+	"type"      => "=i",
+	"default"   => 10000,
+	"parent"    => "appServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"auctionBidServerPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
 	"parent"    => "appServer",

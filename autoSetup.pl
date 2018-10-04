@@ -299,6 +299,9 @@ runAndLog( $fileout, "rm -fr /opt/apache-tomcat-8.5.$tomcat8vers" );
 runAndLog( $fileout, "rm -f /opt/apache-tomcat" );
 runAndLog( $fileout, "mv apache-tomcat-8.5.$tomcat8vers /opt/" );
 runAndLog( $fileout, "ln -s /opt/apache-tomcat-8.5.$tomcat8vers /opt/apache-tomcat" );
+
+print "Setting up AuctionApp\n";
+print $fileout "Setting up AuctionApp\n";
 runAndLog( $fileout, "cp -r configFiles/host/$os/apache-tomcat-auction1 /opt/." );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/webapps" );
 runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.war /opt/apache-tomcat-auction1/webapps/." );
@@ -314,6 +317,24 @@ runAndLog( $fileout,
 );
 runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-auction1/lib/postgresql-9.4.1212.jre7.jar"
+);
+
+print "Setting up AuctionBidService\n";
+print $fileout "Setting up AuctionBidService\n";
+runAndLog( $fileout, "cp -r configFiles/host/$os/apache-tomcat-bid /opt/." );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/webapps" );
+runAndLog( $fileout, "cp /root/weathervane/dist/auctionBidService.war /opt/apache-tomcat-bid/webapps/." );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/bin" );
+runAndLog( $fileout, "cp /opt/apache-tomcat/bin/tomcat-juli.jar /opt/apache-tomcat-bid/bin/" );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/work" );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/temp" );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/logs" );
+runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/lib" );
+runAndLog( $fileout,
+"curl -s http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar -o /opt/apache-tomcat-bid/lib/mysql-connector-java-5.1.41.jar"
+);
+runAndLog( $fileout,
+"curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-bid/lib/postgresql-9.4.1212.jre7.jar"
 );
 
 print "Fetching and installing Httpd\n";

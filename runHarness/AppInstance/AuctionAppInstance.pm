@@ -389,7 +389,7 @@ override 'redeploy' => sub {
 	}
 
 	my $bidServicesRef = $self->getAllServicesByType('auctionBidServer');
-	foreach my $server ($bidServicesRef) {
+	foreach my $server (@$bidServicesRef) {
 		if ( $server->useDocker() ) {
 			next;
 		}
@@ -406,7 +406,9 @@ override 'redeploy' => sub {
 		}
 		
 		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
+		my $scpHostString    = $server->host->scpHostSt
+		
+		ring;
 		my $serverImpl    = $server->getParamValue('auctionBidServerImpl');
 		my $warDestination;
 		if ( $serverImpl eq 'auctionbidservice' ) {

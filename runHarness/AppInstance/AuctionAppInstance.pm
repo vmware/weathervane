@@ -417,9 +417,9 @@ override 'redeploy' => sub {
 			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
 			print $logfile $out;
 
-			print $logfile "$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.\n";
-			$out = `$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.`;
-			$logger->debug("$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/.  out = $out");
+			print $logfile "$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war\n";
+			$out = `$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war`;
+			$logger->debug("$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war  out = $out");
 			print $logfile $out;
 		}
 		else {

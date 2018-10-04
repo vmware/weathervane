@@ -225,7 +225,7 @@ sub configure {
 
 	# Modify setenv.sh and then copy to app server
 	open( FILEIN,  "$configDir/auctionBidService/setenv.sh" ) or die "Can't open file $configDir/auctionBidService/setenv.sh: $!\n";
-	open( FILEOUT, ">/tmp/setenv${suffix}-N${nodeNum}.sh" )             or die "Can't open file /tmp/setenv$suffix-N${nodeNum}.sh: $!\n";
+	open( FILEOUT, ">/tmp/setenv-bid-${suffix}-N${nodeNum}.sh" )             or die "Can't open file /tmp/setenv-bid-$suffix-N${nodeNum}.sh: $!\n";
 
 	while ( my $inline = <FILEIN> ) {
 
@@ -241,7 +241,7 @@ sub configure {
 	close FILEIN;
 	close FILEOUT;
 
-	`$scpConnectString /tmp/setenv${suffix}-N${nodeNum}.sh root\@$scpHostString:${tomcbidServiceCatalinaBasen/setenv.sh`;
+	`$scpConnectString /tmp/setenv-bid-${suffix}-N${nodeNum}.sh root\@$scpHostString:${bidServiceCatalinaBase}/bin/setenv.sh`;
 
 	# Configure the database info
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
@@ -267,7 +267,7 @@ sub configure {
 	}
 
 	open( FILEIN,  "$configDir/auctionBidService/server.xml" );
-	open( FILEOUT, ">/tmp/server${suffix}-N${nodeNum}.xml" );
+	open( FILEOUT, ">/tmp/server-bid-${suffix}-N${nodeNum}.xml" );
 	my $maxIdle = ceil( $self->getParamValue('auctionBidServerJdbcConnections') / 2 );
 	while ( my $inline = <FILEIN> ) {
 
@@ -346,7 +346,7 @@ sub configure {
 
 	close FILEIN;
 	close FILEOUT;
-	`$scpConnectString /tmp/server${suffix}-N${nodeNum}.xml root\@$scpHostString:$bidServiceCatalinaBase/conf/server.xml`;
+	`$scpConnectString /tmp/server-bid-${suffix}-N${nodeNum}.xml root\@$scpHostString:$bidServiceCatalinaBase/conf/server.xml`;
 
 	`$scpConnectString $configDir/auctionBidService/web.xml root\@$scpHostString:$bidServiceCatalinaBase/conf/web.xml`;
 	`$scpConnectString $configDir/auctionBidService/context.xml root\@$scpHostString:$bidServiceCatalinaBase/conf/context.xml`;

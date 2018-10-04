@@ -152,12 +152,12 @@ runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auc
 runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
 runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
 # auctionBidService
-runAndLog($fileout, "rm -rf ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction");
-runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction.war");
-runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction/auction.war");
-runAndLog($fileout, "cd ./dockerImages/auctionbidservice/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
+runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction");
+runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction.war");
+runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction/auction.war");
+runAndLog($fileout, "cd ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction; jar xf auction.war; rm -f auction.war");
 
 # workload driver
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
@@ -247,7 +247,7 @@ runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
 runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionAppServerWarmer.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-auction1/webapps");
+runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-bid/webapps");
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
 runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");

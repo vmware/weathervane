@@ -1005,6 +1005,7 @@ sub startServices {
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
+	my $users    = $self->dataManager->getParamValue('maxUsers');
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
@@ -1015,7 +1016,6 @@ sub startServices {
 		" setupLogDir = $setupLogDir"
 	);
 
-	my $users    = $self->dataManager->getParamValue('maxUsers');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");

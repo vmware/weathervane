@@ -186,8 +186,9 @@ sub configure {
 	open( FILEIN,  "$configDir/nginx/nginx.conf" ) or die "Can't open file $configDir/nginx/nginx.conf: $!";
 	open( FILEOUT, ">/tmp/nginx$suffix.conf" )            or die "Can't open file /tmp/nginx.conf: $!";
 
+	my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
 	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /[^\$]upstream/ ) {
+		if ( $inline =~ /[^\$]upstream\sapp/ ) {
 			print FILEOUT $inline;
 			print FILEOUT "least_conn;\n";
 			do {
@@ -195,13 +196,37 @@ sub configure {
 			} while ( !( $inline =~ /}/ ) );
 
 			# Add the balancer lines for each app server
-			my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
-
-			my $cnt = 1;
 			foreach my $appServer (@$appServersRef) {
 				my $appHostname = $self->getHostnameForUsedService($appServer);
 				my $appServerPort = $self->getPortNumberForUsedService($appServer,"http");
 				print FILEOUT "      server $appHostname:$appServerPort max_fails=0 ;\n";
+			}
+			print FILEOUT "      keepalive 1000;";
+			print FILEOUT "    }\n";
+		}
+		elsif ( $inline =~ /[^\$]upstream\sbid/ ) {
+			print FILEOUT $inline;
+			print FILEOUT "least_conn;\n";
+			do {
+				$inline = <FILEIN>;
+			} while ( !( $inline =~ /}/ ) );
+		
+			# Add the balancer lines for each bid server
+			my $bidServersRef  =$self->appInstance->getActiveServicesByType('auctionBidServer');
+			if ($#{$bidServersRef} >= 0) {
+				# Add the balancer lines for each bid server
+				foreach my $bidServer (@$bidServersRef) {
+					my $bidHostname = $self->getHostnameForUsedService($bidServer);
+					my $bidServerPort = $self->getPortNumberForUsedService($bidServer,"http");
+					print FILEOUT "      server $bidHostname:$bidServerPort max_fails=0 ;\n";
+				}
+			} else {
+				# if no bid server, then bid requests go to app servers
+				foreach my $appServer (@$appServersRef) {
+					my $appHostname = $self->getHostnameForUsedService($appServer);
+					my $appServerPort = $self->getPortNumberForUsedService($appServer,"http");
+					print FILEOUT "      server $appHostname:$appServerPort max_fails=0 ;\n";
+				}
 			}
 			print FILEOUT "      keepalive 1000;";
 			print FILEOUT "    }\n";

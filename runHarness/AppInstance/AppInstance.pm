@@ -998,20 +998,12 @@ sub setLoadPathType {
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	my $users  = $self->users;
 	my $impl         = $self->getParamValue('workloadImpl');
 	
 	my $appInstanceName = $self->getParamValue('appInstanceName');
 	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
-
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
 
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
@@ -1023,6 +1015,7 @@ sub startServices {
 		" setupLogDir = $setupLogDir"
 	);
 
+	my $users    = $self->dataManager->getParamValue('maxUsers');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");

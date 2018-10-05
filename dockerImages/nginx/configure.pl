@@ -56,9 +56,9 @@ while ( my $inline = <FILEIN> ) {
 		print FILEOUT "      keepalive 1000;";
 		print FILEOUT "    }\n";
 	}
-#	elsif ( $inline =~ /^\s*worker_connections\s/ ) {
-#		print FILEOUT "    worker_connections " . $workerConnections . ";\n";
-#	}
+	elsif ( $inline =~ /^\s*worker_connections\s/ ) {
+		print FILEOUT "    worker_connections " . $workerConnections . ";\n";
+	}
 	elsif ( $inline =~ /^\s*keepalive_timeout\s/ ) {
 		print FILEOUT "    keepalive_timeout " . $keepaliveTimeout . ";\n";
 	}

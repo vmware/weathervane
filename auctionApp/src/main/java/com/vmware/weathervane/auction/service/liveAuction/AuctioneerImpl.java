@@ -632,7 +632,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 			}
 
-			if (!auctionCompleted && !_shuttingDown) {
+			if (!auctionCompleted && !_shuttingDown && (_highBid.getBidCount() > 1)) {
 				// Schedule a new watchdog task
 				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
 						new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);

@@ -185,9 +185,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				}
 			}
 			
-			if (!auctionCompleted) {
+			/*
+			 * Don't start the watchdog if the auction is complete or if there are no
+			 * bids yet for the item
+			 */
+			if (!auctionCompleted && (_highBid.getBidCount() > 1)) {
 				// Schedule a watchdog task
-				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(new WatchdogTask(),
+				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(new WatchdogTask(_highBid),
 						watchdogStartDelay, TimeUnit.MILLISECONDS);
 			}
 		}
@@ -387,7 +391,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 							// Cancel and reschedule the watchdog task
 							_watchdogTaskScheduledFuture.cancel(true);
 							_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-									new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
+									new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
 
 							// Propagate the new high bid
 							propagateNewHighBid(returnedBid);
@@ -484,10 +488,6 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					// Notify interested parties of the new high bid
 					propagateNewHighBid(_highBid);
 
-					// Schedule a watchdog task
-					_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-							new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
-
 					suceeded = true;
 
 				} catch (InvalidStateException ex) {
@@ -533,6 +533,12 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 	}
 
 	protected class WatchdogTask implements Runnable {
+		
+		HighBid _lastHighBid;
+		
+		public WatchdogTask(HighBid highBid) {
+			_lastHighBid = highBid;
+		}
 
 		/*
 		 * Every time the BidWatchdogTask runs, it goes through the last
@@ -559,6 +565,12 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				return;
 			}
 
+			if (!_lastHighBid.equals(_highBid)) {
+				// Bid has changed already.  Don't run watchdog
+				_isWatchdogRunning.release();
+				return;
+			}
+			
 			HighBid curHighBid = null;
 			Boolean suceeded = false;
 			while (!suceeded && !_shuttingDown) {
@@ -623,7 +635,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			if (!auctionCompleted && !_shuttingDown) {
 				// Schedule a new watchdog task
 				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-						new WatchdogTask(), _auctionMaxIdleTime, TimeUnit.SECONDS);
+						new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
 			} else {
 				_watchdogTaskScheduledFuture = null;
 			}

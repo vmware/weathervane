@@ -259,6 +259,13 @@ public class HighBid implements Serializable, DomainObject {
 	private void setBidderId(Long bidderId) {
 		this.bidderId = bidderId;
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		HighBid that = (HighBid) other;
+		return ((this.getItemId().equals(that.getItemId())) && (this.getBidCount().equals(that.getBidCount()))
+				&& (this.getState().equals(that.getState())));
+	}
 
 	@Override
 	public String toString() {

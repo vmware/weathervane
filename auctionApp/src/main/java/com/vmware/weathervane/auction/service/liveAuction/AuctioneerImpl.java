@@ -389,7 +389,9 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 							_highBid = returnedBid;
 
 							// Cancel and reschedule the watchdog task
-							_watchdogTaskScheduledFuture.cancel(true);
+							if (_watchdogTaskScheduledFuture != null) {
+								_watchdogTaskScheduledFuture.cancel(true);
+							}
 							_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
 									new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
 

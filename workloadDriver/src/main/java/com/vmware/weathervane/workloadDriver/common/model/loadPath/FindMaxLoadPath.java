@@ -101,7 +101,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private int numSucessiveIntervalsFailed = 0;
 	
 	@JsonIgnore
-	private final long initialRampIntervalSec = 120;
+	private final long initialRampIntervalSec = 60;
 
 	@JsonIgnore
 	private final long findFirstMaxRampIntervalSec = 180;

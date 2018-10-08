@@ -111,10 +111,16 @@ public class BidController extends BaseController {
 		 * Get the delay between auction updates (in minutes) and set the
 		 * asyncContext timeout to twice that value ( to leave room for
 		 * something being delayed).
+		 * Don't set a timeout if bidcount is 1, as the initial update 
+		 * will be delayed until there is a first bid on the item.
 		 */
-		int maxIdleTime = bidService.getAuctionMaxIdleTime();
-		ac.setTimeout(4 * maxIdleTime * 1000);
-		ac.addListener(new AsyncDispatcherServletListener());
+		if (bidCount == 1) {
+			ac.setTimeout(0);
+		} else {
+			int maxIdleTime = bidService.getAuctionMaxIdleTime();
+			ac.setTimeout(4 * maxIdleTime * 1000);
+			ac.addListener(new AsyncDispatcherServletListener());
+		}
 
 		BidRepresentation bidRepresentation = null;
 		boolean completedSucesssfully = false;

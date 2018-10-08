@@ -35,7 +35,7 @@ import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollu
 public class FindMaxLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(FindMaxLoadPath.class);
 
-	private long maxUsers = 10000;
+	private long maxUsers;
 
 	/*
 	 * Phases in a findMax run: - INITIALRAMP: Use short intervals to ramp up until
@@ -85,7 +85,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private String maxPassIntervalName = null;
 
 	@JsonIgnore
-	private final long initialRampRateStep = 500;
+	private long initialRampRateStep = 1000;
 
 	@JsonIgnore
 	private long curRateStep;
@@ -131,6 +131,9 @@ public class FindMaxLoadPath extends LoadPath {
 			String statsHostName, int portNumber, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate,
 				executorService);
+		
+		this.maxUsers = workload.getMaxUsers();
+		this.initialRampRateStep = maxUsers / 20;
 
 	}
 

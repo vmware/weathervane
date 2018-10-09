@@ -621,6 +621,20 @@ public class StatsSummary {
 			
 		}
 		
+		/*
+		 * Add the operation failure info
+		 */
+		retVal.append("Operation Failure-Description:Count\n");
+		for (Map.Entry<String, OperationStatsSummary> opEntry : opNameToStatsMap.entrySet()) {
+			Map<String, Long> failureStringCounts = opEntry.getValue().getFailureStringCounts();
+			if ((failureStringCounts != null) && (!failureStringCounts.isEmpty())) {
+				retVal.append(opEntry.getKey() + " failures:\n");
+				retVal.append(failureStringCounts.entrySet().stream()
+						.map(e -> "\t" + e.getKey() + ": " + e.getValue() + "\n")
+						.reduce("", String::concat));
+			}
+		}
+		
 		return retVal.toString();
 	}
 	

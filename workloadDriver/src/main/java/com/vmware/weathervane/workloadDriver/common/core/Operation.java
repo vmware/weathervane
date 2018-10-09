@@ -605,7 +605,6 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 					}
 					msg += " reason: " + ex.getMessage();
 					logger.warn(msg);
-					ex.printStackTrace();
 				}
 				this.setFailed(true);
 				this.setFailureReason(new RuntimeException(ex.getMessage()));

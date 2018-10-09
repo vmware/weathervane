@@ -408,6 +408,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					}
 				} else {
 					logger.debug("The bid is not a new high bid: " + theBid);
+					/*
+					 * No watchDog is running, so start one
+					 */
+					if (_watchdogTaskScheduledFuture == null) {
+						_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
+								new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
+					}
 				}
 			}
 			

@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,19 +78,25 @@ public class ClientBidUpdater {
 	private ItemDao _itemDao;
 	private ScheduledExecutorService _scheduledExecutorService;
 	private ImageStoreFacade _imageStoreFacade;
+	private RabbitTemplate _rabbitTemplate;
 
+	private boolean _sentWakeUpBid = false;
+	
 	private boolean _shuttingDown = false;
 
 	private boolean _release;
+
 	
 	public ClientBidUpdater(Long auctionId, HighBidDao highBidDao, ItemDao itemDao,
-			ScheduledExecutorService scheduledExecutorService, ImageStoreFacade imageStoreFacade) {
+			ScheduledExecutorService scheduledExecutorService, ImageStoreFacade imageStoreFacade,
+			RabbitTemplate rabbitTemplate) {
 		logger.info("Creating clientBidUpdater for auction " + auctionId);
 		_auctionId = auctionId;
 		_itemDao = itemDao;
 		_imageStoreFacade = imageStoreFacade;
 		_highBidDao = highBidDao;
-		_scheduledExecutorService = scheduledExecutorService;		
+		_scheduledExecutorService = scheduledExecutorService;	
+		_rabbitTemplate = rabbitTemplate;
 		
 		/*
 		 * Initialize our knowledge of existing high bids for this auction so
@@ -160,6 +167,7 @@ public class ClientBidUpdater {
 			 */
 			logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId, itemId);
 			_currentItemId = itemId;
+			_sentWakeUpBid = false;
 		}
 
 		_scheduledExecutorService.execute(new NextBidRequestCompleter(newHighBid));
@@ -192,6 +200,16 @@ public class ClientBidUpdater {
 		_highBidReadLock.lock();
 		try {
 			BidRepresentation highBidRepresentation = _itemHighBidMap.get(itemId);
+			/*
+			 * Send the highBid back if the bidCount is 1 to tell the auctioneer
+			 * to start the watchdog timer 
+			 */
+			if ((highBidRepresentation.getLastBidCount() == 1) && !_sentWakeUpBid) {
+				_rabbitTemplate.convertAndSend(BidServiceImpl.liveAuctionExchangeName, 
+						BidServiceImpl.newBidRoutingKey + highBidRepresentation.getAuctionId(), 
+						highBidRepresentation);
+				_sentWakeUpBid = true;
+			}
 			if (((highBidRepresentation != null)
 					&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue())
 							|| highBidRepresentation.getBiddingState().equals(BiddingState.SOLD)))

@@ -2469,7 +2469,7 @@ sub parseStats {
 		}
 		close RESULTFILE;
 		
-		my $resultString = "passed at $maxPassUsers in interval $maxPassIntervalName";
+		my $resultString = "passed at $maxPassUsers";
 		if (!$passed) {
 			$resultString = "failed";
 		}

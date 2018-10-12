@@ -1,6 +1,7 @@
 {
 	"name" : "followAuction",
 	"initialState" : 8,
+	 "maxNumAsyncBehaviors" : 2,				
 	"transitionChoosers" : [
 					"Default",
 					"Default",
@@ -52,11 +53,11 @@
                              [[   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 100 ]]  
 				],
 				"isResetState" : [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
-				"asyncBehaviors" : ["none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none"],
+				"asyncBehaviors" : ["none", "none", "none", "none", "none", "none", "none", "followAuction", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none"],
 				"meanCycleTimes" : [ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
 				"responseTimeLimits" : [ 2, 2, 3, 2, 2, 2, 2, 3, 3, 60, 2, 2, 2, 2, 2, 2, 5, 2, 5, 3, 9999999 ],
 				"responseTimeLimitsPercentile" : [ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 ],
-				"mixPercentage" : [ 0.93, 0.0, 0.93, 15.1, 7.59, 0.93, 0.46, 6.93, 7.0, 39.75, 2.8, 5.2, 0.46, 0.47, 0.93, 7.59, 0.4, 1.38, 0.22, 0.93, 0.0 ],
+				"mixPercentage" : [ 0.93, 0.0, 0.93, 15.33, 7.7, 0.93, 0.48, 7.03, 7.39, 38.68, 2.77, 5.28, 0.48, 0.46, 0.94, 7.7, 0.4, 1.42, 0.22, 0.93, 0.0 ],
 				"mixPercentageTolerance" : 0.10,
 				"useResponseTime" : [ true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, false ]
 }

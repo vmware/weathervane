@@ -204,6 +204,7 @@ public class StatsServiceImpl implements StatsService {
 					if (aggregatedWriter == null) {
 						aggregatedWriter = new BufferedWriter(new OutputStreamWriter(
 								new FileOutputStream(statsOutputDirName + "/" + workloadName + "-" + statsIntervalSpecName + ".csv"), "utf-8"));
+						aggregatedWriter.write(intervalAggregatedStats.getAggregatedStatsCsvHeader() + "\n");
 						specToAggregatedWriterMap.put(statsIntervalSpecName, aggregatedWriter);
 					}
 					aggregatedWriter.write(intervalAggregatedStats.getAggregatedStatsCsvLine() + "\n");

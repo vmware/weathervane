@@ -174,6 +174,7 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 				auctionIdsTried++;
 			}
 		}
+		
 		if (auctionIdsTried == _maxNumAsyncBehaviors) {
 			/*
 			 * This user is already attending the max allowable number of 
@@ -186,21 +187,35 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		/*
 		 * Pick an auction to attend, out of the allowable set, at random
 		 */
-		_auctionId = firstAllowedAuction + _random.nextInt(_maxNumAsyncBehaviors);
+		int offset = _random.nextInt(_maxNumAsyncBehaviors);
 		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " userId = "
 				+ _userId + ", globalOrderingId = " + globalOrderingId + ", usersPerAuction = " 
 				+ _usersPerAuction + ", maxNumAsyncBehaviors = " + _maxNumAsyncBehaviors 
 				+ ", firstAuctionId = " + _firstAuctionId + ", auctionIdOffset = " + auctionIdOffset
-				+ ", first try at auctionId = " + _auctionId);
-		while (_attendedAuctionsProvider.contains(_auctionId)) {
-			_auctionId++;
+				+ ", first offset = " + offset);
+		auctionIdsTried = 0;
+		while (_attendedAuctionsProvider.contains(firstAllowedAuction + offset)) {
+			offset = (offset + 1) % _maxNumAsyncBehaviors;
 			auctionIdsTried++;
 		}
+		_auctionId = firstAllowedAuction + offset;
 		_bindVarsMap.put("auctionId", Long.toString(_auctionId));
 		logger.info("JoinAuctionOperation:initialStep behaviorID = " + this.getBehaviorId() + " Joining AuctionId = "
 				+ _auctionId);
 		
-		
+//		System.out.println("ja, " 
+//				+ getUser().getTarget().getNumActiveUsers() + ", "
+//				+ getUser().getOrderingId() + ", "
+//				+ getUser().getGlobalOrderingId() + ", "				
+//				+ globalOrderingId + ", "
+//				+ _auctionId + ", "
+//				+ auctionIdOffset + ", "
+//				+ firstAllowedAuction + ", "
+//				+ auctionIdsTried + ", "
+//				+ _attendedAuctionsProvider.size() + ", "
+//				+ _maxNumAsyncBehaviors
+//				);
+
 		SimpleUri uri = getOperationUri(UrlType.POST, 0);
 
 		int[] validResponseCodes = new int[] { 200 };

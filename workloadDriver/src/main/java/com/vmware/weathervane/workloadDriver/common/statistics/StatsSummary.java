@@ -456,7 +456,7 @@ public class StatsSummary {
 	@JsonIgnore
 	public String getAggregatedStatsCsvHeader() {
 		StringBuilder retVal = new StringBuilder();
-		retVal.append("Interval Start, Interval End, Duration (s), Interval, " +
+		retVal.append("Interval Start, Interval End, Duration (s), Interval, Start Users, End Users, " +
 						"Pass," +
 						"TP (ops/s), Effective TP (ops/s),  Avg RT (sec)," +
 						"Ops Total, Ops Failed, Ops Fail RT");
@@ -502,6 +502,8 @@ public class StatsSummary {
 					+ ", " + dateFormatter.format(intervalStartTime) 
 					+ ", " + doubleFormat0.format(statsSummaryRollup.getIntervalDurationSec())
 					+ ", " + intervalName 
+					+ ", " + startActiveUsers 
+					+ ", " + endActiveUsers 
 					);
 		
 		retVal.append(

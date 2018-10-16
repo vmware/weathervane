@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,10 +112,19 @@ public class GetCurrentItemOperation extends AuctionOperation implements NeedsLo
 		_auctionId = theAuction.getId().toString();
 		_bindVarsMap.put("auctionId", _auctionId);
 
+//		System.out.println("gci, " 
+//				+ getUser().getTarget().getNumActiveUsers() + ", "
+//				+ getUser().getOrderingId() + ", "
+//				+ getUser().getGlobalOrderingId() + ", "
+//				+ getUser().getUserName() + ", "
+//				+ _auctionId 
+//				);
+
 		// Join auction must also get the current item and bid for the auction
 		SimpleUri uri = getOperationUri(UrlType.GET, 0);
 
-		logger.info("getCurrentItemStep behaviorID = " + this.getBehaviorId());
+		logger.info("getCurrentItemStep behaviorID = " + this.getBehaviorId() 
+			+ ", User orderingId = " + this.getUser().getOrderingId());
 
 		String[] mustContainText = null;
 		DataListener[] dataListeners = new DataListener[] { _currentItemListener };
@@ -134,14 +142,16 @@ public class GetCurrentItemOperation extends AuctionOperation implements NeedsLo
 		// bid.
 		SimpleUri uri = getOperationUri(UrlType.GET, 1);
 
-		logger.debug("getCurrentBidStep behaviorID = " + this.getBehaviorId() );
+		logger.debug("getCurrentBidStep behaviorID = " + this.getBehaviorId() 
+			+ ", User orderingId = " + this.getUser().getOrderingId());
+
 
 		String[] mustContainText = null;
 		DataListener[] dataListeners = new DataListener[] { _currentBidListener };
 		_authTokenHeaders.put("Accept", "application/json");
 
 		doHttpGet(uri, _bindVarsMap, new int[] { 200 }, new int[] { 410 }, false, true, mustContainText, dataListeners, _authTokenHeaders);
-
+		
 	}
 
 	public void getItemThumbnailStep() throws Throwable {
@@ -155,14 +165,18 @@ public class GetCurrentItemOperation extends AuctionOperation implements NeedsLo
 		_bindVarsMap.put("size", "THUMBNAIL");
 		SimpleUri uri = getOperationUri(UrlType.GET, 2);
 
-		logger.debug("getItemThumbnailStep behaviorID = " + this.getBehaviorId());
+		logger.debug("getItemThumbnailStep behaviorID = " + this.getBehaviorId()
+			+ ", User orderingId = " + this.getUser().getOrderingId());
+
 		_authTokenHeaders.put("Accept", "text/plain");
 		doHttpGet(uri, _bindVarsMap, validResponseCodes, null, false, false, mustContainText, dataListeners, _authTokenHeaders);
 
 	}
 
 	protected void finalStep() throws Throwable {
-		logger.debug("GetCurrentItemOperation:finalStep behaviorID = " + this.getBehaviorId());
+		logger.debug("GetCurrentItemOperation:finalStep behaviorID = " + this.getBehaviorId()
+			+ ", User orderingId = " + this.getUser().getOrderingId());
+
 	}
 
 	@Override

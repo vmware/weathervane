@@ -117,7 +117,7 @@ public class FindMaxLoadPath extends LoadPath {
 	@JsonIgnore
 	private final long verifyMaxIntervalSec = 300;
 	@JsonIgnore
-	private final int numRequiredVerifyMaxRepeats = 3;
+	private final int numRequiredVerifyMaxRepeats = 5;
 	
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined
@@ -542,6 +542,11 @@ public class FindMaxLoadPath extends LoadPath {
 					minRateStep *= 2;
 				}
 				maxPassUsers -= minRateStep;
+				if (maxPassUsers <= 0) {
+					maxPassUsers = 0;
+					loadPathComplete();
+				}
+				numVerifyMaxRepeatsPassed = 0;
 				nextSubInterval = SubInterval.RAMP;
 				return getNextVerifyMaxInterval();
 			}

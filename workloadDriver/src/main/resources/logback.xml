@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <logger name="org.apache.http.wire" level="WARN" />
     <logger name="org.apache.http" level="WARN" />
     <logger name="com.vmware" level="WARN" />
-    <logger name="com.vmware.weathervane.workloadDriver.common.web.service.StatsServiceImpl" level="WARN" />
+    <logger name="com.vmware.weathervane.workloadDriver.benchmarks.auction.operations.GetCurrentItemOperation" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.model.loadPath" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.model.target" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.benchmarks.auction.transitionChoosers" level="WARN" />

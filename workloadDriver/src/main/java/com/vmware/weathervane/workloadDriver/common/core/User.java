@@ -111,11 +111,6 @@ public abstract class User implements LoadProfileChangeCallback {
 	 * current load profile in the scenarioTrack.
 	 */
 	private boolean _isActive = false;
-
-	/**
-	 * Indicates whether this User is in the process of stopping and going away
-	 */
-	private boolean _isResetting = false;
 	
 	/**
 	 * Scheduled future for the timer on the reset process
@@ -131,7 +126,7 @@ public abstract class User implements LoadProfileChangeCallback {
 	// Fields related to selecting the next operation for each behavior
 
 	protected Random _randomNumberGenerator;
-
+	
 	public User(Long id, Long orderingId, Long globalOrderingId, String behaviorSpecName, Target target) {
 
 		logger.debug("Creating user with userId " + id + ", globalOrderingId = " 
@@ -139,7 +134,7 @@ public abstract class User implements LoadProfileChangeCallback {
 		this._id = id;
 		this._orderingId = orderingId;
 		this._globalOrderingId = globalOrderingId;
-		this.target = target;
+		this.setTarget(target);
 		this._behaviorSpecName = behaviorSpecName;
 		
 		setUserName(Long.toString(_id));
@@ -163,7 +158,7 @@ public abstract class User implements LoadProfileChangeCallback {
 		 * is, then create the initial behavior.
 		 */
 		logger.debug("User:start.  User id = " + _id + ", orderingId = " + _orderingId + ", numActiveUsers = "
-				+ numActiveUsers + ", target = " + target.getName());
+				+ numActiveUsers + ", target = " + getTarget().getName());
 
 		if (_orderingId <= numActiveUsers) {
 			// The user should be running
@@ -182,18 +177,6 @@ public abstract class User implements LoadProfileChangeCallback {
 			_behavior.start();
 		}
 
-	}
-
-	public void stop() {
-		if (!_behavior.isStopped()) {
-			_behavior.stop();
-		}
-	}
-
-	public void cleanup() {
-		_behavior = null;
-		_httpTransport.close();
-		_httpTransport = null;
 	}
 
 	/**
@@ -277,58 +260,48 @@ public abstract class User implements LoadProfileChangeCallback {
 	@Override
 	public void loadProfileChanged(long numActiveUsers) {
 		logger.info("User:loadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId 
-					+ ", isActive = " + _isActive + ", numActiveUsers = " + numActiveUsers
-					+ ", isResetting = " + _isResetting);
-		
+					+ ", isActive = " + _isActive + ", numActiveUsers = " + numActiveUsers);
 		/*
 		 * Check whether this user should be active.
 		 */
-		if (_isResetting) {
-			/*
-			 * This user is already resetting and going away.  It should never become active.
-			 */
-			logger.debug("User:loadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId + ". The user is already resetting.");
-			return;
-		} else if ((_orderingId <= numActiveUsers) && !_isActive) {
+		if ((_orderingId <= numActiveUsers) && !_isActive) {
 			/*
 			 * The user was inactive. Start a new behavior. There should not
 			 * already be a behavior for this user.
 			 */
 			logger.debug("User:loadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId + ". The user was inactive but should be active");
 			if (_behavior != null) {
+				logger.warn("User:LoadProfileChanged. userId = " + _id 
+						+ ", orderingId = " + _orderingId + ". The user was inactive, but had a behavior");
 				throw new RuntimeException(
-						"User:LoadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId + ". The user was inactive, but had a behavior");
+						"User:LoadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId 
+						+ ". The user was inactive, but had a behavior");
 			}
 
-			_behavior = createBehavior();
-
-			_isActive = true;
-			
-			/*
-			 * Start the behavior running
-			 */
-			_behavior.start();
+			this.start(numActiveUsers);
 
 		} else if ((_orderingId > numActiveUsers) && _isActive)  {
 			// The user should not be active
 			logger.debug("User:loadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId + ". The user was active and should no longer be active");
 			// There should be a behavior for this user.
 			if (_behavior == null) {
-				throw new RuntimeException(
-						"User:LoadProfileChanged. userId = " + _id + ", orderingId = " + _orderingId + ". The user was active, but did not have a behavior");
+				logger.warn("User:LoadProfileChanged. userId = " + _id + ", orderingId = " 
+								+ _orderingId + ". The user was active, but did not have a behavior");
+				throw new RuntimeException("User:LoadProfileChanged. userId = " + _id + ", orderingId = " 
+								+ _orderingId + ". The user was active, but did not have a behavior");
 			}
 			_isActive = false;
 
 			/*
 			 * Reset the user and stop the current behavior.
 			 */
-			this.startReset();
+			this.reset();
 		}
 
 	}
 
 	/**
-	 * This method is invoked as a callback from the track when the last load
+	 * This method is invoked as a callback from the target when the last load
 	 * profile is complete. The user stops executing.
 	 */
 	@Override
@@ -345,11 +318,11 @@ public abstract class User implements LoadProfileChangeCallback {
 
 	protected Behavior createBehavior() {
 		BehaviorSpec spec = BehaviorSpec.getBehaviorSpec(_behaviorSpecName);
-		Behavior behavior = new Behavior(this, spec, _statsCollector, target);
+		Behavior behavior = new Behavior(this, spec, _statsCollector, getTarget());
 		logger.debug("createBehavior Created behavior " + behavior.getBehaviorId());
 		UUID behaviorId = behavior.getBehaviorId();
 
-		behavior.setOperations(_operationFactory.getOperations(_statsCollector, this, behavior, target));
+		behavior.setOperations(_operationFactory.getOperations(_statsCollector, this, behavior, getTarget()));
 		for (Operation operation : behavior.getOperations()) {
 			this.prepareData(operation, behaviorId, behaviorId);
 		}
@@ -362,7 +335,7 @@ public abstract class User implements LoadProfileChangeCallback {
 		behavior.setHttpTransport(_httpTransport);
 		behavior.setUseThinkTime(_useThinkTime);
 		logger.debug("User with userId " + _id + " now has primary behavior " + behavior.getBehaviorId().toString()
-				+ " and is on track " + target.getName());
+				+ " and is on track " + getTarget().getName());
 		return behavior;
 	}
 
@@ -375,58 +348,38 @@ public abstract class User implements LoadProfileChangeCallback {
 	/**
 	 * 
 	 */
-	protected void startReset() {
+	protected void reset() {
 		logger.info("startReset called for user " + this.getId() + ", main behavior = " + _behavior.getBehaviorId()
 				+ ", subBehavior Ids: " + _behavior.getSubBehaviorIdsString());
-
-		_isResetting = true;
 		
+		/*
+		 * This user should no longer get callbacks
+		 */
+		boolean existed = getTarget().removeLoadProfileChangeCallback(this);
+		if (!existed) {
+			logger.warn("Tried to remove User from operation complete callbacks, but it didn't exist.");
+		}
+
 		/*
 		 * Stop the current behavior, which will stop all of its sub-behaviors
 		 */
 		_behavior.stop();
 
+		// Clean up state and close httpTransport
+		this.resetState();
+		_behavior = null;
+		_httpTransport.close();
+		_httpTransport = null;
+
 		/*
-		 * Start a new user to replace this one.
+		 * Start a new user to replace this one. Whether it actually runs will depend on
+		 * the orderingId and the number of currently active users.
 		 */
 		User newUser = target.getUserFactory().createUser(_id, _orderingId, _globalOrderingId, target);
 		newUser.setStatsCollector(_statsCollector);
 		target.registerLoadProfileChangeCallback(newUser);
 		newUser.start(target.getNumActiveUsers());
 		
-		/*
-		 * Schedule a timeout before forcing the reset to complete
-		 */
-		_resetTimerFuture =_resetTimingExecutor.schedule(new ResetTimeoutHandler(this, _behavior), _resetTimeout, TimeUnit.SECONDS);
-		
-	}
-
-	/**
-	 * Called when this users behavior and all sub-behaviors have fully stopped.
-	 * It will clear out the user's state and start a new behavior
-	 */
-	protected synchronized void completeReset(Behavior callingBehavior) {
-		logger.info("completeReset called for user " + this.getId() + ", main behavior = " + _behavior.getBehaviorId()
-				+ ", subBehavior Ids: " + _behavior.getSubBehaviorIdsString());
-
-		if (_resetTimerFuture != null) {
-			_resetTimerFuture.cancel(false);
-			_resetTimerFuture = null;
-		}
-		
-		if (_isResetting) {
-
-			this.resetState();
-			this.cleanup();
-			
-			boolean existed = target.removeLoadProfileChangeCallback(this);
-			if (!existed) {
-				logger.warn("Tried to remove User from operation complete callbacks, but it didn't exist.");
-			}
-
-			_isResetting = false;
-		}
-
 	}
 
 	protected abstract void resetState();
@@ -475,31 +428,20 @@ public abstract class User implements LoadProfileChangeCallback {
 		this.userName = userName;
 	}
 	
-	private class ResetTimeoutHandler implements Runnable {
-
-		private User theUser = null;
-		private Behavior theBehavior = null;
-		public ResetTimeoutHandler(User user, Behavior behavior) {
-			theUser = user;
-			theBehavior = behavior;
-		}
-		
-		@Override
-		public void run() {
-			/*
-			 * If this is called, then the reset has taken to long.
-			 * Force completion and cleanup.
-			 */
-			logger.info("ResetTimeoutHandler forcing completeReset for user " + theUser.getId() + ", main behavior = " + theBehavior.getBehaviorId()
-			+ ", subBehavior Ids: " + theBehavior.getSubBehaviorIdsString());
-
-			theUser.completeReset(theBehavior);
-			
-			
-		}
-		
+	public long getOrderingId() {
+		return _orderingId;
+	}
+	
+	public long getGlobalOrderingId() {
+		return _globalOrderingId;
 	}
 
+	public Target getTarget() {
+		return target;
+	}
 
+	public void setTarget(Target target) {
+		this.target = target;
+	}
 
 }

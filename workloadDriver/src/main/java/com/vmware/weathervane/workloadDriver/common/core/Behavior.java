@@ -77,8 +77,6 @@ public class Behavior implements OperationCompleteCallback {
 
 	private boolean _stop = false;
 
-	private boolean _opStopped = false;
-
 	private StatsCollector _statsCollector = null;
 
 	private List<Operation> _operations;
@@ -135,8 +133,7 @@ public class Behavior implements OperationCompleteCallback {
 	public void start() {
 
 		logger.debug("Behavior:start User = " + _user.getId() + ", Behavior UUID = " + _behaviorId);
-				
-		_stop = false;
+		
 		_currentOperation = null;
 		_behaviorsToStopOnOperationComplete = null;
 		_nextOperationStartTime = System.currentTimeMillis();
@@ -160,74 +157,32 @@ public class Behavior implements OperationCompleteCallback {
 		logger.debug("Behavior:stop User = " + _user.getId() + " behavior = " + _behaviorId
 				+ ", _subBehaviors = " + getSubBehaviorIdsString());
 		_stop = true;
-//		if (_currentOperation != null) {
-//			try {
-//				_currentOperation.closeCurrentResponse();
-//			} catch (IOException e) {
-//				logger.warn("Couldn't close response for ", _currentOperation.getOperationName(), " for behavior UUID ",
-//						getBehaviorId(), ". Reason: ", e.getMessage());
-//			}
-//		}
 		
 		List<Behavior> subBehaviorList = new ArrayList<Behavior>(_subBehaviors.values());
 		for (Behavior behavior : subBehaviorList) {
-			_activeSubBehaviors.remove(behavior.getBehaviorId());
 			behavior.stop();
 		}
-	}
-	
-	/**
-	 * When this behavior's operation stops due to the
-	 * stop flag, it uses this method to notify the behavior that it 
-	 * is doing so.
-	 */
-	public void opStopped() {
-		logger.debug("Behavior:opStopped User = " + _user.getId() + " behavior = " + _behaviorId);
-		_opStopped = true;
 		
-		checkIfFullyStopped();
-	}
+		if (_parentBehavior != null) {
+			_parentBehavior.subBehaviorStopped(_behaviorId);
+		}
 
-	/**
-	 * This method is called to allow a parent behavior to clean up when one of
-	 * its subBehaviors stops for any reason.
-	 */
-	protected void childStopping(UUID subBehaviorID) {
-		logger.debug("childStopping.  parent Behavior Id =  " + _behaviorId + ", child behavior Id = " + subBehaviorID);
-		_subBehaviors.remove(subBehaviorID);
+		// Clean up state
+		_httpTransport = null;
+		_operations = null;
+		_transitionChoosers = null;
 		
-		checkIfFullyStopped();
-	}
-	
-	/**
-	 * A behavior is only fully stopped if its operation
-	 * has acknowledged the stop, and all of its subbehaviors
-	 * have fully stopped
-	 */
-	protected void checkIfFullyStopped() {
-		logger.debug("checkIfFullyStopped.  Behavior Id =  " + _behaviorId
-				+ ", _stop = " + _stop + ", _opStopped = " + _opStopped
-				+ ", _subBehaviors.isEmpty = " + _subBehaviors.isEmpty());
-		if (_stop && _opStopped && _subBehaviors.isEmpty()) {
-			logger.debug("checkIfFullyStopped.  isFullyStopped Behavior Id =  " + _behaviorId);
-			_user.clearBehaviorState(_behaviorId);
-			_activeSubBehaviors.clear();
-			
-			/*
-			 * This behavior is fully stopped.  Notify its
-			 * parent.  If no parent, then the reset of the 
-			 * user can complete
-			 */
-			if (_parentBehavior != null) {
-				_parentBehavior.childStopping(_behaviorId);
-			} else {
-				_user.completeReset(this);
-				_user = null;
-				_httpTransport = null;
-			}
+		if (_pendingAsyncBehavior != null) {
+			_pendingAsyncBehavior.stop();
+			_pendingAsyncBehavior = null;
 		}
 	}
-
+	
+	private void subBehaviorStopped(UUID subBehaviorId) {
+		_activeSubBehaviors.remove(subBehaviorId);
+		_subBehaviors.remove(subBehaviorId);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -284,7 +239,7 @@ public class Behavior implements OperationCompleteCallback {
 				 * The last operation was a reset state. Let the user know to
 				 * reset. This will stop this behavior and start a new behavior
 				 */
-				_user.startReset();
+				_user.reset();
 			}
 
 			/*
@@ -305,7 +260,6 @@ public class Behavior implements OperationCompleteCallback {
 								+ " Based on previous transition, stopping subbehavior with UUID "
 								+ id);
 						_subBehaviors.get(id).stop();
-						_activeSubBehaviors.remove(id);
 					}
 				}
 
@@ -323,12 +277,6 @@ public class Behavior implements OperationCompleteCallback {
 
 			}
 			
-			/*
-			 * Set opStopped since there is no operation running. If
-			 * the behavior is fully stopped then this will finish 
-			 * any outstanding reset
-			 */
-			_opStopped = true;
 		}
 				
 		// Now start the next operation
@@ -349,7 +297,6 @@ public class Behavior implements OperationCompleteCallback {
 			if (_stop) {
 				logger.debug("startNextOperation: Stopping User = " + _user.getId()
 						+ ", behavior = " + _behaviorId);
-				checkIfFullyStopped();
 				return;
 			}
 
@@ -389,8 +336,7 @@ public class Behavior implements OperationCompleteCallback {
 					/*
 					 * Restart the user
 					 */
-					_user.startReset();
-					this.opStopped();
+					_user.reset();
 				}
 
 				// Save the list of behaviors to stop after this operation
@@ -411,7 +357,6 @@ public class Behavior implements OperationCompleteCallback {
 				for (UUID id : chooserResponse.getBehaviorsToStopAtStart()) {
 					logger.debug("startNextOperation User " + _user.getId() + ", Behavior UUID = "
 							+ _behaviorId + " Stopping subbehavior with UUID " + id);
-					_activeSubBehaviors.remove(id);
 					_subBehaviors.get(id).stop();
 				}
 			}
@@ -534,10 +479,6 @@ public class Behavior implements OperationCompleteCallback {
 					+ " operationStartTime = " + operationStartTime);
 
 			_currentOperation.start(opStartDelay);
-			
-			// Set opStopped since there is now an operation running
-			_opStopped = false;
-
 		}
 	}
 	

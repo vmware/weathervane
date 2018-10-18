@@ -152,7 +152,7 @@ public class ClientBidUpdater {
 	public void handleHighBidMessage(BidRepresentation newHighBid) {
 
 		if (!newHighBid.getAuctionId().equals(_auctionId)) {
-			logger.warn("ClientBidUpdater for auction " + _auctionId
+			logger.warn("handleHighBidMessage: ClientBidUpdater for auction " + _auctionId
 					+ " got a high bid message for auction " + newHighBid.getAuctionId());
 			return;
 		}
@@ -169,13 +169,13 @@ public class ClientBidUpdater {
 				if (!curHighBid.getBiddingState().equals(BiddingState.SOLD) || (curHighBid.getLastBidCount() != 3)
 						|| (newHighBid.getLastBidCount() != 1)) {
 					logger.info(
-							"handleHighBidMessage using existing bid because curBidCount {} is higher than newBidCount {}",
+							"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
 							curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
 					newHighBid = curHighBid;
 				}
 			}
 
-			logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid + ", itemid = " + itemId
+			logger.debug("handleHighBidMessage: got newHighBid " + newHighBid + ", itemid = " + itemId
 					+ ", currentItemId = " + _currentItemId);
 			_itemHighBidMap.put(itemId, newHighBid);
 
@@ -190,7 +190,7 @@ public class ClientBidUpdater {
 				/*
 				 * This highBid is for a new item. Update the current item id
 				 */
-				logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId,
+				logger.info("handleHighBidMessage: Got new item for auctionId = {}, itemId = {}", _auctionId,
 						itemId);
 				_currentItemId = itemId;
 				_currentItemRepresentation = null;
@@ -202,6 +202,8 @@ public class ClientBidUpdater {
 				 * If this the item is SOLD, then clear out the currentItemRepresentation to
 				 * force a refresh of the current item for getCurrentItem
 				 */
+				logger.info("handleHighBidMessage: Item sold for auctionId = {}, itemId = {}, clearing currentItemId", _auctionId,
+						itemId);
 				_currentItemId = null;
 				_currentItemRepresentation = null;
 			}
@@ -311,6 +313,8 @@ public class ClientBidUpdater {
 		try {
 			_curItemReadLock.lock();
 			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
+				logger.debug("getCurrentItem: Returning currentItemRepresentation with id {} for auctionId = ",
+						_currentItemRepresentation.getId(), auctionId);
 				return _currentItemRepresentation;
 			}
 		} finally {
@@ -324,6 +328,7 @@ public class ClientBidUpdater {
 				/*
 				 * Need to wait for the current item to be set
 				 */
+				logger.debug("getCurrentItem: currentItemId is null for auctionid = {}", auctionId);
 				_itemAvailableCondition.await();
 			}
 			if (_currentItemRepresentation == null) {
@@ -335,7 +340,7 @@ public class ClientBidUpdater {
 							+ ", auctionId = " + auctionId);
 					return _currentItemRepresentation;
 				}
-				logger.info("getCurrentItem:Getting the currentItem from the itemDao. current itemId = "
+				logger.info("getCurrentItem: Getting the currentItem from the itemDao. current itemId = "
 						+ _currentItemId + ", auctionId = " + auctionId);
 				Item theItem = _itemDao.get(_currentItemId);
 				List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(Item.class.getSimpleName(),
@@ -349,6 +354,8 @@ public class ClientBidUpdater {
 			_curItemWriteLock.unlock();
 		}
 
+		logger.debug("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}", 
+				itemToReturn.getId(), auctionId);
 		return itemToReturn;
 	}
 

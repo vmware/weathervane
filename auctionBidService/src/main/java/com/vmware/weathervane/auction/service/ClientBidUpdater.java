@@ -27,7 +27,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.servlet.AsyncContext;
@@ -45,11 +44,11 @@ import com.vmware.weathervane.auction.data.dao.ItemDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.model.HighBid;
-import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
+import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
+import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 

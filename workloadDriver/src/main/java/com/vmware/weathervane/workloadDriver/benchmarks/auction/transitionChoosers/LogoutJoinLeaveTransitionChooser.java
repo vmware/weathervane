@@ -137,7 +137,7 @@ public class LogoutJoinLeaveTransitionChooser extends DefaultTransitionChooser i
 					logger.debug("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 2. Leaving auction  " + auctionId
 							+ " because attending max. Stopping BehaviorId = " + id);
 				} catch (NullPointerException e) {
-					logger.debug("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 0 due to nullPointerExcept when coosing auction to leave");
+					logger.warn("chooseTransitionMatrix for behavior " + getBehavior().getBehaviorId() + " Returning 0 due to nullPointerExcept when coosing auction to leave");
 					selectedTransitionMatrix = 0;					
 				}
 			} else {

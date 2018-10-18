@@ -324,10 +324,10 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 		}
 		if (!found) {
 			errorMessage = getOperationName() + " ERROR - unexpected response code: " + statusCode 
-					+ " behavior UUID = " + _behavior.getBehaviorId();
+					+ " for " + this._operationName;
 		}
 		if (errorMessage != null) {
-			logger.error(errorMessage);
+			logger.info(errorMessage + " behavior UUID = " + _behavior.getBehaviorId());
 			throw new RuntimeException(errorMessage);
 		}
 	}
@@ -391,7 +391,6 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 			 */
 			logger.debug("Operation:run Behaviour is stopped for behavior UUID "
 					+ _behavior.getBehaviorId());
-			_behavior.opStopped();
 			return;
 		}
 
@@ -438,8 +437,7 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 				int statusCode = _currentResponseStatus.code();
 				if (_abortResponseCodes != null) {
 					if (isAbortStatusCode(statusCode, _abortResponseCodes)) {
-						_user.startReset();
-						_behavior.opStopped();
+						_user.reset();
 						return;
 					}
 
@@ -557,7 +555,6 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 									 * operation has been stopped. Don't
 									 * continue executing the operation.
 									 */
-									_behavior.opStopped();
 									return;
 								}
 
@@ -592,11 +589,10 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 				 * stopped. The error may be a side effect of the stopping.
 				 */
 				if (_behavior.isStopped()) {
-					_behavior.opStopped();
 					return;
 				}
 
-				if (logger.isWarnEnabled()) {
+				if (logger.isInfoEnabled()) {
 					String msg = "Operation:run Operation failed " + getOperationName()
 							+ " for behavior UUID " + _behavior.getBehaviorId();
 					if (_behavior.getParentBehavior() != null) {
@@ -604,7 +600,7 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 								+ _behavior.getParentBehavior().getBehaviorId();
 					}
 					msg += " reason: " + ex.getMessage();
-					logger.warn(msg);
+					logger.info(msg);
 				}
 				this.setFailed(true);
 				this.setFailureReason(new RuntimeException(ex.getMessage()));
@@ -672,8 +668,7 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 				logger.info("Operation:run restarting userId = " + _user.getId() + ", operation = "
 						+ getOperationName() + ", behavior UUID " + _behavior.getBehaviorId() 
 						+ " Failure Reason = " + this.getFailureReason());
-				this.getUser().startReset();
-				_behavior.opStopped();
+				this.getUser().reset();
 				return;
 			}
 			
@@ -694,15 +689,6 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 			
 		}
 		
-		if (_behavior.isStopped()) {
-			/*
-			 * The behavior associated with this
-			 * operation has been stopped. Don't
-			 * continue executing the operation.
-			 */
-			_behavior.opStopped();
-		}
-
 	}
 
 	/*

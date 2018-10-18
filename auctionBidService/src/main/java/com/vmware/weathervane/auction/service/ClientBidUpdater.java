@@ -313,7 +313,7 @@ public class ClientBidUpdater {
 		try {
 			_curItemReadLock.lock();
 			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
-				logger.debug("getCurrentItem: Returning currentItemRepresentation with id {} for auctionId = ",
+				logger.debug("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}",
 						_currentItemRepresentation.getId(), auctionId);
 				return _currentItemRepresentation;
 			}

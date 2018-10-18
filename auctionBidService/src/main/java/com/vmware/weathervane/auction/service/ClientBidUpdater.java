@@ -24,8 +24,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.servlet.AsyncContext;
@@ -58,7 +60,7 @@ public class ClientBidUpdater {
 
 	private Long _auctionId = null;
 
-	Long _currentItemId = null;
+	private Long _currentItemId = null;
 	private ItemRepresentation _currentItemRepresentation = null;
 
 	private Queue<AsyncContext> _nextBidRequestQueue = new ConcurrentLinkedQueue<AsyncContext>();
@@ -73,6 +75,16 @@ public class ClientBidUpdater {
 	private final ReadWriteLock _highBidRWLock = new ReentrantReadWriteLock();
 	private final Lock _highBidReadLock = _highBidRWLock.readLock();
 	private final Lock _highBidWriteLock = _highBidRWLock.writeLock();
+	
+	/*
+	 * Constructs to synchronize access to currentItem so that in period
+	 * between current item SOLD and the start of the next item the 
+	 * getCurrentItem requests can be blocked.
+	 */
+	private final ReadWriteLock _curItemRWLock = new ReentrantReadWriteLock();
+	private final Lock _curItemReadLock = _curItemRWLock.readLock();
+	private final Lock _curItemWriteLock = _curItemRWLock.writeLock();
+	private final Condition _itemAvailableCondition = _curItemWriteLock.newCondition();
 	
 	private HighBidDao _highBidDao;
 	private ItemDao _itemDao;
@@ -107,6 +119,18 @@ public class ClientBidUpdater {
 			_itemHighBidMap.put(aHighBid.getItemId(), new BidRepresentation(aHighBid));
 			if (!aHighBid.getState().equals(HighBidState.SOLD)) {
 				_currentItemId = aHighBid.getItemId();
+				if (_currentItemId != null) {
+					if (_itemDao == null) {
+						logger.warn("ClientBidUpdater: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
+					} else {
+						logger.info("ClientBidUpdater the currentItem from the itemDao. current itemId = " 
+								+ _currentItemId + ", auctionId = " + auctionId);
+						Item theItem = _itemDao.get(_currentItemId);
+						List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
+								Item.class.getSimpleName(), _currentItemId);
+						_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);	
+					}
+				}
 			}
 		}
 	}
@@ -160,14 +184,30 @@ public class ClientBidUpdater {
 			_highBidWriteLock.unlock();
 		}
 		
-		if ((_currentItemId == null)
-				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId > _currentItemId))) {
-			/*
-			 * This highBid is for a new item. Update the current item id
-			 */
-			logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId, itemId);
-			_currentItemId = itemId;
-			_sentWakeUpBid = false;
+		try {
+			_curItemWriteLock.lock();
+			if (((_currentItemId == null) && !newHighBid.getBiddingState().equals(BiddingState.SOLD))
+					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId > _currentItemId))) {
+				/*
+				 * This highBid is for a new item. Update the current item id
+				 */
+				logger.info("clientBidUpdater:handleHighBid Got new item for auction {} with itemId {}", _auctionId,
+						itemId);
+				_currentItemId = itemId;
+				_currentItemRepresentation = null;
+				_itemAvailableCondition.signalAll();
+				_sentWakeUpBid = false;
+			}
+			else if (newHighBid.getBiddingState().equals(BiddingState.SOLD)) {
+				/*
+				 * If this the item is SOLD, then clear out the currentItemRepresentation to
+				 * force a refresh of the current item for getCurrentItem
+				 */
+				_currentItemId = null;
+				_currentItemRepresentation = null;
+			}
+		} finally {
+			_curItemWriteLock.unlock();
 		}
 
 		_scheduledExecutorService.execute(new NextBidRequestCompleter(newHighBid));
@@ -265,35 +305,52 @@ public class ClientBidUpdater {
 	}
 
 	public ItemRepresentation getCurrentItem(long auctionId) {
-		if (_currentItemId == null) {
-			logger.warn("getCurrentItem: _currentItemId is null. auctionId = " + auctionId);
-			if (_auctionId == null) {				
-				logger.warn("getCurrentItem: _auctionId is null. auctionId = " + auctionId);
-			}
-		}
-		if (_auctionId == null) {				
-			logger.warn("getCurrentItem: _auctionId is null. auctionId = " + auctionId);
-		}
-		
-		logger.info("getCurrentItem. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
-		if ((_currentItemRepresentation == null) || 
-				!_currentItemRepresentation.getId().equals(_currentItemId)) {
-			/*
-			 * Update the current item
-			 */
-			if (_itemDao == null) {
-				logger.warn("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
+		/*
+		 * Fast path.  As long as curItemid and curItemRepresentation are set,
+		 * they are valid and we can return the curItemRepresentation.
+		 */
+		try {
+			_curItemReadLock.lock();
+			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
 				return _currentItemRepresentation;
 			}
-			logger.info("getCurrentItem:Getting the currentItem from the itemDao. current itemId = " 
-					+ _currentItemId + ", auctionId = " + auctionId);
-			Item theItem = _itemDao.get(_currentItemId);
-			List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
-					Item.class.getSimpleName(), _currentItemId);
-			_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);
-		} 
+		} finally {
+			_curItemReadLock.unlock();
+		}
+		
+		ItemRepresentation itemToReturn = null;
+		try {
+			_curItemWriteLock.lock();
+			while (_currentItemId == null) {
+				/*
+				 * Need to wait for the current item to be set
+				 */
+				_itemAvailableCondition.await();
+			}
+			if (_currentItemRepresentation == null) {
+				/*
+				 * Update the current item
+				 */
+				if (_itemDao == null) {
+					logger.warn("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId
+							+ ", auctionId = " + auctionId);
+					return _currentItemRepresentation;
+				}
+				logger.info("getCurrentItem:Getting the currentItem from the itemDao. current itemId = "
+						+ _currentItemId + ", auctionId = " + auctionId);
+				Item theItem = _itemDao.get(_currentItemId);
+				List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(Item.class.getSimpleName(),
+						_currentItemId);
+				_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);
+			}
+			itemToReturn = _currentItemRepresentation;
+		} catch (InterruptedException e) {
+			logger.warn("getCurrentItem: _itemAvailableCondition.await() interrupted");
+		} finally {
+			_curItemWriteLock.unlock();
+		}
 
-		return _currentItemRepresentation;
+		return itemToReturn;
 	}
 
 	public void shutdown() {

@@ -197,7 +197,7 @@ public class ClientBidUpdater {
 				_itemAvailableCondition.signalAll();
 				_sentWakeUpBid = false;
 			}
-			else if (newHighBid.getBiddingState().equals(BiddingState.SOLD)) {
+			else if (newHighBid.getBiddingState().equals(BiddingState.SOLD) && newHighBid.getItemId().equals(_currentItemId)) {
 				/*
 				 * If this the item is SOLD, then clear out the currentItemRepresentation to
 				 * force a refresh of the current item for getCurrentItem

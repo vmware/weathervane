@@ -122,7 +122,7 @@ public class ClientBidUpdater {
 					if (_itemDao == null) {
 						logger.warn("ClientBidUpdater: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
 					} else {
-						logger.info("ClientBidUpdater the currentItem from the itemDao. current itemId = " 
+						logger.debug("ClientBidUpdater the currentItem from the itemDao. current itemId = " 
 								+ _currentItemId + ", auctionId = " + auctionId);
 						Item theItem = _itemDao.get(_currentItemId);
 						List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
@@ -169,7 +169,7 @@ public class ClientBidUpdater {
 			if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
 					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) && (curHighBid.getLastBidCount() == 3)
 							&& (newHighBid.getLastBidCount() == 1))) {
-				logger.info(
+				logger.debug(
 						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
 						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
 				newHighBid = curHighBid;
@@ -227,7 +227,7 @@ public class ClientBidUpdater {
 	@Transactional(readOnly = true)
 	public BidRepresentation getNextBid(Long auctionId, Long itemId, Integer lastBidCount,
 			AsyncContext ac) throws InvalidStateException {
-		logger.info("getNextBid for auctionId = " + auctionId + ", itemId = " + itemId
+		logger.debug("getNextBid for auctionId = " + auctionId + ", itemId = " + itemId
 				+ ", lastBidCount = " + lastBidCount);
 
 		if (!auctionId.equals(_auctionId)) {
@@ -313,7 +313,7 @@ public class ClientBidUpdater {
 		try {
 			_curItemReadLock.lock();
 			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
-				logger.debug("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}",
+				logger.warn("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}",
 						_currentItemRepresentation.getId(), auctionId);
 				return _currentItemRepresentation;
 			}
@@ -328,7 +328,7 @@ public class ClientBidUpdater {
 				/*
 				 * Need to wait for the current item to be set
 				 */
-				logger.debug("getCurrentItem: currentItemId is null for auctionid = {}", auctionId);
+				logger.info("getCurrentItem: currentItemId is null for auctionid = {}", auctionId);
 				_itemAvailableCondition.await();
 			}
 			if (_currentItemRepresentation == null) {
@@ -354,7 +354,7 @@ public class ClientBidUpdater {
 			_curItemWriteLock.unlock();
 		}
 
-		logger.debug("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}", 
+		logger.info("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}", 
 				itemToReturn.getId(), auctionId);
 		return itemToReturn;
 	}
@@ -383,7 +383,7 @@ public class ClientBidUpdater {
 
 		@Override
 		public void run() {
-			logger.info("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
+			logger.debug("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
 					+ theHighBid.toString());
 			if ((_nextBidRequestQueue == null) || (_nextBidRequestQueue.isEmpty())) {
 				// No client is actually waiting
@@ -436,7 +436,7 @@ public class ClientBidUpdater {
 					}
 
 					HttpServletRequest request = (HttpServletRequest) theAsyncContext.getRequest();
-					logger.info("Completing asyncContext with URL " + request.getRequestURL().toString()
+					logger.debug("Completing asyncContext with URL " + request.getRequestURL().toString()
 							+ " with response: " + jsonResponse.toString());
 					// Complete the async request
 					theAsyncContext.complete();

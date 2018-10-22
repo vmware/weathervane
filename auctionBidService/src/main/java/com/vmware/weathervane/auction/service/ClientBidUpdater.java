@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +49,7 @@ import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
+import com.vmware.weathervane.auction.security.CustomUser;
 import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
@@ -306,6 +308,9 @@ public class ClientBidUpdater {
 	}
 
 	public ItemRepresentation getCurrentItem(long auctionId) {
+		CustomUser principal = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		String username = principal.getUsername();
+		
 		/*
 		 * Fast path.  As long as curItemid and curItemRepresentation are set,
 		 * they are valid and we can return the curItemRepresentation.
@@ -313,8 +318,8 @@ public class ClientBidUpdater {
 		try {
 			_curItemReadLock.lock();
 			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
-				logger.warn("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}",
-						_currentItemRepresentation.getId(), auctionId);
+				logger.info("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}, username = {}",
+						_currentItemRepresentation.getId(), auctionId, username);
 				return _currentItemRepresentation;
 			}
 		} finally {
@@ -328,7 +333,7 @@ public class ClientBidUpdater {
 				/*
 				 * Need to wait for the current item to be set
 				 */
-				logger.info("getCurrentItem: currentItemId is null for auctionid = {}", auctionId);
+				logger.info("getCurrentItem: currentItemId is null for auctionid = {}, username = {}", auctionId, username);
 				_itemAvailableCondition.await();
 			}
 			if (_currentItemRepresentation == null) {
@@ -340,8 +345,8 @@ public class ClientBidUpdater {
 							+ ", auctionId = " + auctionId);
 					return _currentItemRepresentation;
 				}
-				logger.info("getCurrentItem: Getting the currentItem from the itemDao. current itemId = "
-						+ _currentItemId + ", auctionId = " + auctionId);
+				logger.info("getCurrentItem: Getting the currentItem from the itemDao. current itemId = {}"
+						+ ", auctionId = {}, username = {}", _currentItemId, auctionId, username);
 				Item theItem = _itemDao.get(_currentItemId);
 				List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(Item.class.getSimpleName(),
 						_currentItemId);
@@ -354,8 +359,8 @@ public class ClientBidUpdater {
 			_curItemWriteLock.unlock();
 		}
 
-		logger.info("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}", 
-				itemToReturn.getId(), auctionId);
+		logger.info("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}, username = {}", 
+				itemToReturn.getId(), auctionId, username);
 		return itemToReturn;
 	}
 

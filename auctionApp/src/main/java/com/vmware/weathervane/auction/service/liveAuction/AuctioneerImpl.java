@@ -448,7 +448,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				nextSuceeded = true;
 				if (nextHighBid != null) {
 					_highBid = nextHighBid;
-					logger.debug("bidwatchdogtask:run propagating item start bid "
+					logger.debug("startNextItem propagating item start bid "
 							+ _highBid);
 					propagateNewHighBid(_highBid);
 
@@ -466,13 +466,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 				}
 			} catch (ObjectOptimisticLockingFailureException ex) {
-				logger.info("BidWatchdogTask:run startNextItem threw ObjectOptimisticLockingFailureException with message "
+				logger.info("startNextItem threw ObjectOptimisticLockingFailureException with message "
 						+ ex.getMessage()
 						+ ", auctionId = "
 						+ _auctionId
 						+ ", itemId = " + curHighBid.getItem().getId());
 			} catch (CannotAcquireLockException ex) {
-				logger.warn("BidWatchdogTask:run startNextItem threw CannotAcquireLockException with message "
+				logger.warn("startNextItem threw CannotAcquireLockException with message "
 						+ ex.getMessage()
 						+ ", auctionId = "
 						+ _auctionId

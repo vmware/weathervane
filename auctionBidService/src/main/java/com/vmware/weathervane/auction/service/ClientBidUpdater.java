@@ -177,7 +177,7 @@ public class ClientBidUpdater {
 				newHighBid = curHighBid;
 			}
 
-			logger.debug("handleHighBidMessage: got newHighBid " + newHighBid + ", itemid = " + itemId
+			logger.info("handleHighBidMessage: got newHighBid " + newHighBid + ", itemid = " + itemId
 					+ ", currentItemId = " + _currentItemId);
 			_itemHighBidMap.put(itemId, newHighBid);
 

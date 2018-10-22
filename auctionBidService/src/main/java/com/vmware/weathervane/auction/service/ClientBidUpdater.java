@@ -186,7 +186,9 @@ public class ClientBidUpdater {
 		}
 		
 		try {
+			logger.info("handleHighBidMessage: waiting for curItemWriteLock for auctionid = {}", _auctionId);
 			_curItemWriteLock.lock();
+			logger.info("handleHighBidMessage: obtained for curItemWriteLock for auctionid = {}", _auctionId);
 			if ((_currentItemId == null) 
 					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
 				/*
@@ -210,6 +212,7 @@ public class ClientBidUpdater {
 				_currentItemRepresentation = null;
 			}
 		} finally {
+			logger.info("handleHighBidMessage: releasing curItemWriteLock for auctionid = {}", _auctionId);
 			_curItemWriteLock.unlock();
 		}
 
@@ -316,6 +319,7 @@ public class ClientBidUpdater {
 		 * they are valid and we can return the curItemRepresentation.
 		 */
 		try {
+			logger.info("getCurrentItem: waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);
 			_curItemReadLock.lock();
 			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
 				logger.info("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}, username = {}",
@@ -323,18 +327,22 @@ public class ClientBidUpdater {
 				return _currentItemRepresentation;
 			}
 		} finally {
+			logger.info("getCurrentItem: releasing curItemReadLock for auctionid = {}, username = {}", auctionId, username);
 			_curItemReadLock.unlock();
 		}
 		
 		ItemRepresentation itemToReturn = null;
 		try {
+			logger.info("getCurrentItem: waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
 			_curItemWriteLock.lock();
 			while (_currentItemId == null) {
 				/*
 				 * Need to wait for the current item to be set
 				 */
-				logger.info("getCurrentItem: currentItemId is null for auctionid = {}, username = {}", auctionId, username);
+ 				logger.info("getCurrentItem: currentItemId is null for auctionid = {}, username = {}", auctionId, username);
 				_itemAvailableCondition.await();
+				logger.info("getCurrentItem: after await, have curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+
 			}
 			if (_currentItemRepresentation == null) {
 				/*
@@ -356,6 +364,7 @@ public class ClientBidUpdater {
 		} catch (InterruptedException e) {
 			logger.warn("getCurrentItem: _itemAvailableCondition.await() interrupted");
 		} finally {
+			logger.info("getCurrentItem: unlocking curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
 			_curItemWriteLock.unlock();
 		}
 

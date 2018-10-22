@@ -156,23 +156,23 @@ public class ClientBidUpdater {
 					+ " got a high bid message for auction " + newHighBid.getAuctionId());
 			return;
 		}
+		
 		Long itemId = newHighBid.getItemId();
-
 		_highBidWriteLock.lock();
 		try {
 			BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
-			if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())) {
-				/*
-				 * Add a special case to allow old bids for items that did not receive any bids
-				 * and are being put back up for auction.
-				 */
-				if (!curHighBid.getBiddingState().equals(BiddingState.SOLD) || (curHighBid.getLastBidCount() != 3)
-						|| (newHighBid.getLastBidCount() != 1)) {
-					logger.info(
-							"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
-							curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
-					newHighBid = curHighBid;
-				}
+			/*
+			 * Want to ignore high bids for an item whose bidcount is lower that the current
+			 * high bid. Have a special case to allow lower bid count for items that were
+			 * sold without receiving any bids and are being put back up for auction.
+			 */
+			if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
+					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) && (curHighBid.getLastBidCount() == 3)
+							&& (newHighBid.getLastBidCount() == 1))) {
+				logger.info(
+						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
+						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
+				newHighBid = curHighBid;
 			}
 
 			logger.debug("handleHighBidMessage: got newHighBid " + newHighBid + ", itemid = " + itemId
@@ -185,8 +185,8 @@ public class ClientBidUpdater {
 		
 		try {
 			_curItemWriteLock.lock();
-			if (((_currentItemId == null) && !newHighBid.getBiddingState().equals(BiddingState.SOLD))
-					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId > _currentItemId))) {
+			if ((_currentItemId == null) 
+					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
 				/*
 				 * This highBid is for a new item. Update the current item id
 				 */
@@ -197,7 +197,7 @@ public class ClientBidUpdater {
 				_itemAvailableCondition.signalAll();
 				_sentWakeUpBid = false;
 			}
-			else if (newHighBid.getBiddingState().equals(BiddingState.SOLD) && newHighBid.getItemId().equals(_currentItemId)) {
+			if (newHighBid.getBiddingState().equals(BiddingState.SOLD) && newHighBid.getItemId().equals(_currentItemId)) {
 				/*
 				 * If this the item is SOLD, then clear out the currentItemRepresentation to
 				 * force a refresh of the current item for getCurrentItem

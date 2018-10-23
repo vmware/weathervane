@@ -24,6 +24,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -185,9 +186,21 @@ public class ClientBidUpdater {
 			_highBidWriteLock.unlock();
 		}
 		
+		logger.info("handleHighBidMessage: waiting for curItemWriteLock for auctionid = {}", _auctionId);
+		boolean gotLock = false;
 		try {
-			logger.info("handleHighBidMessage: waiting for curItemWriteLock for auctionid = {}", _auctionId);
-			_curItemWriteLock.lock();
+			gotLock = _curItemWriteLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.warn("handleHighBidMessage: interrupted waiting for curItemWriteLock for auctionid = {}, highBid = {}", 
+					_auctionId, newHighBid);
+			return;
+		}
+		if (!gotLock) {
+			logger.warn("handleHighBidMessage: timed out waiting for curItemWriteLock for auctionid = {}, highBid = {}", 
+					_auctionId, newHighBid);
+			return;			
+		}
+		try {
 			logger.info("handleHighBidMessage: obtained for curItemWriteLock for auctionid = {}", _auctionId);
 			if ((_currentItemId == null) 
 					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
@@ -318,29 +331,57 @@ public class ClientBidUpdater {
 		 * Fast path.  As long as curItemid and curItemRepresentation are set,
 		 * they are valid and we can return the curItemRepresentation.
 		 */
+		logger.info("getCurrentItem: waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);
+		boolean gotLock = false;
 		try {
-			logger.info("getCurrentItem: waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);
-			_curItemReadLock.lock();
-			if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
-				logger.info("getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}, username = {}",
-						_currentItemRepresentation.getId(), auctionId, username);
-				return _currentItemRepresentation;
+			gotLock = _curItemReadLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.warn("getCurrentItem: interrupted waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);			
+		}
+		if (gotLock) {
+			try {
+				logger.info("getCurrentItem: got curItemReadLock for auctionid = {}, username = {}", auctionId,
+						username);
+				if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
+					logger.info(
+							"getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}, username = {}",
+							_currentItemRepresentation.getId(), auctionId, username);
+					return _currentItemRepresentation;
+				}
+			} finally {
+				logger.info("getCurrentItem: releasing curItemReadLock for auctionid = {}, username = {}", auctionId,
+						username);
+				_curItemReadLock.unlock();
 			}
-		} finally {
-			logger.info("getCurrentItem: releasing curItemReadLock for auctionid = {}, username = {}", auctionId, username);
-			_curItemReadLock.unlock();
+		} else {
+			logger.warn("getCurrentItem: timed out waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);						
 		}
 		
 		ItemRepresentation itemToReturn = null;
+		logger.info("getCurrentItem: waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+		gotLock = false;
 		try {
-			logger.info("getCurrentItem: waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
-			_curItemWriteLock.lock();
+			gotLock = _curItemWriteLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e1) {
+			logger.warn("getCurrentItem: interrupted waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+		}
+		if (!gotLock) {
+			logger.warn("getCurrentItem: timed out waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+			return null;
+		}
+		try {
+			logger.info("getCurrentItem: got curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+			boolean gotSignal = false;
 			while (_currentItemId == null) {
 				/*
 				 * Need to wait for the current item to be set
 				 */
  				logger.info("getCurrentItem: currentItemId is null for auctionid = {}, username = {}", auctionId, username);
-				_itemAvailableCondition.await();
+				gotSignal = _itemAvailableCondition.await(10, TimeUnit.SECONDS);
+				if (!gotSignal) {
+					logger.warn("getCurrentItem: timed out waiting for signal on _itemAvailableCondition for auctionid = {}, username = {}", auctionId, username);
+					return null;
+				}
 				logger.info("getCurrentItem: after await, have curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
 
 			}

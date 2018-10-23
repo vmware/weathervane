@@ -68,6 +68,10 @@ public class ItemController extends BaseController {
 			}
 		}
 		
+		if (returnItem == null) {
+			response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+		}
+		
 		return returnItem;
 	}
 

@@ -188,7 +188,7 @@ foreach my $imageName (@imageNames) {
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
 	
-	if ($imageName eq "zookeper") {
+	if ($imageName eq "zookeeper") {
 		# Figure out the latest version of Zookeeper
 		my $zookeeperGet = `curl -s http://www.us.apache.org/dist/zookeeper/stable/`;
 		$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;

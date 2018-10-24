@@ -178,7 +178,7 @@ public class ClientBidUpdater {
 							&& (curHighBid.getLastBidCount() == 2)
 							&& (newHighBid.getLastBidCount() == 1))
 					) {
-				logger.debug(
+				logger.info(
 						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
 						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
 				newHighBid = curHighBid;
@@ -209,17 +209,7 @@ public class ClientBidUpdater {
 		try {
 			logger.info("handleHighBidMessage: obtained for curItemWriteLock for auctionid = {}", _auctionId);
 			if ((_currentItemId == null) 
-					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && 
-							((itemId.compareTo(_currentItemId) > 0)
-								|| ((itemId.compareTo(_currentItemId)== 0)
-										&& curHighBid.getBiddingState().equals(BiddingState.SOLD) 
-										&& (curHighBid.getLastBidCount() == 3)
-										&& (newHighBid.getLastBidCount() == 1))
-								|| ((itemId.compareTo(_currentItemId)== 0)
-										&& curHighBid.getBiddingState().equals(BiddingState.LASTCALL) 
-										&& (curHighBid.getLastBidCount() == 2)
-										&& (newHighBid.getLastBidCount() == 1))))
-					) {
+					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
 				/*
 				 * This highBid is for a new item. Update the current item id
 				 */
@@ -230,10 +220,14 @@ public class ClientBidUpdater {
 				_itemAvailableCondition.signalAll();
 				_sentWakeUpBid = false;
 			}
-			if (newHighBid.getBiddingState().equals(BiddingState.SOLD) && newHighBid.getItemId().equals(_currentItemId)) {
+			if (newHighBid.getBiddingState().equals(BiddingState.SOLD) 
+					&& newHighBid.getItemId().equals(_currentItemId)
+					&& !newHighBid.getLastBidCount().equals(3)) {
 				/*
 				 * If this the item is SOLD, then clear out the currentItemRepresentation to
-				 * force a refresh of the current item for getCurrentItem
+				 * force a refresh of the current item for getCurrentItem.
+				 * The lastBidCount==3 test is to handle the reuseUnsold special-case where
+				 * an item is sold with no bids and is immediately put back up for auction.
 				 */
 				logger.info("handleHighBidMessage: Item sold for auctionId = {}, itemId = {}, clearing currentItemId", _auctionId,
 						itemId);

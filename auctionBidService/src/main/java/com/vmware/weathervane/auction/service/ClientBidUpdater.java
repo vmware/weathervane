@@ -161,12 +161,12 @@ public class ClientBidUpdater {
 		}
 		
 		Long itemId = newHighBid.getItemId();
+		BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
 		_highBidWriteLock.lock();
 		try {
-			BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
 			/*
 			 * Want to ignore high bids for an item whose bidcount is lower that the current
-			 * high bid. Have a special case to allow lower bid count for items that were
+			 * high bid. Have a special cases to allow lower bid count for items that were
 			 * sold without receiving any bids and are being put back up for auction.
 			 */
 			if ((curHighBid != null) 
@@ -182,12 +182,12 @@ public class ClientBidUpdater {
 						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
 						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
 				newHighBid = curHighBid;
+				itemId = newHighBid.getItemId();
 			}
 
 			logger.info("handleHighBidMessage: auctionId = " + _auctionId + ", got newHighBid " + newHighBid + ", itemid = " + itemId
 					+ ", currentItemId = " + _currentItemId);
 			_itemHighBidMap.put(itemId, newHighBid);
-
 		} finally {
 			_highBidWriteLock.unlock();
 		}
@@ -209,7 +209,17 @@ public class ClientBidUpdater {
 		try {
 			logger.info("handleHighBidMessage: obtained for curItemWriteLock for auctionid = {}", _auctionId);
 			if ((_currentItemId == null) 
-					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
+					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && 
+							((itemId.compareTo(_currentItemId) > 0)
+								|| ((itemId.compareTo(_currentItemId)== 0)
+										&& curHighBid.getBiddingState().equals(BiddingState.SOLD) 
+										&& (curHighBid.getLastBidCount() == 3)
+										&& (newHighBid.getLastBidCount() == 1))
+								|| ((itemId.compareTo(_currentItemId)== 0)
+										&& curHighBid.getBiddingState().equals(BiddingState.LASTCALL) 
+										&& (curHighBid.getLastBidCount() == 2)
+										&& (newHighBid.getLastBidCount() == 1))))
+					) {
 				/*
 				 * This highBid is for a new item. Update the current item id
 				 */

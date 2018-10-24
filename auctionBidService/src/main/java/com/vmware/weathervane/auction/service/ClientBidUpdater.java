@@ -169,16 +169,22 @@ public class ClientBidUpdater {
 			 * high bid. Have a special case to allow lower bid count for items that were
 			 * sold without receiving any bids and are being put back up for auction.
 			 */
-			if ((curHighBid != null) && (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
-					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) && (curHighBid.getLastBidCount() == 3)
-							&& (newHighBid.getLastBidCount() == 1))) {
+			if ((curHighBid != null) 
+					&& (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
+					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) 
+							&& (curHighBid.getLastBidCount() == 3)
+							&& (newHighBid.getLastBidCount() == 1))
+					&& !(curHighBid.getBiddingState().equals(BiddingState.LASTCALL) 
+							&& (curHighBid.getLastBidCount() == 2)
+							&& (newHighBid.getLastBidCount() == 1))
+					) {
 				logger.debug(
 						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
 						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
 				newHighBid = curHighBid;
 			}
 
-			logger.info("handleHighBidMessage: got newHighBid " + newHighBid + ", itemid = " + itemId
+			logger.info("handleHighBidMessage: auctionId = " + _auctionId + ", got newHighBid " + newHighBid + ", itemid = " + itemId
 					+ ", currentItemId = " + _currentItemId);
 			_itemHighBidMap.put(itemId, newHighBid);
 

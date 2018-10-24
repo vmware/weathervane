@@ -313,7 +313,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 						+ itemId + " which is not active.");
 			} else {
 
-				logger.info("auctioneer run auctionId = " + _auctionId + " itemId=" + itemId
+				logger.debug("auctioneer run auctionId = " + _auctionId + " itemId=" + itemId
 						+ " userId=" + theBid.getUserId() + " amount=" + theBid.getAmount());
 
 				if (theBid.getAmount().floatValue() > _highBid.getAmount().floatValue()) {
@@ -448,8 +448,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				nextSuceeded = true;
 				if (nextHighBid != null) {
 					_highBid = nextHighBid;
-					logger.debug("startNextItem propagating item start bid "
-							+ _highBid);
+					logger.debug("startNextItem propagating item start bid " + _highBid);
 					propagateNewHighBid(_highBid);
 
 				} else {

@@ -1201,7 +1201,7 @@ $parameters{"maxDuration"} = {
 # Parameters for selecting the runManager
 $parameters{"runStrategy"} = {
 	"type"      => "=s",
-	"default"   => "findMaxSingleAIWithScaling",
+	"default"   => "findMaxSingleAI",
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 1,

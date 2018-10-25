@@ -46,7 +46,7 @@ public class LowerRandomBidStrategy implements BidStrategy {
 		double randVal = randGen.nextDouble();
 		logger.debug("RandomBidStrategy:shouldBid. randval = " + randVal + " bidprobability = " + bidProbability);
 
-		double maxNextBid = Math.round(currentBid * (1 + bidAmountIncreaseMax) * 100) / 100;
+		double maxNextBid = Math.round(currentBid * (1 + bidAmountIncreaseMax));
 		if ((randVal <= bidProbability) && (maxNextBid < myCreditLimit) && (maxNextBid < maxBid)) {
 			return true;
 		} else {
@@ -62,15 +62,22 @@ public class LowerRandomBidStrategy implements BidStrategy {
 		if (increasePct > bidAmountIncreaseMax) increasePct = bidAmountIncreaseMax;
 		if (increasePct < bidAmountIncreaseMin) increasePct = bidAmountIncreaseMin;
 		double bidAmount = currentBid + (currentBid * increasePct);
+
+		// Make sure bid is not in fractional cents
+		bidAmount = Math.round(bidAmount * 100.0) / 100.0;
+		if (bidAmount <= currentBid) {
+			/*
+			 *  Make sure rounding didn't make bid lower than current,
+			 *  which can happen for really low current
+			 */
+			bidAmount = currentBid + 0.01;
+		}
 		if (bidAmount > myCreditLimit) {
 			bidAmount = myCreditLimit;
 		}
 		if (bidAmount > maxBid) {
 			bidAmount = maxBid;
 		}
-		
-		// Make sure bid is not in fractional cents
-		bidAmount = Math.round(bidAmount);
 		
 		return bidAmount;
 	}

@@ -16,12 +16,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Date;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +65,12 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 	private HighBid _highBid = null;
 
-	private BlockingQueue<BidRepresentation> _newBidMessageQueue = new LinkedBlockingQueue<BidRepresentation>();
+	private Queue<BidRepresentation> _newBidMessageQueue = new ConcurrentLinkedQueue<BidRepresentation>();
+	private final ReadWriteLock _newBidMessageQueueRWLock = new ReentrantReadWriteLock();
+	private final Lock _newBidMessageQueueReadLock = _newBidMessageQueueRWLock.readLock();
+	private final Lock _newBidMessageQueueWriteLock = _newBidMessageQueueRWLock.writeLock();
+
+	private final Semaphore _isScheduled = new Semaphore(1);
 	private final Semaphore _isRunning = new Semaphore(1);
 	private final Semaphore _isWatchdogRunning = new Semaphore(1);
 	private AuctioneerTx _auctioneerTx;
@@ -211,6 +221,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 		if (_watchdogTaskScheduledFuture != null) {
 			logger.debug("Cleanup cancelling watchdogTask for auctionId " + _auctionId);
 			_watchdogTaskScheduledFuture.cancel(true);
+			_watchdogTaskScheduledFuture = null;
 		}
 	}
 
@@ -230,23 +241,26 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			return;
 		}
 		
-		synchronized (_newBidMessageQueue) {
+
+		_newBidMessageQueueReadLock.lock();
+		try {
 			_newBidMessageQueue.add(theBid);
-			logger.debug("handleNewBidMessage got new bid " + theBid + ". isRunning = "
-					+ _isRunning.availablePermits());
+			logger.debug("handleNewBidMessage got new bid " + theBid + ". isScheduled = "
+					+ _isScheduled.availablePermits());
 			/*
 			 * If we can acquire the semaphore, then the newBid handler is not
-			 * running. If it is not running, then start it up.
+			 * scheduled. If it is not scheduled, then schedule it.
 			 */
-			boolean isNotRunning = _isRunning.tryAcquire();
-			if (isNotRunning) {
+			boolean isNotScheduled = _isScheduled.tryAcquire();
+			if (isNotScheduled) {
 				logger.debug("handleNewBidMessage scheduling newBid consumer for bid " + theBid);
 				_scheduledExecutorService.execute(this);
-				_isRunning.release();
 			} else {
 				logger.debug("handleNewBidMessage newBid consumer already running for bid "
 						+ theBid);
 			}
+		} finally {
+			_newBidMessageQueueReadLock.unlock();
 		}
 	}
 
@@ -260,37 +274,42 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 		/*
 		 * Don't start until hold the semaphore which signals that this consumer
-		 * is running.
+		 * is running.  Also don't start until have watchdog semaphore so they can't
+		 * run simultaneously
 		 */
 		try {
 			_isRunning.acquire();
-			_isWatchdogRunning.acquire();
 		} catch (InterruptedException e1) {
-			logger.warn("Auctioneer for auction " + _auctionId + " consume NewBid run interrupted.");
+			logger.warn("Auctioneer for auction " + _auctionId + " acquire isRunning interrupted.");
+			_isScheduled.release();
 			return;
 		}
-
-		boolean moreMessages;
-		synchronized (_newBidMessageQueue) {
-			logger.debug("Checking whether newBidMessageQueue has a new bid for auction "
-					+ _auctionId);
-			moreMessages = !_newBidMessageQueue.isEmpty();
-			if (!moreMessages) {
-				logger.debug("newBidMessageQueue has no new bids for auction " + _auctionId);
-				_isWatchdogRunning.release();
-				_isRunning.release();
-				return;
-			}
+		try {
+			_isWatchdogRunning.acquire();
+		} catch (InterruptedException e1) {
+			logger.warn("Auctioneer for auction " + _auctionId + " acquire isWatchdogRunning interrupted.");
+			_isRunning.release();
+			_isScheduled.release();
+			return;
+		}
+		
+		/*
+		 * Swap the newBid queue and indicate no handler is scheduled.
+		 * New bids will go into the new queue, and a new handler will be 
+		 * scheduled for those bids.
+		 */
+		Queue<BidRepresentation> newBidQueue;
+		_newBidMessageQueueWriteLock.lock();
+		try {
+			newBidQueue = _newBidMessageQueue;
+			_newBidMessageQueue = new ConcurrentLinkedQueue<BidRepresentation>();
+			_isScheduled.release();
+		} finally {
+			_newBidMessageQueueWriteLock.unlock();
 		}
 
-		while (moreMessages) {
-			BidRepresentation theBid = _newBidMessageQueue.poll();
-
-			if (theBid == null) {
-				_isWatchdogRunning.release();
-				_isRunning.release();
-				return;
-			}
+		BidRepresentation theBid;
+		while ((theBid = newBidQueue.poll()) != null) {
 
 			if (_shuttingDown) {
 				/*
@@ -388,12 +407,11 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 							_highBid = returnedBid;
 
-							// Cancel and reschedule the watchdog task
+							// Cancel the watchdog task so it will be rescheduled
 							if (_watchdogTaskScheduledFuture != null) {
 								_watchdogTaskScheduledFuture.cancel(true);
+								_watchdogTaskScheduledFuture = null;
 							}
-							_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-									new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
 
 							// Propagate the new high bid
 							propagateNewHighBid(returnedBid);
@@ -408,28 +426,21 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					}
 				} else {
 					logger.debug("The bid is not a new high bid: " + theBid);
-					/*
-					 * No watchDog is running, so start one
-					 */
-					if (_watchdogTaskScheduledFuture == null) {
-						_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
-								new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
-					}
-				}
-			}
-			
-			synchronized (_newBidMessageQueue) {
-				logger.debug("Checking whether newBidMessageQueue has more new bids for auction "
-						+ _auctionId);
-				moreMessages = !_newBidMessageQueue.isEmpty();
-				if (!moreMessages) {
-					logger.debug("newBidMessageQueue has no new bids for auction " + _auctionId);
-					_isWatchdogRunning.release();
-					_isRunning.release();
-					return;
 				}
 			}
 		}
+		
+		/*
+		 * If no watchDog is running then start one
+		 */
+		if (_watchdogTaskScheduledFuture == null) {
+			_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
+					new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
+		}
+		
+		logger.debug("newBidMessageQueue has no more bids for auction " + _auctionId);
+		_isWatchdogRunning.release();
+		_isRunning.release();
 	}
 
 	protected void propagateNewHighBid(HighBid newHighBid) {

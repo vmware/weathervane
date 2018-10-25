@@ -46,7 +46,7 @@ public class LowerRandomBidStrategy implements BidStrategy {
 		double randVal = randGen.nextDouble();
 		logger.debug("RandomBidStrategy:shouldBid. randval = " + randVal + " bidprobability = " + bidProbability);
 
-		double maxNextBid = Math.round(currentBid * (1 + bidAmountIncreaseMax));
+		double maxNextBid = Math.round(currentBid * (1 + bidAmountIncreaseMax) * 100) / 100;
 		if ((randVal <= bidProbability) && (maxNextBid < myCreditLimit) && (maxNextBid < maxBid)) {
 			return true;
 		} else {

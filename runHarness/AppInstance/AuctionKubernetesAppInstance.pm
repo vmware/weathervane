@@ -79,12 +79,7 @@ override 'startServices' => sub {
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
-	# If in interactive mode, then configure services for maxUsers load
-	my $interactive = $self->getParamValue('interactive');
-	my $maxUsers    = $self->dataManager->getParamValue('maxUsers');
-	if ( $interactive && ( $maxUsers > $users ) ) {
-		$users = $maxUsers;
-	}
+	my $users    = $self->dataManager->getParamValue('maxUsers');
 
 	my $namespace = $self->namespace;
 	my $cluster = $self->host;

@@ -71,15 +71,13 @@ sub setHost {
 override 'startServices' => sub {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	my $users  = $self->users;
+	my $users  = $self->dataManager->getParamValue('maxUsers');
 	my $impl         = $self->getParamValue('workloadImpl');
 
 	my $appInstanceName = $self->getParamValue('appInstanceName');
 	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
-
-	my $users    = $self->dataManager->getParamValue('maxUsers');
 
 	my $namespace = $self->namespace;
 	my $cluster = $self->host;

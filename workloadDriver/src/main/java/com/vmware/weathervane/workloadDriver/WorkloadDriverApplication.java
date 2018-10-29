@@ -16,7 +16,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver;
 
 import java.io.IOException;
-import java.util.Collection;
 
 import org.json.JSONException;
 import org.slf4j.Logger;
@@ -24,15 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.endpoint.PublicMetrics;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.embedded.ServletRegistrationBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.prometheus.client.exporter.MetricsServlet;
-import io.prometheus.client.hotspot.DefaultExports;
-import io.prometheus.client.spring.boot.SpringBootMetricsCollector;
 
 @SpringBootApplication
 @Configuration
@@ -48,16 +41,4 @@ public class WorkloadDriverApplication implements ApplicationRunner {
 		
 	}
 	
-	@Bean
-	public SpringBootMetricsCollector springBootMetricsCollector(Collection<PublicMetrics> publicMetrics) {
-	    SpringBootMetricsCollector springBootMetricsCollector = new SpringBootMetricsCollector(publicMetrics);
-	    springBootMetricsCollector.register();
-	    return springBootMetricsCollector;
-	}
-
-	@Bean
-	public ServletRegistrationBean servletRegistrationBean() {
-	    DefaultExports.initialize();
-	    return new ServletRegistrationBean(new MetricsServlet(), "/prometheus");
-	}
 }

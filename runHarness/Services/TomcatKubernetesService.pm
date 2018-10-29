@@ -114,11 +114,21 @@ sub configure {
 		elsif ( $inline =~ /TOMCAT_CONNECTIONS:/ ) {
 			print FILEOUT "  TOMCAT_CONNECTIONS: \"$maxConnections\"\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('appServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('appServerMem') . "\n";
+		elsif ( $inline =~ /weathervane\-tomcat/ ) {
+			do {
+				if ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
+					print FILEOUT "            cpu: " . $self->getParamValue('appServerCpus') . "\n";
+				}
+				elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
+					print FILEOUT "            memory: " . $self->getParamValue('appServerMem') . "\n";
+				}
+				elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+					my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
+					print FILEOUT "${1}$version\n";
+				}
+				$inline = <FILEIN>;
+			} while (!($inline =~ /timeoutSeconds/)); 
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAppServers\n";

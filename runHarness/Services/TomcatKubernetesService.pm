@@ -125,6 +125,8 @@ sub configure {
 				elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
 					my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 					print FILEOUT "${1}$version\n";
+				} else {
+					print FILEOUT $inline;						
 				}
 				$inline = <FILEIN>;
 			} while (!($inline =~ /timeoutSeconds/)); 

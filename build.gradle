@@ -4,7 +4,7 @@ evaluationDependsOn(':auctionApp')
 
 buildscript {
 	ext {
-		springBootVersion = '1.3.8.RELEASE'
+		springBootVersion = '1.5.17.RELEASE'
 	}
 	repositories {
 		mavenCentral()
@@ -60,7 +60,6 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		ehcacheVersion = "2.10.0"
 		ignitecoreVersion = "1.7.0"
 		ignitespringVersion = "1.7.0"
-		prometheusClientVersion = "0.5.0"
 	}
 	
 	dependencies {	
@@ -108,10 +107,6 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		compile "org.apache.ignite:ignite-core:$ignitecoreVersion"
 		compile "org.apache.ignite:ignite-spring:$ignitespringVersion"
 
-		compile "io.prometheus:simpleclient:$prometheusClientVersion"
-		compile "io.prometheus:simpleclient_hotspot:$prometheusClientVersion"
-		compile "io.prometheus:simpleclient_servlet:$prometheusClientVersion"
-        						
 		compile "org.javasimon:javasimon-core:$javasimonVersion"
 		compile "org.javasimon:javasimon-spring:$javasimonVersion"
 		compile "org.javasimon:javasimon-console-embed:$javasimonVersion"
@@ -270,7 +265,7 @@ project(':auctionCrudService') {
 
 project(':auctionConfigManager') {
 	description "Configuration Manager for Auction"	
-	apply plugin: 'spring-boot' 
+	apply plugin: 'org.springframework.boot' 
 	apply plugin: "eclipse"
 	apply plugin: 'maven'
 	
@@ -281,6 +276,7 @@ project(':auctionConfigManager') {
 	
 	dependencies {
 		compile "org.springframework.boot:spring-boot-starter-web"
+		compile "org.springframework.boot:spring-boot-starter-actuator"
 		compile "org.springframework.boot:spring-boot-starter-hateoas"
 		compile "org.springframework.boot:spring-boot-starter-data-jpa"
 		compile "com.jcabi:jcabi-ssh:1.5.2"
@@ -309,7 +305,7 @@ project(':auctionConfigManager') {
 
 project(':auctionAppServerWarmer') {
 	description "AppServer Warmer Kubernetes Sidecar for Auction"	
-	apply plugin: 'spring-boot' 
+	apply plugin: 'org.springframework.boot' 
 	apply plugin: "eclipse"
 	apply plugin: 'maven'
 	
@@ -320,6 +316,7 @@ project(':auctionAppServerWarmer') {
 	
 	dependencies {
 		compile "org.springframework.boot:spring-boot-starter-web"
+		compile "org.springframework.boot:spring-boot-starter-actuator"
 		compile "org.springframework.boot:spring-boot-starter-hateoas"
 		testCompile "org.springframework.boot:spring-boot-starter-test" 
    	 	testCompile "com.jayway.jsonpath:json-path"
@@ -395,7 +392,7 @@ project(':dbLoader') {
 project(':workloadDriver') {
 	description "Workload Driver for Weathervane"	
 	apply plugin: 'maven'
-	apply plugin: 'spring-boot' 
+	apply plugin: 'org.springframework.boot' 
 
 	configurations {
 		all*.exclude group: 'commons-logging', module: 'commons-logging'
@@ -418,7 +415,6 @@ project(':workloadDriver') {
 		junitVersion = "4.12"
 		orgSlf4jVersion = "1.7.13"
 		logbackVersion = "1.1.3"	
-		prometheusClientVersion = "0.5.0"
 	}
 	
 	dependencies { 
@@ -442,10 +438,6 @@ project(':workloadDriver') {
 		compile "commons-io:commons-io:2.4"
 		compile "org.apache.commons:commons-math:2.2"
 		
-		compile "io.prometheus:simpleclient_spring_boot:$prometheusClientVersion"
-		compile "io.prometheus:simpleclient_hotspot:$prometheusClientVersion"
-		compile "io.prometheus:simpleclient_servlet:$prometheusClientVersion"
-        						
 		compile "org.json:json:20090211"
 	
 		compile "commons-cli:commons-cli:1.2"

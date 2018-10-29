@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionOperation;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.AddedItemIdProvider;
@@ -134,8 +135,8 @@ public class AddImageForItemOperation extends AuctionOperation implements NeedsL
 
 	public static File getResourceAsFile(String resourcePath) {
 	    try {
-	        InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath);
-	        if (in == null) {
+	    	InputStream in = new ClassPathResource(resourcePath).getInputStream();
+	    	if (in == null) {
 	            return null;
 	        }
 

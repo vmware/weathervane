@@ -129,8 +129,8 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.Rando
 import com.vmware.weathervane.workloadDriver.common.chooser.Chooser;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.XHolderProvider;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.util.Holder;
 import com.vmware.weathervane.workloadDriver.common.util.ResponseHolder;
 

@@ -20,7 +20,7 @@ import java.util.List;
 import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 public interface OperationFactory {

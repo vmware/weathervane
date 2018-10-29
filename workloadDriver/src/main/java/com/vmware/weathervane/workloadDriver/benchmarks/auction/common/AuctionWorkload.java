@@ -29,9 +29,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.factory.AuctionOperationFactory;
 import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
-import com.vmware.weathervane.workloadDriver.common.model.target.HttpTarget;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
+import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.target.HttpTarget;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.util.Holder;
 

@@ -43,7 +43,7 @@ import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.XHolderProvider;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 public class PlaceBidOperation extends AuctionOperation implements NeedsLoginResponse, NeedsCurrentAuction, NeedsCurrentItem,

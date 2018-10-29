@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.model.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadPath;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +25,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
-import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.WorkloadStatus;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 @JsonTypeName(value = "fixed")

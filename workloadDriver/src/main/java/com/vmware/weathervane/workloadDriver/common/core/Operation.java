@@ -39,11 +39,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.exceptions.OperationFailedException;
 import com.vmware.weathervane.workloadDriver.common.http.FileUploadInfo;
 import com.vmware.weathervane.workloadDriver.common.http.HttpRequestCompleteCallback;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.OperationStats;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 

@@ -33,10 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.workloadDriver.common.chooser.TransitionChooser;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.factory.OperationFactory;
 import com.vmware.weathervane.workloadDriver.common.factory.TransitionChooserFactory;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 /**

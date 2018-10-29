@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.model.target;
+package com.vmware.weathervane.workloadDriver.common.core.target;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;

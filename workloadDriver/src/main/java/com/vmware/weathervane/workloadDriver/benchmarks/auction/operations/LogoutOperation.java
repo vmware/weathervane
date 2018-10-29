@@ -27,7 +27,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 public class LogoutOperation extends AuctionOperation implements NeedsLoginResponse {

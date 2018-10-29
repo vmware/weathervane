@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.model;
+package com.vmware.weathervane.workloadDriver.common.core;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +35,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionWorkload;
-import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
-import com.vmware.weathervane.workloadDriver.common.core.Operation;
+import com.vmware.weathervane.workloadDriver.common.core.loadPath.LoadPath;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;

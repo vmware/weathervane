@@ -22,10 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.Workload.WorkloadState;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitializedException;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
-import com.vmware.weathervane.workloadDriver.common.model.Workload.WorkloadState;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 

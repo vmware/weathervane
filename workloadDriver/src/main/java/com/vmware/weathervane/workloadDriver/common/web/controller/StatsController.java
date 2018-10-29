@@ -35,8 +35,8 @@ import com.vmware.weathervane.workloadDriver.common.representation.RunCompleteMe
 import com.vmware.weathervane.workloadDriver.common.representation.RunStartedMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsService;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
-import com.vmware.weathervane.workloadDriver.common.web.service.StatsService;
 
 @RestController
 @RequestMapping("/stats")

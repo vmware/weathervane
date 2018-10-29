@@ -15,8 +15,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.web.service;
 
+import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 

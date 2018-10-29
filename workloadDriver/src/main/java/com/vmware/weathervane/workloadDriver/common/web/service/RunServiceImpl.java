@@ -30,12 +30,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.vmware.weathervane.workloadDriver.common.core.Run;
+import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitializedException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
-import com.vmware.weathervane.workloadDriver.common.model.Run;
-import com.vmware.weathervane.workloadDriver.common.model.Run.RunState;
-import com.vmware.weathervane.workloadDriver.common.model.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;

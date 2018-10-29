@@ -17,10 +17,10 @@ package com.vmware.weathervane.workloadDriver.common.web.service;
 
 import java.net.UnknownHostException;
 
+import com.vmware.weathervane.workloadDriver.common.core.Run;
+import com.vmware.weathervane.workloadDriver.common.core.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
-import com.vmware.weathervane.workloadDriver.common.model.Run;
-import com.vmware.weathervane.workloadDriver.common.model.Run.RunState;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 

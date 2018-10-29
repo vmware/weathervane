@@ -31,7 +31,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Operation;
-import com.vmware.weathervane.workloadDriver.common.model.loadPath.LoadPath;
+import com.vmware.weathervane.workloadDriver.common.core.loadPath.LoadPath;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;

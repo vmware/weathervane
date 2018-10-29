@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.web.service;
+package com.vmware.weathervane.workloadDriver.common.statistics;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeRunStatsMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryResponseMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsSummaryRollupResponseMessage;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 
 @Service
 public class StatsServiceImpl implements StatsService {

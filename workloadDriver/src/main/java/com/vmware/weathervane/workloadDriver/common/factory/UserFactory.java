@@ -16,7 +16,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.factory;
 
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.model.target.Target;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 
 public interface UserFactory {
 	User createUser(Long userId, Long orderingId, Long globalOrderingId, Target target);

@@ -17,8 +17,8 @@ package com.vmware.weathervane.workloadDriver.common.representation;
 
 import java.util.List;
 
-import com.vmware.weathervane.workloadDriver.common.model.Run;
-import com.vmware.weathervane.workloadDriver.common.model.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.core.Run;
+import com.vmware.weathervane.workloadDriver.common.core.WorkloadStatus;
 
 public class RunStateResponse {
 	private String status;

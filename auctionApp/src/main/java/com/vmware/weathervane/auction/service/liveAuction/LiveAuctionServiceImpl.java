@@ -295,7 +295,8 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 			List<HighBid> highBids = _highBidDao.getActiveHighBids();
 			for (HighBid aHighBid : highBids) {
 				_clientBidUpdaterMap.put(aHighBid.getAuctionId(),
-						new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, _clientUpdateExecutorService, imageStoreFacade));
+						new ClientBidUpdater(aHighBid.getAuctionId(), _highBidDao, itemDao, 
+								_clientUpdateExecutorService, imageStoreFacade, liveAuctionRabbitTemplate));
 			}
 		}
 	}
@@ -567,7 +568,8 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		if (clientBidUpdater == null) {
 			// Create a ClientBidUpdater for this auction
 			logger.debug("HighBidDispatcher creating ClientBidUpdater for highBid " + newHighBid);
-			clientBidUpdater = new ClientBidUpdater(newHighBid.getAuctionId(), _highBidDao, itemDao, _clientUpdateExecutorService, imageStoreFacade);
+			clientBidUpdater = new ClientBidUpdater(newHighBid.getAuctionId(), _highBidDao, itemDao, 
+					_clientUpdateExecutorService, imageStoreFacade, liveAuctionRabbitTemplate);
 
 			_clientBidUpdaterMap.put(auctionId, clientBidUpdater);
 		}

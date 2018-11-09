@@ -22,8 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +36,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,12 +46,12 @@ import com.vmware.weathervane.auction.data.dao.ItemDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.model.HighBid;
-import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
+import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation.BiddingState;
-import com.vmware.weathervane.auction.service.NextBidQueueEntry;
+import com.vmware.weathervane.auction.security.CustomUser;
+import com.vmware.weathervane.auction.rest.representation.ItemRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
@@ -55,32 +62,55 @@ public class ClientBidUpdater {
 
 	private Long _auctionId = null;
 
-	Long _currentItemId = null;
+	private Long _currentItemId = null;
 	private ItemRepresentation _currentItemRepresentation = null;
 
-	private Map<Long, Queue<NextBidQueueEntry>> _nextBidRequestQueueMap = new ConcurrentHashMap<Long, Queue<NextBidQueueEntry>>();
+	private Queue<AsyncContext> _nextBidRequestQueue = new ConcurrentLinkedQueue<AsyncContext>();
+	private final ReadWriteLock _nextBidRequestQueueRWLock = new ReentrantReadWriteLock();
+	private final Lock _nextBidRequestQueueReadLock = _nextBidRequestQueueRWLock.readLock();
+	private final Lock _nextBidRequestQueueWriteLock = _nextBidRequestQueueRWLock.writeLock();
+
 	/*
 	 * Map from itemId to the last bid for that item
 	 */
 	private Map<Long, BidRepresentation> _itemHighBidMap = new ConcurrentHashMap<Long, BidRepresentation>();
-
+	private final ReadWriteLock _highBidRWLock = new ReentrantReadWriteLock();
+	private final Lock _highBidReadLock = _highBidRWLock.readLock();
+	private final Lock _highBidWriteLock = _highBidRWLock.writeLock();
+	
+	/*
+	 * Constructs to synchronize access to currentItem so that in period
+	 * between current item SOLD and the start of the next item the 
+	 * getCurrentItem requests can be blocked.
+	 */
+	private final ReadWriteLock _curItemRWLock = new ReentrantReadWriteLock();
+	private final Lock _curItemReadLock = _curItemRWLock.readLock();
+	private final Lock _curItemWriteLock = _curItemRWLock.writeLock();
+	private final Condition _itemAvailableCondition = _curItemWriteLock.newCondition();
+	
 	private HighBidDao _highBidDao;
 	private ItemDao _itemDao;
 	private ScheduledExecutorService _scheduledExecutorService;
 	private ImageStoreFacade _imageStoreFacade;
+	private RabbitTemplate _rabbitTemplate;
 
+	private boolean _sentWakeUpBid = false;
+	
 	private boolean _shuttingDown = false;
 
 	private boolean _release;
+
 	
 	public ClientBidUpdater(Long auctionId, HighBidDao highBidDao, ItemDao itemDao,
-			ScheduledExecutorService scheduledExecutorService, ImageStoreFacade imageStoreFacade) {
+			ScheduledExecutorService scheduledExecutorService, ImageStoreFacade imageStoreFacade,
+			RabbitTemplate rabbitTemplate) {
 		logger.info("Creating clientBidUpdater for auction " + auctionId);
 		_auctionId = auctionId;
 		_itemDao = itemDao;
 		_imageStoreFacade = imageStoreFacade;
 		_highBidDao = highBidDao;
-		_scheduledExecutorService = scheduledExecutorService;		
+		_scheduledExecutorService = scheduledExecutorService;	
+		_rabbitTemplate = rabbitTemplate;
 		
 		/*
 		 * Initialize our knowledge of existing high bids for this auction so
@@ -90,12 +120,21 @@ public class ClientBidUpdater {
 		for (HighBid aHighBid : existingHighBids) {
 			_itemHighBidMap.put(aHighBid.getItemId(), new BidRepresentation(aHighBid));
 			if (!aHighBid.getState().equals(HighBidState.SOLD)) {
-				_nextBidRequestQueueMap.put(aHighBid.getItemId(),
-						new LinkedBlockingQueue<NextBidQueueEntry>());
 				_currentItemId = aHighBid.getItemId();
+				if (_currentItemId != null) {
+					if (_itemDao == null) {
+						logger.warn("ClientBidUpdater: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
+					} else {
+						logger.debug("ClientBidUpdater the currentItem from the itemDao. current itemId = " 
+								+ _currentItemId + ", auctionId = " + auctionId);
+						Item theItem = _itemDao.get(_currentItemId);
+						List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
+								Item.class.getSimpleName(), _currentItemId);
+						_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);	
+					}
+				}
 			}
 		}
-
 	}
 
 	public void release() {
@@ -114,34 +153,90 @@ public class ClientBidUpdater {
 	}
 
 	public void handleHighBidMessage(BidRepresentation newHighBid) {
-		logger.debug("clientBidUpdater:handleHighBid got newHighBid " + newHighBid);
 
 		if (!newHighBid.getAuctionId().equals(_auctionId)) {
-			logger.warn("ClientBidUpdater for auction " + _auctionId
+			logger.warn("handleHighBidMessage: ClientBidUpdater for auction " + _auctionId
 					+ " got a high bid message for auction " + newHighBid.getAuctionId());
 			return;
 		}
-
+		
 		Long itemId = newHighBid.getItemId();
-		_itemHighBidMap.put(itemId, newHighBid);
-
-		if ((_currentItemId == null)
-				|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && !itemId
-						.equals(_currentItemId))) {
+		BidRepresentation curHighBid = _itemHighBidMap.get(itemId);
+		_highBidWriteLock.lock();
+		try {
 			/*
-			 * This highBid is for a different item. Update the current item id
+			 * Want to ignore high bids for an item whose bidcount is lower that the current
+			 * high bid. Have a special cases to allow lower bid count for items that were
+			 * sold without receiving any bids and are being put back up for auction.
 			 */
-			_currentItemId = itemId;
+			if ((curHighBid != null) 
+					&& (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
+					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) 
+							&& (curHighBid.getLastBidCount() == 3)
+							&& (newHighBid.getLastBidCount() == 1))
+					&& !(curHighBid.getBiddingState().equals(BiddingState.LASTCALL) 
+							&& (curHighBid.getLastBidCount() == 2)
+							&& (newHighBid.getLastBidCount() == 1))
+					) {
+				logger.info(
+						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
+						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
+				newHighBid = curHighBid;
+				itemId = newHighBid.getItemId();
+			}
+
+			logger.info("handleHighBidMessage: auctionId = " + _auctionId + ", got newHighBid " + newHighBid + ", itemid = " + itemId
+					+ ", currentItemId = " + _currentItemId);
+			_itemHighBidMap.put(itemId, newHighBid);
+		} finally {
+			_highBidWriteLock.unlock();
 		}
-
-		Queue<NextBidQueueEntry> itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-		if ((itemNextBidRequestQueue == null) || (itemNextBidRequestQueue.peek() == null)) {
-			/*
-			 * No client is waiting for an update for this item
-			 */
-			logger.debug("clientBidUpdater:handleHighBid no clients are waiting for updates on auction "
-					+ _auctionId);
+		
+		logger.info("handleHighBidMessage: waiting for curItemWriteLock for auctionid = {}", _auctionId);
+		boolean gotLock = false;
+		try {
+			gotLock = _curItemWriteLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.warn("handleHighBidMessage: interrupted waiting for curItemWriteLock for auctionid = {}, highBid = {}", 
+					_auctionId, newHighBid);
 			return;
+		}
+		if (!gotLock) {
+			logger.warn("handleHighBidMessage: timed out waiting for curItemWriteLock for auctionid = {}, highBid = {}", 
+					_auctionId, newHighBid);
+			return;			
+		}
+		try {
+			logger.info("handleHighBidMessage: obtained for curItemWriteLock for auctionid = {}", _auctionId);
+			if ((_currentItemId == null) 
+					|| (newHighBid.getBiddingState().equals(BiddingState.OPEN) && (itemId.compareTo(_currentItemId) > 0))) {
+				/*
+				 * This highBid is for a new item. Update the current item id
+				 */
+				logger.info("handleHighBidMessage: Got new item for auctionId = {}, itemId = {}", _auctionId,
+						itemId);
+				_currentItemId = itemId;
+				_currentItemRepresentation = null;
+				_itemAvailableCondition.signalAll();
+				_sentWakeUpBid = false;
+			}
+			if (newHighBid.getBiddingState().equals(BiddingState.SOLD) 
+					&& newHighBid.getItemId().equals(_currentItemId)
+					&& !newHighBid.getLastBidCount().equals(3)) {
+				/*
+				 * If this the item is SOLD, then clear out the currentItemRepresentation to
+				 * force a refresh of the current item for getCurrentItem.
+				 * The lastBidCount==3 test is to handle the reuseUnsold special-case where
+				 * an item is sold with no bids and is immediately put back up for auction.
+				 */
+				logger.info("handleHighBidMessage: Item sold for auctionId = {}, itemId = {}, clearing currentItemId", _auctionId,
+						itemId);
+				_currentItemId = null;
+				_currentItemRepresentation = null;
+			}
+		} finally {
+			logger.info("handleHighBidMessage: releasing curItemWriteLock for auctionid = {}", _auctionId);
+			_curItemWriteLock.unlock();
 		}
 
 		_scheduledExecutorService.execute(new NextBidRequestCompleter(newHighBid));
@@ -160,7 +255,7 @@ public class ClientBidUpdater {
 	@Transactional(readOnly = true)
 	public BidRepresentation getNextBid(Long auctionId, Long itemId, Integer lastBidCount,
 			AsyncContext ac) throws InvalidStateException {
-		logger.info("getNextBid for auctionId = " + auctionId + ", itemId = " + itemId
+		logger.debug("getNextBid for auctionId = " + auctionId + ", itemId = " + itemId
 				+ ", lastBidCount = " + lastBidCount);
 
 		if (!auctionId.equals(_auctionId)) {
@@ -170,42 +265,58 @@ public class ClientBidUpdater {
 			throw new InvalidStateException(msg);
 		}
 
-		BidRepresentation highBidRepresentation = _itemHighBidMap.get(itemId);
 		BidRepresentation returnBidRepresentation = null;
-		if (((highBidRepresentation != null)
-				&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue()) || highBidRepresentation
-						.getBiddingState().equals(BiddingState.SOLD)))
-				|| _shuttingDown || _release) {
-		
+		_highBidReadLock.lock();
+		try {
+			BidRepresentation highBidRepresentation = _itemHighBidMap.get(itemId);
 			/*
-			 * If there is a more recent high bid, or if the bidding is complete
-			 * on the item, or if the service is shutting down, then just return last high bid.
+			 * Send the highBid back if the bidCount is 1 to tell the auctioneer
+			 * to start the watchdog timer 
 			 */
-			logger.debug("getNextBid: There is already a more recent bid.  Returning it.  _shuttingDown = " + _shuttingDown);
-			returnBidRepresentation = highBidRepresentation;
-		}
+			if ((highBidRepresentation.getLastBidCount() == 1) && !_sentWakeUpBid) {
+				_rabbitTemplate.convertAndSend(LiveAuctionServiceImpl.liveAuctionExchangeName, 
+						LiveAuctionServiceImpl.newBidRoutingKey + highBidRepresentation.getAuctionId(), 
+						highBidRepresentation);
+				_sentWakeUpBid = true;
+			}
+			if (((highBidRepresentation != null)
+					&& ((highBidRepresentation.getLastBidCount().intValue() > lastBidCount.intValue())
+							|| highBidRepresentation.getBiddingState().equals(BiddingState.SOLD)))
+					|| _shuttingDown || _release) {
 
-		if (returnBidRepresentation == null) {
-			/*
-			 * Need to wait for the next high bid. Place the async context on
-			 * the nextBidRequest queue and return null. The nextBidRequest will
-			 * be completed by the ClientBidUpdater when a new high bid is
-			 * posted
-			 */
-			Queue<NextBidQueueEntry> itemNextBidRequestQueue;
-			synchronized (_nextBidRequestQueueMap) {
-				itemNextBidRequestQueue = _nextBidRequestQueueMap.get(itemId);
-				if (itemNextBidRequestQueue == null) {
-					/*
-					 * Don't yet have a nextBidRequestQueue for this item.
-					 */
-					itemNextBidRequestQueue = new LinkedBlockingQueue<NextBidQueueEntry>();
-					_nextBidRequestQueueMap.put(itemId, itemNextBidRequestQueue);
-				}
+				/*
+				 * If there is a more recent high bid, or if the bidding is complete on the
+				 * item, or if the service is shutting down, then just return last high bid.
+				 */
+				returnBidRepresentation = highBidRepresentation;
+				logger.debug(
+						"getNextBid: There is already a more recent bid.  Returning it.  returnBidRepresentation = "
+								+ returnBidRepresentation);
 			}
 
-			itemNextBidRequestQueue.add(new NextBidQueueEntry(ac, lastBidCount, false, itemId));
+			if (returnBidRepresentation == null) {
+				/*
+				 * Need to wait for the next high bid. Place the async context on the
+				 * nextBidRequest queue and return null. The nextBidRequest will be completed by
+				 * the ClientBidUpdater when a new high bid is posted.
+				 * This uses a read lock even though it appears to be a write because it is actually
+				 * the reading/writing of the _nextBidRequestQueue reference, and not writing to the
+				 * queue, that we are synchronizing.
+				 */
+				_nextBidRequestQueueReadLock.lock();
+				try {
+					logger.debug("getNextBid adding request to itemNextBidRequestQueue for auctionId = " + auctionId
+							+ ", itemId = " + itemId + ", lastBidCount = " + lastBidCount);
+					_nextBidRequestQueue.add(ac);					
+				} finally {
+					_nextBidRequestQueueReadLock.unlock();
+				}
+
+			}
+		} finally {
+			_highBidReadLock.unlock();
 		}
+		
 		return returnBidRepresentation;
 
 	}
@@ -223,32 +334,94 @@ public class ClientBidUpdater {
 	}
 
 	public ItemRepresentation getCurrentItem(long auctionId) {
-		if (_currentItemId == null) {
-			logger.warn("getCurrentItem: _currentItemId is null. auctionId = " + auctionId);
-			if (_auctionId == null) {				
-				logger.warn("getCurrentItem: _auctionId is null. auctionId = " + auctionId);
-			}
+		CustomUser principal = (CustomUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		String username = principal.getUsername();
+		
+		/*
+		 * Fast path.  As long as curItemid and curItemRepresentation are set,
+		 * they are valid and we can return the curItemRepresentation.
+		 */
+		logger.info("getCurrentItem: waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);
+		boolean gotLock = false;
+		try {
+			gotLock = _curItemReadLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.warn("getCurrentItem: interrupted waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);			
 		}
-		if (_auctionId == null) {				
-			logger.warn("getCurrentItem: _auctionId is null. auctionId = " + auctionId);
-		}
-		logger.info("getCurrentItem. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
-		if ((_currentItemRepresentation == null) || 
-				!_currentItemRepresentation.getId().equals(_currentItemId)) {
-			/*
-			 * Update the current item
-			 */
-			if (_itemDao == null) {
-				logger.info("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId + ", auctionId = " + auctionId);
-				return _currentItemRepresentation;
+		if (gotLock) {
+			try {
+				logger.info("getCurrentItem: got curItemReadLock for auctionid = {}, username = {}", auctionId,
+						username);
+				if ((_currentItemId != null) && (_currentItemRepresentation != null)) {
+					logger.info(
+							"getCurrentItem: Returning currentItemRepresentation with itemId = {} for auctionId = {}, username = {}",
+							_currentItemRepresentation.getId(), auctionId, username);
+					return _currentItemRepresentation;
+				}
+			} finally {
+				logger.info("getCurrentItem: releasing curItemReadLock for auctionid = {}, username = {}", auctionId,
+						username);
+				_curItemReadLock.unlock();
 			}
-			Item theItem = _itemDao.get(_currentItemId);
-			List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(
-					Item.class.getSimpleName(), _currentItemId);
-			_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);
-		} 
+		} else {
+			logger.warn("getCurrentItem: timed out waiting for curItemReadLock for auctionid = {}, username = {}", auctionId, username);						
+		}
+		
+		ItemRepresentation itemToReturn = null;
+		logger.info("getCurrentItem: waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+		gotLock = false;
+		try {
+			gotLock = _curItemWriteLock.tryLock(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e1) {
+			logger.warn("getCurrentItem: interrupted waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+		}
+		if (!gotLock) {
+			logger.warn("getCurrentItem: timed out waiting for curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+			return null;
+		}
+		try {
+			logger.info("getCurrentItem: got curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+			boolean gotSignal = false;
+			while (_currentItemId == null) {
+				/*
+				 * Need to wait for the current item to be set
+				 */
+ 				logger.info("getCurrentItem: currentItemId is null for auctionid = {}, username = {}", auctionId, username);
+				gotSignal = _itemAvailableCondition.await(10, TimeUnit.SECONDS);
+				if (!gotSignal) {
+					logger.warn("getCurrentItem: timed out waiting for signal on _itemAvailableCondition for auctionid = {}, username = {}", auctionId, username);
+					return null;
+				}
+				logger.info("getCurrentItem: after await, have curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
 
-		return _currentItemRepresentation;
+			}
+			if (_currentItemRepresentation == null) {
+				/*
+				 * Update the current item
+				 */
+				if (_itemDao == null) {
+					logger.warn("getCurrentItem: _itemDao is null. current itemId = " + _currentItemId
+							+ ", auctionId = " + auctionId);
+					return _currentItemRepresentation;
+				}
+				logger.info("getCurrentItem: Getting the currentItem from the itemDao. current itemId = {}"
+						+ ", auctionId = {}, username = {}", _currentItemId, auctionId, username);
+				Item theItem = _itemDao.get(_currentItemId);
+				List<ImageInfo> theImageInfos = _imageStoreFacade.getImageInfos(Item.class.getSimpleName(),
+						_currentItemId);
+				_currentItemRepresentation = new ItemRepresentation(theItem, theImageInfos, false);
+			}
+			itemToReturn = _currentItemRepresentation;
+		} catch (InterruptedException e) {
+			logger.warn("getCurrentItem: _itemAvailableCondition.await() interrupted");
+		} finally {
+			logger.info("getCurrentItem: unlocking curItemWriteLock for auctionid = {}, username = {}", auctionId, username);
+			_curItemWriteLock.unlock();
+		}
+
+		logger.info("getCurrentItem: returning itemToReturn with itemId = {}, auctionid = {}, username = {}", 
+				itemToReturn.getId(), auctionId, username);
+		return itemToReturn;
 	}
 
 	public void shutdown() {
@@ -275,69 +448,71 @@ public class ClientBidUpdater {
 
 		@Override
 		public void run() {
-
-			logger.info("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
+			logger.debug("nextBidRequestCompleter run for auction " + _auctionId + " got highBid: "
 					+ theHighBid.toString());
-
-			Queue<NextBidQueueEntry> nextBidRequestQueue = _nextBidRequestQueueMap.get(theHighBid
-					.getItemId());
-			if (nextBidRequestQueue == null) {
+			if ((_nextBidRequestQueue == null) || (_nextBidRequestQueue.isEmpty())) {
 				// No client is actually waiting
+				logger.debug("nextBidRequestCompleter run return due to empty queue for auction " 
+						+ _auctionId);
 				return;
 			}
 
+			/*
+			 *  Get the current nextBidRequestQueue replace it with an empty queue
+			 */
+			Long itemId = theHighBid.getItemId();
+			Queue<AsyncContext> nextBidRequestQueue;
+			_nextBidRequestQueueWriteLock.lock();
+			try {
+				nextBidRequestQueue = _nextBidRequestQueue;
+				_nextBidRequestQueue = new ConcurrentLinkedQueue<AsyncContext>();
+				
+			} finally {
+				_nextBidRequestQueueWriteLock.unlock();
+			}
+
 			String jsonResponse = getJsonBidRepresentation(theHighBid);
+			AsyncContext theAsyncContext = nextBidRequestQueue.peek();
+			while (theAsyncContext != null) {
+				logger.debug("ClientBidUpdater run nextQueueEntry is " + theAsyncContext);
 
-			synchronized (nextBidRequestQueue) {
+				theAsyncContext = nextBidRequestQueue.poll();
+				if (theAsyncContext == null) {
+					_release = false;
+					return;
+				}
 
-				NextBidQueueEntry nextQueueEntry = nextBidRequestQueue.peek();
+				// get the response from the async context
+				HttpServletResponse response = (HttpServletResponse) theAsyncContext.getResponse();
+				if (response.isCommitted()) {
+					logger.warn("Found an asyncContext whose response has already been committed for auctionId = "
+							+_auctionId + ", itemId = " + itemId + ". ");
+				} else {
 
-				while ((nextQueueEntry != null)		&& 
-						((nextQueueEntry.getLastBidCount() <= theHighBid.getLastBidCount())
-								|| _shuttingDown  || _release)) {
-					logger.debug("ClientBidUpdater run nextQueueEntry is " + nextQueueEntry);
+					// Fill in the content
+					response.setContentType("application/json");
 
-					nextQueueEntry = nextBidRequestQueue.poll();
-					if (nextQueueEntry == null) {
-						_release = false;
-						return;
+					PrintWriter out;
+					try {
+						out = response.getWriter();
+						out.print(jsonResponse);
+					} catch (IOException ex) {
+						logger.error("Exception when getting writer from response: " + ex);
 					}
 
-					AsyncContext theAsyncContext = nextQueueEntry.getAsyncCtxt();
-
-					// get the response from the async context
-					HttpServletResponse response = (HttpServletResponse) theAsyncContext
-							.getResponse();
-					if (response.isCommitted()) {
-						logger.info("Found an asyncContext whose response has already been committed.");
-					} else {
-
-						// Fill in the content
-						response.setContentType("application/json");
-
-						PrintWriter out;
-						try {
-							out = response.getWriter();
-							out.print(jsonResponse);
-						} catch (IOException ex) {
-							logger.error("Exception when getting writer from response: " + ex);
-						}
-
-						HttpServletRequest request = (HttpServletRequest) theAsyncContext
-								.getRequest();
-						logger.info("Completing asyncContext with URL "
-								+ request.getRequestURL().toString() + " with response: "
-								+ jsonResponse.toString());
-						// Complete the async request
-						theAsyncContext.complete();
-
-					}
-
-					nextQueueEntry = nextBidRequestQueue.peek();
+					HttpServletRequest request = (HttpServletRequest) theAsyncContext.getRequest();
+					logger.debug("Completing asyncContext with URL " + request.getRequestURL().toString()
+							+ " with response: " + jsonResponse.toString());
+					// Complete the async request
+					theAsyncContext.complete();
 
 				}
-				_release = false;
+
+				theAsyncContext = nextBidRequestQueue.peek();
+
 			}
+			_release = false;
+
 		}
 	}
 }

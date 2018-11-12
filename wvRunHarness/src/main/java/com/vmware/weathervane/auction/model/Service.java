@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.auction.defaults.Defaults;
 
-@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "class")
+@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
 @JsonSubTypes({ @Type(value = AppServer.class, name = "appServer"),
 	@Type(value = CoordinationServer.class, name = "coordinationServer"),
 		@Type(value = DbServer.class, name = "dbServer"),

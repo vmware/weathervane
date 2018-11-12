@@ -186,145 +186,172 @@
   
           # Dropping: configurationManager, elasticityService, lbServer, fileServer
           # Prefixing all with auction to distinguish from services for other apps 
-          "auctionDataManager" : {
-            # Should only be one computeResource for auctionDataManager
-            "computeResources" : [ "aHostName1", ],
+          "services" : [
+            {
+              # This is the type of this service.  It corresponds to a sub-class of Service
+              "type" : "auctionDataManager",
   
-            "threads" : 6,
-            "jvmOpts" : "-Xmx4g -Xms4G",
-          },
-          "auctionWebServer" : {
-            # This is the number of instances of this service
-            "numInstances" : 2,
+              # This is the number of instances of this service
+              "numInstances" : 1,
+              
+              # Should only be one computeResource for auctionDataManager
+              "computeResources" : [ "aHostName1", ],
+    
+              "threads" : 6,
+              "jvmOpts" : "-Xmx4g -Xms4G",
+            },
+            {
+              # This is the type of this service.  It corresponds to a sub-class of Service
+              "type" : "auctionWebServer",
   
-            # Specify a list of computeResources on which to run the instances of this
-            # service.  This is only for assigning service instances to different Docker hosts.
-            # Specifying a kubernetes cluster in this list should be an error.
-            # If there are fewer computeResources specified than service instances, then
-            # will wrap when starting services.  If there are more computeResources than 
-            # service instances, then the extras won't be used.
-            # This mechanism eliminates the default service name (e.g. AuctionApp1) to host
-            # mapping through DNS.
-            "computeResources" : [ "aHostName1", "aHostName2"],
+              # This is the number of instances of this service
+              "numInstances" : 2,
+    
+              # Specify a list of computeResources on which to run the instances of this
+              # service.  This is only for assigning service instances to different Docker hosts.
+              # Specifying a kubernetes cluster in this list should be an error.
+              # If there are fewer computeResources specified than service instances, then
+              # will wrap when starting services.  If there are more computeResources than 
+              # service instances, then the extras won't be used.
+              # This mechanism eliminates the default service name (e.g. AuctionApp1) to host
+              # mapping through DNS.
+              "computeResources" : [ "aHostName1", "aHostName2"],
+    
+    	        # All instances for a service are configured identically in a given appInstance.  The 
+              # ability to tune each service instance individually is eliminated.
+    
+              # In addition to computeResource, every service has these fields
+              "impl" : "nginx", # leave the possibility of different service implementations
+    	        "cpuRequest" : "1500m",
+              "cpuLimit" : "2",
+              "memRequest" : "2Gi",
+         	    "memLimit" : "7Gi"
+              "dockerCpuSetCpus" : "1-4",
+    	        "dockerNet" : "bridge",
+    
+              "httpPort" : 80,
+              "httpsPort" : 443,
+              "portOffset" : 9000,
+              "portStep" : 1,
+    
+              # Service-specific fields
+              "keepalive" : true,
+              "keepaliveTimeout" : 120,
+              "nginxWorkerConnections" : 0,
+    
+              # These are only relevant when running on a docker host
+              "useNamedVolumes" : false,
+              "cacheVolumeName" : "nginxCache",
+              "cacheVolumeSize" : "10Gi",
+            },
+            {
+              "type" : "auctionAppServer",
+              "numInstances" : 1,
   
-  	    # All instances for a service are configured identically in a given appInstance.  The 
-            # ability to tune each service instance individually is eliminated.
-  
-            # In addition to computeResource, every service has these fields
-            "impl" : "nginx", # leave the possibility of different service implementations
-  	    "cpuRequest" : "1500m",
-            "cpuLimit" : "2",
-            "memRequest" : "2Gi",
-       	    "memLimit" : "7Gi"
-  	    "dockerCpuSetCpus" : "1-4",
-  	    "dockerNet" : "bridge",
-  
-            "httpPort" : 80,
-            "httpsPort" : 443,
-            "portOffset" : 9000,
-            "portStep" : 1,
-  
-            # Service-specific fields
-            "keepalive" : true,
-            "keepaliveTimeout" : 120,
-            "nginxWorkerConnections" : 0,
-  
-            # These are only relevant when running on a docker host
-            "useNamedVolumes" : false,
-            "cacheVolumeName" : "nginxCache",
-            "cacheVolumeSize" : "10Gi",
-          },
-          "auctionAppServer" : {
-            "threads" : 49,
-            "jdbcConnections" : 50,
-            "jvmOpts" : "-Xms2g -Xmx2g",
-  
-            "httpPort" : 80,
-            "httpsPort" : 443,
-            "portOffset" : 8000,
-            "portStep" : 1,
-  
-            # These are tuning knobs for the internals of the auctionApp.  I want to leave them in
-            # but will not expost them to users.
-            "randomizeImages" : true,
-            "useImageWriterThreads" : true,
-            "numImageWriterThreads" : 1,
-            "numClientUpdateThreads" : 2,
-            "numAuctioneerThreads" : 2,
-            "highBidQueueConcurrency" : 1,
-            "newBidQueueConcurrency" : 1,
-            "prewarmAppServers" : true,
-            "thumbnailImageCacheSizeMultiplier" : 25,
-            "previewImageCacheSizeMultiplier" : 25,
-            "fullImageCacheSizeMultiplier" : 25,
-          },
-          "auctionBidServer" : {
-            "threads" 25,
-            "jdbcConnections" : 26,
-            "jvmOpts" : "-Xmx4g -Xms4g -XX:+UseG1GC",
-  
-            "httpPort" : 80,
-            "httpsPort" : 443,
-            "portOffset" : 10000,
-            "portStep" : 1,
-          },
-          "auctionCoordinationServer" : {
-            "zkClientPort" : 2181,
-            "zkPeerPort" : 2888,
-            "zkElectionPort" : 3888,
-            "portStep" : 1,
-          },
-          "auctionMsgServer" : {
-            "rabbitmqPort" : 5672,
-            "portStep" : 1,
-          },
-          "auctionNosqlServer" : {
-            "replicated" : false,
-            "sharded" : false,
-            "replicasPerShard" : 3,
-  
-            "portStep" : 100,
-  
-            # Used for Docker
-            "useNamedVolumes" : false,
-            "dataVolumeName" : "mongodbData",
-            "dataVolumeSize" : "200Gi",
-            "c1DataVolumeName" : "mongodbC1Data",
-            "c1DataVolumeSize" : "10Gi",
-            "c2DataVolumeName" : "mongodbC2Data",
-            "c2DataVolumeSize" : "10Gi",
-            "c3DataVolumeName" : "mongodbC3Data",
-            "c3DataVolumeSize" : "10Gi",
-  
-            # used for Kubernetes
-            "dataStorageClass" : "fast",
-  
-            "mongodbTouch" : true,
-            "mongodbTouchFull" : false,
-            "mongodbTouchPreview" : false,
-          },
-          "auctionDbServer" : {
-            "postgresqlPort" : 5432,
-            "portStep" : 1,
-  
-            "postgresqlSharedBuffers" : 0, 
-            "postgresqlSharedBuffersPct" : 0.25,
-            "postgresqlEffectiveCacheSize" : 0,
-            "postgresqlEffectiveCacheSizePct" : 0.65,
-            "postgresqlMaxConnections" : 0,
-  
-            # Used for Docker
-            "useNamedVolumes" : false,
-            "dataVolumeName" : "postgresqlData",
-            "dataVolumeSize" : "20Gi",
-            "logVolumeName" : "postgresqlLogs",
-            "logVolumeSize" : "20Gi",
-  
-            # used for Kubernetes
-            "dataStorageClass" : "fast",
-            "logStorageClass" : "fast",
+              "threads" : 49,
+              "jdbcConnections" : 50,
+              "jvmOpts" : "-Xms2g -Xmx2g",
+    
+              "httpPort" : 80,
+              "httpsPort" : 443,
+              "portOffset" : 8000,
+              "portStep" : 1,
+    
+              # These are tuning knobs for the internals of the auctionApp.  I want to leave them in
+              # but will not expost them to users.
+              "randomizeImages" : true,
+              "useImageWriterThreads" : true,
+              "numImageWriterThreads" : 1,
+              "numClientUpdateThreads" : 2,
+              "numAuctioneerThreads" : 2,
+              "highBidQueueConcurrency" : 1,
+              "newBidQueueConcurrency" : 1,
+              "prewarmAppServers" : true,
+              "thumbnailImageCacheSizeMultiplier" : 25,
+              "previewImageCacheSizeMultiplier" : 25,
+              "fullImageCacheSizeMultiplier" : 25,
+            },
+            {
+              "type" : "auctionBidServer",
+              "numInstances" : 1,
             
-          },
+              "threads" 25,
+              "jdbcConnections" : 26,
+              "jvmOpts" : "-Xmx4g -Xms4g -XX:+UseG1GC",
+    
+              "httpPort" : 80,
+              "httpsPort" : 443,
+              "portOffset" : 10000,
+              "portStep" : 1,
+            },
+            {
+              "type" : "auctionCoordinationServer",
+              "numInstances" : 3,
+   
+              "zkClientPort" : 2181,
+              "zkPeerPort" : 2888,
+              "zkElectionPort" : 3888,
+              "portStep" : 1,
+            },
+            {
+              "type" : "auctionMsgServer",
+              "numInstances" : 1,
+  
+              "rabbitmqPort" : 5672,
+              "portStep" : 1,
+            },
+            {
+              "type" : "auctionNosqlServer",
+              "numInstances" : 1,
+  
+              "replicated" : false,
+              "sharded" : false,
+              "replicasPerShard" : 3,
+    
+              "portStep" : 100,
+    
+              # Used for Docker
+              "useNamedVolumes" : false,
+              "dataVolumeName" : "mongodbData",
+              "dataVolumeSize" : "200Gi",
+              "c1DataVolumeName" : "mongodbC1Data",
+              "c1DataVolumeSize" : "10Gi",
+              "c2DataVolumeName" : "mongodbC2Data",
+              "c2DataVolumeSize" : "10Gi",
+              "c3DataVolumeName" : "mongodbC3Data",
+              "c3DataVolumeSize" : "10Gi",
+    
+              # used for Kubernetes
+              "dataStorageClass" : "fast",
+    
+              "mongodbTouch" : true,
+              "mongodbTouchFull" : false,
+              "mongodbTouchPreview" : false,
+            },
+            {
+              "type" : "auctionDbServer"
+              "numInstances" : 1,
+              "postgresqlPort" : 5432,
+              "portStep" : 1,
+    
+              "postgresqlSharedBuffers" : 0, 
+              "postgresqlSharedBuffersPct" : 0.25,
+              "postgresqlEffectiveCacheSize" : 0,
+              "postgresqlEffectiveCacheSizePct" : 0.65,
+              "postgresqlMaxConnections" : 0,
+    
+              # Used for Docker
+              "useNamedVolumes" : false,
+              "dataVolumeName" : "postgresqlData",
+              "dataVolumeSize" : "20Gi",
+              "logVolumeName" : "postgresqlLogs",
+              "logVolumeSize" : "20Gi",
+    
+              # used for Kubernetes
+              "dataStorageClass" : "fast",
+              "logStorageClass" : "fast",            
+            },
+          ],
         }
       ],
     }

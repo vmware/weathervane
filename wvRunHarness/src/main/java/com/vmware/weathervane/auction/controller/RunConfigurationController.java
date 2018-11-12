@@ -36,7 +36,7 @@ import com.vmware.weathervane.auction.model.RunConfiguration;
 import com.vmware.weathervane.auction.service.RunConfigurationService;
 
 @RestController
-@RequestMapping("/configuration")
+@RequestMapping("/runConfiguration")
 public class RunConfigurationController {
 	private static final Logger logger = LoggerFactory.getLogger(RunConfigurationController.class);
 

@@ -22,26 +22,38 @@
 
   "responseTimePassingPercentile" : 0.99,
 
+  # Need to consider these further.  Currently allow calling a script 
+  # on the runHarness VM, but this won't be possible with the 
+  # harness in a container.  
   "startStatsScript" : "/path/to/script/scriptname.sh",
   "stopStatsScript" : "/path/to/script/scriptname.sh",
 
+  # There should be a subclass of runStrategy for each type
   "runStrategy" : {
     "type": "findMaxSingleAI",
 
+    # Different run strategies will have different parameters.
+    # Parameters for fixed runStrategy
     "users" : 1000,
     "runLength" : "short", # short, medium, or long
     "rampUp" : 600,
     "steadyState" : 900,
     "rampDown" : 120,
   
+    # findMax run strategy is the multi-run findMax
+    # findMax run strategy has the same parameters as fixed, plus the following:
     "initialRateStep" : 500,
     "minRateStep" : 250,
     "repeatsAtMax" : 0,
 
+    # targetUtilization run strategy has the same parameters as fixed, plus
+    # the following:
     "targetUtilization" : 70,
     "targetUtilizationMarginPct" : 0.02,
     "targetUtilizationServiceType" : "auctionAppServer",
 
+    # custom run strategy allows the user to specify a loadPath. 
+    # custom run strategy has the same parameters as fixed, plus the following:
     "loadPath" : [
       {"duration" : 300, "users" : 2000, },  # fixed interval
       {"duration" : 420, "startUsers" : 2000, "endUsers" : 40000, "timeStep" : 10}, # ramp interval
@@ -57,6 +69,12 @@
   "version" : true,
   "interactive" : false,
 
+  # computeResources is a list of ComputeResources
+  # ComputeResources are either docker hosts or kubernetes clusters
+  # Getting rid of plain VMs.  Can run in VMs by running in Docker and having one service per Docker host/VM.
+  # Unlike in the current run harness, the computeResources need to be explicitly defined.  
+  # Note: At some point we would like to be able to reference computeResources from set of previously 
+  # defined values (e.g. from a database).
   "computeResources" : [
     {
       "name" : "aHostName1",
@@ -74,6 +92,8 @@
       "name" : "aClusterName",
       "type" : "kubernetes",
 
+      # This won't work if running in a container.  Need to include the config file
+      # contents here, not a pointer to the file.
       "kubernetesConfigFile" : "filePointer",
     },
     {
@@ -83,12 +103,22 @@
     },
   },
 
+  # The defaults specified here override the baseline defaults which should be
+  # specified either in a separate JSON file or in the run harness (or in a database table).
+  # 
   "defaults" : {
+    # There are just a few parameters that we want to be able to override in every service, rather
+    # than having to specify them for each service separately.  These parameters must be fields in 
+    # every service class, and must have globally unique names.
     "computeResource" : "aHostName"
   
+    # Other defaults are specified per service-type.
+    # Have one of these sections for each service type (e.g. auctionAppServer, auctionWebServer, etc.)
     "auctionAppServer" : {
+      # override the default in every auctionAppServer that doesn't explicitly define jvmOpts
       "jvmOpts" : "-Xmx6G -Xms6G",
   
+      # Other fields whose defaults can be overridden
       "cpuRequest" : "1500m",
       "cpuLimit" : "2",
       "memRequest" : "2Gi",
@@ -98,11 +128,20 @@
 
   "workloads" : [
     {
+      # Parameters which control the workload to be executed.  This controls the
+      # type of both the drivers and the appInstances.
       "type" : "auction",
 
       "driver" : {
         "numInstances" : 4,
 
+        # Specify a list of compute resources on which to run the drivers. 
+        # If there are fewer computeResources specified than driver instances, then
+        # will wrap when starting drivers.  If there are more computeResources than 
+        # driver instances, then the extras won't be used.
+        # If the first computeResource is a kubernetes cluster, then all instances will
+        # run on that cluster, and other will be ignored (we should emit a warning). So
+        # specifying multiple is only for running drivers on Docker hosts.
         "computeResources" : ["driverClusterName",];
   
         "port" : 7500,
@@ -110,6 +149,7 @@
 
         "workloadProfile" : "auction",
 
+        # The tunings are the same for all driver instances
         "jvmOpts" : "-Xmx2g -Xms2g",
         "maxConnPerUser" : 4,
         "threads" : 0, # default to numCpus
@@ -121,6 +161,9 @@
       },
       "appInstances" : [
         {
+          # Only if the runStrategy is custom is it possible to specify a loadPath in an
+          # appInstance.  For any other runStratgy, specifying this should be an error.
+          # This loadPath should override the global loadPath specified in the runStrategy
           "loadPath" : [
             {"duration" : 300, "users" : 2000, },
             {"duration" : 420, "startUsers" : 2000, "endUsers" : 40000, "timeStep" : 10},
@@ -129,21 +172,45 @@
           ],
           "repeatLoadPath" : true,        
 
+          # Specify the compute resource for this appInstance.  If running on kubernetes or
+          # on a single Docker host, then this computeResource is used for all services.
+          # If a user wants to assign services instances to specific Docker hosts, then 
+          # they must specify the computeResources list in each service type below.
+          # If this computeResource is a Kubernetes host, then specifying computeResources
+          # in the services is an error.
           "computeResource" : "aClusterName",
   
+          # Since we are getting rid of the file server, the only remaining options for
+          # the image store are mongoDb and memory
           "imageStoreType" : "mongodb",
   
+          # Dropping: configurationManager, elasticityService, lbServer, fileServer
+          # Prefixing all with auction to distinguish from services for other apps 
           "auctionDataManager" : {
+            # Should only be one computeResource for auctionDataManager
             "computeResources" : [ "aHostName1", ],
   
             "threads" : 6,
             "jvmOpts" : "-Xmx4g -Xms4G",
           },
           "auctionWebServer" : {
+            # This is the number of instances of this service
             "numInstances" : 2,
   
+            # Specify a list of computeResources on which to run the instances of this
+            # service.  This is only for assigning service instances to different Docker hosts.
+            # Specifying a kubernetes cluster in this list should be an error.
+            # If there are fewer computeResources specified than service instances, then
+            # will wrap when starting services.  If there are more computeResources than 
+            # service instances, then the extras won't be used.
+            # This mechanism eliminates the default service name (e.g. AuctionApp1) to host
+            # mapping through DNS.
             "computeResources" : [ "aHostName1", "aHostName2"],
   
+  	    # All instances for a service are configured identically in a given appInstance.  The 
+            # ability to tune each service instance individually is eliminated.
+  
+            # In addition to computeResource, every service has these fields
             "impl" : "nginx", # leave the possibility of different service implementations
   	    "cpuRequest" : "1500m",
             "cpuLimit" : "2",
@@ -157,10 +224,12 @@
             "portOffset" : 9000,
             "portStep" : 1,
   
+            # Service-specific fields
             "keepalive" : true,
             "keepaliveTimeout" : 120,
             "nginxWorkerConnections" : 0,
   
+            # These are only relevant when running on a docker host
             "useNamedVolumes" : false,
             "cacheVolumeName" : "nginxCache",
             "cacheVolumeSize" : "10Gi",
@@ -175,6 +244,8 @@
             "portOffset" : 8000,
             "portStep" : 1,
   
+            # These are tuning knobs for the internals of the auctionApp.  I want to leave them in
+            # but will not expost them to users.
             "randomizeImages" : true,
             "useImageWriterThreads" : true,
             "numImageWriterThreads" : 1,
@@ -214,6 +285,7 @@
   
             "portStep" : 100,
   
+            # Used for Docker
             "useNamedVolumes" : false,
             "dataVolumeName" : "mongodbData",
             "dataVolumeSize" : "200Gi",
@@ -224,6 +296,7 @@
             "c3DataVolumeName" : "mongodbC3Data",
             "c3DataVolumeSize" : "10Gi",
   
+            # used for Kubernetes
             "dataStorageClass" : "fast",
   
             "mongodbTouch" : true,
@@ -240,12 +313,14 @@
             "postgresqlEffectiveCacheSizePct" : 0.65,
             "postgresqlMaxConnections" : 0,
   
+            # Used for Docker
             "useNamedVolumes" : false,
             "dataVolumeName" : "postgresqlData",
             "dataVolumeSize" : "20Gi",
             "logVolumeName" : "postgresqlLogs",
             "logVolumeSize" : "20Gi",
   
+            # used for Kubernetes
             "dataStorageClass" : "fast",
             "logStorageClass" : "fast",
             
@@ -257,12 +332,14 @@
   
   "virtualInfrastructure" : {
     "type" : " vsphere",  
+    # The management host for the virtual infrastructure
     "mgmtHost" : {
       "type" : "vcenter",
       "hostname" : "aVcHostname",
       "username" : "ausername",
       "password" : "apassword",
     },
+    # A list of viHosts which are the underlying resource in the virtual infrastructure 
     "hosts" : [
       {
         "type" : "esxi",

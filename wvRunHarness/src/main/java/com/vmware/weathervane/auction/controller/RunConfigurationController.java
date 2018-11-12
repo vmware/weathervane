@@ -54,7 +54,7 @@ public class RunConfigurationController {
 		return new ResponseEntity<GetRunConfigurationResponse>(response, status);
 	}
 
-	@RequestMapping(method = RequestMethod.PUT)
+	@RequestMapping(method = RequestMethod.POST)
 	public HttpEntity<ResponseMessage> addRunConfiguration(@RequestBody RunConfiguration runConfiguration) {
 		ResponseMessage addConfigurationResponse = new ResponseMessage();
 		HttpStatus status = HttpStatus.OK;

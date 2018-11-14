@@ -146,65 +146,6 @@ override 'initialize' => sub {
 	super();
 };
 
-
-# Stop all of the services needed for the MongoDB service
-override 'create' => sub {
-	my ($self, $logPath)            = @_;
-	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
-	my $console_logger   = get_logger("Console");
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $logName     = "$logPath/StopMongodb-$time.log";
-	my $appInstance = $self->appInstance;
-	
-	$logger->debug("MongoDB Stop");
-	
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-	print $dblog $self->meta->name . " In MongodbDockerService::create\n";
-		
-	if ( ( $self->numNosqlShards > 0 ) && ( $self->numNosqlReplicas > 0 ) ) {
-		die "Need to implement createShardedReplicatedMongodbDocker";
-	}
-	elsif ( $self->numNosqlShards > 0 ) {
-		# stop mongos servers
-		$self->createMongosServers($dblog);
-
-		# stop config servers
-		$self->createMongocServers($dblog);
-	}
-
-	# stop mongod servers
-	$self->stopMongodServers($dblog);
-		
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	foreach my $nosqlServer (@$nosqlServersRef) {	
-		$nosqlServer->cleanLogFiles();
-		$nosqlServer->cleanStatsFiles();
-	}
-};
-
-override 'create' => sub {
-	my ( $self, $logPath ) = @_;
-	my $appInstance = $self->appInstance;
-
-	if ( ( $appInstance->numNosqlShards > 0 ) && ( $appInstance->numNosqlReplicas > 0 ) ) {
-		$self->createShardedReplicatedMongodb($logPath);
-	}
-	elsif ( $appInstance->numNosqlShards > 0 ) {
-		$self->createShardedMongodb($logPath);
-	}
-	elsif ( $appInstance->numNosqlReplicas > 0 ) {
-		$self->createReplicatedMongodb($logPath);
-	}
-	else {
-		$self->createSingleMongodb($logPath);
-	}
-	
-	$self->clearBeforeStart(0);
-};
-
 sub setPortNumbers {
 	my ($self) = @_;
 

@@ -496,9 +496,6 @@ override 'start' => sub {
 	  || die "Error opening /$logName:$!";
 	print $dblog $self->meta->name . " In MongodbDockerService::start\n";
 			
-	# Set up the configuration files for all of the hosts to be part of the service
-	$self->configure($dblog, $serviceType, $users, $self->numNosqlShards, $self->numNosqlReplicas);
-
 	my $isReplicated = 0;
 	if ( ( $self->numNosqlShards > 0 ) && ( $self->numNosqlReplicas > 0 ) ) {
 		die "Need to implement startShardedReplicatedMongodbDocker";

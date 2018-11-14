@@ -48,6 +48,8 @@ override 'create' => sub {
 	if ( !$self->getParamValue('useDocker') ) {
 		return;
 	}
+	
+	$self->setPortNumbers();
 
 	my $name     = $self->getParamValue('dockerName');
 	my $hostname = $self->host->hostName;

@@ -151,8 +151,8 @@ sub setPortNumbers {
 
 	my $appInstance     = $self->appInstance;
 	my $numNosqlServers = $appInstance->getNumActiveOfServiceType('nosqlServer');
-	my $numShards       = $appInstance->numNosqlShards;
-	my $numReplicas     = $appInstance->numNosqlReplicas;
+	my $numShards       = $self->numNosqlShards;
+	my $numReplicas     = $self->numNosqlReplicas;
 
 	my $serviceType    = $self->getParamValue('serviceType');
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);

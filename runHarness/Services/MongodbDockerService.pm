@@ -62,6 +62,12 @@ has 'numNosqlReplicas' => (
 	default => 0,
 );
 
+has 'clearBeforeStart' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 # This holds the total number of config servers
 # to be used in sharded mode. MongoDB requires
 # this to be 3, but we don't want to hard-code

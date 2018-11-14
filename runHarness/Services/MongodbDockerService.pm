@@ -609,6 +609,7 @@ sub startMongodServers {
 		my $host = $nosqlServer->host;
 		my $hostname = $host->hostName;
 		my $impl     = $nosqlServer->getImpl();
+		my $name        = $nosqlServer->getParamValue('dockerName');
 		
 		my %volumeMap;
 		my $dataDir = $nosqlServer->getParamValue('mongodbDataDir');
@@ -709,8 +710,8 @@ sub startMongocServers {
 			$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
 			$envVarMap{"MONGOCPORT"} = $nosqlServer->internalPortMap->{'mongoc'.$curCfgSvr};
 			$envVarMap{"CFGSVRNUM"} = $curCfgSvr;
-			$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
-			$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+			$envVarMap{"NUMSHARDS"} = $nosqlServer->appInstance->numNosqlShards;
+			$envVarMap{"NUMREPLICAS"} = $nosqlServer->appInstance->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 1;
 	  		$envVarMap{"ISMONGOS"} = 0;
 			if ($self->clearBeforeStart) {
@@ -728,10 +729,9 @@ sub startMongocServers {
 			my $entrypoint;
 			my $cmd = "mongod -f /etc/mongoc$curCfgSvr.conf";
 
-			my $host = $nosqlServer->host;
 			# Create the container
 			$host->dockerRun( $dblog, "mongoc$curCfgSvr-W${workloadNum}I${appInstanceNum}",
-				$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef, $entrypoint,
+				$nosqlServer->getImpl(), $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef, $entrypoint,
 				$cmd, $self->needsTty );
 
 			my $configServersRef = $nosqlServer->configServersRef;
@@ -874,7 +874,7 @@ sub startMongosServers {
 				 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) 
 			{
 				# For docker host networking, external ports are same as internal ports
-				$appServer->setMongosDocker($hostname);
+				$appServer->setMongosDocker($appHostname);
 			}
 			elsif ( $appServer->useDocker()
 				&& ( $appServer->dockerConfigHashRef->{"net"} eq $self->dockerConfigHashRef->{"net"} ) )
@@ -888,7 +888,7 @@ sub startMongosServers {
 				# Mongos is using bridged networking and the app server is either not
 				# dockerized or is on a different Docker network.  Use external port number
 				# and full hostname
-				$appServer->setMongosDocker($hostname);
+				$appServer->setMongosDocker($appHostname);
 			}
 			$appServer->internalPortMap->{'mongos'} = $hostsMongosCreated{$appIpAddr};
 			next;
@@ -904,8 +904,8 @@ sub startMongosServers {
 		my %envVarMap;
 		$envVarMap{"MONGODPORT"} = $self->internalPortMap->{'mongod'};
 		$envVarMap{"MONGOSPORT"} = $mongosPort;
-		$envVarMap{"NUMSHARDS"} = $appInstance->numNosqlShards;
-		$envVarMap{"NUMREPLICAS"} = $appInstance->numNosqlReplicas;
+		$envVarMap{"NUMSHARDS"} = $self->numNosqlShards;
+		$envVarMap{"NUMREPLICAS"} = $self->numNosqlReplicas;
 		$envVarMap{"ISCFGSVR"} = 0;
 		$envVarMap{"ISMONGOS"} = 1;
 		$envVarMap{"CLEARBEFORESTART"} = 0;		
@@ -930,7 +930,7 @@ sub startMongosServers {
 			$logger->debug("mongos $dockerName uses host networking, setting app server to use external name and port");
 			# For docker host networking, external ports are same as internal ports
 			$appServer->internalPortMap->{'mongos'} = $mongosPort;
-			$appServer->setMongosDocker($hostname);
+			$appServer->setMongosDocker($appHostname);
 			$hostsMongosCreated{$appIpAddr} = $mongosPort;
 		}
 		elsif ( $appServer->useDocker()
@@ -950,7 +950,7 @@ sub startMongosServers {
 			# and full hostname
 			$logger->debug("app server is not dockerized or on different network, setting app server to use external name and port");
 			$appServer->internalPortMap->{'mongos'} = $portMapRef->{$mongosPort};
-			$appServer->setMongosDocker($hostname);
+			$appServer->setMongosDocker($appHostname);
 			$hostsMongosCreated{$appIpAddr} = $portMapRef->{$mongosPort};
 		}
 		push @mongosSvrHostnames, $appHostname;
@@ -977,7 +977,6 @@ override 'stop' => sub {
 	my $time = `date +%H:%M`;
 	chomp($time);
 	my $logName     = "$logPath/StopMongodb-$time.log";
-	my $appInstance = $self->appInstance;
 	
 	$logger->debug("MongoDB Stop");
 	
@@ -1066,7 +1065,7 @@ sub stopMongosServers {
 		if ( exists $hostsMongosStopped{$appIpAddr} ) {
 			next;
 		}
-		$hostsMongosCreated{$appIpAddr} = 1;
+		$hostsMongosStopped{$appIpAddr} = 1;
 		$appServer->host->dockerStopAndRemove( $dblog, $dockerName );
 	}
 }

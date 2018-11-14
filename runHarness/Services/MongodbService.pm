@@ -457,6 +457,8 @@ sub startMongosServers {
 	my @mongosSvrPorts;
 
 	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	push @$serversRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
+	push @$serversRef, $self->appInstance->dataManager;
 	my %hostsMongosStarted;
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;

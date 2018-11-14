@@ -33,6 +33,12 @@ extends 'DataManager';
 
 has '+name' => ( default => 'Weathervane', );
 
+has 'mongosDocker' => (
+	is      => 'rw',
+	isa     => 'Str',
+	default => "",
+);
+
 # default scale factors
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
@@ -42,6 +48,11 @@ override 'initialize' => sub {
 
 	super();
 };
+
+sub setMongosDocker {
+	my ( $self, $mongosDockerName ) = @_;
+	$self->mongosDocker($mongosDockerName);
+}
 
 sub startAuctionDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;

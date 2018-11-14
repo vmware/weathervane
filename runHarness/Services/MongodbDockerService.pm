@@ -567,8 +567,8 @@ sub startMongodServers {
 
 		my %envVarMap;
 		$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
-		$envVarMap{"NUMSHARDS"} = $nosqlServer->appInstance->numNosqlShards;
-		$envVarMap{"NUMREPLICAS"} = $nosqlServer->appInstance->numNosqlReplicas;
+		$envVarMap{"NUMSHARDS"} = $self->numNosqlShards;
+		$envVarMap{"NUMREPLICAS"} = $self->numNosqlReplicas;
 		$envVarMap{"ISCFGSVR"} = 0;
 		$envVarMap{"ISMONGOS"} = 0;
 	
@@ -648,8 +648,8 @@ sub startMongocServers {
 			$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
 			$envVarMap{"MONGOCPORT"} = $nosqlServer->internalPortMap->{'mongoc'.$curCfgSvr};
 			$envVarMap{"CFGSVRNUM"} = $curCfgSvr;
-			$envVarMap{"NUMSHARDS"} = $nosqlServer->appInstance->numNosqlShards;
-			$envVarMap{"NUMREPLICAS"} = $nosqlServer->appInstance->numNosqlReplicas;
+			$envVarMap{"NUMSHARDS"} = $self->numNosqlShards;
+			$envVarMap{"NUMREPLICAS"} = $self->numNosqlReplicas;
 			$envVarMap{"ISCFGSVR"} = 1;
 	  		$envVarMap{"ISMONGOS"} = 0;
 			if ($self->clearBeforeStart) {
@@ -1092,12 +1092,16 @@ sub getLogFiles {
 	my $name        = $self->getParamValue('dockerName');
 	my $hostname    = $self->host->hostName;
 	my $appInstance = $self->appInstance;
-
+	
+	
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
 		`mkdir -p $logpath`;
 	}
 
+	# Need to fix the rest of this
+	return;
+	
 	my $time = `date +%H:%M`;
 	chomp($time);
 	my $logName = "$logpath/GetLogFilesMongodbDocker-$hostname-$name-$time.log";
@@ -1116,7 +1120,7 @@ sub getLogFiles {
 
 	close $logfile;
 
-	if ( $appInstance->numNosqlShards > 0 ) {
+	if ( $self->numNosqlShards > 0 ) {
 
 		# If this is the first MongoDB service to be configured,
 		# then configure the numShardsProcessed variable
@@ -1217,25 +1221,6 @@ sub getConfigFiles {
 
 	`cp /tmp/$hostname-$name-mongod*.conf $destinationPath/. 2>&1`;
 
-	if ( $appInstance->numNosqlShards > 0 ) {
-
-		# If this is the first MongoDB service to be configured,
-		if ( !$appInstance->has_numShardsProcessed() ) {
-			$appInstance->numShardsProcessed(1);
-
-			# get the config files for the config servers
-			`cp /tmp/*-mongoc*.conf $destinationPath/. 2>&1`;
-		}
-		else {
-			$appInstance->numShardsProcessed( $appInstance->numShardsProcessed + 1 );
-		}
-
-		if ( $appInstance->numShardsProcessed == $appInstance->numNosqlShards ) {
-			$appInstance->clear_numShardsProcessed;
-			`cp /tmp/*-mongos.conf $destinationPath/.`;
-
-		}
-	}
 }
 
 sub getConfigSummary {

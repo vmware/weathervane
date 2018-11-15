@@ -42,14 +42,16 @@ override 'initialize' => sub {
 	super();
 };
 
-override 'start' => sub {
-	my ($self, $serviceType, $users, $logPath)            = @_;
+override 'startInstance' => sub {
+	my ($self, $logPath)            = @_;
 
 	if ( !$self->getParamValue('useDocker') ) {
 		return;
 	}
 
-	my $impl     = $self->getImpl();
+	my $impl     = $self->getImpl();		
+	my $instanceNum = $self->getParamValue("instanceNum");
+
 
 	my $logName = "$logPath/CreateZookeeperDocker.log";
 	my $applog;
@@ -65,50 +67,49 @@ override 'start' => sub {
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
+		my $hostname = $zookeeperServer->host->hostName;
+		if ($id == $instanceNumber) {
+			$hostname = "0.0.0.0";
+		}
 		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
 		my $electionPort = $zookeeperServer->internalPortMap->{"election"};			
-		$zookeeperServers .= "server." . $id . "=" . $zookeeperServer->host->hostName . ":" .
+		$zookeeperServers .= "server." . $id . "=" . $hostname. ":" .
 							$peerPort . ":" . $electionPort . "," ;
 	}
 	chop($zookeeperServers);
 	
-	# Start all of the zookeepers
-	foreach my $zookeeperServer (@$zookeeperServersRef) {
-		my $name     = $zookeeperServer->getParamValue('dockerName');
-		my $hostname = $zookeeperServer->host->hostName;
-		my $instanceNum = $zookeeperServer->getParamValue("instanceNum");
+	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->hostName;
 
-		my %envVarMap;
-		$envVarMap{"ZK_CLIENT_PORT"} = $zookeeperServer->internalPortMap->{"client"};
-		$envVarMap{"ZK_PEER_PORT"} = $zookeeperServer->internalPortMap->{"peer"};
-		$envVarMap{"ZK_ELECTION_PORT"} = $zookeeperServer->internalPortMap->{"election"};
-		$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
-		$envVarMap{"ZK_ID"} = $instanceNum;
+	my %envVarMap;
+	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
+	$envVarMap{"ZK_PEER_PORT"} = $self->internalPortMap->{"peer"};
+	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
+	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
+	$envVarMap{"ZK_ID"} = $instanceNum;
 		
-		# Create the container
-		my %portMap;
-		my $directMap = 1;
-		foreach my $key ( keys %{ $zookeeperServer->internalPortMap } ) {
-			my $port = $zookeeperServer->internalPortMap->{$key};
-			$portMap{$port} = $port;
-		$zookeeperServer}
-
-		my $cmd        = "";
-		my $entryPoint = "";
-
-		$zookeeperServer->host->dockerRun(
-			$applog, $zookeeperServer->getParamValue('dockerName'),
-			$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $zookeeperServer->dockerConfigHashRef,
-			$entryPoint, $cmd, $self->needsTty
-		);
-
-		$zookeeperServer->setExternalPortNumbers();
-	
-		$zookeeperServer->registerPortsWithHost();
-
-		$zookeeperServer->host->startNscd();
-	
+	# Create the container
+	my %portMap;
+	my $directMap = 1;
+	foreach my $key ( keys %{ $self->internalPortMap } ) {
+		my $port = $self->internalPortMap->{$key};
+		$portMap{$port} = $port;
 	}
+
+	my $cmd        = "";
+	my $entryPoint = "";
+	$self->host->dockerRun(
+		$applog, $self->getParamValue('dockerName'),
+		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
+		$entryPoint, $cmd, $zookeeperServer->needsTty
+	);
+
+	$self->setExternalPortNumbers();
+	
+	$self->registerPortsWithHost();
+
+	$self->host->startNscd();
+	
 	close $applog;
 };
 

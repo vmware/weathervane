@@ -89,7 +89,7 @@ sub startInstance {
 	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
 	$envVarMap{"ZK_ID"} = $instanceNum;
 
-	$logger->debug("CreateZookeeperDocker-${name} envVarMap = %envVarMap");
+	$logger->debug("CreateZookeeperDocker-${name} $envVarMap{\"ZK_CLIENT_PORT\"} = " . $envVarMap{"ZK_CLIENT_PORT"} .  ", envVarMap = " . %envVarMap);
 		
 	# Create the container
 	my %portMap;
@@ -98,6 +98,7 @@ sub startInstance {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
 	}
+	
 	my $cmd        = "";
 	my $entryPoint = "";
 	$self->host->dockerRun(

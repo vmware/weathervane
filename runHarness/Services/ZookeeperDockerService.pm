@@ -97,7 +97,7 @@ override 'start' => sub {
 		my $entryPoint = "";
 
 		$zookeeperServer->host->dockerRun(
-			$applog, $self->getParamValue('dockerName'),
+			$applog, $zookeeperServer->getParamValue('dockerName'),
 			$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $zookeeperServer->dockerConfigHashRef,
 			$entryPoint, $cmd, $self->needsTty
 		);

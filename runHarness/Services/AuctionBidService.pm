@@ -188,7 +188,7 @@ sub setPortNumbers {
 		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
-	$self->internalPortMap->{"shutdown"} = 8005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
+	$self->internalPortMap->{"shutdown"} = 10005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 }
 
 sub setExternalPortNumbers {

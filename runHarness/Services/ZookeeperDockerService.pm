@@ -44,6 +44,7 @@ override 'initialize' => sub {
 
 sub startInstance {
 	my ($self, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 
 	if ( !$self->getParamValue('useDocker') ) {
 		return;
@@ -51,9 +52,11 @@ sub startInstance {
 
 	my $impl     = $self->getImpl();		
 	my $instanceNum = $self->getParamValue("instanceNum");
+	my $hostname = $self->host->hostName;
+	my $name     = $self->getParamValue('dockerName');
 
-
-	my $logName = "$logPath/CreateZookeeperDocker.log";
+	$logger->debug("CreateZookeeperDocker-${name}");
+	my $logName = "$logPath/CreateZookeeperDocker-${name}.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
@@ -62,7 +65,6 @@ sub startInstance {
 	my %volumeMap;
 
 	# Set environment variables for startup configuration
-	my $numZookeeperServers = $self->appInstance->getMaxNumOfServiceType("coordinationServer");
 	my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
@@ -78,15 +80,16 @@ sub startInstance {
 	}
 	chop($zookeeperServers);
 	
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
-
+	$logger->debug("CreateZookeeperDocker-${name} zookeeperServers = $zookeeperServers");
+	
 	my %envVarMap;
 	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
 	$envVarMap{"ZK_PEER_PORT"} = $self->internalPortMap->{"peer"};
 	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
 	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
 	$envVarMap{"ZK_ID"} = $instanceNum;
+
+	$logger->debug("CreateZookeeperDocker-${name} envVarMap = %envVarMap");
 		
 	# Create the container
 	my %portMap;
@@ -95,7 +98,6 @@ sub startInstance {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
 	}
-
 	my $cmd        = "";
 	my $entryPoint = "";
 	$self->host->dockerRun(

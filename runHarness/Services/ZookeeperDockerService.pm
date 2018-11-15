@@ -43,7 +43,7 @@ override 'initialize' => sub {
 };
 
 override 'start' => sub {
-	my ( $self, $logPath ) = @_;
+	my ($self, $serviceType, $users, $logPath)            = @_;
 
 	if ( !$self->getParamValue('useDocker') ) {
 		return;

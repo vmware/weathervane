@@ -68,7 +68,7 @@ override 'startInstance' => sub {
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
 		my $hostname = $zookeeperServer->host->hostName;
-		if ($id == $instanceNumber) {
+		if ($id == $instanceNum) {
 			$hostname = "0.0.0.0";
 		}
 		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
@@ -101,7 +101,7 @@ override 'startInstance' => sub {
 	$self->host->dockerRun(
 		$applog, $self->getParamValue('dockerName'),
 		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
-		$entryPoint, $cmd, $zookeeperServer->needsTty
+		$entryPoint, $cmd, $self->needsTty
 	);
 
 	$self->setExternalPortNumbers();

@@ -138,6 +138,10 @@ sub stopInstance {
 	
 }
 
+override 'create' => sub {
+	my ( $self, $logPath ) = @_;
+};
+
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerService");

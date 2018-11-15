@@ -415,7 +415,7 @@ sub dockerRun {
 	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
 		$envVarHashRef, $dockerConfigHashRef, $entryPoint, $cmd, $needsTty) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	$logger->debug("name = $name, impl = $impl");
+	$logger->debug("name = $name, impl = $impl, envVarHashRef values = " . (values %$envVarHashRef));
 
 	my $version  = $self->getParamValue('dockerWeathervaneVersion');
 	my $dockerHostString  = $self->dockerHostString;

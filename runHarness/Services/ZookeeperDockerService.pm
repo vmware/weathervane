@@ -49,22 +49,19 @@ override 'start' => sub {
 		return;
 	}
 
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
 	my $impl     = $self->getImpl();
 
-	my $logName = "$logPath/CreateZookeeperDocker-$hostname-$name.log";
+	my $logName = "$logPath/CreateZookeeperDocker.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	# The default create doesn't map any volumes
+	# doesn't map any volumes
 	my %volumeMap;
 
 	# Set environment variables for startup configuration
 	my $numZookeeperServers = $self->appInstance->getMaxNumOfServiceType("coordinationServer");
 	my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
-	my $instanceNum = $self->getParamValue("instanceNum");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
@@ -75,36 +72,43 @@ override 'start' => sub {
 	}
 	chop($zookeeperServers);
 	
-	my %envVarMap;
-	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
-	$envVarMap{"ZK_PEER_PORT"} = $self->internalPortMap->{"peer"};
-	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
-	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
-	$envVarMap{"ZK_ID"} = $instanceNum;
+	# Start all of the zookeepers
+	foreach my $zookeeperServer (@$zookeeperServersRef) {
+		my $name     = $zookeeperServer->getParamValue('dockerName');
+		my $hostname = $zookeeperServer->host->hostName;
+		my $instanceNum = $zookeeperServer->getParamValue("instanceNum");
+
+		my %envVarMap;
+		$envVarMap{"ZK_CLIENT_PORT"} = $zookeeperServer->internalPortMap->{"client"};
+		$envVarMap{"ZK_PEER_PORT"} = $zookeeperServer->internalPortMap->{"peer"};
+		$envVarMap{"ZK_ELECTION_PORT"} = $zookeeperServer->internalPortMap->{"election"};
+		$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
+		$envVarMap{"ZK_ID"} = $instanceNum;
+		
+		# Create the container
+		my %portMap;
+		my $directMap = 1;
+		foreach my $key ( keys %{ $zookeeperServer->internalPortMap } ) {
+			my $port = $zookeeperServer->internalPortMap->{$key};
+			$portMap{$port} = $port;
+		$zookeeperServer}
+
+		my $cmd        = "";
+		my $entryPoint = "";
+
+		$zookeeperServer->host->dockerRun(
+			$applog, $self->getParamValue('dockerName'),
+			$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $zookeeperServer->dockerConfigHashRef,
+			$entryPoint, $cmd, $self->needsTty
+		);
+
+		$zookeeperServer->setExternalPortNumbers();
 	
+		$zookeeperServer->registerPortsWithHost();
+
+		$zookeeperServer->host->startNscd();
 	
-	# Create the container
-	my %portMap;
-	my $directMap = 1;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-	if ( $self->isEdgeService() && $useVirtualIp ) {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
 	}
-	foreach my $key ( keys %{ $self->internalPortMap } ) {
-		my $port = $self->internalPortMap->{$key};
-		$portMap{$port} = $port;
-	}
-
-	my $cmd        = "";
-	my $entryPoint = "";
-
-	$self->host->dockerRun(
-		$applog, $self->getParamValue('dockerName'),
-		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
-		$entryPoint, $cmd, $self->needsTty
-	);
-
 	close $applog;
 };
 
@@ -124,28 +128,6 @@ sub stopInstance {
 	  || die "Error opening /$logName:$!";
 
 	$self->host->dockerStop( $applog, $name );
-
-	close $applog;
-	
-}
-
-sub startInstance {
-	my ( $self, $logPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $time     = `date +%H:%M`;
-	chomp($time);
-	my $logName          = "$logPath/StartZookeeperDocker-$hostname-$name-$time.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	$self->setExternalPortNumbers();
-
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 
 	close $applog;
 	

@@ -180,22 +180,12 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self) = @_;
-
-	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
-		# For docker host networking, external ports are same as internal ports
-		$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
-		$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
-		$self->portMap->{"election"} = $self->internalPortMap->{"election"};
-	}
-	else {
-		# For bridged networking, ports get assigned at start time
-		my $name = $self->getParamValue('dockerName');
-		my $portMapRef = $self->host->dockerPort($name );
-		$self->portMap->{"client"}   = $portMapRef->{ $self->internalPortMap->{"client"} };
-		$self->portMap->{"peer"}     = $portMapRef->{ $self->internalPortMap->{"peer"} };
-		$self->portMap->{"election"} = $portMapRef->{ $self->internalPortMap->{"election"} };
-	}
-
+	# For bridged networking, ports get assigned at start time
+	my $name = $self->getParamValue('dockerName');
+	my $portMapRef = $self->host->dockerPort($name );
+	$self->portMap->{"client"}   = $portMapRef->{ $self->internalPortMap->{"client"} };
+	$self->portMap->{"peer"}     = $portMapRef->{ $self->internalPortMap->{"peer"} };
+	$self->portMap->{"election"} = $portMapRef->{ $self->internalPortMap->{"election"} };
 }
 
 sub configure {

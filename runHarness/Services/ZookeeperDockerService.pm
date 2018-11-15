@@ -42,14 +42,12 @@ override 'initialize' => sub {
 	super();
 };
 
-override 'create' => sub {
+override 'start' => sub {
 	my ( $self, $logPath ) = @_;
 
 	if ( !$self->getParamValue('useDocker') ) {
 		return;
 	}
-	
-	$self->setPortNumbers();
 
 	my $name     = $self->getParamValue('dockerName');
 	my $hostname = $self->host->hostName;
@@ -70,15 +68,8 @@ override 'create' => sub {
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
-		my $peerPort;
-		my $electionPort;
-		if ($instanceNum == $id) {	
-			$peerPort = $zookeeperServer->internalPortMap->{"peer"};
-			$electionPort = $zookeeperServer->internalPortMap->{"election"};			
-		} else {
-			$peerPort = $zookeeperServer->portMap->{"peer"};
-			$electionPort = $zookeeperServer->portMap->{"election"};
-		}
+		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
+		my $electionPort = $zookeeperServer->internalPortMap->{"election"};			
 		$zookeeperServers .= "server." . $id . "=" . $zookeeperServer->host->hostName . ":" .
 							$peerPort . ":" . $electionPort . "," ;
 	}
@@ -94,7 +85,7 @@ override 'create' => sub {
 	
 	# Create the container
 	my %portMap;
-	my $directMap = 0;
+	my $directMap = 1;
 	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 	if ( $self->isEdgeService() && $useVirtualIp ) {
 		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports

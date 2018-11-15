@@ -42,7 +42,7 @@ override 'initialize' => sub {
 	super();
 };
 
-override 'startInstance' => sub {
+sub startInstance {
 	my ($self, $logPath)            = @_;
 
 	if ( !$self->getParamValue('useDocker') ) {

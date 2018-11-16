@@ -323,7 +323,7 @@ print "Setting up AuctionBidService\n";
 print $fileout "Setting up AuctionBidService\n";
 runAndLog( $fileout, "cp -r configFiles/host/$os/apache-tomcat-bid /opt/." );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/webapps" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionBidService.war /opt/apache-tomcat-bid/webapps/." );
+runAndLog( $fileout, "cp /root/weathervane/dist/auctionBidService.war /opt/apache-tomcat-bid/webapps/auction.war" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/bin" );
 runAndLog( $fileout, "cp /opt/apache-tomcat/bin/tomcat-juli.jar /opt/apache-tomcat-bid/bin/" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/work" );

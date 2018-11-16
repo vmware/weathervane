@@ -68,6 +68,7 @@ sub run {
 	my $tmpDir             = $self->getParamValue('tmpDir');
 	my $console_logger     = get_logger("Console");
 	my $debug_logger       = get_logger("Weathervane::RunProcedures::PrepareOnlyRunProcedure");
+	my $weathervaneHome    = $self->getParamValue('weathervaneHome');
 	my @pids;
 	my $pid;
 

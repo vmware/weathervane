@@ -230,9 +230,9 @@ sub prepareData {
 		return 0;
 	}
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
-
-	$self->startAuctionDataManagerContainer ($users, $logHandle);
 		
+	$self->startAuctionDataManagerContainer ($users, $logHandle);
+
 	my $loadedData = 0;
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
@@ -253,12 +253,16 @@ sub prepareData {
 					  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
 				# Load the data
+				# Need to stop and restart services so that we can clear out any old data
 				$appInstance->stopServices("data", $logPath);
 				$appInstance->unRegisterPortNumbers();
 				$appInstance->clearDataServicesBeforeStart($logPath);
 				$appInstance->startServices("data", $logPath);
 				# Make sure that the services know their external port numbers
 				$self->appInstance->setExternalPortNumbers();
+
+				# This will stop and restart the data manager so that it has the right port numbers
+				$self->startAuctionDataManagerContainer ($users, $logHandle);
 
 				$logger->debug( "All data services configured and started for appInstance "
 					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
@@ -321,6 +325,7 @@ sub prepareData {
 
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$self->stopAuctionDataManagerContainer ($logHandle);
 		return 0;
 	}
 

@@ -42,38 +42,45 @@ override 'initialize' => sub {
 	super();
 };
 
-override 'start' => sub {
-	my ( $self, $logPath ) = @_;
+sub startInstance {
+	my ($self, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 
 	if ( !$self->getParamValue('useDocker') ) {
 		return;
 	}
 
-	my $name     = $self->getParamValue('dockerName');
+	my $impl     = $self->getImpl();		
+	my $instanceNum = $self->getParamValue("instanceNum");
 	my $hostname = $self->host->hostName;
-	my $impl     = $self->getImpl();
+	my $name     = $self->getParamValue('dockerName');
 
-	my $logName = "$logPath/CreateZookeeperDocker-$hostname-$name.log";
+	$logger->debug("CreateZookeeperDocker-${name}");
+	my $logName = "$logPath/CreateZookeeperDocker-${name}.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	# The default create doesn't map any volumes
+	# doesn't map any volumes
 	my %volumeMap;
 
 	# Set environment variables for startup configuration
-	my $numZookeeperServers = $self->appInstance->getMaxNumOfServiceType("coordinationServer");
 	my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
-	my $instanceNum = $self->getParamValue("instanceNum");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
+		my $hostname = $zookeeperServer->host->hostName;
+		if ($id == $instanceNum) {
+			$hostname = "0.0.0.0";
+		}
 		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
 		my $electionPort = $zookeeperServer->internalPortMap->{"election"};			
-		$zookeeperServers .= "server." . $id . "=" . $zookeeperServer->host->hostName . ":" .
+		$zookeeperServers .= "server." . $id . "=" . $hostname. ":" .
 							$peerPort . ":" . $electionPort . "," ;
 	}
 	chop($zookeeperServers);
+	
+	$logger->debug("CreateZookeeperDocker-${name} zookeeperServers = $zookeeperServers");
 	
 	my %envVarMap;
 	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
@@ -81,30 +88,32 @@ override 'start' => sub {
 	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
 	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
 	$envVarMap{"ZK_ID"} = $instanceNum;
-	
-	
+
+	$logger->debug("CreateZookeeperDocker-${name} envVarMap{\"ZK_CLIENT_PORT\"} = " 
+				. $envVarMap{"ZK_CLIENT_PORT"} .  ", envVarMap = " . (values %envVarMap));
+		
 	# Create the container
 	my %portMap;
 	my $directMap = 1;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-	if ( $self->isEdgeService() && $useVirtualIp ) {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
-	}
 	foreach my $key ( keys %{ $self->internalPortMap } ) {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
 	}
-
+	
 	my $cmd        = "";
 	my $entryPoint = "";
-
 	$self->host->dockerRun(
 		$applog, $self->getParamValue('dockerName'),
 		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
 		$entryPoint, $cmd, $self->needsTty
 	);
 
+	$self->setExternalPortNumbers();
+	
+	$self->registerPortsWithHost();
+
+	$self->host->startNscd();
+	
 	close $applog;
 };
 
@@ -129,27 +138,9 @@ sub stopInstance {
 	
 }
 
-sub startInstance {
+override 'create' => sub {
 	my ( $self, $logPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $time     = `date +%H:%M`;
-	chomp($time);
-	my $logName          = "$logPath/StartZookeeperDocker-$hostname-$name-$time.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	$self->setExternalPortNumbers();
-
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
-
-	close $applog;
-	
-}
+};
 
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
@@ -198,22 +189,11 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self) = @_;
-
-	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
-		# For docker host networking, external ports are same as internal ports
-		$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
-		$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
-		$self->portMap->{"election"} = $self->internalPortMap->{"election"};
-	}
-	else {
-		# For bridged networking, ports get assigned at start time
-		my $name = $self->getParamValue('dockerName');
-		my $portMapRef = $self->host->dockerPort($name );
-		$self->portMap->{"client"}   = $portMapRef->{ $self->internalPortMap->{"client"} };
-		$self->portMap->{"peer"}     = $portMapRef->{ $self->internalPortMap->{"peer"} };
-		$self->portMap->{"election"} = $portMapRef->{ $self->internalPortMap->{"election"} };
-	}
-
+	# For bridged networking, ports get assigned at start time
+	my $name = $self->getParamValue('dockerName');
+	$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
+	$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
+	$self->portMap->{"election"} = $self->internalPortMap->{"election"};
 }
 
 sub configure {

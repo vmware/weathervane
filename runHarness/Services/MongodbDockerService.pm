@@ -591,8 +591,8 @@ sub startMongodServers {
 		my $port = $nosqlServer->internalPortMap->{'mongod'};
 		$portMap{$port} = $port;
 
-		my $entrypoint;
-		my $cmd = "mongod -f /etc/mongod.conf";
+		my $entrypoint = "";
+		my $cmd = "";
 
 		# Create the container
 		$nosqlServer->host->dockerRun( $dblog, $name, $impl, $directMap, \%portMap, \%volumeMap, \%envVarMap,
@@ -670,8 +670,8 @@ sub startMongocServers {
 			# Only need to expose the mongoc port
 			my $configPort = $self->internalPortMap->{"mongoc$curCfgSvr"};
 			$portMap{$configPort} = $configPort;
-			my $entrypoint;
-			my $cmd = "mongod -f /etc/mongoc$curCfgSvr.conf";
+			my $entrypoint = "";
+			my $cmd = "";
 
 			# Create the container
 			$host->dockerRun( $dblog, "mongoc$curCfgSvr-W${workloadNum}I${appInstanceNum}",
@@ -852,6 +852,7 @@ sub startMongosServers {
 		$envVarMap{"NUMREPLICAS"} = $self->numNosqlReplicas;
 		$envVarMap{"ISCFGSVR"} = 0;
 		$envVarMap{"ISMONGOS"} = 1;
+		$envVarMap{"CONFIGDBSTRING"} = $configdbString;
 		$envVarMap{"CLEARBEFORESTART"} = 0;		
 			
 		my %portMap;
@@ -860,8 +861,8 @@ sub startMongosServers {
 		# Save the mongos port for this host in the internalPortMap
 		$portMap{$mongosPort} = $mongosPort;
 
-		my $entrypoint;
-		my $cmd = "mongos -f /etc/mongos.conf --configdb $configdbString ";
+		my $entrypoint = "";
+		my $cmd = "";
 
 		# Create the container
 		$appServer->host->dockerRun( $dblog, $dockerName, $self->getImpl(), $directMap, \%portMap, \%volumeMap,

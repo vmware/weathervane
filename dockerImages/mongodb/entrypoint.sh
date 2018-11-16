@@ -57,9 +57,17 @@ fi
 perl /configure.pl
 
 if [ $numArgs -gt 0 ]; then
-	eval "$cmd &"
+	eval "setsid $cmd &"
 else
-	setsid /usr/bin/mongod -f /etc/mongod.conf --bind_ip_all &
+    if [ $ISCFGSVR -eq 1 ]; then
+	    setsid /usr/bin/mongod -f /etc/mongoc${CFGSVRNUM}.conf --bind_ip_all &             
+    else 
+      if [ $ISMONGOS -eq 1 ]; then
+	    setsid /usr/bin/mongos -f /etc/mongos.conf --configdb $CONFIGDBSTRING --bind_ip_all &                  
+      else
+	    setsid /usr/bin/mongod -f /etc/mongod.conf --bind_ip_all &         
+      fi
+    fi
 fi
 
 if [ ! -e "/fifo" ]; then

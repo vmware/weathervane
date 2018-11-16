@@ -3,8 +3,6 @@
 use strict;
 use POSIX;
 
-print "Loading Data\n";
-
 # the usersPerAuctionScaleFactor
 my $maxUsers = $ENV{'MAXUSERS'};
 my $users = $ENV{'USERS'};

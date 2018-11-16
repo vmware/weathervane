@@ -38,7 +38,7 @@ if [ $# -gt 0 ]; then
 else
     echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &"
 	setsid sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &
-	sleep 120
+	sleep 20
 	rabbitmqctl add_user auction auction
 	rabbitmqctl set_user_tags auction administrator
 	rabbitmqctl add_vhost auction

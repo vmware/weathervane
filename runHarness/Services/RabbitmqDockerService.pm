@@ -148,7 +148,7 @@ sub startInstance {
 
 	$self->host->startNscd();
 
-	sleep 30;
+	sleep 5;
 
 	$self->configureAfterIsUp($applog);
 

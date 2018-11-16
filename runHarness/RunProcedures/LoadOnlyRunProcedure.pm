@@ -142,6 +142,9 @@ sub run {
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
 
+	# Let the appInstances clean any run specific data or services
+	$self->cleanupAppInstances($setupLogDir);
+
 	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
 	
@@ -158,11 +161,18 @@ sub run {
 		callMethodOnObjectsParallel2( 'redeploy', $self->workloadsRef, $setupLogDir, $self->hostsRef );
 		$self->setParamValue( 'redeploy', 0 );
 	}
+
+	# Copy the version file into the output directory
+	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
+
+	# Make sure that all hosts are running the same version of Weathervane
+	my $allSame = $self->checkVersions();
+	if (!$allSame) {
+		$console_logger->info("Mismatching Weathervane versions detected.");		
+		$console_logger->info("To synchronize the version of Weathervane on all hosts to match the local host, use the --redeploy flag.");
+		exit;		
+	}
 		
-	# Make sure time is synced on all hosts
-	$debug_logger->debug("Sync time");
-	$self->syncTime();
-	
 	# Prepare the data for this run and start the data services
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);

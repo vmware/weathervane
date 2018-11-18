@@ -636,7 +636,7 @@ sub startMongocServers {
 			my $host = $nosqlServer->host;
 			my %volumeMap;
 			my $dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataDir");
-			if ($host->getParamValue('mongodbNamedVolumes') || $host->getParamValue('vicHost')) {
+			if ($self->appInstance->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
 				$dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolume");
 				# use named volumes.  Create volume if it doesn't exist
 				if (!$host->dockerVolumeExists($dblog, $dataDir)) {
@@ -1010,6 +1010,7 @@ sub stopMongosServers {
 		if ( exists $hostsMongosStopped{$appIpAddr} ) {
 			next;
 		}
+		$logger->debug("Stopping mongos on " . $appServer->host->hostName);
 		$hostsMongosStopped{$appIpAddr} = 1;
 		$appServer->host->dockerStopAndRemove( $dblog, $dockerName );
 	}
@@ -1234,8 +1235,8 @@ sub getConfigSummary {
 	my ($self) = @_;
 	tie( my %csv, 'Tie::IxHash' );
 	my $appInstance = $self->appInstance;
-	$csv{"numNosqlShards"}   = $appInstance->numNosqlShards;
-	$csv{"numNosqlReplicas"} = $appInstance->numNosqlReplicas;
+	$csv{"numNosqlShards"}   = $self->numNosqlShards;
+	$csv{"numNosqlReplicas"} = $self->numNosqlReplicas;
 
 	return \%csv;
 }

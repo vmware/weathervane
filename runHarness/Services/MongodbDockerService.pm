@@ -791,7 +791,7 @@ sub startMongosServers {
 	my @mongosSvrPorts;
 
 	my $serversRef = $self->appInstance->getActiveServicesByType('appServer');
-	push @$serversRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
+	push @$serversRef, @{$self->appInstance->getActiveServicesByType('auctionBidServer')};
 	push @$serversRef, $self->appInstance->dataManager;
 	my %hostsMongosCreated;
 	my $numMongos = 0;
@@ -993,7 +993,7 @@ sub stopMongosServers {
 
 	my %hostsMongosStopped;
 	my $serversRef = $self->appInstance->getActiveServicesByType('appServer');
-	push @$serversRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
+	push @$serversRef, @{$self->appInstance->getActiveServicesByType('auctionBidServer')};
 	push @$serversRef, $self->appInstance->dataManager;
 	foreach my $server (@$serversRef) {
 		my $ipAddr = $server->host->ipAddr;

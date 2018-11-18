@@ -991,10 +991,10 @@ sub stopMongosServers {
 	print $dblog "Stopping mongos servers\n";
 	$logger->debug("Stopping mongos servers");
 
-	my $serversRef = $self->appInstance->getActiveServicesByType('appServer');
 	my %hostsMongosStopped;
-
-	$logger->debug("Stopping mongos on appServers");
+	my $serversRef = $self->appInstance->getActiveServicesByType('appServer');
+	push @$serversRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
+	push @$serversRef, $self->appInstance->dataManager;
 	foreach my $server (@$serversRef) {
 		my $ipAddr = $server->host->ipAddr;
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
@@ -1005,29 +1005,6 @@ sub stopMongosServers {
 		$hostsMongosStopped{$ipAddr} = 1;
 		$server->host->dockerStopAndRemove( $dblog, $dockerName );
 	}
-
-	$serversRef = $self->appInstance->getActiveServicesByType('auctionBidServer');
-	$logger->debug("Stopping mongos on bidServers");
-	foreach my $server (@$serversRef) {
-		my $ipAddr = $server->host->ipAddr;
-		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
-		if ( exists $hostsMongosStopped{$ipAddr} ) {
-			next;
-		}
-		$logger->debug("Stopping mongos on " . $server->host->hostName);
-		$hostsMongosStopped{$ipAddr} = 1;
-		$server->host->dockerStopAndRemove( $dblog, $dockerName );
-	}
-
-	my $server = $self->appInstance->dataManager;
-	$logger->debug("Stopping mongos on dataManager");
-	my $ipAddr = $server->host->ipAddr;
-	my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
-	if ( exists $hostsMongosStopped{$ipAddr} ) {
-		return;
-	}
-	$logger->debug("Stopping mongos on " . $server->host->hostName);
-	$server->host->dockerStopAndRemove( $dblog, $dockerName );
 }
 
 sub clearDataAfterStart {

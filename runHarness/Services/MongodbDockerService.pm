@@ -678,15 +678,6 @@ sub startMongocServers {
 				$nosqlServer->getImpl(), $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef, $entrypoint,
 				$cmd, $self->needsTty );
 
-			my $configServersRef = $nosqlServer->configServersRef;
-			push @$configServersRef, $nosqlServer;
-			$curCfgSvr++;
-			if ( $curCfgSvr > $nosqlServer->numConfigServers ) {
-				$logger->debug( "curCfgServer ($curCfgSvr) > nosqlServer->numConfigServers (",
-					$nosqlServer->numConfigServers, ")" );
-				last;
-			}
-
 			# Determine the externally visible configPort
 			if ( $host->dockerNetIsHostOrExternal($nosqlServer->getParamValue('dockerNet') )) {
 				# For docker host networking, external ports are same as internal ports
@@ -1001,19 +992,42 @@ sub stopMongosServers {
 	$logger->debug("Stopping mongos servers");
 
 	my $serversRef = $self->appInstance->getActiveServicesByType('appServer');
-	push @$serversRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
-	push @$serversRef, $self->appInstance->dataManager;
 	my %hostsMongosStopped;
-	foreach my $appServer (@$serversRef) {
-		my $appIpAddr = $appServer->host->ipAddr;
-		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $appIpAddr;
-		if ( exists $hostsMongosStopped{$appIpAddr} ) {
+
+	$logger->debug("Stopping mongos on appServers");
+	foreach my $server (@$serversRef) {
+		my $ipAddr = $server->host->ipAddr;
+		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
+		if ( exists $hostsMongosStopped{$ipAddr} ) {
 			next;
 		}
-		$logger->debug("Stopping mongos on " . $appServer->host->hostName);
-		$hostsMongosStopped{$appIpAddr} = 1;
-		$appServer->host->dockerStopAndRemove( $dblog, $dockerName );
+		$logger->debug("Stopping mongos on " . $server->host->hostName);
+		$hostsMongosStopped{$ipAddr} = 1;
+		$server->host->dockerStopAndRemove( $dblog, $dockerName );
 	}
+
+	$serversRef = $self->appInstance->getActiveServicesByType('auctionBidServer');
+	$logger->debug("Stopping mongos on bidServers");
+	foreach my $server (@$serversRef) {
+		my $ipAddr = $server->host->ipAddr;
+		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
+		if ( exists $hostsMongosStopped{$ipAddr} ) {
+			next;
+		}
+		$logger->debug("Stopping mongos on " . $server->host->hostName);
+		$hostsMongosStopped{$ipAddr} = 1;
+		$server->host->dockerStopAndRemove( $dblog, $dockerName );
+	}
+
+	my $server = $self->appInstance->dataManager;
+	$logger->debug("Stopping mongos on dataManager");
+	my $ipAddr = $server->host->ipAddr;
+	my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
+	if ( exists $hostsMongosStopped{$ipAddr} ) {
+		return;
+	}
+	$logger->debug("Stopping mongos on " . $server->host->hostName);
+	$server->host->dockerStopAndRemove( $dblog, $dockerName );
 }
 
 sub clearDataAfterStart {

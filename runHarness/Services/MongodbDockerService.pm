@@ -518,8 +518,6 @@ override 'start' => sub {
 		my $mongosHostname = $mongosHostPortListRef->[0];
 		my $mongosPort = $mongosHostPortListRef->[1];
 		
-		# add the shards and shard the collections		
-		$self->configureSharding($mongosHostname, $mongosPort, $dblog);
 	}
 	elsif ( $self->numNosqlReplicas > 0 ) {
 		$isReplicated = 1;
@@ -534,6 +532,8 @@ override 'start' => sub {
 		$nosqlServer->setExternalPortNumbers();
 		$nosqlServer->registerPortsWithHost();
 	}
+
+	$self->configureAfterStart($logPath);
 
 	$self->host->startNscd();
 
@@ -798,8 +798,6 @@ sub startMongosServers {
 	foreach my $appServer (@$serversRef) {
 		my $appHostname = $appServer->host->hostName;
 		my $appIpAddr   = $appServer->host->ipAddr;
-		my $wkldNum    = $appServer->getWorkloadNum();
-		my $appInstNum = $appServer->getAppInstanceNum();
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $appIpAddr;
 
 		if ( exists $hostsMongosCreated{$appIpAddr} ) {

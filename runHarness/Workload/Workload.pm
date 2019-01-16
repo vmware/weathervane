@@ -292,11 +292,6 @@ sub isPassed {
 	return $passed;
 }
 
-sub clearResults {
-	my ( $self, $tmpDir ) = @_;
-	return $self->primaryDriver->clearResults();
-}
-
 sub setLoadPathType {
 	my ( $self, $loadPathType ) = @_;
 	my $logger         = get_logger("Weathervane::Workload::Workload");

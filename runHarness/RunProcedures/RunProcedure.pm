@@ -444,14 +444,6 @@ sub isPassed {
 	return $passed;
 }
 
-sub clearResults {
-	my ( $self, $tmpDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->clearResults();
-	}
-}
-
 sub setLoadPathType {
 	my ( $self, $loadPathType ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");

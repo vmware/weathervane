@@ -383,11 +383,6 @@ sub cleanData {
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
 }
 
-sub cleanupAppInstances {
-	my ( $self, $cleanupLogDir ) = @_;
-	return callBooleanMethodOnObjectsParallel1( 'cleanupAppInstances', $self->workloadsRef, $cleanupLogDir );
-}
-
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -644,6 +639,7 @@ sub cleanup {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 
+	return callBooleanMethodOnObjectsParallel1( 'cleanupAppInstances', $self->workloadsRef, $cleanupLogDir );
 	$self->cleanStatsFiles();
 	$self->cleanLogFiles();
 

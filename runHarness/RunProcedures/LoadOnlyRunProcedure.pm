@@ -143,14 +143,11 @@ sub run {
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
 
-	# Let the appInstances clean any run specific data or services
-	$self->cleanupAppInstances($setupLogDir);
-
 	$debug_logger->debug("Unregister port numbers");
 	$self->unRegisterPortNumbers();
 	
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
-	$self->cleanup();
+	$self->cleanup($setupLogDir);
 
 	# Get rid of old results from previous run
 	$debug_logger->debug("clear results");

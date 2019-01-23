@@ -147,7 +147,7 @@ sub run {
 	$self->unRegisterPortNumbers();
 	
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
-	$self->cleanup();
+	$self->cleanup($setupLogDir);
 
 	# redeploy artifacts if selected
 	if ( $self->getParamValue('redeploy') ) {

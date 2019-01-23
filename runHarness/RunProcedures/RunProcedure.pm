@@ -506,7 +506,7 @@ sub cleanupAfterFailure {
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 
 	# clean up old logs and stats
-	$self->cleanup();
+	$self->cleanup($cleanupLogDir);
 
 	my $resultsDir = "$outputDir/$seqnum";
 	`mkdir -p $resultsDir`;
@@ -636,7 +636,7 @@ sub getStatsFiles {
 }
 
 sub cleanup {
-	my ($self) = @_;
+	my ($self, $cleanupLogDir) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 
 	return callBooleanMethodOnObjectsParallel1( 'cleanupAppInstances', $self->workloadsRef, $cleanupLogDir );

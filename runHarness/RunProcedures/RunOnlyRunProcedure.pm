@@ -187,11 +187,8 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		# Let the appInstances clean any run specific data or services
-		$self->cleanupAppInstances($cleanupLogDir);
-
 		# clean up old logs and stats
-		$self->cleanup();
+		$self->cleanup($cleanupLogDir);
 	}
 
 	# Put a file in the output/seqnum directory with the run name

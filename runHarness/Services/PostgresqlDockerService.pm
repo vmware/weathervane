@@ -81,7 +81,7 @@ override 'create' => sub {
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
 	my $hostDataDir = $self->getParamValue('postgresqlDataDir');
-	if ($host->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
+	if ($self->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$hostDataDir = $self->getParamValue('postgresqlDataVolume');
 		# use named volumes.  Create volume if it doesn't exist
 		if (!$host->dockerVolumeExists($applog, $hostDataDir)) {
@@ -175,6 +175,8 @@ sub startInstance {
 	$self->registerPortsWithHost();
 
 	$self->host->startNscd();
+	
+	$self->doVacuum($appLog);
 
 	close $applog;
 }
@@ -223,6 +225,25 @@ sub clearDataAfterStart {
 	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
 
 	close $applog;
+
+}
+
+sub doVacuum {
+	my ( $self, $fileout ) = @_;
+	my $hostname    = $self->host->hostName;
+	my $serviceType = $self->getParamValue('serviceType');
+	my $impl        = $self->getParamValue( $serviceType . "Impl" );
+	my $port        = $self->portMap->{$impl};
+
+	my $cmdout =
+	  `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"`;
+	print $fileout
+	  "PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"\n";
+	print $fileout $cmdout;
+	$cmdout = `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"checkpoint;\"`;
+	print $fileout
+	  "PGPASSWORD=\"postgres\"  psql -p $port -U postgres -d auction -h $hostname -c \"checkpoint;\"\n";
+	print $fileout $cmdout;
 
 }
 

@@ -272,13 +272,13 @@ sub configureAfterStart {
 	my $cmdout;
 	my $replicaMasterHostname = "";
 	my $replicaMasterPort = "";
-	if (   ( $appInstance->numNosqlShards > 0 )
-		&& ( $appInstance->numNosqlReplicas > 0 ) )
+	if (   ( $self->numNosqlShards > 0 )
+		&& ( $self->numNosqlReplicas > 0 ) )
 	{
 		$console_logger->( "Loading data in sharded and replicated mongo is not supported yet" );
 		return 0;
 	}
-	elsif ( $appInstance->numNosqlShards > 0 ) {
+	elsif ( $self->numNosqlShards > 0 ) {
 		print $applog "Sharding MongoDB\n";
 		my $localPort = $self->portMap->{'mongos'};
 		my $cmdString;
@@ -415,7 +415,7 @@ sub configureAfterStart {
 		print $applog $cmdout;
 
 	}
-	elsif ( $appInstance->numNosqlReplicas > 0 ) {
+	elsif ( $self->numNosqlReplicas > 0 ) {
 		$logger->debug("Creating the MongoDB Replica Set");
 		print $applog "Creating the MongoDB Replica Set\n";
 		my $cmdString;
@@ -557,7 +557,7 @@ sub startMongodServers {
 		
 		my %volumeMap;
 		my $dataDir = $nosqlServer->getParamValue('mongodbDataDir');
-		if ($host->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		if ($self->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
 			$dataDir = $nosqlServer->getParamValue('mongodbDataVolume');
 			# use named volumes.  Create volume if it doesn't exist
 			if (!$host->dockerVolumeExists($dblog, $dataDir)) {

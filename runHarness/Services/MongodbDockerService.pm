@@ -286,7 +286,7 @@ sub configureAfterStart {
 		# Add the shards to the database
 		foreach my $nosqlServer (@$nosqlServersRef) {
 			my $hostname = $nosqlServer->getIpAddr();
-			my $port     = $nosqlServer->portMap->{'mongod'};
+			my $localPort   = $nosqlServer->portMap->{'mongod'};
 			print $applog "Add $hostname as shard.\n";
 			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))'";
 			my $cmdout = `$cmdString`;	

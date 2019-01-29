@@ -176,7 +176,7 @@ sub startInstance {
 
 	$self->host->startNscd();
 	
-	$self->doVacuum($appLog);
+	$self->doVacuum($applog);
 
 	close $applog;
 }

@@ -195,6 +195,14 @@ sub useDocker {
 	return 1;
 }
 
+sub getIpAddr {
+	my ($self) = @_;
+	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
+	}
+	return $self->host->ipAddr;
+}
+
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");

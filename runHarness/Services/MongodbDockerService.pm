@@ -249,7 +249,7 @@ override 'sanityCheck' => sub {
 };
 
 sub configureAfterStart {
-	my ($self, $logPath)            = @_;
+	my ($self, $logPath, $mongosHostPortListRef)            = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger = get_logger("Weathervane::Services::MongodbService");
 	my $name     = $self->getParamValue('dockerName');
@@ -534,7 +534,7 @@ override 'start' => sub {
 		$nosqlServer->registerPortsWithHost();
 	}
 
-	$self->configureAfterStart($logPath);
+	$self->configureAfterStart($logPath, $mongosHostPortListRef);
 
 	$self->host->startNscd();
 

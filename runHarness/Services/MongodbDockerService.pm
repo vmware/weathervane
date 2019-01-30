@@ -803,12 +803,14 @@ sub startMongosServers {
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $appIpAddr;
 
 		if ( exists $hostsMongosCreated{$appIpAddr} ) {
+			$logger->debug("Not creating mongos on $appHostname, already exists with dockerName $dockerName");
 			# If a mongos has already been created on this host,
 			# Don't start another one
 			if ( exists( $self->dockerConfigHashRef->{"net"} ) &&
 				 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) 
 			{
 				# For docker host networking, external ports are same as internal ports
+				$logger->debug("For $dockerName, isHostOrExternal so setting mongosDocker on $appHostname to $appHostname");
 				$appServer->setMongosDocker($appHostname);
 			}
 			elsif ( $appServer->useDocker()
@@ -818,21 +820,24 @@ sub startMongosServers {
 				# the same (non-host) network as the mongos, but use the docker name rather than the hostname
 				my $mongosDocker = $appServer->host->dockerGetIp($dockerName);
 				$appServer->setMongosDocker($mongosDocker);
+				$logger->debug("For $dockerName, on same docker net so setting mongosDocker on $appHostname to $mongosDocker");
 			}
 			else {
 				# Mongos is using bridged networking and the app server is either not
 				# dockerized or is on a different Docker network.  Use external port number
 				# and full hostname
 				$appServer->setMongosDocker($appHostname);
+				$logger->debug("For $dockerName, on different net so setting mongosDocker on $appHostname to $appHostname");
 			}
+			$logger->debug("For $dockerName, setting internal mongos port to " . $hostsMongosCreated{$appIpAddr});
 			$appServer->internalPortMap->{'mongos'} = $hostsMongosCreated{$appIpAddr};
 			next;
 		}
 		
-		$logger->debug( "Creating mongos on ", $appServer->host->hostName );
 		my $mongosPort =
 		  $self->internalPortMap->{'mongos'} +
 		  ( $self->getParamValue( $self->getParamValue('serviceType') . 'PortStep' ) * $numMongos );
+		$logger->debug("Creating mongos on $appHostname with dockerName $dockerName and mongosPort $mongosPort");
 		$numMongos++;
 
 		my %volumeMap;
@@ -863,7 +868,7 @@ sub startMongosServers {
 		my $portMapRef = $appServer->host->dockerPort($dockerName);
 		if ( exists( $self->dockerConfigHashRef->{"net"} ) &&
 			 ( $self->host->dockerNetIsHostOrExternal($self->dockerConfigHashRef->{"net"}))) {
-			$logger->debug("mongos $dockerName uses host networking, setting app server to use external name and port");
+			$logger->debug("mongos $dockerName uses host networking, setting app server to use $appHostname and port $mongosPort");
 			# For docker host networking, external ports are same as internal ports
 			$appServer->internalPortMap->{'mongos'} = $mongosPort;
 			$appServer->setMongosDocker($appHostname);
@@ -874,19 +879,19 @@ sub startMongosServers {
 		{
 			# Also use the internal port if the appServer is also using docker and is on
 			# the same (non-host) network as the mongos, but use the docker name rather than the hostname
-			$logger->debug("app server and mongos are both dockerized on the same host and network, setting app server to use internal name and port");
 			$appServer->internalPortMap->{'mongos'} = $mongosPort;
 			my $mongosDocker = $appServer->host->dockerGetIp($dockerName);
 			$appServer->setMongosDocker($mongosDocker);
 			$hostsMongosCreated{$appIpAddr} = $mongosPort;
+			$logger->debug("app server and mongos are both dockerized on the same host and network, setting app server to use internal name $mongosDocker and port $mongosPort");
 		}
 		else {
 			# Mongos is using bridged networking and the app server is either not
 			# dockerized or is on a different Docker network.  Use external port number
 			# and full hostname
-			$logger->debug("app server is not dockerized or on different network, setting app server to use external name and port");
 			$appServer->internalPortMap->{'mongos'} = $portMapRef->{$mongosPort};
 			$appServer->setMongosDocker($appHostname);
+			$logger->debug("app server is not dockerized or on different network, setting app server to use $appHostname and port $mongosPort");
 			$hostsMongosCreated{$appIpAddr} = $portMapRef->{$mongosPort};
 		}
 		push @mongosSvrHostnames, $appHostname;

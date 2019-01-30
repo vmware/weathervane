@@ -136,11 +136,9 @@ sub startAuctionDataManagerContainer {
 		$mongodbPort   = $nosqlServerRef->portMap->{'mongod'};
 	}
 	else {
-		# The mongos will be running on an appServer
-		my $appServersRef = $self->appInstance->getActiveServicesByType("appServer");
-		my $appServerRef = $appServersRef->[0];
-		$mongodbHostname = $appServerRef->getIpAddr();
-		$mongodbPort   = $appServerRef->portMap->{'mongos'};
+		# The mongos will be running on the dataManager host
+		$mongodbHostname = $self->host->getIpAddr();
+		$mongodbPort   = $self->internalPortMap->{'mongos'};
 	}
 
 	my $mongodbReplicaSet = "$mongodbHostname:$mongodbPort";

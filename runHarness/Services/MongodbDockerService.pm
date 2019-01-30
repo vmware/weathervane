@@ -504,6 +504,7 @@ override 'start' => sub {
 	print $dblog $self->meta->name . " In MongodbDockerService::start\n";
 			
 	my $isReplicated = 0;
+	my $mongosHostPortListRef;
 	if ( ( $self->numNosqlShards > 0 ) && ( $self->numNosqlReplicas > 0 ) ) {
 		die "Need to implement startShardedReplicatedMongodbDocker";
 	}
@@ -515,7 +516,7 @@ override 'start' => sub {
 		$self->startMongodServers($isReplicated, $dblog);
 		
 		# start mongos servers
-		my $mongosHostPortListRef = $self->startMongosServers($configdbString, $dblog);
+		$mongosHostPortListRef = $self->startMongosServers($configdbString, $dblog);
 		my $mongosHostname = $mongosHostPortListRef->[0];
 		my $mongosPort = $mongosHostPortListRef->[1];
 		

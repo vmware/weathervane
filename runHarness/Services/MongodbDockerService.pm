@@ -166,7 +166,7 @@ sub setPortNumbers {
 
 	my $instanceNumber = $self->getParamValue('instanceNum');
 	$self->internalPortMap->{'mongod'}  = 27017 + $portOffset;
-	$self->internalPortMap->{'mongos'}  = 27017 + $portOffset;
+	$self->internalPortMap->{'mongos'}  = 27017;
 	$self->internalPortMap->{'mongoc1'} = 27019;
 	$self->internalPortMap->{'mongoc2'} = 27020;
 	$self->internalPortMap->{'mongoc3'} = 27021;
@@ -280,13 +280,14 @@ sub configureAfterStart {
 	}
 	elsif ( $self->numNosqlShards > 0 ) {
 		print $applog "Sharding MongoDB\n";
-		my $localPort = $self->portMap->{'mongos'};
+		my $mongosHostname = $mongosHostPortListRef->[0];
+		my $localPort = $mongosHostPortListRef->[1];
 		my $cmdString;
 
 		# Add the shards to the database
 		foreach my $nosqlServer (@$nosqlServersRef) {
 			my $hostname = $nosqlServer->getIpAddr();
-			my $localPort   = $nosqlServer->portMap->{'mongod'};
+			my $port   = $nosqlServer->portMap->{'mongod'};
 			print $applog "Add $hostname as shard.\n";
 			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))'";
 			my $cmdout = `$cmdString`;	

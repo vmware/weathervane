@@ -1106,6 +1106,7 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self)          = @_;
+	$self->portMap->{'mongos'}  = $self->internalPortMap->{'mongos'};
 	$self->portMap->{'mongod'}  = $self->internalPortMap->{'mongod'};
 	$self->portMap->{'mongoc1'} = $self->internalPortMap->{'mongoc1'};
 	$self->portMap->{'mongoc2'} = $self->internalPortMap->{'mongoc2'};

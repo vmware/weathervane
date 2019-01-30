@@ -185,6 +185,13 @@ sub stopAuctionDataManagerContainer {
 
 }
 
+# Auction data manager always uses docker
+sub useDocker {
+	my ($self) = @_;
+	
+	return 1;
+}
+
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");

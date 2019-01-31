@@ -289,7 +289,7 @@ sub configureAfterStart {
 			my $hostname = $nosqlServer->getIpAddr();
 			my $port   = $nosqlServer->portMap->{'mongod'};
 			print $applog "Add $hostname as shard.\n";
-			$cmdString = "mongo --port $localPort --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))' 2>&1";
+			$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))' 2>&1";
 			my $cmdout = `$cmdString`;	
 			print $applog "$cmdString\n";
 			print $applog $cmdout;
@@ -298,37 +298,37 @@ sub configureAfterStart {
 		# enable sharding for the databases
 
 		print $applog "Enabling sharding for auction database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auction\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"auction\\\"))' 2>&1";
 		my $cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for bid database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"bid\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"bid\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for attendanceRecord database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"attendanceRecord\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"attendanceRecord\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for imageInfo database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"imageInfo\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"imageInfo\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for auctionFullImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionFullImages\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"auctionFullImages\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for auctionPreviewImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionPreviewImages\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"auctionPreviewImages\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Enabling sharding for auctionThumbnailImages database.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.enableSharding(\\\"auctionThumbnailImages\\\"))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.enableSharding(\\\"auctionThumbnailImages\\\"))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
@@ -336,36 +336,36 @@ sub configureAfterStart {
 		# Create indexes for collections
 		print $applog "Adding hashed index for userId in attendanceRecord Collection.\n";
 		$cmdString =
-"mongo --port $localPort attendanceRecord --eval 'printjson(db.attendanceRecord.ensureIndex({userId : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname attendanceRecord --eval 'printjson(db.attendanceRecord.ensureIndex({userId : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Adding hashed index for bidderId in bid Collection.\n";
-		$cmdString = "mongo --port $localPort bid --eval 'printjson(db.bid.ensureIndex({bidderId : \\\"hashed\\\"}))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname bid --eval 'printjson(db.bid.ensureIndex({bidderId : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Adding hashed index for entityid in imageInfo Collection.\n";
 		$cmdString =
-		  "mongo --port $localPort imageInfo --eval 'printjson(db.imageInfo.ensureIndex({entityid : \\\"hashed\\\"}))' 2>&1";
+		  "mongo --port $localPort --host $mongosHostname imageInfo --eval 'printjson(db.imageInfo.ensureIndex({entityid : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Adding hashed index for imageid in imageFull Collection.\n";
 		$cmdString =
-"mongo --port $localPort auctionFullImages --eval 'printjson(db.imageFull.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname auctionFullImages --eval 'printjson(db.imageFull.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Adding hashed index for imageid in imagePreview Collection.\n";
 		$cmdString =
-"mongo --port $localPort auctionPreviewImages --eval 'printjson(db.imagePreview.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname auctionPreviewImages --eval 'printjson(db.imagePreview.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Adding hashed index for imageid in imageThumbnail Collection.\n";
 		$cmdString =
-"mongo --port $localPort auctionThumbnailImages --eval 'printjson(db.imageThumbnail.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname auctionThumbnailImages --eval 'printjson(db.imageThumbnail.ensureIndex({imageid : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
@@ -373,44 +373,44 @@ sub configureAfterStart {
 		# shard the collections
 		print $applog "Sharding attendanceRecord collection on hashed userId.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"attendanceRecord.attendanceRecord\\\", {\\\"userId\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"attendanceRecord.attendanceRecord\\\", {\\\"userId\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Sharding bid collection on hashed bidderId.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"bid.bid\\\",{\\\"bidderId\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"bid.bid\\\",{\\\"bidderId\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Sharding imageInfo collection on hashed entityid.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"imageInfo.imageInfo\\\",{\\\"entityid\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"imageInfo.imageInfo\\\",{\\\"entityid\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Sharding imageFull collection on hashed imageid.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionFullImages.imageFull\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"auctionFullImages.imageFull\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Sharding imagePreview collection on hashed imageid.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionPreviewImages.imagePreview\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"auctionPreviewImages.imagePreview\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 		print $applog "Sharding imageThumbnail collection on hashed imageid.\n";
 		$cmdString =
-"mongo --port $localPort --eval 'printjson(sh.shardCollection(\\\"auctionThumbnailImages.imageThumbnail\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
+"mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.shardCollection(\\\"auctionThumbnailImages.imageThumbnail\\\",{\\\"imageid\\\" : \\\"hashed\\\"}))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;
 
 		# disable the balancer
 		print $applog "Disabling the balancer.\n";
-		$cmdString = "mongo --port $localPort --eval 'printjson(sh.setBalancerState(false))' 2>&1";
+		$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.setBalancerState(false))' 2>&1";
 		$cmdout = `$cmdString`;	
 		print $applog "$cmdString\n";
 		print $applog $cmdout;

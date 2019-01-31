@@ -137,7 +137,7 @@ sub startAuctionDataManagerContainer {
 	}
 	else {
 		# The mongos will be running on the dataManager host
-		$mongodbHostname = $self->host->getIpAddr();
+		$mongodbHostname = $self->getIpAddr();
 		$mongodbPort   = $self->internalPortMap->{'mongos'};
 	}
 

@@ -51,10 +51,6 @@ spec:
         - containerPort: 5432
           name: postgresqlport
           protocol: TCP
-        resources:
-          requests:
-            cpu: 2
-            memory: 16Gi
         livenessProbe:
           exec:
             command:

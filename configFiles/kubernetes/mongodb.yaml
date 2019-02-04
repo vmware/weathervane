@@ -46,10 +46,6 @@ spec:
         - containerPort: 27017 
           name: mongodport
           protocol: TCP
-        resources:
-          requests:
-            cpu: 2
-            memory: 16Gi
         livenessProbe:
           exec:
             command:

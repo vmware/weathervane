@@ -53,13 +53,6 @@ spec:
         - containerPort: 8849
           name: jprofilerport
           protocol: TCP
-        resources:
-          requests:
-            cpu: 1
-            memory: 8Gi
-          limits:
-            cpu: 2
-            memory: 8Gi
         livenessProbe:
           exec:
             command:

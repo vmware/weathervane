@@ -241,7 +241,9 @@ sub prepareData {
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
-	$cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);
+	my $cmd = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);
+	print $logHandle "Output: $cmd\n";
+	$logger->debug("Output: $cmd");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		return 0;
@@ -566,6 +568,8 @@ sub loadData {
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
+	print $applog "Command: $cmd\n";
+	print $applog "Output: $outString\n";
 	my @lines = split /\s+/, $outString;
 	if ($#lines < 0) {
 		$console_logger->error("loadData: There are no pods with label auctiondatamanager in namespace $namespace");
@@ -576,6 +580,7 @@ sub loadData {
 	my $podName = $lines[0];
 	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
+	print $applog "opening pipe with command $cmd\n";
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
@@ -583,6 +588,7 @@ sub loadData {
   			print "$line\n";			
 		} 
 		$logger->debug("Got line: $line");
+		print $applog "Got line: $line\n";
    	}
    	close $pipe;	
 	close $applog;
@@ -631,15 +637,17 @@ sub isDataLoaded {
 	print $applog "Exec-ing perl /isDataLoaded.pl\n";
 	$logger->debug("Exec-ing perl /isDataLoaded.pl");
 	my $cmdOut = $cluster->kubernetesExecOne("auctiondatamanager", "perl /isDataLoaded.pl", $namespace);
-	close $applog;
 	if ($?) {
 		$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
+		print $applog "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut\n";
 		return 0;
 	}
 	else {
 		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
+		print $applog "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut\n";
 		return 1;
 	}
+	close $applog;
 
 
 }
@@ -686,8 +694,9 @@ sub cleanData {
 
 	print $logHandle "Exec-ing perl /cleanData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /cleanData.pl  in container $name");
-	$cluster->kubernetesExecOne("auctiondatamanager", "perl /cleanData.pl", $namespace);
-
+	my $cmd = $cluster->kubernetesExecOne("auctiondatamanager", "perl /cleanData.pl", $namespace);
+	print $logHandle "Output: $cmd\n";
+	$logger->debug("Output: $cmd");	
 	if ($?) {
 		$console_logger->error(
 			"Data cleaning process failed.  Check CleanData_W${workloadNum}I${appInstanceNum}.log for more information."

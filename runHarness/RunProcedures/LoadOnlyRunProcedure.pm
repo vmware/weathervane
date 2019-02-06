@@ -149,10 +149,6 @@ sub run {
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
 	$self->cleanup($setupLogDir);
 
-	# Get rid of old results from previous run
-	$debug_logger->debug("clear results");
-	$self->clearResults();
-
 	# redeploy artifacts if selected
 	if ( $self->getParamValue('redeploy') ) {
 		$console_logger->info("Redeploying artifacts for application and workload-driver nodes");

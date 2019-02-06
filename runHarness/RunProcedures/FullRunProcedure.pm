@@ -192,9 +192,6 @@ override 'run' => sub {
 	# Stop the workload drivers
 	$self->stopWorkloads( $seqnum, $tmpDir );
 
-	# Get rid of old results from previous run
-	$self->clearResults();
-
 	my $runResult = RunResult->new(
 		'runNum'                => $seqnum,
 		'isPassable'            => 1,

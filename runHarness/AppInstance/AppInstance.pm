@@ -1712,6 +1712,11 @@ sub getLogFiles {
 	}
 }
 
+sub getDeployedConfiguration {
+	my ( $self, $destinationPath) = @_;
+	
+}
+
 sub getConfigFiles {
 	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -1721,11 +1726,14 @@ sub getConfigFiles {
 	);
 	my $pid;
 	my @pids;
-
+	
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
 		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
 	}
+
+	# If AI is running on Kubernetes, get the layout of the pods
+	$self->getDeployedConfiguration($newBaseDestinationPath);
 
 	#  collection on services
 	my $impl         = $self->getParamValue('workloadImpl');

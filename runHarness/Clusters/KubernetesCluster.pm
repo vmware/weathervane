@@ -70,6 +70,22 @@ override 'registerService' => sub {
 
 };
 
+sub kubernetesGetPods {
+	my ( $self, $resourceType, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetPods in namespace $namespace");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pod --namespace=$namespace -o wide 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+}
+
 sub kubernetesDeleteAll {
 	my ( $self, $resourceType, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

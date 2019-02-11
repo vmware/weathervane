@@ -68,6 +68,20 @@ sub setHost {
 		
 }
 
+override 'getDeployedConfiguration' => sub {
+	my ( $self, $destinationPath) = @_;
+	
+	# Get a host from the first appServer (since there will always be an appServer)
+	my $appServersRef = $self->getActiveServicesByType("appServer");
+	my $anAppServer = $appServersRef->[0];	
+	my $cluster = $anAppServer->host;
+	
+	# Get the pod configuration and save it to a file
+	my $out = $cluster->kubernetesGetPods($self->namespace);
+	my $cmdString = "cat $out > $destinationPath/" . $self->namespace . "-GetPods.txt";
+	`$cmdString`;
+};
+
 override 'startServices' => sub {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");

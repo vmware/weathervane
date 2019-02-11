@@ -71,7 +71,7 @@ override 'registerService' => sub {
 };
 
 sub kubernetesGetPods {
-	my ( $self, $resourceType, $namespace ) = @_;
+	my ( $self, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetPods in namespace $namespace");
 

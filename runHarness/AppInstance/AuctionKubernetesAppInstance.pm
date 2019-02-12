@@ -77,9 +77,13 @@ override 'getDeployedConfiguration' => sub {
 	my $cluster = $anAppServer->host;
 	
 	# Get the pod configuration and save it to a file
+	open( FILEOUT, ">$destinationPath/" . $self->namespace . "-GetPods.txt" )             or die "Can't open file /tmp/namespace-$namespace.yaml: $!\n";	
 	my $out = $cluster->kubernetesGetPods($self->namespace);
-	my $cmdString = "cat $out > $destinationPath/" . $self->namespace . "-GetPods.txt";
-	`$cmdString`;
+	my @out = split /\n/, $out;
+	for my $line (@out) {
+		print FILEOUT "$line\n";
+	}
+	close FILEOUT;
 };
 
 override 'startServices' => sub {

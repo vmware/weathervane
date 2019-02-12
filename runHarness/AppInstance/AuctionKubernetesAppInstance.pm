@@ -77,7 +77,7 @@ override 'getDeployedConfiguration' => sub {
 	my $cluster = $anAppServer->host;
 	
 	# Get the pod configuration and save it to a file
-	open( FILEOUT, ">$destinationPath/" . $self->namespace . "-GetPods.txt" )             or die "Can't open file /tmp/namespace-$namespace.yaml: $!\n";	
+	open( FILEOUT, ">$destinationPath/" . $self->namespace . "-GetPods.txt" ) or die "Can't open file $destinationPath/" . $self->namespace . "-GetPods.txt: $!\n";	
 	my $out = $cluster->kubernetesGetPods($self->namespace);
 	my @out = split /\n/, $out;
 	for my $line (@out) {

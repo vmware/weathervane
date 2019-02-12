@@ -77,7 +77,9 @@ override 'getDeployedConfiguration' => sub {
 	my $cluster = $anAppServer->host;
 	
 	# Get the pod configuration and save it to a file
-	$cluster->kubernetesGetPods($self->namespace);
+	my $out = $cluster->kubernetesGetPods($self->namespace);
+	my $cmdString = "cat $out > $destinationPath/" . $self->namespace . "-GetPods.txt";
+	`$cmdString`;
 };
 
 override 'startServices' => sub {

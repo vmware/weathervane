@@ -83,7 +83,7 @@ sub kubernetesGetPods {
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
-	
+	return $outString;
 }
 
 sub kubernetesDeleteAll {

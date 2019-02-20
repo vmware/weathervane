@@ -15,7 +15,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import java.util.Collection;
+import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -23,9 +23,6 @@ import javax.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoOperations;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
 import org.springframework.data.mongodb.core.query.Query;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
@@ -49,11 +46,6 @@ public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
 		Query query = new Query(where("preloaded").is(preloaded));
 		
 		imageMongoTemplate.remove(query, ImageFull.class);
-	}
-
-	@Override
-	public void insertBatch(Collection<ImageFull> imageFulls) {
-		imageMongoTemplate.insert(imageFulls, ImageFull.class);
 	}
 
 }

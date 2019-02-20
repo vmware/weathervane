@@ -15,8 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import java.util.Collection;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -49,11 +47,6 @@ public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
 		Query query = new Query(where("preloaded").is(preloaded));
 		
 		imageMongoTemplate.remove(query, ImageFull.class);
-	}
-
-	@Override
-	public void insertBatch(Collection<ImageFull> imageFulls) {
-		imageMongoTemplate.insert(imageFulls, ImageFull.class);
 	}
 
 }

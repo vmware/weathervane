@@ -18,7 +18,6 @@ package com.vmware.weathervane.auction.data.repository;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Update.update;
 
-import java.util.Collection;
 import java.util.Date;
 
 import javax.inject.Inject;
@@ -44,17 +43,6 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 	}
 
 	@Override
-	public void deleteByAuctionId(Long auctionId) {
-		Query query = new Query(where("auctionId").is(auctionId));
-		attendanceRecordMongoTemplate.remove(query, AttendanceRecord.class);		
-	}
-
-	@Override
-	public void insertBatch(Collection<AttendanceRecord> attendanceRecords) {
-		attendanceRecordMongoTemplate.insert(attendanceRecords, AttendanceRecord.class);		
-	}
-
-	@Override
 	public void leaveAuctionsForUser(Long userId) {
 		Query query = new Query(where("userId").is(userId).and("state").is(AttendanceRecordState.ATTENDING));
 		attendanceRecordMongoTemplate.updateMulti(query, update("state", AttendanceRecordState.LEFT), AttendanceRecord.class);
@@ -68,12 +56,6 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 		theUpdate.set("lastActiveTime", time);
 		
 		attendanceRecordMongoTemplate.updateMulti(query, theUpdate, AttendanceRecord.class);		
-	}
-
-	@Override
-	public AttendanceRecord findOneByAuctionIdAndUserId(Long auctionId, Long userId) {
-		Query query = new Query(where("userId").is(userId).and("auctionId").is(auctionId));
-		return attendanceRecordMongoTemplate.findOne(query, AttendanceRecord.class);
 	}
 
 }

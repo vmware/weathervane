@@ -26,9 +26,7 @@ import com.vmware.weathervane.auction.data.model.Bid;
 
 @Repository
 public interface BidRepository extends MongoRepository<Bid, String>, BidRepositoryCustom {
-	
-	Long countByBidderId(Long bidderId);
-	
+		
 	Page<Bid> findByBidderId(Long bidderId, Pageable pageable);
 	
 	Page<Bid> findByBidderIdAndBidTimeLessThanEqual(Long bidderId, Date toDate, Pageable pageable);	

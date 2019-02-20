@@ -16,7 +16,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.repository;
 
 import java.util.Date;
-import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,9 +26,7 @@ import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 
 @Repository
 public interface AttendanceRecordRepository extends MongoRepository<AttendanceRecord, String>, AttendanceRecordRepositoryCustom {
-	
-	Long countByUserId(Long userId);
-	
+		
 	Page<AttendanceRecord> findByUserId(Long userId, Pageable pageable);
 	
 	Page<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate, Pageable pageable);	
@@ -38,5 +35,4 @@ public interface AttendanceRecordRepository extends MongoRepository<AttendanceRe
 
 	Page<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate, Pageable pageable);	
 	
-	List<AttendanceRecord> findByUserIdAndAuctionId(Long userId, Long auctionId);
 }

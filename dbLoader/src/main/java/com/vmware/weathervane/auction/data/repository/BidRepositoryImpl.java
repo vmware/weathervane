@@ -17,8 +17,6 @@ package com.vmware.weathervane.auction.data.repository;
 
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
-import java.util.Collection;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -37,11 +35,6 @@ public class BidRepositoryImpl implements BidRepositoryCustom {
 	public void deleteByItemId(Long itemId) {
 		Query query = new Query(where("itemId").is(itemId));
 		bidMongoTemplate.remove(query, Bid.class);
-	}
-	
-	@Override
-	public void insertBatch(Collection<Bid> bids) {
-		bidMongoTemplate.insert(bids, Bid.class);
 	}
 
 }

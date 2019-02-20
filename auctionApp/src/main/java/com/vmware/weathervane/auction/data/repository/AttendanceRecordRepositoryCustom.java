@@ -15,22 +15,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import java.util.Collection;
 import java.util.Date;
-
-import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 
 public interface AttendanceRecordRepositoryCustom {
 	
 	void updateLastActiveTime(Long auctionId, Long userId, Date time);
-
-	AttendanceRecord findOneByAuctionIdAndUserId(Long auctionId, Long userId);
 	
 	void leaveAuctionForUser(Long auctionId, Long userId, Date time);
 
 	void leaveAuctionsForUser(Long userId);
 	
-	void deleteByAuctionId(Long auctionId);
-
-	void insertBatch(Collection<AttendanceRecord> attendanceRecords);
 }

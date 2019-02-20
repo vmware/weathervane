@@ -15,13 +15,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import java.util.Collection;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-
 public interface ImageInfoRepositoryCustom {
 		
 	void deleteByPreloaded(boolean preloaded);
 
-	void insertBatch(Collection<ImageInfo> imageInfos);
 }

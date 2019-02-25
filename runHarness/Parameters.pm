@@ -1497,6 +1497,7 @@ $parameters{"dockerServiceImages"} = {
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
+		"cassandra"  => "weathervane-cassandra",
 		"zookeeper"  => "weathervane-zookeeper",
 		"webConfig"  => "weathervane-configurationmanager",
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
@@ -1885,7 +1886,7 @@ $parameters{"nosqlServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "mongodb",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which NoSQL data-store to use.\n\t" . "Currently only MongoDB is supported.",
+	"usageText" => "Controls which NoSQL data-store to use.\n\t" . "Currently only Cassandra is supported.",
 	"showUsage" => 0,
 };
 $parameters{"msgServerImpl"} = {

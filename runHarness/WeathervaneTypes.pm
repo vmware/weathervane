@@ -60,7 +60,7 @@ our %serviceImpls = (
 	'appServer'   => [ 'tomcat' ],
 	'auctionBidServer'   => [ 'auctionbidservice' ],
 	'dbServer'    => [ 'mysql', 'postgresql' ],
-	'nosqlServer' => ['mongodb'],
+	'nosqlServer' => ['mongodb', 'cassandra'],
 	'msgServer'   => ['rabbitmq'],
 	'fileServer'  => ['nfs'],
 );

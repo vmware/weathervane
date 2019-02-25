@@ -20,6 +20,11 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: mongodb
+  labels:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: mongodb
 spec:
   serviceName: mongodb
   replicas: 1

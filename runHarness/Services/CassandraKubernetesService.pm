@@ -64,6 +64,7 @@ sub configure {
 
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
+	my $dataVolumeSize = $self->getParamValue("cassandraDataVolumeSize");
 
 	open( FILEIN,  "$configDir/kubernetes/cassandra.yaml" ) or die "$configDir/kubernetes/cassandra.yaml: $!\n";
 	open( FILEOUT, ">/tmp/cassandra-$namespace.yaml" )             or die "Can't open file /tmp/cassandra-$namespace.yaml: $!\n";	
@@ -91,43 +92,25 @@ sub configure {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";
 		}
-#		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
-#			print FILEOUT $inline;
-#			while ( my $inline = <FILEIN> ) {
-#				if ( $inline =~ /(\s+)name:\spostgresql\-data/ ) {
-#					print FILEOUT $inline;
-#					while ( my $inline = <FILEIN> ) {
-#						if ( $inline =~ /(\s+)storageClassName:/ ) {
-#							my $storageClass = $self->getParamValue("postgresqlDataStorageClass");
-#							print FILEOUT "${1}storageClassName: $storageClass\n";
-#							last;
-#						} elsif ($inline =~ /^(\s+)storage:/ ) {
-#							print FILEOUT "${1}storage: $dataVolumeSize\n";
-#						} else {
-#							print FILEOUT $inline;
-#						}	
-#					}
-#				} elsif ( $inline =~ /(\s+)name:\spostgresql\-logs/ ) {
-#					print FILEOUT $inline;
-#					while ( my $inline = <FILEIN> ) {
-#						if ( $inline =~ /(\s+)storageClassName:/ ) {
-#							my $storageClass = $self->getParamValue("postgresqlLogStorageClass");
-#							print FILEOUT "${1}storageClassName: $storageClass\n";
-#							last;
-#						} elsif ($inline =~ /^(\s+)storage:/ ) {
-#							print FILEOUT "${1}storage: $logVolumeSize\n";
-#						} else {
-#							print FILEOUT $inline;
-#						}	
-#					}
-#				} elsif ( $inline =~ /\-\-\-/ ) {
-#					print FILEOUT $inline;
-#					last;
-#				} else {
-#					print FILEOUT $inline;					
-#				}
-#			}
-#		}
+		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if ( $inline =~ /(\s+)name:\scassandra\-data/ ) {
+					print FILEOUT $inline;
+					while ( my $inline = <FILEIN> ) {
+						if ( $inline =~ /(\s+)storageClassName:/ ) {
+							my $storageClass = $self->getParamValue("cassandraDataStorageClass");
+							print FILEOUT "${1}storageClassName: $storageClass\n";
+							last;
+						} elsif ($inline =~ /^(\s+)storage:/ ) {
+							print FILEOUT "${1}storage: $dataVolumeSize\n";
+						} else {
+							print FILEOUT $inline;
+						}	
+					}
+				}
+			}
+		}
 		else {
 			print FILEOUT $inline;
 		}
@@ -141,22 +124,18 @@ sub configure {
 	# if the size doesn't match the requested size.  
 	# This is to make sure that we are running the
 	# correct configuration size
-#	my $cluster = $self->host;
-#	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-data-postgresql-0", $self->namespace);
-#	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
-#		$cluster->kubernetesDelete("pvc", "postgresql-data-postgresql-0", $self->namespace);
-#	}	
-#	$curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-logs-postgresql-0", $self->namespace);
-#	if (($curPvcSize ne "") && ($curPvcSize ne $logVolumeSize)) {
-#		$cluster->kubernetesDelete("pvc", "postgresql-logs-postgresql-0", $self->namespace);
-#	}	
+	my $cluster = $self->host;
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("cassandra-data-cassandra-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDeleteAllWithLabelAndResourceType("impl=cassandra,type=nosqlServer", "pvc", $self->namespace);
+	}
 
 }
 
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/bin/sh -i -c 'nodetool status | grep $POD_IP | grep -Eq UN'", $self->namespace );
+	$cluster->kubernetesExecOne ($self->getImpl(), "perl /isUp.pl", $self->namespace );
 	my $exitValue=$? >> 8;
 	if ($exitValue) {
 		return 0;

@@ -23,6 +23,12 @@ metadata:
     impl: cassandra
 spec:
   serviceName: cassandra
+  selector:
+    matchLabels:
+      app: auction
+      tier: data
+      type: nosqlServer
+      impl: cassandra
   replicas: 3
   template:
     metadata:

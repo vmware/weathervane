@@ -4,6 +4,7 @@ MAINTAINER hrosenbe@vmware.com
 COPY cassandra.repo /etc/yum.repos.d/cassandra.repo
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl    
+COPY isUp.pl /isUp.pl    
 COPY cassandra-init.sh /cassandra-init.sh    
 COPY cassandra.yaml /cassandra.yaml
 

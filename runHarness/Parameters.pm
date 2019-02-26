@@ -3035,6 +3035,38 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"cassandraUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"cassandraDataStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"cassandraDataVolume"} = {
+	"type"      => "=s",
+	"default"   => "cassandraData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"cassandraDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "100Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"mongodbDataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/mongoData",

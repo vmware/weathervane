@@ -15,8 +15,7 @@ RUN yum install -y java-1.8.0-openjdk && \
 	mkdir -p /data/commitlog && \
     chmod +x /entrypoint.sh 
     
-VOLUME ["/data/data"]
-VOLUME ["/data/commitlog"]
+VOLUME ["/data"]
 
 EXPOSE 7000 7001 7199 9042
 

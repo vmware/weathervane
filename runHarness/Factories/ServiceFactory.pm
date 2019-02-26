@@ -31,6 +31,7 @@ use Services::MysqlService;
 use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
+use Services::CassandraKubernetesService;
 use Services::MongodbService;
 use Services::MongodbKubernetesService;
 use Services::MongodbDockerService;
@@ -210,6 +211,16 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
+	}
+	elsif ( $serviceName eq "cassandra" ) {
+		if ($paramHashRef->{'clusterName'}) {
+			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+				$service = CassandraKubernetesService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
+			}		
+		} 
 	}
 	elsif ( $serviceName eq "mongodb" ) {
 		if ($paramHashRef->{'clusterName'}) {

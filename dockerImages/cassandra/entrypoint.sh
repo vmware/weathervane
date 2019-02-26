@@ -2,9 +2,10 @@
 
 sigterm()
 {
-   echo "signal TERM received."
-   systemctl stop cassandra
+   echo "signal TERM received pid = $pid."
    rm -f /fifo
+   nodetool decommission
+   nodetool stopdaemon
    exit 0
 }
 
@@ -17,14 +18,16 @@ if [ $CLEARBEFORESTART -eq 1 ]; then
   echo "Clearing old Cassandra data"
 fi
 
-perl /configure.pl
-
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
 	echo "starting cassandra"
-	systemctl start cassandra
+	setsid /cassandra-init.sh &
 fi
+
+pid="$!"
+
+tail -f /var/log/cassandra/* &
 
 if [ ! -e "/fifo" ]; then
 	mkfifo /fifo || exit

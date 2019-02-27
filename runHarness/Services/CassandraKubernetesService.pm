@@ -78,7 +78,7 @@ sub configure {
 			print FILEOUT "  CASSANDRA_CLUSTER_NAME: \"$namespace\"\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
-			print FILEOUT "  replicas: $numAppServers\n";
+			print FILEOUT "  replicas: $numServers\n";
 		}
 		elsif ( $inline =~ /(\s+)cpu:/ ) {
 			print FILEOUT "${1}cpu: " . $self->getParamValue('nosqlServerCpus') . "\n";
@@ -109,6 +109,11 @@ sub configure {
 							print FILEOUT $inline;
 						}	
 					}
+				} elsif ( $inline =~ /\-\-\-/ ) {
+					print FILEOUT $inline;
+					last;
+				} else {
+					print FILEOUT $inline;					
 				}
 			}
 		}

@@ -65,6 +65,7 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 	my $dataVolumeSize = $self->getParamValue("cassandraDataVolumeSize");
+	my $numServers = $self->appInstance->getNumActiveOfServiceType('nosqlServer');
 
 	open( FILEIN,  "$configDir/kubernetes/cassandra.yaml" ) or die "$configDir/kubernetes/cassandra.yaml: $!\n";
 	open( FILEOUT, ">/tmp/cassandra-$namespace.yaml" )             or die "Can't open file /tmp/cassandra-$namespace.yaml: $!\n";	
@@ -75,6 +76,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {
 			print FILEOUT "  CASSANDRA_CLUSTER_NAME: \"$namespace\"\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numAppServers\n";
 		}
 		elsif ( $inline =~ /(\s+)cpu:/ ) {
 			print FILEOUT "${1}cpu: " . $self->getParamValue('nosqlServerCpus') . "\n";

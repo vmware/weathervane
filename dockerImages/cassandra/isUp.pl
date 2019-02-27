@@ -4,8 +4,11 @@ use strict;
 use POSIX;
 
 my $hostname = `hostname`;
+chomp($hostname);
+
 my $host = `host ${hostname}.cassandra`;
-$host =~ /^address\s(.*)$/;
+chomp($host);
+$host =~ /address\s(\d+\.\d+\.\d+\.\d+).*$/;
 my $ip = $1;
 
 my $status = `nodetool status | grep $ip`;

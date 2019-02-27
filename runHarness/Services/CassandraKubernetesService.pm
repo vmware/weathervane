@@ -72,7 +72,7 @@ sub configure {
 	while ( my $inline = <FILEIN> ) {
 
 		if ( $inline =~ /CASSANDRA_SEEDS:/ ) {
-			print FILEOUT "  CASSANDRA_SEEDS: \"cassandra-0.cassandra.${namespace}.default.svc.cluster.local\"\n";
+			print FILEOUT "  CASSANDRA_SEEDS: \"cassandra-0.cassandra.${namespace}.svc.cluster.local\"\n";
 		}
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {
 			print FILEOUT "  CASSANDRA_CLUSTER_NAME: \"$namespace\"\n";

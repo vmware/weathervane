@@ -70,10 +70,7 @@ sub configure {
 	open( FILEOUT, ">/tmp/cassandra-$namespace.yaml" )             or die "Can't open file /tmp/cassandra-$namespace.yaml: $!\n";	
 	while ( my $inline = <FILEIN> ) {
 
-		if ( $inline =~ /CLEARBEFORESTART:/ ) {
-			print FILEOUT "  CLEARBEFORESTART: \"" . $self->clearBeforeStart . "\"\n";
-		}
-		elsif ( $inline =~ /CASSANDRA_SEEDS:/ ) {
+		if ( $inline =~ /CASSANDRA_SEEDS:/ ) {
 			print FILEOUT "  CASSANDRA_SEEDS: \"cassandra-0.cassandra.${namespace}.default.svc.cluster.local\"\n";
 		}
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {

@@ -10,7 +10,6 @@ metadata:
 data:
   CASSANDRA_SEEDS: "cassandra-0.cassandra.default.svc.cluster.local"
   CASSANDRA_CLUSTER_NAME: "Auction"
-  CLEARBEFORESTART: "0"
 ---
 apiVersion: apps/v1
 kind: StatefulSet

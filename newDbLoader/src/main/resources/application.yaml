@@ -1,0 +1,18 @@
+cassandra:
+  contactpoints: cassandra
+  keyspace: auction
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgresql:5432/auction"
+    username: auction
+    password: auction
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    hibernate:
+      ddl-auto: validate
+      

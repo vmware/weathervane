@@ -28,7 +28,7 @@ our @workloadImpls = ('auction');
 
 # valid service types 
 our %serviceTypes = ( 
-	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'appServer', 'auctionBidServer'], 
+	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer'], 
 );
 
 # services that can be run on docker
@@ -43,7 +43,7 @@ our %dockerServiceTypes = (
 # Map workload to serviceTier to serviceType in each tier
 our %workloadToServiceTypes = ('auction' => {
 	'infrastructure' => ['configurationManager', 'elasticityService'],
-	'data' => ['dbServer', 'nosqlServer', 'fileServer', 'msgServer', 'coordinationServer'],
+	'data' => ['dbServer', 'nosqlServer', 'msgServer', 'coordinationServer'],
 	'backend' => ['appServer', 'auctionBidServer'],
 	'frontend' => ['webServer', 'lbServer', 'ipManager'],
 	}
@@ -60,13 +60,12 @@ our %serviceImpls = (
 	'appServer'   => [ 'tomcat' ],
 	'auctionBidServer'   => [ 'auctionbidservice' ],
 	'dbServer'    => [ 'mysql', 'postgresql' ],
-	'nosqlServer' => ['mongodb', 'cassandra'],
+	'nosqlServer' => ['cassandra'],
 	'msgServer'   => ['rabbitmq'],
-	'fileServer'  => ['nfs'],
 );
 
 our @virtualInfrastructureTypes = ('vsphere');
-our @imageStoreTypes            = ( 'filesystem', 'filesystemApp', 'memory', 'mongodb' );
+our @imageStoreTypes            = ( 'memory', 'cassandra' );
 our @oses                  = ('centos6', 'ubuntu');
 our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');

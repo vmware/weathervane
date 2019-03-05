@@ -4,7 +4,7 @@ cassandra:
 
 spring:
   datasource:
-    url: jdbc:postgresql://postgresql:5432/auction"
+    url: jdbc:postgresql://postgresql:5432/auction
     username: auction
     password: auction
   jpa:

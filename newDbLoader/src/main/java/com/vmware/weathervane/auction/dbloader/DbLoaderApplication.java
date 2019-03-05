@@ -7,11 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 import com.vmware.weathervane.auction.data.dao.AuctionMgmtDao;
 import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 
 @SpringBootApplication
+@ComponentScan("com.vmware.weathervane.auction.data")
 public class DbLoaderApplication {
 	private static String numThreadsDefault = "30";
 	private static String itemFileDefault = "items.json";

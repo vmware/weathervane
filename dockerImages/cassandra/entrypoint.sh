@@ -16,6 +16,8 @@ perl /updateResolveConf.pl
 
 if [ $CLEARBEFORESTART -eq 1 ]; then
   echo "Clearing old Cassandra data"
+  find /data/data/* -delete
+  find /data/commitlog/* -delete
 fi
 
 if [ $# -gt 0 ]; then

@@ -54,7 +54,7 @@ GetOptions('help' => \$help,
 			'private!' => \$private
 			);
 
-my @imageNames = qw(centos7 auctiondatamanager auctionworkloaddriver auctionappserverwarmer haproxy cassandra mongodb nginx postgresql rabbitmq zookeeper configurationmanager tomcat auctionbidservice);
+my @imageNames = qw(centos7 auctiondatamanager auctionworkloaddriver auctionappserverwarmer haproxy cassandra nginx postgresql rabbitmq zookeeper configurationmanager tomcat auctionbidservice);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }

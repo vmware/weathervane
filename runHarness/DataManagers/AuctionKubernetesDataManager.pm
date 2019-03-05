@@ -226,18 +226,6 @@ sub prepareData {
 		}
 	}
 
-	# If the imageStore type is filesystem, then clean added images from the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-
-		my $fileServersRef    = $self->appInstance->getActiveServicesByType('fileServer');
-		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-			`$sshConnectString \"find $imageStoreDataDir -name '*added*' -delete 2>&1\"`;
-		}
-
-	}
-
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
@@ -248,15 +236,6 @@ sub prepareData {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		return 0;
 	}
-
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-#	my $nosqlServerRef = $nosqlServersRef->[0];
-#	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-#		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $logHandle );
-#	}
 
 	# stop the auctiondatamanager container
 	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
@@ -593,15 +572,6 @@ sub loadData {
    	close $pipe;	
 	close $applog;
 	
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-#	my $nosqlServerRef = $nosqlServersRef->[0];
-#	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-#		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $applog );
-#	}
-
 	close $applog;
 
 	# Now make sure that the data is really loaded properly
@@ -670,24 +640,6 @@ sub cleanData {
 		"Cleaning and compacting storage on all data services.  This can take a long time after large runs." );
 	$logger->debug("cleanData.  user = $users");
 
-	# If the imageStore type is filesystem, then clean added images from the filesystem
-#	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-#		$logger->debug("cleanData. Deleting added images from fileserver");
-#
-#		my $fileServersRef    = $self->appInstance->getActiveServicesByType('fileServer');
-#		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
-#		foreach my $fileServer (@$fileServersRef) {
-#			$logger->debug(
-#				"cleanData. Deleting added images for workload ",
-#				$workloadNum, " appInstance ",
-#				$appInstanceNum, " on host ", $fileServer->getIpAddr()
-#			);
-#			my $sshConnectString = $fileServer->host->sshConnectString;
-#			`$sshConnectString \"find $imageStoreDataDir -name '*added*' -delete 2>&1\"`;
-#		}
-#
-#	}
-
 	$logger->debug(
 		"cleanData. Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n";
@@ -704,15 +656,6 @@ sub cleanData {
 		return 0;
 	}
 	
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-#	my $nosqlService = $nosqlServersRef->[0];
-#	if (   ( $nosqlService->numNosqlReplicas > 0 )
-#		&& ( $nosqlService->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $logHandle );
-#	}
-
 	if ( $self->getParamValue('mongodbCompact') ) {
 
 		# Compact all mongodb collections

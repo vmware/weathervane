@@ -8,6 +8,7 @@ metadata:
     type: nosqlServer
     impl: cassandra
 data:
+  CLEARBEFORESTART: "0"
   CASSANDRA_SEEDS: "cassandra-0.cassandra.default.svc.cluster.local"
   CASSANDRA_CLUSTER_NAME: "Auction"
 ---

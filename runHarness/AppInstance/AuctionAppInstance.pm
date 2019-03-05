@@ -193,22 +193,6 @@ override 'checkConfig' => sub {
 		return 0;
 	}
 
-	if ( ( $imageStoreType eq "filesystem" ) || ( $imageStoreType eq "filesystemApp" ) ) {
-		if ( $numFileServers <= 0 ) {
-			$console_logger->error(
-"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is filesystem or filesystemApp, then number of fileServers must be 1 or more, got $numFileServers"
-			);
-			return 0;
-		}
-	}
-	else {
-		if ( $numFileServers > 0 ) {
-			$console_logger->error(
-				"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is not filesystem or filesystemApp, then number of fileServers must be 0");
-			return 0;
-		}
-	}
-
 	if ( ( $numCoordinationServers != 1 ) && ( $numCoordinationServers != 3 ) ) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The number of Coordination Servers must be 1 or 3");
 		return 0;
@@ -294,29 +278,6 @@ override 'redeploy' => sub {
 		}
 	}
 	
-	# Figure out if mongodb is using docker, and if so pull docker images
-	# to app servers and data manager
-	my $nosqlServicesRef = $self->getAllServicesByType('nosqlServer');
-	my $nosqlServer      = $nosqlServicesRef->[0];
-	if ( $nosqlServer->getParamValue('useDocker') ) {
-		my $appServicesRef = $self->getAllServicesByType('appServer');
-		foreach my $appServer (@$appServicesRef) {
-			my $host = $appServer->host;
-			my $hostname = $host->hostName;
-			my $sshConnectString = $host->sshConnectString;
-			if ($host->isNonDocker()) {			
-				my $ls          = `$sshConnectString \"ls\" 2>&1`;
-				if ( $ls =~ /No route/ ) {
-					# This host is not up so can't redeploy
-					$logger->debug("Don't redeploy to $hostname as it is not up.");
-					next;
-				}
-			}
-			$appServer->host->dockerPull( $logfile, $nosqlServer->getImpl() );
-		}
-		$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
-	}
-
 	# Pull the datamanager image
 	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
 	
@@ -534,24 +495,11 @@ sub getSpringProfilesActive {
 	}
 
 	my $imageStore = $self->getParamValue('imageStoreType');
-	if ( ( $imageStore eq "filesystem" ) || ( $imageStore eq "filesystemApp" ) ) {
-		$springProfilesActive .= ",imagesInFilesystem";
-	}
-	elsif ( $imageStore eq "mongodb" ) {
-		$springProfilesActive .= ",imagesInMongo";
+	if ( $imageStore eq "cassandra" ) {
+		$springProfilesActive .= ",imagesInCassandra";
 	}
 	elsif ( $imageStore eq "memory" ) {
 		$springProfilesActive .= ",imagesInMemory";
-	}
-
-	if ( $self->getParamValue('nosqlSharded') ) {
-		$springProfilesActive .= ",shardedMongo";
-	}
-	elsif ( $self->getParamValue('nosqlReplicated') ) {
-		$springProfilesActive .= ",replicatedMongo";
-	}
-	else {
-		$springProfilesActive .= ",singleMongo";
 	}
 
 	my $numMsgServers = $self->getNumActiveOfServiceType('msgServer');

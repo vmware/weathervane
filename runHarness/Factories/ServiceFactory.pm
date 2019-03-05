@@ -32,9 +32,6 @@ use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::CassandraKubernetesService;
-use Services::MongodbService;
-use Services::MongodbKubernetesService;
-use Services::MongodbDockerService;
 use Services::ZookeeperService;
 use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
@@ -221,26 +218,6 @@ sub getServiceByType {
 				);
 			}		
 		} 
-	}
-	elsif ( $serviceName eq "mongodb" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = MongodbKubernetesService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
-		} elsif ($docker) {
-			$service = MongodbDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {			
-			$service = MongodbService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
 	}
 	elsif ( $serviceName eq "rabbitmq" ) {
 		if ($paramHashRef->{'clusterName'}) {

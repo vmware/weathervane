@@ -33,6 +33,12 @@ has '+version' => ( default => '3.11', );
 
 has '+description' => ( default => '', );
 
+has 'clearBeforeStart' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -44,16 +50,7 @@ sub clearDataBeforeStart {
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
 	my $name        = $self->getParamValue('dockerName');
 	$logger->debug("clearDataBeforeStart for $name");
-}
-
-sub clearDataAfterStart {
-	my ( $self, $logPath ) = @_;
-	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
-	my $cluster    = $self->host;
-	my $name        = $self->getParamValue('dockerName');
-
-	$logger->debug("clearDataAfterStart for $name");
-
+	$self->clearBeforeStart(1);
 }
 
 sub configure {
@@ -71,7 +68,10 @@ sub configure {
 	open( FILEOUT, ">/tmp/cassandra-$namespace.yaml" )             or die "Can't open file /tmp/cassandra-$namespace.yaml: $!\n";	
 	while ( my $inline = <FILEIN> ) {
 
-		if ( $inline =~ /CASSANDRA_SEEDS:/ ) {
+		if ( $inline =~ /CLEARBEFORESTART:/ ) {
+			print FILEOUT "  CLEARBEFORESTART: \"" . $self->clearBeforeStart . "\"\n";
+		}
+		elsif ( $inline =~ /CASSANDRA_SEEDS:/ ) {
 			print FILEOUT "  CASSANDRA_SEEDS: \"cassandra-0.cassandra.${namespace}.svc.cluster.local\"\n";
 		}
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {

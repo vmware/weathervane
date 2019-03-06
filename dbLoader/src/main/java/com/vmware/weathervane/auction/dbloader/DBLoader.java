@@ -177,18 +177,17 @@ public class DBLoader {
 					"The spring.profiles.active property must be set for the dbLoader. " + messageString);
 		}
 		String imageStoreType;
-		if (springProfilesActive.contains("Filesystem")) {
-			imageStoreType = "filesystem";
-		} else if (springProfilesActive.contains("Mongo")) {
-			imageStoreType = "mongodb";
+		if (springProfilesActive.contains("Memory")) {
+			imageStoreType = "memory";
+		} else if (springProfilesActive.contains("Cassandra")) {
+			imageStoreType = "cassandra";
 		} else {
 			throw new RuntimeException(
-					"The spring.profiles.active property be either imagesInMongo or imagesInFilesystem for the DBLoader. " + messageString);
+					"The spring.profiles.active property be either imagesInCassandra or imagesInMemory for the DBLoader. " + messageString);
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {
-				"application-context.xml", "datasource-context.xml", "jpa-context.xml",
-				"mongo-context.xml" });
+				"application-context.xml", "datasource-context.xml", "jpa-context.xml" });
 		dbLoaderDao = (DbLoaderDao) context.getBean("dbLoaderDao");
     	auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
 		imageStore = (ImageStoreFacade) context.getBean("imageStoreFacade");
@@ -369,7 +368,7 @@ public class DBLoader {
 
 		if (dbLoaderWorkEstimate == null) {
 			dbLoaderWorkEstimate = new DbLoaderWorkEstimate();
-			if (imageStoreType.equals("mongodb")) {
+			if (imageStoreType.equals("cassandra")) {
 				dbLoaderWorkEstimate.setUserWork(0.0004);
 				dbLoaderWorkEstimate.setHistoryWork(0.00085);
 				dbLoaderWorkEstimate.setFutureWork(0.00015);

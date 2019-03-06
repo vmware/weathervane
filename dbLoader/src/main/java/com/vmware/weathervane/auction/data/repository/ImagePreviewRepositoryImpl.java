@@ -24,7 +24,7 @@ public class ImagePreviewRepositoryImpl implements ImagePreviewRepositoryCustom 
 	CassandraOperations cassandraOperations;
 	
 	@Override
-	public void deleteByPreloaded(boolean preloaded) {
+	public void deleteByKeyPreloaded(boolean preloaded) {
 		String cql = "DELETE FROM image_preview WHERE preloaded = " + preloaded + ";";
 		cassandraOperations.execute(cql);
 	}

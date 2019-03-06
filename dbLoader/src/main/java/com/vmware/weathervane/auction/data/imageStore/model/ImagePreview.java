@@ -16,33 +16,81 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.imageStore.model;
 
 import java.io.Serializable;
+import java.util.Objects;
+import java.util.UUID;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.cassandra.core.Ordering;
+import org.springframework.cassandra.core.PrimaryKeyType;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
+import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
+@Table("image_preview")
 public class ImagePreview implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	@Id
-	private String id;
+	@PrimaryKeyClass
+	public static class ImagePreviewKey  implements Serializable {
 
-	@Indexed
-	private String imageid;	
+		private static final long serialVersionUID = 1L;
+
+		@PrimaryKeyColumn(name="image_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
+		private UUID imageId;	
+
+		/*
+		 * The field is used by the Weathervane benchmark infrastructure to 
+		 * simplify cleanup between runs.
+		 */
+		@PrimaryKeyColumn(name="preloaded", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.DESCENDING)
+		private boolean preloaded;
+	
+		public UUID getImageId() {
+			return imageId;
+		}
+
+		public void setImageId(UUID imageId) {
+			this.imageId = imageId;
+		}
+
+		public boolean isPreloaded() {
+			return preloaded;
+		}
+
+		public void setPreloaded(boolean preloaded) {
+			this.preloaded = preloaded;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(imageId, preloaded);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ImagePreviewKey other = (ImagePreviewKey) obj;
+			return Objects.equals(imageId, other.imageId) && preloaded == other.preloaded;
+		}
+	}
+	
+	@PrimaryKey
+	private ImagePreviewKey key;
 	
 	private byte[] image;
 
-	/*
-	 * The field is used by the Weathervane benchmark infrastructure to 
-	 * simplify cleanup between runs.
-	 */
-	@Indexed
-	private boolean preloaded;
-	
-	public String getId() {
-		return id;
+	public ImagePreviewKey getKey() {
+		return key;
+	}
+
+	public void setKey(ImagePreviewKey key) {
+		this.key = key;
 	}
 
 	public byte[] getImage() {
@@ -51,21 +99,5 @@ public class ImagePreview implements Serializable {
 
 	public void setImage(byte[] image) {
 		this.image = image;
-	}
-
-	public String getImageid() {
-		return imageid;
-	}
-
-	public void setImageid(String imageid) {
-		this.imageid = imageid;
-	}
-
-	public boolean isPreloaded() {
-		return preloaded;
-	}
-
-	public void setPreloaded(boolean preloaded) {
-		this.preloaded = preloaded;
 	}
 }

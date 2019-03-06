@@ -17,74 +17,126 @@ package com.vmware.weathervane.auction.data.imageStore.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.cassandra.core.Ordering;
+import org.springframework.cassandra.core.PrimaryKeyType;
+import org.springframework.data.cassandra.mapping.Column;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
+import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
-@CompoundIndexes({
-	@CompoundIndex(name="ent_id_type_idx", def="{'entityid': 1, 'entitytype': 1 }")
-})
+@Table("image_info")
 public class ImageInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	@Id
-	private String id;
+	@PrimaryKeyClass
+	public static class ImageInfoKey implements Serializable {
 
-	private String entitytype;	
+		private static final long serialVersionUID = 1L;
+
+		@PrimaryKeyColumn(name="entity_type", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
+		private String entitytype;	
+
+		@PrimaryKeyColumn(name="entity_id", ordinal= 1, type=PrimaryKeyType.PARTITIONED)
+		private Long entityid;
+
+		/*
+		 * The field is used by the Weathervane benchmark infrastructure to 
+		 * simplify cleanup between runs.
+		 */
+		@PrimaryKeyColumn(name="preloaded", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
+		private boolean preloaded;
 	
-	private Long entityid;
-			
+		public String getEntitytype() {
+			return entitytype;
+		}
+
+		public void setEntitytype(String entitytype) {
+			this.entitytype = entitytype;
+		}
+
+		public Long getEntityid() {
+			return entityid;
+		}
+
+		public void setEntityid(Long entityid) {
+			this.entityid = entityid;
+		}
+
+		public boolean isPreloaded() {
+			return preloaded;
+		}
+
+		public void setPreloaded(boolean preloaded) {
+			this.preloaded = preloaded;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(entityid, entitytype, preloaded);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ImageInfoKey other = (ImageInfoKey) obj;
+			return Objects.equals(entityid, other.entityid) && Objects.equals(entitytype, other.entitytype)
+					&& preloaded == other.preloaded;
+		}
+	}
+	
+	@PrimaryKey
+	private ImageInfoKey key;
+	
+	@Column("image_id")
+	private UUID imageId;
+	
 	private String name;
 	private String format;
-
-	@Indexed
-	private String filepath;
 	
 	private Long imagenum = 0L;
 	
 	private Date dateadded;
 	
-	/*
-	 * The field is used by the Weathervane benchmark infrastructure to 
-	 * simplify cleanup between runs.
-	 */
-	@Indexed
-	private boolean preloaded;
 	
 	public ImageInfo() {
 		
 	}
 	
 	public ImageInfo(ImageInfo that) {
-		this.id = that.id;
-		this.entitytype = that.entitytype;
-		this.entityid = that.entityid;
+		this.key = new ImageInfoKey();
+		this.key.entitytype = that.key.entitytype;
+		this.key.entityid = that.key.entityid;
+		this.key.preloaded = that.key.preloaded;
 		this.name = that.name;
 		this.format = that.format;
-		this.filepath = that.filepath;
 		this.imagenum = that.imagenum;
 		this.dateadded = that.dateadded;
 	}
 	
-	public void setId(String id) {
-		this.id = id;
+	public ImageInfoKey getKey() {
+		return key;
 	}
 
-	public String getId() {
-		return id;
+	public void setKey(ImageInfoKey key) {
+		this.key = key;
 	}
 
-	public Long getEntityid() {
-		return entityid;
+	public UUID getImageId() {
+		return imageId;
 	}
 
-	public void setEntityid(Long entityid) {
-		this.entityid = entityid;
+	public void setImageId(UUID imageId) {
+		this.imageId = imageId;
 	}
 
 	public String getName() {
@@ -103,14 +155,6 @@ public class ImageInfo implements Serializable {
 		this.format = format;
 	}
 
-	public String getEntitytype() {
-		return entitytype;
-	}
-
-	public void setEntitytype(String entitytype) {
-		this.entitytype = entitytype;
-	}
-
 	public Long getImagenum() {
 		return imagenum;
 	}
@@ -125,22 +169,6 @@ public class ImageInfo implements Serializable {
 
 	public void setDateadded(Date dateadded) {
 		this.dateadded = dateadded;
-	}
-
-	public boolean isPreloaded() {
-		return preloaded;
-	}
-
-	public void setPreloaded(boolean preloaded) {
-		this.preloaded = preloaded;
-	}
-
-	public String getFilepath() {
-		return filepath;
-	}
-
-	public void setFilepath(String filepath) {
-		this.filepath = filepath;
 	}
 	
 }

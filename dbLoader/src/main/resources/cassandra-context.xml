@@ -26,12 +26,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
     ">
 
-<context:property-placeholder location="classpath:cassandra.properties" />
+<context:property-placeholder location="classpath*:cassandra.properties" />
 
 <cassandra:cluster contact-points="${cassandra.contactpoints}"
 port="${cassandra.port}" />
 
-<cassandra:session keyspace-name="${cassandra.keyspace}" />
+<cassandra:session keyspace-name="${cassandra.keyspace}" schema-action="CREATE_IF_NOT_EXISTS"/>
 
 <cassandra:mapping>
   <cassandra:user-type-resolver keyspace-name="${cassandra.keyspace}" />

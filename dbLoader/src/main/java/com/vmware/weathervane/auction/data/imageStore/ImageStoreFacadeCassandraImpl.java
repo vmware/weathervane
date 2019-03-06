@@ -272,7 +272,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		logger.info("retrieveImage imageHandle = " + imageHandle + ", imageSize = " + size);
 		switch (size) {
 		case THUMBNAIL:
-			List<ImageThumbnail> thumbs = imageThumbnailRepository.findByKeyFirstImageId(imageHandle);
+			List<ImageThumbnail> thumbs = imageThumbnailRepository.findByKeyImageId(imageHandle);
 			if (thumbs == null) {
 				logger.warn("retrieveImage thumbs = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
@@ -281,7 +281,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			return thumbs.get(0).getImage();
 
 		case PREVIEW:
-			List<ImagePreview> previews = imagePreviewRepository.findByKeyFirstImageId(imageHandle);
+			List<ImagePreview> previews = imagePreviewRepository.findByKeyImageId(imageHandle);
 			if (previews == null) {
 				logger.warn("retrieveImage previews = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
@@ -305,8 +305,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		logger.info("clearNonPreloadedImages");
 		imageFullRepository.deleteByPreloaded(false);
 		imageInfoRepository.deleteByPreloaded(false);
-		imagePreviewRepository.deleteByPreloaded(false);
-		imageThumbnailRepository.deleteByPreloaded(false);
+		imagePreviewRepository.deleteByKeyPreloaded(false);
+		imageThumbnailRepository.deleteByKeyPreloaded(false);
 	}
 
 	@Override

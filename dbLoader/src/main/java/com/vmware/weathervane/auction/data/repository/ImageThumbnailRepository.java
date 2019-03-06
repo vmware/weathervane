@@ -26,7 +26,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail.Image
 
 @Repository
 public interface ImageThumbnailRepository extends CrudRepository<ImageThumbnail, ImageThumbnailKey>, ImageThumbnailRepositoryCustom {
-	List<ImageThumbnail> findByKeyFirstImageId(UUID imageid);
+	List<ImageThumbnail> findByKeyImageId(UUID imageid);
 	
-	void deleteByPreloaded(boolean preloaded);
+	void deleteByKeyPreloaded(boolean preloaded);
 }

@@ -26,7 +26,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview.ImagePr
 
 @Repository
 public interface ImagePreviewRepository extends CrudRepository<ImagePreview, ImagePreviewKey>, ImagePreviewRepositoryCustom {
-	List<ImagePreview> findByKeyFirstImageId(UUID imageid);
+	List<ImagePreview> findByKeyImageId(UUID imageid);
 	
-	void deleteByPreloaded(boolean preloaded);
+	void deleteByKeyPreloaded(boolean preloaded);
 }

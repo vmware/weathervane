@@ -33,7 +33,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.vmware.weathervane.auction.data.dao.AuctionDao;
 import com.vmware.weathervane.auction.data.dao.AuctionMgmtDao;
-import com.vmware.weathervane.auction.data.dao.BidCompletionDelayDao;
 import com.vmware.weathervane.auction.data.dao.DbBenchmarkInfoDao;
 import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
@@ -66,7 +65,6 @@ public class DBPrep {
 	private static ItemDao itemDao;
 	private static HighBidDao highBidDao;
 	private static AuctionMgmtDao auctionMgmtDao;
-	private static BidCompletionDelayDao bidCompletionDelayDao;
 	private static FixedTimeOffsetDao fixedTimeOffsetDao;
 
 	private static final Logger logger = LoggerFactory.getLogger(DBPrep.class);
@@ -160,7 +158,6 @@ public class DBPrep {
 		itemDao = (ItemDao) context.getBean("itemDao");
 		highBidDao = (HighBidDao) context.getBean("highBidDao");
 		auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
-		bidCompletionDelayDao = (BidCompletionDelayDao) context.getBean("bidCompletionDelayDao");
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
 
 		/*
@@ -287,12 +284,6 @@ public class DBPrep {
 		 */
 		logger.debug("Clearing non-preloaded images");
 		imageStore.clearNonpreloadedImages();
-
-		/*
-		 * Clear out the bidCompletionDelay table
-		 */
-		logger.info("Clear out the bidCompletionDelay table\n");
-		bidCompletionDelayDao.deleteAll();
 
 		/*
 		 * Reset the data on all auctions that could be current in a run and

@@ -3,6 +3,8 @@ package com.vmware.weathervane.auction.dbloader;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cassandra.core.keyspace.CreateKeyspaceSpecification;
 import org.springframework.cassandra.core.keyspace.KeyspaceOption;
@@ -16,6 +18,7 @@ import org.springframework.data.cassandra.repository.config.EnableCassandraRepos
 @EnableCassandraRepositories
 @PropertySource("classpath:application.yaml")
 public class CassandraConfig extends AbstractCassandraConfiguration {
+	private static final Logger logger = LoggerFactory.getLogger(CassandraConfig.class);
 
 	@Value("$cassandra.contactpoints")
 	private String contactPoints;
@@ -32,11 +35,13 @@ public class CassandraConfig extends AbstractCassandraConfiguration {
 	
 	@Override
 	protected String getContactPoints() {
+		logger.debug("Returning contactPoints: " + contactPoints);
 		return contactPoints;
 	}
 
 	@Override
 	protected String getKeyspaceName() {
+		logger.debug("Returning keyspace: " + keyspace);
 		return keyspace;
 	}
 

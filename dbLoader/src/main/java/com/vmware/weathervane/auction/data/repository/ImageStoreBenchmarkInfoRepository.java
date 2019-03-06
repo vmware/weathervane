@@ -15,12 +15,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import java.util.UUID;
+
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 
 
 @Repository
-public interface ImageStoreBenchmarkInfoRepository extends MongoRepository<ImageStoreBenchmarkInfo, String> {
+public interface ImageStoreBenchmarkInfoRepository extends CrudRepository<ImageStoreBenchmarkInfo, UUID> {
 }

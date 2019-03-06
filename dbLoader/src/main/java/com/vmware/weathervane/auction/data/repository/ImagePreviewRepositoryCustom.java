@@ -15,10 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
-
-public interface ImagePreviewRepositoryCustom {
-	void saveImage(ImagePreview image);
-	
+public interface ImagePreviewRepositoryCustom {	
 	void deleteByPreloaded(boolean preloaded);
 }

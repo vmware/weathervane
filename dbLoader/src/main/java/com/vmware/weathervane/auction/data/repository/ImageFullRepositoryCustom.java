@@ -15,10 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
-
-public interface ImageFullRepositoryCustom {
-	void saveImage(ImageFull image);
-	
+public interface ImageFullRepositoryCustom {	
 	void deleteByPreloaded(boolean preloaded);
 }

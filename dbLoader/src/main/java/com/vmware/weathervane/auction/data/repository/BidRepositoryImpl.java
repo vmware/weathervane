@@ -15,26 +15,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.model.Bid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
 public class BidRepositoryImpl implements BidRepositoryCustom {
 
-	@Inject
-	@Named("bidMongoTemplate")
-	MongoOperations bidMongoTemplate;
-	
+	@Autowired
+	CassandraOperations cassandraOperations;
+
 	@Override
 	public void deleteByItemId(Long itemId) {
-		Query query = new Query(where("itemId").is(itemId));
-		bidMongoTemplate.remove(query, Bid.class);
+		String cql = "DELETE FROM bid_by_bidderid WHERE item_id = " + itemId + ";";
+		cassandraOperations.execute(cql);
 	}
 
 }

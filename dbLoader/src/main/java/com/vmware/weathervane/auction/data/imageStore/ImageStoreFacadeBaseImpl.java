@@ -20,7 +20,6 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -363,7 +362,6 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 						"No space in the imageWriter queue. Already contains "
 								+ imageAddQueue.size() + " images to be written");
 			}
-			imageInfo.setId("pending");
 		} else {
 			byte[] randomizedImage = imageBytes;
 			if (randomizeImages) {
@@ -537,7 +535,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 
 				if (nextImage != null) {
 					logger.debug("ImageWriter got image for imageId "
-							+ nextImage.getImageInfo().getId());
+							+ nextImage.getImageInfo().getImageId());
 					try {
 						byte[] randomizedImage = nextImage.getImage();
 						if (randomizeImages) {
@@ -547,7 +545,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 						saveImage(nextImage.getImageInfo(), randomizedImage);
 					} catch (IOException e) {
 						logger.warn("Got IOException when resizing and saving image with id "
-								+ nextImage.getImageInfo().getId());
+								+ nextImage.getImageInfo().getImageId());
 						e.printStackTrace();
 					}
 				}

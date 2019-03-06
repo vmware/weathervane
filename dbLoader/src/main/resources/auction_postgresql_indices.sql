@@ -29,9 +29,6 @@ CREATE INDEX highbid_auction_id_key ON highbid USING btree (auction_id);
 CREATE INDEX highbid_state_key ON highbid USING btree (state, id);
 CREATE INDEX highbid_state_bidder_endtime_key ON highbid USING btree (state, bidder_id, biddingendtime);
 
-CREATE INDEX bidcompletiondelay_bid_id_key ON bidcompletiondelay USING btree (bidid);
-CREATE INDEX bidcompletiondelay_item_id_key ON bidcompletiondelay USING btree (item_id);
-
 CREATE INDEX item_auction_id_key ON item USING btree (auction_id);
 CREATE INDEX item_auction_id_id_key ON item USING btree (auction_id,id);
 CREATE INDEX item_auctioneer_id_key ON item USING btree (auctioneer_id);

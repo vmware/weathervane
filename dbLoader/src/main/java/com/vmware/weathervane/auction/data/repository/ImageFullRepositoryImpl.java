@@ -15,38 +15,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.mongodb.core.MongoOperations;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
 public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
 
-	private static final Logger logger = LoggerFactory.getLogger(ImageFullRepositoryImpl.class);
-
-	@Inject
-	@Named("fullImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
+	@Autowired
+	CassandraOperations cassandraOperations;
 	
-	public void saveImage(ImageFull image) {
-		imageMongoTemplate.save(image);
-	}
-
 	@Override
 	public void deleteByPreloaded(boolean preloaded) {
-		logger.debug("deleteByPreloaded preloaded = " + preloaded);
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageMongoTemplate.remove(query, ImageFull.class);
+		String cql = "DELETE FROM image_full WHERE preloaded = " + preloaded + ";";
+		cassandraOperations.execute(cql);
 	}
-
 }

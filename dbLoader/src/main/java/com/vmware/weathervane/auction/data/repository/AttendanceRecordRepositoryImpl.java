@@ -15,26 +15,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
 public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositoryCustom {
 
-	@Inject
-	@Named("attendanceRecordMongoTemplate")
-	MongoOperations attendanceRecordMongoTemplate;
+	@Autowired
+	CassandraOperations cassandraOperations;
 	
 	@Override
 	public void deleteByAuctionId(Long auctionId) {
-		Query query = new Query(where("auctionId").is(auctionId));
-		attendanceRecordMongoTemplate.remove(query, AttendanceRecord.class);		
+		String cql = "DELETE FROM attendancerecord_by_userid WHERE auction_id = " + auctionId + ";";
+		cassandraOperations.execute(cql);
 	}
-
 }

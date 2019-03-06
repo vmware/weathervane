@@ -148,7 +148,7 @@ public class DBPrep {
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {
-				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml" });
+				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml", "cassandra-context.xml" });
 		imageStore = (ImageStoreFacade) context.getBean("imageStoreFacade");
 		NosqlBenchmarkInfoRepository nosqlBenchmarkInfoRepository = (NosqlBenchmarkInfoRepository) context
 				.getBean("nosqlBenchmarkInfoRepository");

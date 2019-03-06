@@ -15,28 +15,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.springframework.data.mongodb.core.MongoOperations;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
 public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
 
-	@Inject
-	@Named("imageInfoMongoTemplate")
-	MongoOperations imageInfoMongoTemplate;
+	@Autowired
+	CassandraOperations cassandraOperations;
 	
 	@Override
 	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageInfoMongoTemplate.remove(query, ImageInfo.class);
+		String cql = "DELETE FROM image_info WHERE preloaded = " + preloaded + ";";
+		cassandraOperations.execute(cql);
 	}
-
 }

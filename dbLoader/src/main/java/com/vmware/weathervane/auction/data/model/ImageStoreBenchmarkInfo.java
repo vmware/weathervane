@@ -16,17 +16,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.model;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
+@Table("imagestore_benchmark_info")
 public class ImageStoreBenchmarkInfo implements Serializable, DomainObject {
 
 	private static final long serialVersionUID = 1L;
 
-
-	private String id;
+	@PrimaryKey
+	private UUID id;
 	
 	private Long maxusers;
 		
@@ -36,12 +37,11 @@ public class ImageStoreBenchmarkInfo implements Serializable, DomainObject {
 
 	}
 
-	@Id
-	public String getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 	

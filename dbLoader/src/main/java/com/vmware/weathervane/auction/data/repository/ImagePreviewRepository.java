@@ -16,15 +16,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.repository;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
+import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview.ImagePreviewKey;
 
 @Repository
-public interface ImagePreviewRepository extends MongoRepository<ImagePreview, String>, ImagePreviewRepositoryCustom {
-	List<ImagePreview> findByImageid(String imageid);
+public interface ImagePreviewRepository extends CrudRepository<ImagePreview, ImagePreviewKey>, ImagePreviewRepositoryCustom {
+	List<ImagePreview> findByKeyFirstImageId(UUID imageid);
 	
 	void deleteByPreloaded(boolean preloaded);
 }

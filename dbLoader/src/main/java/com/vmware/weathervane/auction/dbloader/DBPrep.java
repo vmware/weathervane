@@ -218,7 +218,7 @@ public class DBPrep {
 		 * Make sure that NoSQL store is loaded at correctly
 		 */
 		logger.debug("Checking whether NoSQL Data-Store has benchmark info");
-		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = nosqlBenchmarkInfoRepository.findAll();
+		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = (List<NosqlBenchmarkInfo>) nosqlBenchmarkInfoRepository.findAll();
 		if ((nosqlBenchmarkInfoList == null) || (nosqlBenchmarkInfoList.size() < 1)) {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
@@ -233,22 +233,6 @@ public class DBPrep {
 			throw new RuntimeException(
 					"MaxUsers supported by NoSQL datastore does not match desired number of users   Users =  "
 							+ users + ", Found " + infoMaxUsers
-							+ ". Make sure that correct data is loaded.");
-		}
-		
-		if (!nosqlBenchmarkInfo.getNumShards().equals(numNosqlShards)) {
-			imageStore.stopServiceThreads();
-			throw new RuntimeException(
-					"Number of shards in NoSQL datastore does not match current configuration.  Needed "
-							+ numNosqlShards + ", Found " + nosqlBenchmarkInfo.getNumShards()
-							+ ". Make sure that correct data is loaded.");
-		}
-
-		if (!nosqlBenchmarkInfo.getNumReplicas().equals(numNosqlReplicas)) {
-			imageStore.stopServiceThreads();
-			throw new RuntimeException(
-					"Number of replicas in NoSQL datastore does not match current configuration.  Needed "
-							+ numNosqlReplicas + ", Found " + nosqlBenchmarkInfo.getNumReplicas()
 							+ ". Make sure that correct data is loaded.");
 		}
 

@@ -11,7 +11,6 @@ SET client_min_messages = warning;
 DROP TABLE IF EXISTS attendancerecord cascade;
 DROP TABLE IF EXISTS auction cascade;
 DROP TABLE IF EXISTS auction_keyword cascade;
-DROP TABLE IF EXISTS bidcompletiondelay cascade;
 DROP TABLE IF EXISTS item cascade;
 DROP TABLE IF EXISTS keyword cascade;
 DROP TABLE IF EXISTS userdata cascade;
@@ -70,7 +69,7 @@ CREATE TABLE highbid (
     auctionid bigint NOT NULL,
     itemid bigint NOT NULL,
     bidderid bigint,
-    bidid character varying(40),
+    bidid uuid,
     preloaded boolean,
     version integer
 );
@@ -100,29 +99,6 @@ CREATE TABLE item (
 );
 
 ALTER TABLE item OWNER TO auction;
-
---
--- Name: bidcompletiondelay; Type: TABLE; Schema: public; Owner: auction; Tablespace: 
---
-
-CREATE TABLE bidcompletiondelay (
-    id bigint NOT NULL,
-    delay bigint,
-    host character varying(255),
-    numcompletedbids bigint,
-    "timestamp" timestamp without time zone,
-    version integer,
-    auction_id bigint,
-    item_id bigint,
-	biddingstate character varying(20),
-    bidid character varying(40),
-    "bidtime" timestamp without time zone,
-    receivingnode bigint,
-    completingnode bigint
-);
-
-
-ALTER TABLE bidcompletiondelay OWNER TO auction;
 
 --
 -- Name: fixedtimeoffset; Type: TABLE; Schema: public; Owner: auction; Tablespace: 
@@ -234,15 +210,6 @@ ALTER TABLE ONLY auction
 ALTER TABLE ONLY highbid
     ADD CONSTRAINT highbid_pkey PRIMARY KEY (id);
 
-
---
--- Name: bidcompletiondelay_pkey; Type: CONSTRAINT; Schema: public; Owner: auction; Tablespace: 
---
-
-ALTER TABLE ONLY bidcompletiondelay
-    ADD CONSTRAINT bidcompletiondelay_pkey PRIMARY KEY (id);
-
-    
 --
 -- Name: fixedtimeoffset_pkey; Type: CONSTRAINT; Schema: public; Owner: auction; Tablespace: 
 --

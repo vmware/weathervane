@@ -15,12 +15,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
 
 @Repository
-public interface AttendanceRecordRepository extends MongoRepository<AttendanceRecord, String>, AttendanceRecordRepositoryCustom {
+public interface AttendanceRecordRepository extends CrudRepository<AttendanceRecord, AttendanceRecordKey>, AttendanceRecordRepositoryCustom {
 			
 }

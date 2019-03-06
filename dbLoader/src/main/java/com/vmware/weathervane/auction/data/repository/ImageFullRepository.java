@@ -26,7 +26,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullK
 
 @Repository
 public interface ImageFullRepository extends CrudRepository<ImageFull, ImageFullKey>, ImageFullRepositoryCustom {
-	List<ImageFull> findByKeyFirstImageId(UUID imageid);
+	List<ImageFull> findByKeyImageId(UUID imageid);
 	
 	void deleteByKeyPreloaded(boolean preloaded);
 }

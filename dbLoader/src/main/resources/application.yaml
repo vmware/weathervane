@@ -1,3 +1,0 @@
-cassandra:
-  contactpoints: cassandra
-  keyspace: auction

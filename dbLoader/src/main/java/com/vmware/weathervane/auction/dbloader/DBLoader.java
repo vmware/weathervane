@@ -187,7 +187,7 @@ public class DBLoader {
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {
-				"application-context.xml", "datasource-context.xml", "jpa-context.xml" });
+				"application-context.xml", "datasource-context.xml", "jpa-context.xml", "cassandra-context.xml" });
 		dbLoaderDao = (DbLoaderDao) context.getBean("dbLoaderDao");
     	auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
 		imageStore = (ImageStoreFacade) context.getBean("imageStoreFacade");

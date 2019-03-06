@@ -139,19 +139,18 @@ public class DBPrep {
 			throw new RuntimeException("The spring.profiles.active property must be set for DBPrep");
 		}
 		String imageStoreType;
-		if (springProfilesActive.contains("Filesystem")) {
-			imageStoreType = "filesystem";
-		} else if (springProfilesActive.contains("Mongo")) {
-			imageStoreType = "mongodb";
+		if (springProfilesActive.contains("Memory")) {
+			imageStoreType = "memory";
+		} else if (springProfilesActive.contains("Cassandra")) {
+			imageStoreType = "cassandra";
 		} else {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
-					"The spring.profiles.active property be either imagesInMongo or imagesInFilesystem for DBPrep.");
+					"The spring.profiles.active property be either imagesInCassandra or imagesInMemory for DBPrep.");
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {
-				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml",
-				"mongo-context.xml" });
+				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml" });
 		imageStore = (ImageStoreFacade) context.getBean("imageStoreFacade");
 		NosqlBenchmarkInfoRepository nosqlBenchmarkInfoRepository = (NosqlBenchmarkInfoRepository) context
 				.getBean("nosqlBenchmarkInfoRepository");

@@ -290,7 +290,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			return previews.get(0).getImage();
 
 		default:
-			List<ImageFull> fulls = imageFullRepository.findByKeyFirstImageId(imageHandle);
+			List<ImageFull> fulls = imageFullRepository.findByKeyImageId(imageHandle);
 			if (fulls == null) {
 				logger.warn("retrieveImage fulls = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);

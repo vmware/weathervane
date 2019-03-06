@@ -15,11 +15,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import java.util.UUID;
+
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
 
 @Repository
-public interface NosqlBenchmarkInfoRepository extends MongoRepository<NosqlBenchmarkInfo, String> {
+public interface NosqlBenchmarkInfoRepository extends CrudRepository<NosqlBenchmarkInfo, UUID> {
 }

@@ -15,31 +15,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.springframework.data.mongodb.core.MongoOperations;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
 public class ImageThumbnailRepositoryImpl implements ImageThumbnailRepositoryCustom {
 
-	@Inject
-	@Named("thumbnailImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
+	@Autowired
+	CassandraOperations cassandraOperations;
 	
-	public void saveImage(ImageThumbnail image) {
-		imageMongoTemplate.save(image);
-	}
-
 	@Override
 	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageMongoTemplate.remove(query, ImageThumbnail.class);
+		String cql = "DELETE FROM image_thumbnail WHERE preloaded = " + preloaded + ";";
+		cassandraOperations.execute(cql);
 	}
 }

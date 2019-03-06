@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -46,9 +47,11 @@ import com.vmware.weathervane.auction.data.dao.UserDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade.ImageSize;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Bid;
+import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 import com.vmware.weathervane.auction.data.model.Condition;
 import com.vmware.weathervane.auction.data.model.DbBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.HighBid;
@@ -56,6 +59,7 @@ import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.User;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
@@ -417,8 +421,6 @@ public class DbLoaderDao {
 		// Save the load info in the NoSQL Data store
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = new NosqlBenchmarkInfo();
 		nosqlBenchmarkInfo.setMaxusers(maxUsers);
-		nosqlBenchmarkInfo.setNumShards(numNosqlShards);
-		nosqlBenchmarkInfo.setNumReplicas(numNosqlReplicas);
 		nosqlBenchmarkInfo.setImageStoreType(imageStoreType);
 		nosqlBenchmarkInfoRepository.save(nosqlBenchmarkInfo);
 
@@ -705,11 +707,13 @@ public class DbLoaderDao {
 				} while (attendeeIds.contains(attendeeId));
 				attendeeIds.add(attendeeId);
 
+				AttendanceRecordKey arKey = new AttendanceRecordKey();
+				arKey.setAuctionId(anAuction.getId());
+				arKey.setTimestamp(endTime);
+				arKey.setUserId(attendeeId);
 				AttendanceRecord anAttendanceRecord = new AttendanceRecord();
-				anAttendanceRecord.setTimestamp(endTime);
+				anAttendanceRecord.setKey(arKey);
 				anAttendanceRecord.setState(AttendanceRecordState.AUCTIONCOMPLETE);
-				anAttendanceRecord.setUserId(attendeeId);
-				anAttendanceRecord.setAuctionId(anAuction.getId());
 				anAttendanceRecord.setAuctionName(anAuction.getName());
 				
 				attendanceRecordRepository.save(anAttendanceRecord);
@@ -729,6 +733,7 @@ public class DbLoaderDao {
 				float bidAmount = anItem.getStartingBidAmount();
 
 				Bid aBid = null;
+				BidKey bidKey = null;
 				for (int j = 0; j < historyBidsPerItem; j++) {
 					// Choose a bidder from users who attended auction
 					Long bidderId;
@@ -737,21 +742,22 @@ public class DbLoaderDao {
 					} while (bidderId.equals(lastBidderId));
 					lastBidderId = bidderId;
 
+					bidKey = new BidKey();
+					bidKey.setBidderId(lastBidderId);
+					bidKey.setBidTime(new Date(bidTime));
+					bidTime += milliSecPerBid;
+					bidKey.setItemId(anItem.getId());
 					aBid = new Bid();
+					aBid.setId(UUID.randomUUID());
+					aBid.setKey(bidKey);
 					aBid.setReceivingNode(0L);
 					aBid.setBidCount(j + 1);
 					aBid.setAmount(bidAmount);
 					bidAmount += historyBidIncrement;
 
-					aBid.setBidTime(new Date(bidTime));
-					bidTime += milliSecPerBid;
-
 					// Only creating history of high bids
 					aBid.setState(Bid.BidState.HIGH);
 					aBid.setAuctionId(anAuction.getId());
-					aBid.setItemId(anItem.getId());
-					aBid.setBidderId(lastBidderId);
-
 					bidRepository.save(aBid);
 				}
 
@@ -764,8 +770,8 @@ public class DbLoaderDao {
 				}
 				highBid.setBidder(purchaser);
 				highBid.setBidCount(historyBidsPerItem + 2);
-				highBid.setCurrentBidTime(aBid.getBidTime());
-				highBid.setBidId(aBid.getId().toString());
+				highBid.setCurrentBidTime(aBid.getKey().getBidTime());
+				highBid.setBidId(aBid.getId());
 				highBid.setState(HighBidState.SOLD);
 			}
 
@@ -876,12 +882,16 @@ public class DbLoaderDao {
 			for (int k = 0; k < imagesToLoad; k++) {
 				ImagesHolder imagesHolder = itemImages.get(k);
 
+				ImageInfoKey key = new ImageInfoKey();
+				key.setEntityid(anItem.getId());
+				key.setEntitytype(Item.class.getSimpleName());
+				key.setPreloaded(true);
+				
 				ImageInfo theImageInfo = new ImageInfo();
+				theImageInfo.setKey(key);
 				theImageInfo.setFormat(imageStore.getImageFormat());
 				theImageInfo.setName(imageNames.getString(k));
-				theImageInfo.setEntityid(anItem.getId());
-				theImageInfo.setEntitytype(Item.class.getSimpleName());
-				theImageInfo.setPreloaded(true);
+				theImageInfo.setImageId(UUID.randomUUID());
 				theImageInfo.setImagenum(new Long(k + 1));
 				theImageInfo.setDateadded(calendar.getTime());
 				imageInfos.add(theImageInfo);

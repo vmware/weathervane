@@ -17,16 +17,15 @@ package com.vmware.weathervane.auction.data.repository;
 
 import java.util.List;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
 
 @Repository
-public interface ImageInfoRepository extends MongoRepository<ImageInfo, String>, ImageInfoRepositoryCustom {
-	List<ImageInfo> findByEntitytypeAndEntityid(String entityType, Long entityId);
+public interface ImageInfoRepository extends CrudRepository<ImageInfo, ImageInfoKey>, ImageInfoRepositoryCustom {
+	List<ImageInfo> findByKeyFirstEntitytypeAndEntityid(String entityType, Long entityId);
 	
-	Long countByEntityidAndEntitytype(Long entityId, String entityType);
-	
-	List<ImageInfo> findByFilepath(String filepath);
+	Long countByKeyFirstEntityidAndEntitytype(Long entityId, String entityType);	
 }

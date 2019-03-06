@@ -38,13 +38,6 @@ ALTER TABLE ONLY highbid
 
 ALTER TABLE ONLY auction
     ADD CONSTRAINT fk_auction_auctioneer_id FOREIGN KEY (auctioneer_id) REFERENCES userdata(id);
-
-ALTER TABLE ONLY bidcompletiondelay
-    ADD CONSTRAINT fk_bcd_auction_id FOREIGN KEY (auction_id) REFERENCES auction(id);
-ALTER TABLE ONLY bidcompletiondelay
-    ADD CONSTRAINT fk_bcd_item_id FOREIGN KEY (item_id) REFERENCES item(id);
-
-
     
 ALTER TABLE ONLY auction_keyword
     ADD CONSTRAINT fk_auction_keyword_keyword_id FOREIGN KEY (keyword_id) REFERENCES keyword(id);

@@ -69,7 +69,7 @@ CREATE TABLE highbid (
     auctionid bigint NOT NULL,
     itemid bigint NOT NULL,
     bidderid bigint,
-    bidid uuid,
+    bidid bytea,
     preloaded boolean,
     version integer
 );

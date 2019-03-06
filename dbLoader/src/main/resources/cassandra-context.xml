@@ -27,7 +27,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     ">
 
 <cassandra:cluster contact-points="cassandra" port="9042" >
-  <cassandra:keyspace name="auction" action="CREATE_IF_NOT_EXISTS"/>
 </cassandra:cluster>
 
 <cassandra:session keyspace-name="auction" schema-action="CREATE_IF_NOT_EXISTS"/>
@@ -40,7 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 <cassandra:template id="cassandraTemplate" />
 
-<cassandra:repositories base-package="com.vmware.weathervane.auction.data.repository" />
+<cassandra:repositories base-package="com.vmware.weathervane.auction.data.repository" 
+	cassandra-template-ref="cassandraTemplate" />
 
 </beans>
 

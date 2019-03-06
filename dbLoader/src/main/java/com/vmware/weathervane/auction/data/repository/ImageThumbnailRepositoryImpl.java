@@ -24,7 +24,7 @@ public class ImageThumbnailRepositoryImpl implements ImageThumbnailRepositoryCus
 	CassandraOperations cassandraOperations;
 	
 	@Override
-	public void deleteByPreloaded(boolean preloaded) {
+	public void deleteByKeyPreloaded(boolean preloaded) {
 		String cql = "DELETE FROM image_thumbnail WHERE preloaded = " + preloaded + ";";
 		cassandraOperations.execute(cql);
 	}

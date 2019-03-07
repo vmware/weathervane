@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.springframework.cassandra.core.Ordering;
 import org.springframework.cassandra.core.PrimaryKeyType;
+import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
@@ -39,7 +40,7 @@ public class AttendanceRecord implements Serializable {
 		@PrimaryKeyColumn(name="user_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
 		private Long userId;
 
-		@PrimaryKeyColumn(name="timestamp", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
+		@PrimaryKeyColumn(name="record_time", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
 		private Date timestamp;
 
 		@PrimaryKeyColumn(name="auction_id", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
@@ -93,6 +94,8 @@ public class AttendanceRecord implements Serializable {
 	private AttendanceRecordKey key;
 	
 	private AttendanceRecordState state;
+	
+	@Column("auction_name")
 	private String auctionName;
 	
 	public AttendanceRecord() {

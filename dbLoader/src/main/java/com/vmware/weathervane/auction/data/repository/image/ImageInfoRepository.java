@@ -13,19 +13,19 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.cassandra.core.CassandraOperations;
+import java.util.List;
 
-public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-	@Autowired
-	CassandraOperations cassandraOperations;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
+
+@Repository
+public interface ImageInfoRepository extends CrudRepository<ImageInfo, ImageInfoKey>, ImageInfoRepositoryCustom {
+	List<ImageInfo> findByKeyEntitytypeAndKeyEntityid(String entityType, Long entityId);
 	
-	@Override
-	public void deleteByPreloaded(boolean preloaded) {
-		String cql = "DELETE FROM image_info WHERE preloaded = " + preloaded + ";";
-		cassandraOperations.execute(cql);
-	}
+	Long countByKeyEntityidAndKeyEntitytype(Long entityId, String entityType);	
 }

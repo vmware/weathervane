@@ -420,6 +420,7 @@ public class DbLoaderDao {
 
 		// Save the load info in the NoSQL Data store
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = new NosqlBenchmarkInfo();
+		nosqlBenchmarkInfo.setId(UUID.randomUUID());
 		nosqlBenchmarkInfo.setMaxusers(maxUsers);
 		nosqlBenchmarkInfo.setImageStoreType(imageStoreType);
 		nosqlBenchmarkInfoRepository.save(nosqlBenchmarkInfo);
@@ -435,6 +436,7 @@ public class DbLoaderDao {
 
 		// Save the load info as a file in the image store
 		ImageStoreBenchmarkInfo imageStoreBenchmarkInfo = new ImageStoreBenchmarkInfo();
+		imageStoreBenchmarkInfo.setId(UUID.randomUUID());
 		imageStoreBenchmarkInfo.setMaxusers(maxUsers);
 		imageStoreBenchmarkInfo.setImageStoreType(imageStoreType);
 		imageStore.setBenchmarkInfo(imageStoreBenchmarkInfo);

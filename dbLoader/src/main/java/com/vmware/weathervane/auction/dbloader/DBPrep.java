@@ -44,7 +44,7 @@ import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.DbBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
-import com.vmware.weathervane.auction.data.repository.NosqlBenchmarkInfoRepository;
+import com.vmware.weathervane.auction.data.repository.event.NosqlBenchmarkInfoRepository;
 
 /**
  * Hello world!

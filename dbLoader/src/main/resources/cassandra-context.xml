@@ -23,24 +23,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     http://www.springframework.org/schema/data/cassandra/spring-cassandra.xsd
     http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd
-    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/context 
+    http://www.springframework.org/schema/context/spring-context.xsd
     ">
 
-<cassandra:cluster contact-points="cassandra" port="9042" >
-</cassandra:cluster>
+<cassandra:cluster contact-points="cassandra" port="9042"/>
 
-<cassandra:session keyspace-name="auction" schema-action="CREATE_IF_NOT_EXISTS"/>
+<cassandra:session id="eventSession" keyspace-name="auction_event" 
+  schema-action="NONE" cassandra-converter-ref="eventConverter"/>
+<cassandra:session id="imageSession" keyspace-name="auction_image" 
+  schema-action="NONE" cassandra-converter-ref="imageConverter"/>
 
-<cassandra:mapping>
-  <cassandra:user-type-resolver keyspace-name="auction" />
+<cassandra:mapping id="eventMapping">
+  <cassandra:user-type-resolver keyspace-name="auction_event" />
 </cassandra:mapping>
 
-<cassandra:converter />
+<cassandra:mapping id="imageMapping">
+  <cassandra:user-type-resolver keyspace-name="auction_image" />
+</cassandra:mapping>
 
-<cassandra:template id="cassandraTemplate" />
+<cassandra:converter id="eventConverter" mapping-ref="eventMapping"/>
+<cassandra:converter id="imageConverter" mapping-ref="imageMapping"/>
 
-<cassandra:repositories base-package="com.vmware.weathervane.auction.data.repository" 
-	cassandra-template-ref="cassandraTemplate" />
+<cassandra:template id="cassandraEventTemplate" session-ref="eventSession" cassandra-converter-ref="eventConverter"/>
+<cassandra:template id="cassandraImageTemplate" session-ref="imageSession" cassandra-converter-ref="imageConverter"/>
+
+<cassandra:repositories base-package="com.vmware.weathervane.auction.data.repository.event" 
+	cassandra-template-ref="cassandraEventTemplate" />
+<cassandra:repositories base-package="com.vmware.weathervane.auction.data.repository.image" 
+	cassandra-template-ref="cassandraImageTemplate" />
 
 </beans>
 

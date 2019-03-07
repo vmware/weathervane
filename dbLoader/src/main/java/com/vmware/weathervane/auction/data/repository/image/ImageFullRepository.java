@@ -13,15 +13,20 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
+
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.vmware.weathervane.auction.data.model.AttendanceRecord;
-import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullKey;
 
 @Repository
-public interface AttendanceRecordRepository extends CrudRepository<AttendanceRecord, AttendanceRecordKey>, AttendanceRecordRepositoryCustom {
-			
+public interface ImageFullRepository extends CrudRepository<ImageFull, ImageFullKey>, ImageFullRepositoryCustom {
+	List<ImageFull> findByKeyImageId(UUID imageid);
+	
+	void deleteByKeyPreloaded(boolean preloaded);
 }

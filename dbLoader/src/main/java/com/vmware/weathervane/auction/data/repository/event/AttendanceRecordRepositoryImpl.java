@@ -13,19 +13,21 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
+public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositoryCustom {
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
-
-@Repository
-public interface ImageInfoRepository extends CrudRepository<ImageInfo, ImageInfoKey>, ImageInfoRepositoryCustom {
-	List<ImageInfo> findByKeyEntitytypeAndKeyEntityid(String entityType, Long entityId);
+	@Autowired
+	@Qualifier("cassandraEventTemplate")
+	CassandraOperations cassandraOperations;
 	
-	Long countByKeyEntityidAndKeyEntitytype(Long entityId, String entityType);	
+	@Override
+	public void deleteByAuctionId(Long auctionId) {
+		String cql = "DELETE FROM attendancerecord_by_userid WHERE auction_id = " + auctionId + ";";
+		cassandraOperations.execute(cql);
+	}
 }

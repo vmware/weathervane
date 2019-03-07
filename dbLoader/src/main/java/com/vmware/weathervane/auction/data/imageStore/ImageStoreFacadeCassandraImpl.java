@@ -42,10 +42,10 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview.ImagePr
 import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail.ImageThumbnailKey;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
-import com.vmware.weathervane.auction.data.repository.ImageFullRepository;
-import com.vmware.weathervane.auction.data.repository.ImagePreviewRepository;
-import com.vmware.weathervane.auction.data.repository.ImageStoreBenchmarkInfoRepository;
-import com.vmware.weathervane.auction.data.repository.ImageThumbnailRepository;
+import com.vmware.weathervane.auction.data.repository.event.ImageStoreBenchmarkInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageFullRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImagePreviewRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageThumbnailRepository;
 
 /**
  * This is an implementation of the ImageStoreFacade that stores all images in a

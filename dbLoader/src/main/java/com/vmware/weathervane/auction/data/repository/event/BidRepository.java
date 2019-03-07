@@ -13,16 +13,15 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
-
-import java.util.UUID;
+package com.vmware.weathervane.auction.data.repository.event;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
-
+import com.vmware.weathervane.auction.data.model.Bid;
+import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 
 @Repository
-public interface ImageStoreBenchmarkInfoRepository extends CrudRepository<ImageStoreBenchmarkInfo, UUID> {
+public interface BidRepository extends CrudRepository<Bid, BidKey>, BidRepositoryCustom {
+	
 }

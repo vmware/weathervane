@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.data.model;
 import java.io.Serializable;
 import java.util.UUID;
 
+import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.Table;
 
@@ -29,8 +30,10 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 	@PrimaryKey
 	private UUID id;
 	
+	@Column("max_users")
 	private Long maxusers;
 			
+	@Column("imagestore_type")
 	private String imageStoreType;
 
 	public NosqlBenchmarkInfo() {

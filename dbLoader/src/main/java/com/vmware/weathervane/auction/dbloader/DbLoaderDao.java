@@ -65,9 +65,9 @@ import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.data.model.Item.ItemState;
 import com.vmware.weathervane.auction.data.model.User.UserState;
-import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
-import com.vmware.weathervane.auction.data.repository.NosqlBenchmarkInfoRepository;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
+import com.vmware.weathervane.auction.data.repository.event.NosqlBenchmarkInfoRepository;
 import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
 @Repository(value = "dbLoaderDao")

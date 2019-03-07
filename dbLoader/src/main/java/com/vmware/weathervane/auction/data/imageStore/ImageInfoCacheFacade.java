@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-import com.vmware.weathervane.auction.data.repository.ImageInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageInfoRepository;
 
 /**
  * 

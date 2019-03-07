@@ -13,10 +13,8 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-public interface ImageInfoRepositoryCustom {
-		
-	void deleteByPreloaded(boolean preloaded);
-
+public interface ImagePreviewRepositoryCustom {	
+	void deleteByKeyPreloaded(boolean preloaded);
 }

@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 
@@ -202,7 +203,6 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		if (previewImage != null) {
 			logger.debug("addImage bytes adding preview image for " + imageInfo.getKey().getEntitytype() + ":"
 					+ imageInfo.getKey().getEntityid());
-			
 			// Randomize the image
 			ImagePreviewKey ipKey = new ImagePreviewKey();
 			ipKey.setImageId(imageId);
@@ -276,7 +276,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return thumbs.get(0).getImage();
+			return thumbs.get(0).getImage().array();
 
 		case PREVIEW:
 			List<ImagePreview> previews = imagePreviewRepository.findByKeyImageId(imageHandle);
@@ -285,7 +285,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return previews.get(0).getImage();
+			return previews.get(0).getImage().array();
 
 		default:
 			List<ImageFull> fulls = imageFullRepository.findByKeyImageId(imageHandle);
@@ -294,7 +294,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return fulls.get(0).getImage();
+			return fulls.get(0).getImage().array();
 		}
 	}
 

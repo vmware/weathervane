@@ -16,6 +16,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.imageStore.model;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -83,7 +84,7 @@ public class ImageThumbnail implements Serializable {
 	@PrimaryKey
 	private ImageThumbnailKey key;
 	
-	private byte[] image;
+	private ByteBuffer image;
 
 	public ImageThumbnailKey getKey() {
 		return key;
@@ -93,11 +94,15 @@ public class ImageThumbnail implements Serializable {
 		this.key = key;
 	}
 
-	public byte[] getImage() {
+	public ByteBuffer getImage() {
 		return image;
 	}
 
-	public void setImage(byte[] image) {
+	public void setImage(ByteBuffer image) {
 		this.image = image;
+	}
+
+	public void setImage(byte[] byteImage) {
+		this.image = ByteBuffer.wrap(byteImage);
 	}
 }

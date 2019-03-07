@@ -40,7 +40,7 @@ CREATE TABLE auction_event.bid_by_bidderid (
   item_id bigint,
   amount float,
   state text,
-  bid_id timeuuid,
+  bid_id uuid,
   bid_count int,
   receiving_node bigint,
   auction_id bigint,
@@ -48,13 +48,13 @@ CREATE TABLE auction_event.bid_by_bidderid (
   ) WITH CLUSTERING ORDER BY (bid_time ASC, item_id ASC);
   
 CREATE TABLE auction_event.nosql_benchmark_info (
-  id timeuuid PRIMARY KEY,
+  id uuid PRIMARY KEY,
   max_users bigint,
   imagestore_type text
   );
   
 CREATE TABLE auction_event.imagestore_benchmark_info (
-  id timeuuid PRIMARY KEY,
+  id uuid PRIMARY KEY,
   max_users bigint,
   imagestore_type text
   );
@@ -63,7 +63,7 @@ CREATE TABLE auction_image.image_info (
   entity_type text,
   entity_id bigint,
   preloaded boolean,
-  image_id timeuuid,
+  image_id uuid,
   name text,
   format text,
   imagenum bigint,
@@ -72,21 +72,21 @@ CREATE TABLE auction_image.image_info (
   ) WITH CLUSTERING ORDER BY (preloaded DESC);
      
 CREATE TABLE auction_image.image_full (
-  image_id timeuuid,
+  image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id), preloaded)
   ) WITH CLUSTERING ORDER BY (preloaded DESC);
      
 CREATE TABLE auction_image.image_preview (
-  image_id timeuuid,
+  image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id), preloaded))
   WITH CLUSTERING ORDER BY (preloaded DESC);
      
 CREATE TABLE auction_image.image_thumbnail (
-  image_id timeuuid,
+  image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id), preloaded))

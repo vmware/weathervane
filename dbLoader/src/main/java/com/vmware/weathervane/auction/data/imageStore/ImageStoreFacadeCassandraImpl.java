@@ -28,12 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cassandra.core.keyspace.DropTableSpecification;
 import org.springframework.data.cassandra.core.CassandraOperations;
-import org.springframework.data.mongodb.core.MongoOperations;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Truncate;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullKey;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
@@ -71,6 +68,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 	private ImageStoreBenchmarkInfoRepository imageStoreBenchmarkInfoRepository;
 	
 	@Autowired
+	@Qualifier("cassandraImageTemplate")
 	private CassandraOperations cassandraOperations;
 
 	/*

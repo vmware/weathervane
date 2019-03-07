@@ -13,8 +13,21 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-public interface BidRepositoryCustom {	
-	void deleteByItemId(Long itemId);
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
+
+public class ImageThumbnailRepositoryImpl implements ImageThumbnailRepositoryCustom {
+
+	@Autowired
+	@Qualifier("cassandraImageTemplate")
+	CassandraOperations cassandraOperations;
+	
+	@Override
+	public void deleteByKeyPreloaded(boolean preloaded) {
+		String cql = "DELETE FROM image_thumbnail WHERE preloaded = " + preloaded + ";";
+		cassandraOperations.execute(cql);
+	}
 }

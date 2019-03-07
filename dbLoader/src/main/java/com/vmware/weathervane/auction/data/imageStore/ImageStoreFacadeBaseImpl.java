@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-import com.vmware.weathervane.auction.data.repository.ImageInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageInfoRepository;
 
 /**
  * This is an implementation of the ImageStoreFacade that stores all images in a

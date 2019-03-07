@@ -13,19 +13,10 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.cassandra.core.CassandraOperations;
+public interface AttendanceRecordRepositoryCustom {
+			
+	void deleteByAuctionId(Long auctionId);
 
-public class ImagePreviewRepositoryImpl implements ImagePreviewRepositoryCustom {
-
-	@Autowired
-	CassandraOperations cassandraOperations;
-	
-	@Override
-	public void deleteByKeyPreloaded(boolean preloaded) {
-		String cql = "DELETE FROM image_preview WHERE preloaded = " + preloaded + ";";
-		cassandraOperations.execute(cql);
-	}
 }

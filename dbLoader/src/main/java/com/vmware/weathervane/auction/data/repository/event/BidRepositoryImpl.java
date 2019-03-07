@@ -13,15 +13,22 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
-import com.vmware.weathervane.auction.data.model.Bid;
-import com.vmware.weathervane.auction.data.model.Bid.BidKey;
+public class BidRepositoryImpl implements BidRepositoryCustom {
 
-@Repository
-public interface BidRepository extends CrudRepository<Bid, BidKey>, BidRepositoryCustom {
-	
+	@Autowired
+	@Qualifier("cassandraEventTemplate")
+	CassandraOperations cassandraOperations;
+
+	@Override
+	public void deleteByItemId(Long itemId) {
+		String cql = "DELETE FROM bid_by_bidderid WHERE item_id = " + itemId + ";";
+		cassandraOperations.execute(cql);
+	}
+
 }

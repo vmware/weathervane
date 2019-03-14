@@ -415,8 +415,7 @@ public class DbLoaderDao {
 		return imageSizes;
 	}
 
-	public void saveBenchmarkInfo(long maxUsers, int numNosqlShards, int numNosqlReplicas, 
-								String imageStoreType, Long maxDuration) {
+	public void saveBenchmarkInfo(long maxUsers, String imageStoreType, Long maxDuration) {
 
 		// Save the load info in the NoSQL Data store
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = new NosqlBenchmarkInfo();
@@ -429,8 +428,6 @@ public class DbLoaderDao {
 		DbBenchmarkInfo dbBenchmarkInfo = new DbBenchmarkInfo();
 		dbBenchmarkInfo.setMaxusers(maxUsers);
 		dbBenchmarkInfo.setImagestoretype(imageStoreType);
-		dbBenchmarkInfo.setNumnosqlreplicas(new Long(numNosqlReplicas));
-		dbBenchmarkInfo.setNumnosqlshards(new Long(numNosqlShards));
 		dbBenchmarkInfo.setMaxduration(maxDuration);
 		dbBenchmarkInfoDao.save(dbBenchmarkInfo);
 

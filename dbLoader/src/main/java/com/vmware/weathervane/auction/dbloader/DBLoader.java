@@ -58,8 +58,6 @@ public class DBLoader {
 	private static String creditLimitDefault = "1000000";
 	private static String maxDurationDefault = "0";
 	private static String maxUsersDefault = "120";
-	private static String numNosqlShardsDefault = "0";
-	private static String numNosqlReplicasDefault = "0";
 	private static String imageDirDefault = "images";
 
 	private static final double itemDuration = 8.5 * 60;
@@ -90,10 +88,6 @@ public class DBLoader {
 		Option d = new Option("d", "descriptions", true, "File containing the item descriptions.");
 		Option u = new Option("u", "users", true,
 				"Max number of active users to be supported by the this data load.");
-		Option m = new Option("m", "shards", true,
-				"Number of NoSQL shards in the configuration. This is used only for storing in the benchmarkInfo");
-		Option p = new Option("p", "replicas", true,
-				"Number of NoSQL replicas in the configuration. This is used only for storing in the benchmarkInfo");
 		Option n = new Option("n", "nocontext", false,
 				"If specified, no users and historical or future auctions are loaded.");
 		Option r = new Option("r", "imagedir", true,
@@ -112,8 +106,6 @@ public class DBLoader {
 		cliOptions.addOption(t);
 		cliOptions.addOption(d);
 		cliOptions.addOption(u);
-		cliOptions.addOption(m);
-		cliOptions.addOption(p);
 		cliOptions.addOption(n);
 		cliOptions.addOption(r);
 		cliOptions.addOption(g);
@@ -141,12 +133,6 @@ public class DBLoader {
 
 		String maxDurationString = cliCmd.getOptionValue('f', maxDurationDefault);
 		long maxDuration = Long.valueOf(maxDurationString);
-
-		String numNosqlShardsString = cliCmd.getOptionValue('m', numNosqlShardsDefault);
-		int numNosqlShards = Integer.valueOf(numNosqlShardsString);
-
-		String numNosqlReplicasString = cliCmd.getOptionValue('p', numNosqlReplicasDefault);
-		int numNosqlReplicas = Integer.valueOf(numNosqlReplicasString);
 
 		String imageDirString = cliCmd.getOptionValue('r', imageDirDefault);
 		String messageString = cliCmd.getOptionValue('a', "");
@@ -690,7 +676,7 @@ public class DBLoader {
 		/*
 		 * Save information about this benchmark load in the data services
 		 */
-		dbLoaderDao.saveBenchmarkInfo(maxUsers, numNosqlShards, numNosqlReplicas, imageStoreType, maxDuration);
+		dbLoaderDao.saveBenchmarkInfo(maxUsers, imageStoreType, maxDuration);
 		
 		fixedTimeOffsetDao.deleteAll();
 

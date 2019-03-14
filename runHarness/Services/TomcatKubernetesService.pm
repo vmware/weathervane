@@ -34,12 +34,6 @@ has '+version' => ( default => '8', );
 
 has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 override 'initialize' => sub {
 	my ($self) = @_;
 

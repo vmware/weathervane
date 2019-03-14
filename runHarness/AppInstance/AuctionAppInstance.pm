@@ -717,38 +717,15 @@ sub getServiceConfigParameters {
 			$jvmOpts .= " -DRABBITMQ_HOST=$msgHostname -DRABBITMQ_PORT=$rabbitMQPort ";
 		}
 
-		my $nosqlHostname;
-		my $mongodbPort;
+		my $cassandraContactpoints = "";
 		my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");
-		if ( !$self->getParamValue('nosqlSharded') ) {
-			my $nosqlService = $nosqlServicesRef->[0];
-			$nosqlHostname = $service->getHostnameForUsedService($nosqlService);
-			$mongodbPort = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
+		my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
+		foreach my $nosqlServer (@$nosqlServicesRef) {
+			$nosqlHostname = $nosqlServer->getHostnameForUsedService($nosqlService);
+			$cassandraContactpoints .= $nosqlHostname + ",";
 		}
-		else {
-
-			# The mongos will be running on this app server
-			$nosqlHostname = $service->host->hostName;
-			if ( $service->mongosDocker ) {
-				$nosqlHostname = $service->mongosDocker;
-			}
-			$mongodbPort = $service->internalPortMap->{'mongos'};
-		}
-		$jvmOpts .= " -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort ";
-
-		if ( $self->getParamValue('nosqlReplicated') ) {
-			my $nosqlService      = $nosqlServicesRef->[0];
-			my $nosqlHostname     = $service->getHostnameForUsedService($nosqlService);
-			my $mongodbPort       = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
-			my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-			for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
-				$nosqlService  = $nosqlServicesRef->[$i];
-				$nosqlHostname = $service->getHostnameForUsedService($nosqlService);
-				$mongodbPort   = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
-				$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
-			}
-			$jvmOpts .= " -DMONGODB_REPLICA_SET=$mongodbReplicaSet ";
-		}
+		$cassandraContactpoints =~ s/,$//;		
+		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints -DCASSANDRA_PORT=$cassandraPort ";
 
 		my $dbServicesRef = $self->getActiveServicesByType("dbServer");
 		my $dbService     = $dbServicesRef->[0];

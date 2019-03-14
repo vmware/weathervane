@@ -34,22 +34,11 @@ has '+version' => ( default => '8', );
 
 has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 override 'initialize' => sub {
 	my ( $self, $numAppServers ) = @_;
 
 	super();
 };
-
-sub setMongosDocker {
-	my ( $self, $mongosDockerName ) = @_;
-	$self->mongosDocker($mongosDockerName);
-}
 
 sub stopInstance {
 	my ( $self, $logPath ) = @_;

@@ -6,6 +6,7 @@ COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl    
 COPY isUp.pl /isUp.pl    
 COPY cassandra-init.sh /cassandra-init.sh    
+COPY auction_cassandra.cql /auction_cassandra.cql
 COPY cassandra.yaml /cassandra.yaml
 
 RUN yum install -y java-1.8.0-openjdk && \

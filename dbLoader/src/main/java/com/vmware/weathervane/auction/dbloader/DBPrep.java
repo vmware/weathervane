@@ -55,8 +55,6 @@ public class DBPrep {
 	private static String numThreadsDefault = "30";
 	private static String maxUsersDefault = "120";
 	private static String maxDurationDefault = "0";
-	private static String numNosqlShardsDefault = "0";
-	private static String numNosqlReplicasDefault = "0";
 	private static List<Thread> threadList = new ArrayList<Thread>();
 
 	private static ImageStoreFacade imageStore;
@@ -79,10 +77,6 @@ public class DBPrep {
 
 		Option u = new Option("u", "users", true,
 				"Number of active users to be supported in this run.");
-		Option m = new Option("m", "shards", true,
-				"Number of NoSQL shards in the configuration. This is used only for storing in the benchmarkInfo");
-		Option p = new Option("p", "replicas", true,
-				"Number of NoSQL replicas in the configuration. This is used only for storing in the benchmarkInfo");
 		Option c = new Option("c", "check", false,
 				"Only check whether the database is loaded with the proper number of users and then exit.");
 		Option a = new Option("a", "auctions", true,
@@ -94,8 +88,6 @@ public class DBPrep {
 
 		Options cliOptions = new Options();
 		cliOptions.addOption(u);
-		cliOptions.addOption(m);
-		cliOptions.addOption(p);
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
 		cliOptions.addOption(t);
@@ -119,12 +111,6 @@ public class DBPrep {
 
 		String maxDurationString = cliCmd.getOptionValue('f', maxDurationDefault);
 		long maxDuration = Long.valueOf(maxDurationString);
-
-		String numNosqlShardsString = cliCmd.getOptionValue('m', numNosqlShardsDefault);
-		int numNosqlShards = Integer.valueOf(numNosqlShardsString);
-
-		String numNosqlReplicasString = cliCmd.getOptionValue('p', numNosqlReplicasDefault);
-		int numNosqlReplicas = Integer.valueOf(numNosqlReplicasString);
 
 		int numAuctions = Integer.valueOf(auctionsString);
 		long numThreads = Long.valueOf(numThreadsString);
@@ -192,19 +178,6 @@ public class DBPrep {
 						"ImageStoreType in database does not match desired type. Needed "
 								+ imageStoreType + ", Found " + dbBenchmarkInfo.getImagestoretype()
 								+ ", Make sure that correct data is loaded.");
-			}
-			if (!dbBenchmarkInfo.getNumnosqlshards().equals(Long.valueOf(numNosqlShards))) {
-				throw new RuntimeException(
-						"Number of shards in NoSQL datastore does not match current configuration in database.  Needed "
-								+ numNosqlShards + ", Found " + dbBenchmarkInfo.getNumnosqlshards()
-								+ ". Make sure that correct data is loaded.");
-			}
-			if (!dbBenchmarkInfo.getNumnosqlreplicas().equals(Long.valueOf(numNosqlReplicas))) {
-				throw new RuntimeException(
-						"Number of replicas in NoSQL datastore does not match current configuration in database.  Needed "
-								+ numNosqlReplicas + ", Found "
-								+ dbBenchmarkInfo.getNumnosqlreplicas()
-								+ ". Make sure that correct data is loaded.");
 			}
 		} finally {
 			imageStore.stopServiceThreads();

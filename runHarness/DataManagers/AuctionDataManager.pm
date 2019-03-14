@@ -109,14 +109,6 @@ sub startAuctionDataManagerContainer {
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 	$envVarMap{"MAXDURATION"} = max( $maxDuration, $totalTime );
-
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
-	$envVarMap{"NUMNOSQLSHARDS"} = $numNosqlShards;
-	
-	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
-	$envVarMap{"NUMNOSQLREPLICAS"} = $numNosqlReplicas;
 	
 	my $cassandraContactpoints = "";
 	my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");

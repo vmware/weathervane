@@ -62,10 +62,6 @@ sub startAuctionKubernetesDataManagerContainer {
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
-	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
@@ -87,12 +83,6 @@ sub startAuctionKubernetesDataManagerContainer {
 		}
 		elsif ( $inline =~ /APPINSTANCENUM:/ ) {
 			print FILEOUT "  APPINSTANCENUM: \"$appInstanceNum\"\n";
-		}
-		elsif ( $inline =~ /NUMNOSQLSHARDS:/ ) {
-			print FILEOUT "  NUMNOSQLSHARDS: \"$numNosqlShards\"\n";
-		}
-		elsif ( $inline =~ /NUMNOSQLREPLICAS:/ ) {
-			print FILEOUT "  NUMNOSQLREPLICAS: \"$numNosqlReplicas\"\n";
 		}
 		elsif ( $inline =~ /SPRINGPROFILESACTIVE:/ ) {
 			print FILEOUT "  SPRINGPROFILESACTIVE: \"$springProfilesActive\"\n";

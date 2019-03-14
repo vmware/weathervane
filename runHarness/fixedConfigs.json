@@ -49,8 +49,8 @@
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "100m",
   "nosqlServerMem" : "2Gi",
-  "nosqlServerImpl" : "mongodb",
-  "mongodbDataVolumeSize" : "5Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "5Gi",
   
 },
 
@@ -103,8 +103,8 @@
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "2",
   "nosqlServerMem" : "32Gi",
-  "nosqlServerImpl" : "mongodb",
-  "mongodbDataVolumeSize" : "200Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "200Gi",
   
 },
 

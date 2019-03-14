@@ -318,7 +318,7 @@ override 'getServiceConfigParameters' => sub {
 
 		$jvmOpts .= " -DRABBITMQ_HOST=rabbitmq -DRABBITMQ_PORT=5672 ";
 
-		$jvmOpts .= " -DMONGODB_HOST=mongodb -DMONGODB_PORT=27017 ";
+		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=cassandra -DCASSANDRA_PORT=9042 ";
 
 		$jvmOpts .= " -DDBHOSTNAME=postgresql -DDBPORT=5432 ";
 

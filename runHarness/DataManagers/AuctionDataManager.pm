@@ -33,12 +33,6 @@ extends 'DataManager';
 
 has '+name' => ( default => 'Weathervane', );
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 has 'dockerConfigHashRef' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -94,11 +88,6 @@ override 'initialize' => sub {
 	super();
 };
 
-sub setMongosDocker {
-	my ( $self, $mongosDockerName ) = @_;
-	$self->mongosDocker($mongosDockerName);
-}
-
 sub startAuctionDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
@@ -129,30 +118,16 @@ sub startAuctionDataManagerContainer {
 	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
 	$envVarMap{"NUMNOSQLREPLICAS"} = $numNosqlReplicas;
 	
-	my $mongodbHostname;
-	my $mongodbPort;
-	if ( $nosqlServerRef->numNosqlShards == 0 ) {
-		$mongodbHostname = $nosqlServerRef->getIpAddr();
-		$mongodbPort   = $nosqlServerRef->portMap->{'mongod'};
+	my $cassandraContactpoints = "";
+	my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");
+	my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
+	foreach my $nosqlServer (@$nosqlServicesRef) {
+		$nosqlHostname = $nosqlServer->getHostnameForUsedService($nosqlService);
+		$cassandraContactpoints .= $nosqlHostname + ",";
 	}
-	else {
-		# The mongos will be running on the dataManager host
-		$mongodbHostname = $self->getIpAddr();
-		$mongodbPort   = $self->internalPortMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "$mongodbHostname:$mongodbPort";
-	if ( $nosqlServerRef->numNosqlReplicas > 0 ) {
-		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService  = $nosqlServersRef->[$i];
-			my $mongodbHostname = $nosqlService->getIpAddr();
-			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
-			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
-		}
-	}
-	$envVarMap{"MONGODBHOSTNAME"} = $mongodbHostname;
-	$envVarMap{"MONGODBPORT"} = $mongodbPort;
-	$envVarMap{"MONGODBREPLICASET"} = $mongodbReplicaSet;
+	$cassandraContactpoints =~ s/,$//;		
+	$envVarMap{"CASSANDRA_CONTACTPOINTS"} = $cassandraContactpoints;
+	$envVarMap{"CASSANDRA_PORT"} = $cassandraPort;
 	
 	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
@@ -335,15 +310,6 @@ sub prepareData {
 		return 0;
 	}
 
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $logHandle );
-	}
-
 	# stop the auctiondatamanager container
 	$self->stopAuctionDataManagerContainer ($logHandle);
 
@@ -373,319 +339,7 @@ sub pretouchData {
 	};
 
 	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-
-	my @pids            = ();
-	if ( $self->getParamValue('mongodbTouch') ) {
-		my $nosqlService = $nosqlServersRef->[0];
-		if ($nosqlService->host->getParamValue('vicHost')) {
-			# mongoDb takes longer to start on VIC
-			sleep 240;
-		}
-
-		foreach $nosqlService (@$nosqlServersRef) {
-
-			my $hostname = $nosqlService->getIpAddr();
-			my $port     = $nosqlService->portMap->{'mongod'};
-			my $cmdString;
-			my $cmdout;
-			my $pid;
-			if ( $self->getParamValue('mongodbTouchFull') ) {
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					print $logHandle "Touching imageFull collection to preload data and indexes\n";
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
-					print $logHandle $cmdout;
-
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-			}
-
-			if ( $self->getParamValue('mongodbTouchPreview') ) {
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					print $logHandle "Touching imagePreview collection to preload data and indexes\n";
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-			}
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imageInfo collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching attendanceRecord collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching bid collection to preload data and indexes\n";
-				$cmdString =
-				  "mongo --port $port --host $hostname --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdString =
-				  "mongo --port $port --host $hostname --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-		}
-
-	}
-
-	foreach my $pid (@pids) {
-		waitpid $pid, 0;
-	}
+	# ToDo: Pretouch cassandra either here or in datamanager container
 
 	$logger->debug( "pretouchData complete for workload ", $workloadNum );
 
@@ -736,15 +390,6 @@ sub loadData {
    	close $pipe;	
 	close $applog;
 	
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $applog );
-	}
-
 	close $applog;
 
 	# Now make sure that the data is really loaded properly
@@ -824,110 +469,14 @@ sub cleanData {
 	my $cmdOut = `$dockerHostString docker exec $name perl /cleanData.pl`;
 	print $logHandle "Output: $cmdOut, \$? = $?\n";
 	$logger->debug("Output: $cmdOut, \$? = $?");
-
 	if ($?) {
 		$console_logger->error(
 			"Data cleaning process failed.  Check CleanData_W${workloadNum}I${appInstanceNum}.log for more information."
 		);
 		return 0;
 	}
-
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
-	my $nosqlService = $nosqlServersRef->[0];
-	if (   ( $nosqlService->numNosqlReplicas > 0 )
-		&& ( $nosqlService->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $logHandle );
-	}
-
-	if ( $self->getParamValue('mongodbCompact') ) {
-
-		# Compact all mongodb collections
-		foreach my $nosqlService (@$nosqlServersRef) {
-			my $hostname         = $nosqlService->getIpAddr();
-			my $port             = $nosqlService->portMap->{'mongod'};
-			print $logHandle "Compacting MongoDB collections on $hostname\n";
-			$logger->debug(
-				"cleanData. Compacting MongoDB collections on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-
-			$logger->debug(
-				"cleanData. Compacting attendanceRecord collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			my $cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord";
-			print $logHandle "$cmdString\n";
-			my $cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting bid collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdString =
-			  "mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageInfo collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageFull collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imagePreview collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageThumbnail collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Getting du -hsc /mnt/mongoData on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-
-		}
-	}
+	
+	# ToDo: Compact cassandra is not done by dataManager container
 }
 
 __PACKAGE__->meta->make_immutable;

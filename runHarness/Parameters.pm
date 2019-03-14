@@ -2758,6 +2758,13 @@ $parameters{"postgresqlPort"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+$parameters{"cassandraPort"} = {
+	"type"      => "=i",
+	"default"   => 9042,
+	"parent"    => "nosqlServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
 $parameters{"rabbitmqPort"} = {
 	"type"      => "=i",
 	"default"   => 5672,

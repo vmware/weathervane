@@ -45,6 +45,7 @@ use Factories::AppInstanceFactory;
 use Parameters
   qw(getParamDefault getParamType getParamKeys getParamValue setParamValue mergeParameters usage fullUsage);
 use Utils qw(getIpAddresses getIpAddress);
+use StderrToLogerror;
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
@@ -283,6 +284,8 @@ if ( getParamValue( $paramsHashRef, "loggers" ) ) {
 		$logger->level( $loggersHashRef->{$loggerName} );
 	}
 }
+
+tie *STDERR, "StderrToLogerror", category => "Console";
 
 my $logger = get_logger("Weathervane");
 

@@ -37,10 +37,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	
 	private Long maxduration;
 	
-	private Long numnosqlshards;
-	
-	private Long numnosqlreplicas;
-
 	private String imagestoretype;
 	
 	public DbBenchmarkInfo() {
@@ -76,22 +72,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 
 	public void setMaxusers(Long maxusers) {
 		this.maxusers = maxusers;
-	}
-
-	public Long getNumnosqlshards() {
-		return numnosqlshards;
-	}
-
-	public void setNumnosqlshards(Long numnosqlshards) {
-		this.numnosqlshards = numnosqlshards;
-	}
-
-	public Long getNumnosqlreplicas() {
-		return numnosqlreplicas;
-	}
-
-	public void setNumnosqlreplicas(Long numnosqlreplicas) {
-		this.numnosqlreplicas = numnosqlreplicas;
 	}
 
 	public Long getMaxduration() {

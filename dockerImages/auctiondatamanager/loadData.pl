@@ -44,9 +44,9 @@ my $dbLoaderJavaOptions = "";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 
-my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" + 
-				" -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" + 
-				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" + 
+my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
+				" -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" .
+				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" . 
 				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions 2>/dev/null";
 				
 system($cmdString);

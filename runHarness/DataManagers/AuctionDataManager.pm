@@ -114,8 +114,7 @@ sub startAuctionDataManagerContainer {
 	my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");
 	my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
 	foreach my $nosqlServer (@$nosqlServicesRef) {
-		$nosqlHostname = $nosqlServer->getHostnameForUsedService($nosqlService);
-		$cassandraContactpoints .= $nosqlHostname + ",";
+		$cassandraContactpoints .= $nosqlServer->hostName + ",";
 	}
 	$cassandraContactpoints =~ s/,$//;		
 	$envVarMap{"CASSANDRA_CONTACTPOINTS"} = $cassandraContactpoints;

@@ -35,8 +35,7 @@ BEGIN {
 my @constructedNameParameters = ( "hostName", "vmName" );
 my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",    "configurationManagers",    "elasticityServices",
-	"coordinationServers",
+	"ipManagers",  "elasticityServices", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
 	"appServers",    "fileServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
@@ -45,8 +44,7 @@ my @instancesWithConstructedNames = (
 my @dockerNameParameters = ( "dockerName" );
 my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",    "configurationManagers",    "elasticityServices",
-	"coordinationServers",
+	"ipManagers",     "elasticityServices", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
 	"appServers",    "auctionBidServers", "fileServers",	"dataManagerInstance"
 );
@@ -842,14 +840,6 @@ $parameters{"ipManagers"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"configurationManager"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServer"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -862,15 +852,6 @@ $parameters{"elasticityService"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"configurationManagers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "configurationManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1498,7 +1479,6 @@ $parameters{"dockerServiceImages"} = {
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
 		"zookeeper"  => "weathervane-zookeeper",
-		"webConfig"  => "weathervane-configurationmanager",
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
 		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
 	},
@@ -1581,15 +1561,6 @@ $parameters{"useVirtualIp"} = {
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-$parameters{"numConfigurationManagers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 $parameters{"numCoordinationServers"} = {
@@ -1808,14 +1779,6 @@ $parameters{"ipManagerImpl"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"configurationManagerImpl"} = {
-	"type"      => "=s",
-	"default"   => "webConfig",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which configuration manager to use.  Currently must be webConfig.",
-	"showUsage" => 0,
-};
-
 $parameters{"elasticityServiceImpl"} = {
 	"type"      => "=s",
 	"default"   => "scheduledES",
@@ -1982,8 +1945,7 @@ $parameters{"prewarmAppServers"} = {
 	"default"   => JSON::true,
 	"parent"  => "appInstance",
 	"usageText" =>
-	  "Controls whether the run harness using the configuration manager to pre-warm the app servers.\n" .
-	  "Must have a configuration manager in the configuration when setting this option to true.",
+	  "Controls whether the run harness pre-warms the app servers.\n" .
 	"showUsage" => 1,
 };
 
@@ -2234,17 +2196,7 @@ $parameters{"nosqlServerMem"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to the configuration service
-$parameters{"configurationManagerJvmOpts"} = {
-	"type"      => "=s",
-	"default"   => "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
-	"parent"    => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # Parameters specific to App Servers
-
 $parameters{"appServerThumbnailImageCacheSizeMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 25,
@@ -2748,22 +2700,6 @@ $parameters{"workloadDriverPortStep"} = {
 	"showUsage" => 0,
 };
 
-
-$parameters{"configurationManagerPort"} = {
-	"type"      => "=i",
-	"default"   => 8888,
-	"parent"    => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"configurationManagerPortStep"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"zookeeperRoot"} = {
 	"type"      => "=i",
 	"default"   => "/opt/zookeeper",
@@ -3234,13 +3170,6 @@ $parameters{"ipManagerSuffix"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 
-};
-$parameters{"configurationManagerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Cm",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
 };
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",

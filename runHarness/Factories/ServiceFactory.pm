@@ -41,8 +41,6 @@ use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
-use Services::ConfigurationManager;
-use Services::ConfigurationManagerDocker;
 use Services::ScheduledElasticityService;
 use Services::SimpleElasticityService;
 use Log::Log4perl qw(get_logger);
@@ -256,26 +254,6 @@ sub getServiceByType {
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 		);
-	}
-	elsif ( $serviceName eq "webConfig" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = ConfigurationManagerKubernetes->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
-		} elsif ($docker) {
-			$service = ConfigurationManagerDocker->new(
-					paramHashRef => $paramHashRef,
-					appInstance => $appInstance,
-			);
-		} else {
-			$service = ConfigurationManager->new(
-						paramHashRef => $paramHashRef,
-					appInstance => $appInstance,
-			);	
-		}
 	}
 	elsif ( $serviceName eq "simpleES" ) {
 		$service = SimpleElasticityService->new(

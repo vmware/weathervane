@@ -1789,7 +1789,7 @@ $parameters{"dbServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "postgresql",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which database to use.\n\tMust be one of: mysql, postgresql",
+	"usageText" => "Controls which database to use.\n\tMust be postgresql",
 	"showUsage" => 1,
 };
 $parameters{"nosqlServerImpl"} = {
@@ -2363,39 +2363,6 @@ $parameters{"frontendConnectionMultiplier"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to MySQL
-$parameters{"mysqlStatsInterval"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlInnodbBufferPoolSize"} = {
-	"type"      => "=s",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlInnodbBufferPoolSizePct"} = {
-	"type"      => "=f",
-	"default"   => 0.75,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlMaxConnections"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # Parameters specific to PostgreSQL
 $parameters{"postgresqlSharedBuffers"} = {
 	"type"      => "=s",
@@ -2774,14 +2741,6 @@ $parameters{"nosqlServerPortStep"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-
-$parameters{"mysqlPort"} = {
-	"type"      => "=i",
-	"default"   => 3306,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"postgresqlPort"} = {
 	"type"      => "=i",
 	"default"   => 5432,
@@ -2802,22 +2761,6 @@ $parameters{"keepalivedServerRoot"} = {
 	"type"      => "=s",
 	"default"   => "/etc/keepalived",
 	"parent"    => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/mysql",
-	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };

@@ -88,13 +88,6 @@ has 'needsTty' => (
 	default => 0,
 );
 
-# This service is currently actively part of the running configuration
-has 'isActive' => (
-	is => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
 # Hold the id assigned by the configuration manager
 has 'id' => (
 	is => 'rw',
@@ -320,7 +313,7 @@ sub start {
 	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
 		foreach my $service (@$servicesRef) {
@@ -356,7 +349,7 @@ sub stop {
 	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	foreach my $service (@$servicesRef) {
 		$logger->debug( "Stop " . $service->getDockerName() . "\n" );

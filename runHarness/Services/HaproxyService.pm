@@ -173,12 +173,12 @@ sub configure {
 	
 	# Get the haproxy.cfg from the haproxy instance, modify it, and
 	# then copy back
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
-	my $appServersRef  =  $self->appInstance->getActiveServicesByType('appServer');		
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
+	my $appServersRef  =  $self->appInstance->getAllServicesByType('appServer');		
 
-	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
-	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
-	my $numLbServers = $self->appInstance->getNumActiveOfServiceType('lbServer');
+	my $numWebServers = $self->appInstance->getTotalNumOfServiceType('webServer');
+	my $numAppServers = $self->appInstance->getTotalNumOfServiceType('appServer');
+	my $numLbServers = $self->appInstance->getTotalNumOfServiceType('lbServer');
 
 	my $maxConn = $self->getParamValue('frontendConnectionMultiplier') * floor($users / $numLbServers);
 	if ($self->getParamValue('haproxyMaxConn')) {

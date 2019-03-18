@@ -66,7 +66,7 @@ sub configure {
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('auctionBidServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('auctionBidServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
@@ -83,7 +83,7 @@ sub configure {
 	}
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
-	my $numAuctionBidServers = $self->appInstance->getNumActiveOfServiceType('auctionBidServer');
+	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 
 	open( FILEIN,  "$configDir/kubernetes/auctionbidservice.yaml" ) or die "$configDir/kubernetes/auctionbidservice.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionbidservice-$namespace.yaml" )             or die "Can't open file /tmp/auctionbidservice-$namespace.yaml: $!\n";

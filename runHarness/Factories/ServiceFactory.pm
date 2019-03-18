@@ -27,7 +27,6 @@ use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
 use Services::AuctionBidService;
-use Services::MysqlService;
 use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
@@ -180,12 +179,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
-	}
-	elsif ( $serviceName eq "mysql" ) {
-		$service = MysqlService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	elsif ( $serviceName eq "postgresql" ) {
 		if ($paramHashRef->{'clusterName'}) {

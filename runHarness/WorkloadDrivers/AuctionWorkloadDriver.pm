@@ -1626,39 +1626,6 @@ sub stopAppStatsCollection {
 		print LOG "numTimeoffsetsDeleted = $numTimeoffsetsDeleted\n";
 
 	}
-	else {
-		$connectString =
-"mysql  -u auction -pauction -h $dbHostname --database=auction --skip-column-names -s -e ";
-		$avgBidCompletionDelay =
-`$connectString \"SELECT AVG(delay)/1000 FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND  timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($avgBidCompletionDelay);
-		print LOG "avgBidCompletionDelay = $avgBidCompletionDelay\n";
-
-		$stddevBidCompletionDelay =
-`$connectString \"SELECT STDDEV(delay)/1000 FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND  timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($stddevBidCompletionDelay);
-		print LOG "stddevBidCompletionDelay = $stddevBidCompletionDelay\n";
-
-		$avgItemDuration =
-`$connectString \"SELECT avg(TIMESTAMPDIFF(SECOND, biddingStartTime, biddingEndTime)) FROM highbid WHERE biddingEndTime IS NOT NULL AND biddingStartTime IS NOT NULL AND  '$steadyStateStartTimestamp'<  biddingEndTime AND biddingStartTime <  '$steadyStateEndTimestamp';\"`;
-		chomp($avgItemDuration);
-		print LOG "avgItemDuration = $avgItemDuration\n";
-
-		$avgCompletionsPerBid =
-`$connectString \"SELECT AVG(numCompletedBids) FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($avgCompletionsPerBid);
-		print LOG "avgCompletionsPerBid = $avgCompletionsPerBid\n";
-
-		$stddevCompletionsPerBid =
-`$connectString \"SELECT STDDEV(numCompletedBids) FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($stddevCompletionsPerBid);
-		print LOG "stddevCompletionsPerBid = $stddevCompletionsPerBid\n";
-
-		$numTimeoffsetsDeleted =
-		  `$connectString \"DELETE FROM fixedtimeoffset;\"`;
-		print LOG "numTimeoffsetsDeleted = $numTimeoffsetsDeleted\n";
-
-	}
 	close LOG;
 	exit;
 }

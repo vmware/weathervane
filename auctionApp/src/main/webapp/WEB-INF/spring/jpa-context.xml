@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager"
 		p:entityManagerFactory-ref="entityManagerFactory" />
 
-	<beans profile="mysql,postgresql">
+	<beans profile="postgresql">
 		<bean id="entityManagerFactory"
 			class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
 			<property name="dataSource" ref="dataSource" />
@@ -50,16 +50,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				</props>
 			</property>
 
-		</bean>
-	</beans>
-
-	<beans profile="mysql">
-		<bean id="jpaVendorAdapter"
-			class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
-			<property name="database" value="MYSQL" />
-			<property name="showSql" value="${jpa.jpaVendorAdapter.showSql}" />
-			<property name="databasePlatform"
-				value="com.vmware.weathervane.auction.support.Mysql5BitBooleanDialect" />
 		</bean>
 	</beans>
 

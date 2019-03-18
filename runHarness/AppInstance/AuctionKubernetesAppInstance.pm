@@ -129,20 +129,22 @@ override 'startServices' => sub {
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for starting the 
-			# service instances
-			my $serviceRef = $servicesRef->[0];
-			$serviceRef->start($serviceType, $users, $setupLogDir);
-		} else {
-			next;
-		}		
-	}
+	if ($serviceTypes) {
+		foreach my $serviceType (@$serviceTypes) {
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for starting the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$serviceRef->start($serviceType, $users, $setupLogDir);
+			} else {
+				next;
+			}		
+		}
 		
-	# Don't return until all services are ready
-	$self->isRunningAndUpDataServices($serviceTier, $logFile);
+		# Don't return until all services are ready
+		$self->isRunningAndUpDataServices($serviceTier, $logFile);
+	}
 	
 	close $logFile;
 	

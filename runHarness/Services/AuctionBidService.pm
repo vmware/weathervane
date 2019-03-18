@@ -262,21 +262,8 @@ sub configure {
 	my $db            = $dbService->getImpl();
 	my $dbPort        = $dbService->portMap->{$db};
 
-	my $driverClassName;
-	if ( $db eq "mysql" ) {
-		$driverClassName = "com.mysql.jdbc.Driver";
-	}
-	elsif ( $db eq "postgresql" ) {
-		$driverClassName = "org.postgresql.Driver";
-	}
-
-	my $dbUrl;
-	if ( $db eq "mysql" ) {
-		$dbUrl = "jdbc:mysql://" . $dbHostname . ":" . $dbPort . "/auction";
-	}
-	elsif ( $db eq "postgresql" ) {
-		$dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
-	}
+	my $driverClassName = "org.postgresql.Driver";
+	my $dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
 
 	open( FILEIN,  "$configDir/auctionBidService/server.xml" );
 	open( FILEOUT, ">/tmp/server-bid-${suffix}-N${nodeNum}.xml" );

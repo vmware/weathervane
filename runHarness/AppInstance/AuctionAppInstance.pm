@@ -409,16 +409,7 @@ override 'redeploy' => sub {
 		my $scpConnectString = $server->host->scpConnectString;
 		my $scpHostString    = $server->host->scpHostString;
 		my $webServerImpl    = $server->getParamValue('webServerImpl');
-		my $webContentRoot;
-		if ( $webServerImpl eq 'httpd' ) {
-			$webContentRoot = $self->getParamValue('httpdDocumentRoot');
-		}
-		elsif ( $webServerImpl eq 'nginx' ) {
-			$webContentRoot = $self->getParamValue('nginxDocumentRoot');
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only httpd and nginx are supported .as web servers\n";
-		}
+		my $webContentRoot = $self->getParamValue('nginxDocumentRoot');
 
 		print $logfile "$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"\n";
 		my $out = `$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"`;

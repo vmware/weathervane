@@ -198,13 +198,13 @@ sub configure {
 
 	}
 	
-	my $numZookeeperServers = $self->appInstance->getMaxNumOfServiceType("coordinationServer");
+	my $numZookeeperServers = $self->appInstance->getTotalNumOfServiceType("coordinationServer");
 	if ($numZookeeperServers > 1) {
 		# Add server info for a replicated config
 		print FILEOUT "initLimit=5\n";
 		print FILEOUT "syncLimit=2\n";
 		
-		my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
+		my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
 		foreach my $zookeeperServer (@$zookeeperServersRef) {
 			my $id =  $zookeeperServer->getParamValue("instanceNum");
 			my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
@@ -237,7 +237,7 @@ sub clearDataAfterStart {
 }
 
 sub stopStatsCollection {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -279,7 +279,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

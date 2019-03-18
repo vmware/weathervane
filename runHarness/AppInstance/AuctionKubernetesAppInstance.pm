@@ -72,7 +72,7 @@ override 'getDeployedConfiguration' => sub {
 	my ( $self, $destinationPath) = @_;
 	
 	# Get a host from the first appServer (since there will always be an appServer)
-	my $appServersRef = $self->getActiveServicesByType("appServer");
+	my $appServersRef = $self->getAllServicesByType("appServer");
 	my $anAppServer = $appServersRef->[0];	
 	my $cluster = $anAppServer->host;
 	
@@ -130,7 +130,7 @@ override 'startServices' => sub {
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
 	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getActiveServicesByType($serviceType);
+		my $servicesRef = $self->getAllServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
 			# Use the first instance of the service for starting the 
 			# service instances
@@ -204,8 +204,8 @@ override 'getServiceConfigParameters' => sub {
 		if ( !$auctions ) {
 			$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 		}
-		my $numAppServers                  = $self->getNumActiveOfServiceType('appServer');
-		my $numWebServers                  = $self->getNumActiveOfServiceType('webServer');
+		my $numAppServers                  = $self->getTotalNumOfServiceType('appServer');
+		my $numWebServers                  = $self->getTotalNumOfServiceType('webServer');
 		my $authTokenCacheSize             = 2 * $users;
 		my $activeAuctionCacheSize         = 2 * $auctions;
 		my $itemsForAuctionCacheSize       = 2 * $auctions;
@@ -233,7 +233,7 @@ override 'getServiceConfigParameters' => sub {
 			}
 			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
 
-			my $appServersRef = $self->getActiveServicesByType('appServer');
+			my $appServersRef = $self->getAllServicesByType('appServer');
 			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
 			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 		}
@@ -351,7 +351,7 @@ override 'getHostStatsSummary' => sub {
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
 	# start kubectl top
-	my $servicesRef = $self->getActiveServicesByType('appServer');
+	my $servicesRef = $self->getAllServicesByType('appServer');
 	my $service = $servicesRef->[0];
 	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $destinationDir = "$tmpDir/statistics/kubernetes";
@@ -364,7 +364,7 @@ override 'startStatsCollection' => sub {
 override 'stopStatsCollection' => sub {
 	my ( $self ) = @_;
 	# stop kubectl top
-	my $servicesRef = $self->getActiveServicesByType('appServer');
+	my $servicesRef = $self->getAllServicesByType('appServer');
 	my $service = $servicesRef->[0];
 	$service->host->stopKubectlTop(1);
 

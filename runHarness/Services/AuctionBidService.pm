@@ -218,7 +218,7 @@ sub configure {
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('auctionBidServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('auctionBidServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
@@ -256,7 +256,7 @@ sub configure {
 	`$scpConnectString /tmp/setenv-bid-${suffix}-N${nodeNum}.sh root\@$scpHostString:${bidServiceCatalinaBase}/bin/setenv.sh`;
 
 	# Configure the database info
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
 	my $dbHostname    = $dbService->host->hostName;
 	my $db            = $dbService->getImpl();
@@ -482,7 +482,7 @@ sub getStatsSummary {
 
 	tie( my %accumulatedCsv, 'Tie::IxHash' );
 	my $serviceType = $self->getParamValue('serviceType');
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	my $numServices = $#{$servicesRef} + 1;
 	my $csvHashRef;

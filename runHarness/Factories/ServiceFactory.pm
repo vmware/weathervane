@@ -41,8 +41,6 @@ use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Services::NfsService;
-use Services::ScheduledElasticityService;
-use Services::SimpleElasticityService;
 use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
@@ -251,18 +249,6 @@ sub getServiceByType {
 	}
 	elsif ( $serviceName eq "nfs" ) {
 		$service = NfsService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "simpleES" ) {
-		$service = SimpleElasticityService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "scheduledES" ) {
-		$service = ScheduledElasticityService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 		);

@@ -87,7 +87,7 @@ override 'create' => sub {
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('appServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('appServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
@@ -104,13 +104,13 @@ override 'create' => sub {
 	}
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
 	my $dbHostname    = $self->getHostnameForUsedService($dbService);
 	my $db            = $dbService->getImpl();
 	my $dbPort        = $self->getPortNumberForUsedService( $dbService, $db );
 	my $useTLS = 0;
-	if ( $self->getParamValue('ssl') && ( $self->appInstance->getNumActiveOfServiceType('webServer') == 0 ) ) {
+	if ( $self->getParamValue('ssl') && ( $self->appInstance->getTotalNumOfServiceType('webServer') == 0 ) ) {
 		$useTLS = 1;
 	}
 	my %envVarMap;
@@ -439,7 +439,7 @@ sub getStatsSummary {
 
 		tie( my %accumulatedCsv, 'Tie::IxHash' );
 		my $serviceType = $self->getParamValue('serviceType');
-		my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+		my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 		my $numServices = $#{$servicesRef} + 1;
 		my $csvHashRef;
 		foreach my $service (@$servicesRef) {

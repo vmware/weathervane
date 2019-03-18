@@ -81,9 +81,9 @@ override 'getEdgeService' => sub {
 		", appInstance ",               $self->getParamValue('appInstanceNum')
 	);
 
-	my $numLbServers  = $self->getNumActiveOfServiceType('lbServer');
-	my $numWebServers = $self->getNumActiveOfServiceType('webServer');
-	my $numAppServers = $self->getNumActiveOfServiceType('appServer');
+	my $numLbServers  = $self->getTotalNumOfServiceType('lbServer');
+	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
+	my $numAppServers = $self->getTotalNumOfServiceType('appServer');
 	$logger->debug(
 		"getEdgeService: numLbServers = $numLbServers, numWebServers = $numWebServers, numAppServers = $numAppServers");
 
@@ -128,45 +128,15 @@ override 'checkConfig' => sub {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
-	# First make sure that any configPaths specified didn't ask for more services
-	# than the user specified
-	my $impl         = $self->getParamValue('workloadImpl');
-	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
-	my $serviceTypes =  $serviceTiersHashRef->{"infrastructure"};
-	foreach my $serviceType (@$serviceTypes) {
-		if ( $self->getMaxNumOfServiceType($serviceType) < $self->getTotalNumOfServiceType($serviceType) ) {
-			$console_logger->error(
-				    "For service $serviceType the config path specifies more servers than were configured by num"
-				  . $serviceType . "s or "
-				  . $serviceType
-				  . "s.\nMust specify at least "
-				  . $self->getMaxNumOfServiceType($serviceType) . " "
-				  . $serviceType
-				  . "s for the configPath to be viable.\n." );
-			return 0;
-		}
-	}
-
 	my $edgeService              = $self->getParamValue('edgeService');
-	my $numLbServers             = $self->getNumActiveOfServiceType('lbServer');
-	my $numCoordinationServers   = $self->getNumActiveOfServiceType('coordinationServer');
-	my $numWebServers            = $self->getNumActiveOfServiceType('webServer');
-	my $numAppServers            = $self->getNumActiveOfServiceType('appServer');
-	my $numMsgServers            = $self->getNumActiveOfServiceType('msgServer');
-	my $numDbServers             = $self->getNumActiveOfServiceType('dbServer');
-	my $numFileServers           = $self->getNumActiveOfServiceType('fileServer');
-	my $numElasticityServers     = $self->getNumActiveOfServiceType('elasticityService');
-	my $numNosqlServers          = $self->getNumActiveOfServiceType('nosqlServer');
-
-	if ( $numElasticityServers > 1 ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The workload can be run with at most one elasticityServer.");
-		return 0;
-	}
-	my $configPath = $self->getConfigPath();
-	if (($#$configPath >= 0 ) && ($numElasticityServers < 1)) {
-		$console_logger->error( "Workload $workloadNum, AppInstance $appInstanceNum: When running an appInstance with a configPath, the deployment must include an elasticity service.\n" );
-		return 0;
-	}
+	my $numLbServers             = $self->getTotalNumOfServiceType('lbServer');
+	my $numCoordinationServers   = $self->getTotalNumOfServiceType('coordinationServer');
+	my $numWebServers            = $self->getTotalNumOfServiceType('webServer');
+	my $numAppServers            = $self->getTotalNumOfServiceType('appServer');
+	my $numMsgServers            = $self->getTotalNumOfServiceType('msgServer');
+	my $numDbServers             = $self->getTotalNumOfServiceType('dbServer');
+	my $numFileServers           = $self->getTotalNumOfServiceType('fileServer');
+	my $numNosqlServers          = $self->getTotalNumOfServiceType('nosqlServer');
 
 	my $minimumUsers = $self->getParamValue('minimumUsers');
 	if ( $self->getParamValue('users') < $minimumUsers ) {
@@ -478,7 +448,7 @@ sub getSpringProfilesActive {
 	my $springProfilesActive;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 
-	my $dbsRef = $self->getActiveServicesByType('dbServer');
+	my $dbsRef = $self->getAllServicesByType('dbServer');
 	my $db     = $dbsRef->[0]->getImpl();
 
 	if ( $db eq "mysql" ) {
@@ -517,7 +487,7 @@ sub getSpringProfilesActive {
 		$springProfilesActive .= ",singleMongo";
 	}
 
-	my $numMsgServers = $self->getNumActiveOfServiceType('msgServer');
+	my $numMsgServers = $self->getTotalNumOfServiceType('msgServer');
 	if ( $numMsgServers > 1 ) {
 		$springProfilesActive .= ",clusteredRabbit";
 	}
@@ -533,7 +503,7 @@ sub getSpringProfilesActive {
 		$springProfilesActive .= ",performanceMonitor";
 	}
 
-	my $numBidServers = $self->getNumActiveOfServiceType('auctionBidServer');
+	my $numBidServers = $self->getTotalNumOfServiceType('auctionBidServer');
 	if ($numBidServers > 0) {
 		$springProfilesActive .= ",bidService";
 	} else {
@@ -574,8 +544,8 @@ sub getServiceConfigParameters {
 		if ( !$auctions ) {
 			$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 		}
-		my $numAppServers                  = $self->getNumActiveOfServiceType('appServer');
-		my $numWebServers                  = $self->getNumActiveOfServiceType('webServer');
+		my $numAppServers                  = $self->getTotalNumOfServiceType('appServer');
+		my $numWebServers                  = $self->getTotalNumOfServiceType('webServer');
 		my $authTokenCacheSize             = 2 * $users;
 		my $activeAuctionCacheSize         = 2 * $auctions;
 		my $itemsForAuctionCacheSize       = 2 * $auctions;
@@ -603,12 +573,12 @@ sub getServiceConfigParameters {
 			}
 			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
 
-			my $appServersRef = $self->getActiveServicesByType('appServer');
+			my $appServersRef = $self->getAllServicesByType('appServer');
 			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
 			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
 		}
 		my $zookeeperConnectionString = "";
-		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
+		my $coordinationServersRef    = $self->getAllServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
 			my $zkHost = $service->getHostnameForUsedService($coordinationServer);
 			my $zkPort = $service->getPortNumberForUsedService( $coordinationServer, "client" );
@@ -692,12 +662,12 @@ sub getServiceConfigParameters {
 
 
 		my $clusteredRabbit = '';
-		my $numMsgServers   = $self->getNumActiveOfServiceType('msgServer');
+		my $numMsgServers   = $self->getTotalNumOfServiceType('msgServer');
 		if ( $numMsgServers > 1 ) {
 			$clusteredRabbit = 1;
 		}
 
-		my $msgServicesRef = $self->getActiveServicesByType("msgServer");
+		my $msgServicesRef = $self->getAllServicesByType("msgServer");
 		if ($clusteredRabbit) {
 
 			# start the list of rabbit hosts in rotating order
@@ -734,7 +704,7 @@ sub getServiceConfigParameters {
 
 		my $nosqlHostname;
 		my $mongodbPort;
-		my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");
+		my $nosqlServicesRef = $self->getAllServicesByType("nosqlServer");
 		if ( !$self->getParamValue('nosqlSharded') ) {
 			my $nosqlService = $nosqlServicesRef->[0];
 			$nosqlHostname = $service->getHostnameForUsedService($nosqlService);
@@ -765,7 +735,7 @@ sub getServiceConfigParameters {
 			$jvmOpts .= " -DMONGODB_REPLICA_SET=$mongodbReplicaSet ";
 		}
 
-		my $dbServicesRef = $self->getActiveServicesByType("dbServer");
+		my $dbServicesRef = $self->getAllServicesByType("dbServer");
 		my $dbService     = $dbServicesRef->[0];
 		my $dbHostname    = $service->getHostnameForUsedService($dbService);
 		my $dbPort        = $service->getPortNumberForUsedService( $dbService, $dbService->getImpl() );

@@ -35,7 +35,7 @@ BEGIN {
 my @constructedNameParameters = ( "hostName", "vmName" );
 my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",  "elasticityServices", "coordinationServers",
+	"ipManagers", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
 	"appServers",    "fileServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
@@ -44,7 +44,7 @@ my @instancesWithConstructedNames = (
 my @dockerNameParameters = ( "dockerName" );
 my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",     "elasticityServices", "coordinationServers",
+	"ipManagers", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
 	"appServers",    "auctionBidServers", "fileServers",	"dataManagerInstance"
 );
@@ -56,7 +56,7 @@ my @constructedWwwHostnameParameters     = ("wwwHostname");
 my @instancesWithConstructedWwwHostnames = ( "appInstances", );
 
 my @nonInstanceHashParameters = ("dockerServiceImages");
-my @nonInstanceListParameters = ('userLoadPath', 'configPath');
+my @nonInstanceListParameters = ('userLoadPath');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
 
 sub getParamHashAsJson {
@@ -848,28 +848,11 @@ $parameters{"coordinationServer"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"elasticityService"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServers"} = {
 	"type"      => "list",
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"elasticityServices"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "elasticityService",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1151,24 +1134,6 @@ $parameters{"repeatUserLoadPath"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-
-$parameters{"configPath"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"usageText" => "This is the configuration path for the number of web and app servers.\n" . 
-	"It is a list of intervals, with each interval having a duration and a number of web and app servers. ",
-	"showUsage" => 1,
-};
-
-$parameters{"repeatConfigPath"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"maxDuration"} = {
 	"type"      => "=i",
 	"default"   => 7200,
@@ -1572,15 +1537,6 @@ $parameters{"numCoordinationServers"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"numElasticityServices"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "elasticityService",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"numLbServers"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1776,14 +1732,6 @@ $parameters{"ipManagerImpl"} = {
 	"type"      => "=s",
 	"default"   => "keepalived",
 	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
-$parameters{"elasticityServiceImpl"} = {
-	"type"      => "=s",
-	"default"   => "scheduledES",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which elasticity service to use.  Currently must be localElasticity.",
 	"showUsage" => 0,
 };
 
@@ -3174,13 +3122,6 @@ $parameters{"ipManagerSuffix"} = {
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Cs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"elasticityServiceSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Es",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

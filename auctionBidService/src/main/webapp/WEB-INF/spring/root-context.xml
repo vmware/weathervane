@@ -108,23 +108,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		</bean>
 	</beans>
 
-	<beans profile="imagesInFilesystem">
-		<bean id="imageStoreFacade"
-			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeFilesystemImpl">
-			<property name="baseDirectory" value="/mnt/imageStore" />
-			<property name="imageFormat" value="jpg" />
-			<property name="thumbnailWidth" value="100" />
-			<property name="thumbnailHeight" value="100" />
-			<property name="previewWidth" value="350" />
-			<property name="previewHeight" value="350" />
-			<property name="numImageWriters" value="${IMAGEWRITERTHREADS:10}" />
-			<property name="useImageWriters" value="${USEIMAGEWRITERS:true}" />
-			<property name="randomizeImages" value="${RANDOMIZEIMAGES:true}" />
-			<property name="addImageQueueSize" value="${ADDIMAGEQUEUESIZE:4000}" />
-		</bean>
-	</beans>
-
-
 	<beans profile="imagesInMongo">
 		<bean id="imageStoreFacade"
 			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeMongodbImpl">

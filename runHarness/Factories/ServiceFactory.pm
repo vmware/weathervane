@@ -38,7 +38,6 @@ use Services::ZookeeperDockerService;
 use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
-use Services::NfsService;
 use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
@@ -232,12 +231,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
-	}
-	elsif ( $serviceName eq "nfs" ) {
-		$service = NfsService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	else {
 		die "No matching service name $serviceName available to ServiceFactory";

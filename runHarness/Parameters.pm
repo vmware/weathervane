@@ -37,7 +37,7 @@ my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
 	"ipManagers", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "fileServers",      "viHosts",      "viMgmtHostInstance",
+	"appServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
 );
 
@@ -46,7 +46,7 @@ my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
 	"ipManagers", "coordinationServers",
 	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "auctionBidServers", "fileServers",	"dataManagerInstance"
+	"appServers",    "auctionBidServers",	"dataManagerInstance"
 );
 
 my @constructedAppInstanceNameParameters     = ("appInstanceName");
@@ -925,23 +925,6 @@ $parameters{"nosqlServers"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"fileServer"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"fileServers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "fileServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"msgServer"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1624,15 +1607,6 @@ $parameters{"numMsgServers"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"numFileServers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"viMgmtHost"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1806,19 +1780,12 @@ $parameters{"msgServerImpl"} = {
 	"usageText" => "Controls which message server to use.\n\t" . "Currently only RabbitMQ is supported.",
 	"showUsage" => 0,
 };
-$parameters{"fileServerImpl"} = {
-	"type"      => "=s",
-	"default"   => "nfs",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which file server to use.\n\t" . "Currently only NFS is supported.",
-	"showUsage" => 0,
-};
 $parameters{"imageStoreType"} = {
 	"type"      => "=s",
 	"default"   => "mongodb",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which imageStore implementation to use.\n\t"
-	  . "Must be one of: mongodb, filesystem, filesystemApp, or memory",
+	  . "Must be one of: mongodb, or memory",
 	"showUsage" => 1,
 };
 
@@ -2389,54 +2356,6 @@ $parameters{"mongodbCompact"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to NFS
-$parameters{"nfsProcessCount"} = {
-	"type"      => "=i",
-	"default"   => 32,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsServiceName"} = {
-	"type"      => "=s",
-	"default"   => "nfs-server",
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"nfsRsize"} = {
-	"type"      => "=i",
-	"default"   => 65536,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsWsize"} = {
-	"type"      => "=i",
-	"default"   => 1048567,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsServerAsync"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsClientAsync"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
 
 $parameters{"appServerEnableJprofiler"} = {
 	"type"      => "!",
@@ -2910,15 +2829,6 @@ $parameters{"rampupInterval"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"imageStoreDir"} = {
-	"type"    => "=s",
-	"default" => "/mnt/imageStore",
-	"parent"  => "appInstance",
-	"usageText" =>
-"This is the location of the directory in which images are stored when the\n\timageStore type is filesystem.   This is the \n\tdirectory that is exported by NFS and mounted by other VMs.",
-	"showUsage" => 0,
-};
-
 $parameters{"wwwHostnamePrefix"} = {
 	"type"    => "=s",
 	"default" => "www",
@@ -3043,13 +2953,6 @@ $parameters{"nosqlServerSuffix"} = {
 $parameters{"msgServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Msg",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"fileServerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "File",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

@@ -700,9 +700,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			$appInstance->setServicesByType( $serviceType, \@services );
 		}
 
-		# Let the appInstance set up the number of services active at start
-		$appInstance->initializeServiceConfig();
-
 		# Ask the application which service is the edge service that is directly used by clients.
 		# This may affect the configuration of port numbers
 		my $edgeService = $appInstance->getEdgeService();
@@ -714,7 +711,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $useVirtualIp = $appInstanceParamHashRef->{'useVirtualIp'};
 		if ($useVirtualIp) {
 			$weathervane_logger->debug("Configuring IP Managers for virtualIp");
-			$appInstanceParamHashRef->{'numIpManagers'}   = $appInstance->getNumActiveOfServiceType($edgeService);
+			$appInstanceParamHashRef->{'numIpManagers'}   = $appInstance->getTotalNumOfServiceType($edgeService);
 			$appInstanceParamHashRef->{"ipManagerSuffix"} = $appInstanceParamHashRef->{ $edgeService . "Suffix" };
 
 			my @services;
@@ -764,9 +761,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			}
 
 			$appInstance->setServicesByType( $serviceType, \@services );
-
-			# Let the appInstance set up the number of services active at start
-			$appInstance->initializeServiceConfig();
 
 		}
 		else {

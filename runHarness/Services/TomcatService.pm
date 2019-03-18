@@ -222,7 +222,7 @@ sub configure {
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('appServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('appServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
@@ -260,7 +260,7 @@ sub configure {
 	`$scpConnectString /tmp/setenv${suffix}-N${nodeNum}.sh root\@$scpHostString:${tomcatCatalinaBase}/bin/setenv.sh`;
 
 	# Configure the database info
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
 	my $dbHostname    = $dbService->host->hostName;
 	my $db            = $dbService->getImpl();
@@ -335,7 +335,7 @@ sub configure {
 			print FILEOUT "maxConnections=\"$maxConnections\"\n";
 			print FILEOUT "protocol=\"org.apache.coyote.http11.Http11NioProtocol\"\n";
 
-			if ( $self->getParamValue('ssl') && ( $self->appInstance->getNumActiveOfServiceType('webServer') == 0 ) ) {
+			if ( $self->getParamValue('ssl') && ( $self->appInstance->getTotalNumOfServiceType('webServer') == 0 ) ) {
 
 				# If using ssl, reconfigure the connector
 				# to handle ssl on https port
@@ -403,7 +403,7 @@ sub configure {
 	while ( my $inline = <FILEIN> ) {
 		if (0) {
 
-#		if ( ( $inline =~ /<\/web-app>/ ) && ( $self->appInstance->getNumActiveOfServiceType('webServer') == 0 ) && ( $self->getParamValue('ssl') ) ) {
+#		if ( ( $inline =~ /<\/web-app>/ ) && ( $self->appInstance->getTotalNumOfServiceType('webServer') == 0 ) && ( $self->getParamValue('ssl') ) ) {
 			print FILEOUT "<security-constraint>\n";
 			print FILEOUT "<web-resource-collection>\n";
 			print FILEOUT "<web-resource-name>Entire Application</web-resource-name>\n";
@@ -545,7 +545,7 @@ sub getStatsSummary {
 
 	tie( my %accumulatedCsv, 'Tie::IxHash' );
 	my $serviceType = $self->getParamValue('serviceType');
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	my $numServices = $#{$servicesRef} + 1;
 	my $csvHashRef;

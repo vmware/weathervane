@@ -65,7 +65,7 @@ sub startInstance {
 	my %volumeMap;
 
 	# Set environment variables for startup configuration
-	my $zookeeperServersRef = $self->appInstance->getActiveServicesByType("coordinationServer");
+	my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->getParamValue("instanceNum");
@@ -210,7 +210,7 @@ sub clearDataAfterStart {
 }
 
 sub stopStatsCollection {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -263,7 +263,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

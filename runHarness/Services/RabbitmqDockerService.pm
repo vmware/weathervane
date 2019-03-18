@@ -158,7 +158,7 @@ sub startInstance {
 sub configureAfterIsUp {
 	my ( $self, $applog ) = @_;
 	
-	if ( $self->appInstance->getNumActiveOfServiceType('msgServer') > 1 ) {
+	if ( $self->appInstance->getTotalNumOfServiceType('msgServer') > 1 ) {
 		$self->configureAfterIsUpClusteredRabbitMQ($applog);
 	}
 	else {
@@ -230,7 +230,7 @@ sub configureAfterIsUpClusteredRabbitMQ {
 
 	# If this is the last rabbit service to be processed,
 	# then clear the static variables for the next action
-	if ( $appInstance->numRabbitmqProcessed == $self->appInstance->getNumActiveOfServiceType('msgServer') ) {
+	if ( $appInstance->numRabbitmqProcessed == $self->appInstance->getTotalNumOfServiceType('msgServer') ) {
 		$appInstance->clear_numRabbitmqProcessed;
 		$appInstance->clear_rabbitmqClusterHosts;
 	}
@@ -321,7 +321,7 @@ sub clearDataAfterStart {
 }
 
 sub stopStatsCollection {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -372,7 +372,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

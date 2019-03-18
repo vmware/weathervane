@@ -177,7 +177,7 @@ override 'stop' => sub {
 	# stop mongod servers
 	$self->stopMongodServers($dblog);
 		
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		$nosqlServer->cleanLogFiles();
 		$nosqlServer->cleanStatsFiles();
@@ -192,7 +192,7 @@ sub stopMongodServers {
 	$logger->debug("stopping mongod servers");
 
 	#  stop all of the mongod servers
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		my $hostname = $nosqlServer->host->hostName;
 
@@ -223,7 +223,7 @@ sub stopMongocServers {
 	$logger->debug("Stopping config servers");
 
 	my $curCfgSvr = 1;
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	while ( $curCfgSvr <= $self->numConfigServers ) {
 
 		foreach my $nosqlServer (@$nosqlServersRef) {
@@ -258,7 +258,7 @@ sub stopMongosServers {
 	print $dblog "Stopping mongos servers\n";
 	$logger->debug("Stopping mongos servers");
 
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	my %hostsMongosStarted;
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;
@@ -302,7 +302,7 @@ override 'start' => sub {
 	  || die "Error opening /$logName:$!";
 	print $dblog $self->meta->name . " In MongodbService::start\n";
 		
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		$nosqlServer->setExternalPortNumbers();
 		$nosqlServer->registerPortsWithHost();
@@ -350,7 +350,7 @@ sub startMongodServers {
 	$logger->debug("Starting mongod servers");
 
 	#  start all of the mongod servers
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		my $hostname = $nosqlServer->host->hostName;
 		
@@ -389,7 +389,7 @@ sub startMongocServers {
 
 	my $curCfgSvr = 1;
 	my $configdbString = "";
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	while ( $curCfgSvr <= $self->numConfigServers ) {
 
 		foreach my $nosqlServer (@$nosqlServersRef) {
@@ -456,8 +456,8 @@ sub startMongosServers {
 	my @mongosSvrHostnames;
 	my @mongosSvrPorts;
 
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
-	push @$appServersRef, $self->appInstance->getActiveServicesByType('auctionBidServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
+	push @$appServersRef, $self->appInstance->getAllServicesByType('auctionBidServer');
 	push @$appServersRef, $self->appInstance->dataManager;
 	my %hostsMongosStarted;
 	foreach my $appServer (@$appServersRef) {
@@ -573,7 +573,7 @@ sub configure {
 	}
 
 	# Configure all of the hosts running a mongod	
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $sshConnectString = $nosqlServer->host->sshConnectString;
 		my $scpConnectString = $nosqlServer->host->scpConnectString;
@@ -690,7 +690,7 @@ sub configure {
 	if (( $numShards > 0 ) && ($numReplicas == 0)) {
 
 		# configure the mongos processes
-		my $appServersRef = $appInstance->getActiveServicesByType('appServer');
+		my $appServersRef = $appInstance->getAllServicesByType('appServer');
 		my $numMongos     = 0;
 		my %hostsMongosConfigured;
 		foreach my $appServer (@$appServersRef) {
@@ -747,7 +747,7 @@ sub configureSharding {
 	my $cmdout;
 
 	# Add the shards to the database
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $hostname = $nosqlServer->getIpAddr();
 		my $port     = $nosqlServer->portMap->{'mongod'};
@@ -895,7 +895,7 @@ sub configureAfterStart {
 
 	my $appInstance = $self->appInstance;
 
-	my $nosqlServersRef = $appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $appInstance->getAllServicesByType('nosqlServer');
 	my $cmdout;
 	my $replicaMasterHostname = "";
 	my $replicaMasterPort = "";
@@ -1205,7 +1205,7 @@ sub getLogFiles {
     $out              = `$scpConnectString root\@$scpHostString:/var/log/mongodb/mongoc2.log $destinationPath/.  2>&1`;
     $out              = `$scpConnectString root\@$scpHostString:/var/log/mongodb/mongoc3.log $destinationPath/.  2>&1`;
 
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		$scpConnectString = $appServer->host->scpConnectString;
 		$scpHostString    = $appServer->host->scpHostString;
@@ -1233,7 +1233,7 @@ sub cleanLogFiles {
 	my $sshConnectString = $self->host->sshConnectString;
 	my $out              = `$sshConnectString \"rm -f /var/log/mongodb/* 2>&1\"`;
 
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		$sshConnectString = $appServer->host->sshConnectString;
 		if (!$appServer->useDocker()) {
@@ -1248,7 +1248,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

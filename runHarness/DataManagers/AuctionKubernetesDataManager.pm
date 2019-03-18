@@ -62,7 +62,7 @@ sub startAuctionKubernetesDataManagerContainer {
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 
-	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	my $nosqlServerRef = $nosqlServersRef->[0];
 	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
 	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
@@ -229,7 +229,7 @@ sub prepareData {
 	# If the imageStore type is filesystem, then clean added images from the filesystem
 	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
 
-		my $fileServersRef    = $self->appInstance->getActiveServicesByType('fileServer');
+		my $fileServersRef    = $self->appInstance->getAllServicesByType('fileServer');
 		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
 		foreach my $fileServer (@$fileServersRef) {
 			my $sshConnectString = $fileServer->host->sshConnectString;
@@ -249,7 +249,7 @@ sub prepareData {
 		return 0;
 	}
 
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 #	my $nosqlServerRef = $nosqlServersRef->[0];
 #	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
 #		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
@@ -593,7 +593,7 @@ sub loadData {
    	close $pipe;	
 	close $applog;
 	
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 #	my $nosqlServerRef = $nosqlServersRef->[0];
 #	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
 #		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
@@ -674,7 +674,7 @@ sub cleanData {
 #	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
 #		$logger->debug("cleanData. Deleting added images from fileserver");
 #
-#		my $fileServersRef    = $self->appInstance->getActiveServicesByType('fileServer');
+#		my $fileServersRef    = $self->appInstance->getAllServicesByType('fileServer');
 #		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
 #		foreach my $fileServer (@$fileServersRef) {
 #			$logger->debug(
@@ -704,7 +704,7 @@ sub cleanData {
 		return 0;
 	}
 	
-#	my $nosqlServersRef = $self->appInstance->getActiveServicesByType('nosqlServer');
+#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 #	my $nosqlService = $nosqlServersRef->[0];
 #	if (   ( $nosqlService->numNosqlReplicas > 0 )
 #		&& ( $nosqlService->numNosqlShards == 0 ) )

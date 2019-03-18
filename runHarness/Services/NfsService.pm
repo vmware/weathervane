@@ -70,8 +70,8 @@ sub stopInstance {
 	print $applog $self->meta->name . " In NfsService::stop.  $hostname exports @exports\n";
 
 	# Unmount on all web and app servers
-	my $webServersRef  =  $self->appInstance->getActiveServicesByType('webServer');
-	my $appServersRef  = $self->appInstance->getActiveServicesByType('appServer');
+	my $webServersRef  =  $self->appInstance->getAllServicesByType('webServer');
+	my $appServersRef  = $self->appInstance->getAllServicesByType('appServer');
 
 	my @servers = ();
 	if ( $#$webServersRef >= 0 ) {
@@ -203,8 +203,8 @@ sub startInstance {
 	}
 	close FILEIN;
 
-	my $webServersRef  =  $self->appInstance->getActiveServicesByType('webServer');
-	my $appServersRef  = $self->appInstance->getActiveServicesByType('appServer');
+	my $webServersRef  =  $self->appInstance->getAllServicesByType('webServer');
+	my $appServersRef  = $self->appInstance->getAllServicesByType('appServer');
 	my @servers = ();
 	
 	foreach my $server (@$webServersRef) {
@@ -401,14 +401,14 @@ sub stopStatsCollection {
 
 	my $out = `$sshConnectString \"nfsstat -s > /tmp/nfsstat-s_end_$hostname.txt\"`;
 
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
 	foreach my $webServer (@$webServersRef) {
 		my $webHostname = $webServer->host->hostName;
 		$sshConnectString = $webServer->host->sshConnectString;
 		$out              = `$sshConnectString \"nfsstat -c > /tmp/nfsstat-c_end_$webHostname.txt\"`;
 		$out              = `$sshConnectString \"nfsstat -m > /tmp/nfsstat-m_end_$webHostname.txt\"`;
 	}
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;
 		$sshConnectString = $appServer->host->sshConnectString;
@@ -429,7 +429,7 @@ sub startStatsCollection {
 
 	my $out = `$sshConnectString \"nfsstat -s > /tmp/nfsstat-s_start_$hostname.txt\"`;
 
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
 	foreach my $webServer (@$webServersRef) {
 		my $webHostname = $webServer->host->hostName;
 		$sshConnectString = $webServer->host->sshConnectString;
@@ -437,7 +437,7 @@ sub startStatsCollection {
 		$out = `$sshConnectString \"nfsstat -c > /tmp/nfsstat-c_start_$webHostname.txt\"`;
 		$out = `$sshConnectString \"nfsstat -m > /tmp/nfsstat-m_start_$webHostname.txt\"`;
 	}
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;
 		$sshConnectString = $appServer->host->sshConnectString;
@@ -462,7 +462,7 @@ sub getStatsFiles {
 	my $out = `$scpConnectString root\@$scpHostString:/tmp/nfsstat-s_start_$hostname.txt $destinationPath/. 2>&1`;
 	$out = `$scpConnectString root\@$scpHostString:/tmp/nfsstat-s_end_$hostname.txt $destinationPath/. 2>&1`;
 
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
 	foreach my $webServer (@$webServersRef) {
 		my $webHostname = $webServer->host->hostName;
 		$scpConnectString = $webServer->host->scpConnectString;
@@ -473,7 +473,7 @@ sub getStatsFiles {
 		$out = `$scpConnectString root\@$scpHostString:/tmp/nfsstat-m_start_$webHostname.txt $destinationPath/. 2>&1`;
 		$out = `$scpConnectString root\@$scpHostString:/tmp/nfsstat-m_end_$webHostname.txt $destinationPath/. 2>&1`;
 	}
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;
 		$scpConnectString = $appServer->host->scpConnectString;
@@ -499,7 +499,7 @@ sub cleanStatsFiles {
 	my $out              = `$sshConnectString \"rm tmp/nfsstat-s_start_$hostname.txt 2>&1\" `;
 	$out = `$sshConnectString \"rm /tmp/nfsstat-s_end_$hostname.txt 2>&1\"`;
 
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
 	foreach my $webServer (@$webServersRef) {
 		my $webHostname = $webServer->host->hostName;
 		$sshConnectString = $webServer->host->sshConnectString;
@@ -508,7 +508,7 @@ sub cleanStatsFiles {
 		$out              = `$sshConnectString \"rm /tmp/nfsstat-m_start_$webHostname.txt 2>&1\"`;
 		$out              = `$sshConnectString \"rm /tmp/nfsstat-m_end_$webHostname.txt 2>&1\"`;
 	}
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		my $appHostname = $appServer->host->hostName;
 		$sshConnectString = $appServer->host->sshConnectString;
@@ -553,14 +553,14 @@ sub getConfigFiles {
 
 	# For each web, app, and primary driver, edit /etc/fstab
 	# to remove all mounts from this host.  Then add proper mounts.
-	my $webServersRef  = $self->appInstance->getActiveServicesByType('webServer');
+	my $webServersRef  = $self->appInstance->getAllServicesByType('webServer');
 	foreach my $webServer (@$webServersRef) {
 		$scpConnectString = $webServer->host->scpConnectString;
 		$scpHostString    = $webServer->host->scpHostString;
 		my $webHostname = $webServer->host->hostName;
 		`$scpConnectString root\@$scpHostString:/etc/fstab $destinationPath/fstab_$webHostname`;
 	}
-	my $appServersRef = $self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef = $self->appInstance->getAllServicesByType('appServer');
 	foreach my $appServer (@$appServersRef) {
 		$scpConnectString = $appServer->host->scpConnectString;
 		$scpHostString    = $appServer->host->scpHostString;

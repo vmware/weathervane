@@ -183,7 +183,7 @@ sub configure {
 	my $scpHostString        = $self->host->scpHostString;
 	my $sshConnectString     = $self->host->sshConnectString;
 	my $configDir            = $self->getParamValue('configDir');
-	my $numIpManagers        = $self->appInstance->getNumActiveOfServiceType('ipManager');
+	my $numIpManagers        = $self->appInstance->getTotalNumOfServiceType('ipManager');
 	my $instanceNum          = $self->getParamValue('instanceNum');
 	my $appInstance = $self->appInstance;
 	# get the IP address and the netmask for the www host
@@ -293,7 +293,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

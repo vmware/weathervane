@@ -68,7 +68,7 @@ override 'start' => sub {
 
 	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
 	if ( $runProcedureType eq 'prepareOnly' ) {
-		$console_logger->info("Application configured and running.  Connect with a browser to http://www.weathervane");
+		$console_logger->info("Application configured and running. ");
 	}
 	elsif ( $runProcedureType eq 'stop' ) {
 		$console_logger->info("Run stopped");

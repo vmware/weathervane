@@ -15,9 +15,6 @@ package ServiceFactory;
 
 use Moose;
 use MooseX::Storage;
-use Services::KeepalivedService;
-use Services::HaproxyService;
-use Services::HaproxyDockerService;
 use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
@@ -109,25 +106,6 @@ sub getServiceByType {
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-		}
-	}
-	elsif ( $serviceName eq "keepalived" ) {
-		$service = KeepalivedService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "haproxy" ) {
-		if ($docker) {
-			$service = HaproxyDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {
-			$service = HaproxyService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
 		}
 	}
 	elsif ( $serviceName eq "zookeeper" ) {

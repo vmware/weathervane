@@ -321,18 +321,6 @@ sub prepareData {
 		}
 	}
 	
-	# If the imageStore type is filesystem, then clean added images from the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-
-		my $fileServersRef    = $self->appInstance->getAllServicesByType('fileServer');
-		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
-		foreach my $fileServer (@$fileServersRef) {
-			my $sshConnectString = $fileServer->host->sshConnectString;
-			`$sshConnectString \"find $imageStoreDataDir -name '*added*' -delete 2>&1\"`;
-		}
-
-	}
-
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $dockerHostString  = $self->host->dockerHostString;	
@@ -825,24 +813,6 @@ sub cleanData {
 	$console_logger->info(
 		"Cleaning and compacting storage on all data services.  This can take a long time after large runs." );
 	$logger->debug("cleanData.  user = $users");
-
-	# If the imageStore type is filesystem, then clean added images from the filesystem
-	if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-		$logger->debug("cleanData. Deleting added images from fileserver");
-
-		my $fileServersRef    = $self->appInstance->getAllServicesByType('fileServer');
-		my $imageStoreDataDir = $self->getParamValue('imageStoreDir');
-		foreach my $fileServer (@$fileServersRef) {
-			$logger->debug(
-				"cleanData. Deleting added images for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum, " on host ", $fileServer->getIpAddr()
-			);
-			my $sshConnectString = $fileServer->host->sshConnectString;
-			`$sshConnectString \"find $imageStoreDataDir -name '*added*' -delete 2>&1\"`;
-		}
-
-	}
 
 	$logger->debug(
 		"cleanData. Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum." );

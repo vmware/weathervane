@@ -428,9 +428,6 @@ print "Installing mongodb-org\n";
 runAndLog( $fileout, "yum install -y mongodb-org" );
 runAndLog( $fileout, "chkconfig mongod off" );
 
-print "Installing nfs\n";
-runAndLog( $fileout, "yum install -y nfs-utils" );
-
 print "Installing Perl Modules\n";
 print $fileout "Installing Perl Modules\n";
 runAndLog( $fileout, "yum install -y perl-App-cpanminus" );

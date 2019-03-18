@@ -135,7 +135,6 @@ override 'checkConfig' => sub {
 	my $numAppServers            = $self->getTotalNumOfServiceType('appServer');
 	my $numMsgServers            = $self->getTotalNumOfServiceType('msgServer');
 	my $numDbServers             = $self->getTotalNumOfServiceType('dbServer');
-	my $numFileServers           = $self->getTotalNumOfServiceType('fileServer');
 	my $numNosqlServers          = $self->getTotalNumOfServiceType('nosqlServer');
 
 	my $minimumUsers = $self->getParamValue('minimumUsers');
@@ -160,22 +159,6 @@ override 'checkConfig' => sub {
 	if ( !( $imageStoreType ~~ @WeathervaneTypes::imageStoreTypes ) ) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The imageStore must be one of: @WeathervaneTypes::imageStoreTypes");
 		return 0;
-	}
-
-	if ( ( $imageStoreType eq "filesystem" ) || ( $imageStoreType eq "filesystemApp" ) ) {
-		if ( $numFileServers <= 0 ) {
-			$console_logger->error(
-"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is filesystem or filesystemApp, then number of fileServers must be 1 or more, got $numFileServers"
-			);
-			return 0;
-		}
-	}
-	else {
-		if ( $numFileServers > 0 ) {
-			$console_logger->error(
-				"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is not filesystem or filesystemApp, then number of fileServers must be 0");
-			return 0;
-		}
 	}
 
 	if ( ( $numCoordinationServers != 1 ) && ( $numCoordinationServers != 3 ) ) {
@@ -453,10 +436,7 @@ sub getSpringProfilesActive {
 	}
 
 	my $imageStore = $self->getParamValue('imageStoreType');
-	if ( ( $imageStore eq "filesystem" ) || ( $imageStore eq "filesystemApp" ) ) {
-		$springProfilesActive .= ",imagesInFilesystem";
-	}
-	elsif ( $imageStore eq "mongodb" ) {
+	if ( $imageStore eq "mongodb" ) {
 		$springProfilesActive .= ",imagesInMongo";
 	}
 	elsif ( $imageStore eq "memory" ) {

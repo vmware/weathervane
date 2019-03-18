@@ -852,7 +852,7 @@ sub startServices {
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
-	if ($serviceTypesRef) {	
+	if ($serviceTypes) {	
 		foreach my $serviceType (@$serviceTypes) {
 			my $servicesRef = $self->getAllServicesByType($serviceType);
 			if ($#{$servicesRef} >= 0) {

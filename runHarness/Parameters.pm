@@ -35,8 +35,7 @@ BEGIN {
 my @constructedNameParameters = ( "hostName", "vmName" );
 my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
+	"ipManagers", "coordinationServers", "webServers",   "msgServers",
 	"appServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
 );
@@ -44,8 +43,7 @@ my @instancesWithConstructedNames = (
 my @dockerNameParameters = ( "dockerName" );
 my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
+	"ipManagers", "coordinationServers", "webServers",   "msgServers",
 	"appServers",    "auctionBidServers",	"dataManagerInstance"
 );
 
@@ -857,23 +855,6 @@ $parameters{"coordinationServers"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"lbServer"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"webServer"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1422,7 +1403,6 @@ $parameters{"dockerServiceImages"} = {
 		"nginx"      => "weathervane-nginx",
 		"tomcat"     => "weathervane-tomcat",
 		"auctionbidservice"     => "weathervane-auctionbidservice",
-		"haproxy"    => "weathervane-haproxy",
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
@@ -1516,15 +1496,6 @@ $parameters{"numCoordinationServers"} = {
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numLbServers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1697,7 +1668,7 @@ $parameters{"appInstanceImpl"} = {
 $parameters{"edgeService"} = {
 	"type"      => "=s",
 	"parent"    => "appInstance",
-	"default"   => "lbServer",
+	"default"   => "webServer",
 	"showUsage" => 0,
 };
 
@@ -1714,14 +1685,6 @@ $parameters{"coordinationServerImpl"} = {
 	"default"   => "zookeeper",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which coordination server to use.  Currently must be zookeeper.",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServerImpl"} = {
-	"type"      => "=s",
-	"default"   => "haproxy",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which load-balancer to use.  Currently must be haproxy.",
 	"showUsage" => 0,
 };
 $parameters{"appServerImpl"} = {
@@ -2233,39 +2196,6 @@ $parameters{"nginxCacheVolumeSize"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to haproxy
-$parameters{"haproxyProcPerCpu"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyTerminateTLS"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyAppServerMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 10000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"frontendConnectionMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 10,
@@ -2440,14 +2370,6 @@ $parameters{"nginxDocumentRoot"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"haproxyServerRoot"} = {
-	"type"      => "=s",
-	"parent"    => "lbServer",
-	"default"   => "/etc/haproxy",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"workloadDriverPort"} = {
 	"type"      => "=i",
 	"default"   => 7500,
@@ -2502,21 +2424,6 @@ $parameters{"coordinationServerPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
 	"parent"    => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServerPortOffset"} = {
-	"type"      => "=i",
-	"default"   => 7000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerPortStep"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "lbServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2904,13 +2811,6 @@ $parameters{"ipManagerSuffix"} = {
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Cs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

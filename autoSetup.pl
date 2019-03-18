@@ -207,7 +207,6 @@ else {
 print "Setting up various configuration files.  See autoSetup.log for details\n";
 print $fileout "Setting up various configuration files.  See autoSetup.log for details\n";
 runAndLog( $fileout, "cp configFiles/host/$os/sysctl.conf /etc/" );
-runAndLog( $fileout, "cp configFiles/host/$os/rsyslog.conf /etc/" );
 runAndLog( $fileout, "cp configFiles/host/$os/config /etc/selinux/" );
 runAndLog( $fileout, "cp configFiles/host/$os/login /etc/pam.d/login" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits.conf /etc/security/limits.conf" );
@@ -332,18 +331,6 @@ runAndLog( $fileout,
 print "Installing keepalived\n";
 print $fileout "Installing keepalived\n";
 runAndLog( $fileout, "yum install -y keepalived" );
-
-print "Installing haproxy\n";
-print $fileout "Installing haproxy\n";
-runAndLog( $fileout, "yum install -y haproxy" );
-runAndLog( $fileout, "yum install -y mod_ssl" );
-runAndLog( $fileout,
-	"curl -s http://www.dest-unreach.org/socat/download/socat-1.7.3.0.tar.gz -o /tmp/socat-1.7.3.0.tar.gz" );
-runAndLog( $fileout, "tar zxf /tmp/socat-1.7.3.0.tar.gz" );
-runAndLog( $fileout, "cd /root/weathervane/socat-1.7.3.0;./configure 2>&1;make 2>&1;make install" );
-runAndLog( $fileout, "rm -rf /root/weathervane/socat-1.7.3.0" );
-runAndLog( $fileout, "mkdir /etc/systemd/system/haproxy.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/haproxy.service.d/limits.conf" );
 
 print "Installing sysstat\n";
 print $fileout "Installing sysstat\n";

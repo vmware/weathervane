@@ -28,8 +28,7 @@ allprojects {
 
 }
 
-configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBidService'|| 
-                               it.name == 'auctioneerService'|| it.name == 'auctionCrudService' || it.name == 'dbLoader' })  {
+configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBidService' || it.name == 'dbLoader' })  {
 	apply plugin: "eclipse"
 	apply plugin: "eclipse-wtp"
 	apply plugin: 'maven'
@@ -203,57 +202,6 @@ project(':auctionBidService') {
 			from war.archivePath
 			into file("$rootDir/dist/")
 			rename ('auctionBidService-.*war', 'auctionBidService.war')
-		}
-	}			
-}
-
-
-project(':auctioneerService') {
-	apply plugin: 'war'
-	
-	description "Main project for Auctioneer Service.  Creates war file."
-	
-	dependencies {
-				
-		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
-		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
-		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
-		testCompile "org.hamcrest:hamcrest-library:1.3"
-	}
-	
-	task release(dependsOn: build) << {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from war.archivePath
-			into file("$rootDir/dist/")
-			rename ('auctioneerService-.*war', 'auctioneerService.war')
-		}
-	}			
-}
-
-project(':auctionCrudService') {
-	apply plugin: 'war'
-	
-	description "Main project for Auction Crud Service.  Creates war file."
-	
-	dependencies {
-				
-		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
-		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
-		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
-		testCompile "org.hamcrest:hamcrest-library:1.3"
-	}
-	
-	task release(dependsOn: build) << {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from war.archivePath
-			into file("$rootDir/dist/")
-			rename ('auctionCrudService-.*war', 'auctionCrudService.war')
 		}
 	}			
 }

@@ -329,17 +329,6 @@ runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-bid/lib/postgresql-9.4.1212.jre7.jar"
 );
 
-print "Fetching and installing Httpd\n";
-print $fileout "Fetching and installing Httpd\n";
-runAndLog( $fileout, "yum install -y httpd" );
-runAndLog( $fileout, "mkdir /var/cache/apache" );
-runAndLog( $fileout, "chmod 777 /var/cache/apache" );
-runAndLog( $fileout, "mkdir -p /var/www/vhosts/auction/html" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.tgz /var/www/vhosts/auction/html/" );
-runAndLog( $fileout, "cd /var/www/vhosts/auction/html; tar zxf auctionWeb.tgz 2>&1; rm -r auctionWeb.tgz" );
-runAndLog( $fileout, "mkdir /etc/systemd/system/httpd.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/httpd.service.d/limits.conf" );
-
 print "Installing keepalived\n";
 print $fileout "Installing keepalived\n";
 runAndLog( $fileout, "yum install -y keepalived" );

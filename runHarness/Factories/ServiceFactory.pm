@@ -18,7 +18,6 @@ use MooseX::Storage;
 use Services::KeepalivedService;
 use Services::HaproxyService;
 use Services::HaproxyDockerService;
-use Services::HttpdService;
 use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
@@ -131,12 +130,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
-	}
-	elsif ( $serviceName eq "httpd" ) {
-			$service = HttpdService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
 	}
 	elsif ( $serviceName eq "zookeeper" ) {
 		if ($paramHashRef->{'clusterName'}) {

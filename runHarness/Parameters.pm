@@ -1782,7 +1782,7 @@ $parameters{"webServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "nginx",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which Web Server to use.\n\tMust be one of: httpd or nginx",
+	"usageText" => "Controls which Web Server to use.\n\tMust be nginx",
 	"showUsage" => 1,
 };
 $parameters{"dbServerImpl"} = {
@@ -2217,62 +2217,6 @@ $parameters{"auctionBidServerJvmOpts"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"httpdKeepalive"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdKeepaliveTimeout"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxKeepaliveRequests"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxClients"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdThreadsPerChild"} = {
-	"type"      => "=i",
-	"default"   => 100,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMinSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 25,
-	"usageText" => "",
-	"parent"    => "webServer",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 2000,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # parameters specific to Nginx
 $parameters{"nginxKeepaliveTimeout"} = {
 	"type"      => "=i",
@@ -2561,14 +2505,6 @@ $parameters{"igniteCopyOnRead"} = {
 };
 
 
-# parameters specific to Apache httpd
-$parameters{"httpdServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/httpd",
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"nginxServerRoot"} = {
 	"type"      => "=s",
 	"default"   => "/etc/nginx",
@@ -2585,13 +2521,6 @@ $parameters{"nginxDocumentRoot"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"httpdDocumentRoot"} = {
-	"type"      => "=s",
-	"default"   => "/var/www/vhosts/auction/html",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"haproxyServerRoot"} = {
 	"type"      => "=s",
 	"parent"    => "lbServer",

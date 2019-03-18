@@ -58,14 +58,6 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-# AppInstance variables for keepalived
-has 'wwwIpAddrs' => (
-	is        => 'rw',
-	isa       => 'ArrayRef[Str]',
-	predicate => 'has_wwwIpAddrs',
-);
-
-
 override 'initialize' => sub {
 	my ($self) = @_;
 		
@@ -81,31 +73,20 @@ override 'getEdgeService' => sub {
 		", appInstance ",               $self->getParamValue('appInstanceNum')
 	);
 
-	my $numLbServers  = $self->getTotalNumOfServiceType('lbServer');
 	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
 	my $numAppServers = $self->getTotalNumOfServiceType('appServer');
 	$logger->debug(
-		"getEdgeService: numLbServers = $numLbServers, numWebServers = $numWebServers, numAppServers = $numAppServers");
+		"getEdgeService: numWebServers = $numWebServers, numAppServers = $numAppServers");
 
 	# Used to keep track of which server is acting as the edge (client-facing) service
 	my $edgeServer;
-
-	if ( $numLbServers == 0 ) {
-		if ( $numWebServers == 0 ) {
-
-			# small configuration. App server is the edge service
-			$edgeServer = "appServer";
-		}
-		else {
-
-			# medium configuration. Web server is the edge service
-			$edgeServer = "webServer";
-		}
+	if ( $numWebServers == 0 ) {
+		# small configuration. App server is the edge service
+		$edgeServer = "appServer";
 	}
 	else {
-
-		# large configuration. load-balancer is the edge service
-		$edgeServer = "lbServer";
+		# medium configuration. Web server is the edge service
+		$edgeServer = "webServer";
 	}
 
 	$logger->debug(
@@ -117,7 +98,6 @@ override 'getEdgeService' => sub {
 	);
 
 	return $edgeServer;
-
 };
 
 override 'checkConfig' => sub {
@@ -129,7 +109,6 @@ override 'checkConfig' => sub {
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
 	my $edgeService              = $self->getParamValue('edgeService');
-	my $numLbServers             = $self->getTotalNumOfServiceType('lbServer');
 	my $numCoordinationServers   = $self->getTotalNumOfServiceType('coordinationServer');
 	my $numWebServers            = $self->getTotalNumOfServiceType('webServer');
 	my $numAppServers            = $self->getTotalNumOfServiceType('appServer');

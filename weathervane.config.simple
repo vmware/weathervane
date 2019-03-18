@@ -10,7 +10,6 @@
 "numAppInstances" : 1,
 "numDrivers" : 1,
 "numCoordinationServers" : 1,
-#"numLbServers" : 0,
 "numWebServers" : 1,
 "numAppServers" : 1,
 "numMsgServers" : 1,
@@ -28,8 +27,6 @@
 #"numViHosts" : 0,
 
 # "useDocker" : false,
-# "dockerHostPin" : false,
-# "dockerHostPinMode" : "all",
 
 # "dockerCpuShares" : n/a,
 # "dockerCpuSetCpus" : n/a,
@@ -37,6 +34,6 @@
 # "dockerMemory" : n/a,
 # "dockerMemorySwap" : n/a,
 # "dockerNet" : "bridge",
-# "dockerRegistryName" : "vmc-perf-h11",
+# "dockerNamespace" : "dockerhubUsername",
 
 }

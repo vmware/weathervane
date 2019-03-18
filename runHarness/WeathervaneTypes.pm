@@ -28,12 +28,12 @@ our @workloadImpls = ('auction');
 
 # valid service types 
 our %serviceTypes = ( 
-	'auction' => ['coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer'], 
+	'auction' => ['coordinationServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer'], 
 );
 
 # services that can be run on docker
 our %dockerServiceTypes = ( 
-	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer', 'coordinationServer'], 
+	'auction' => ['webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer', 'coordinationServer'], 
 );
 
 
@@ -44,16 +44,14 @@ our %dockerServiceTypes = (
 our %workloadToServiceTypes = ('auction' => {
 	'data' => ['dbServer', 'nosqlServer', 'msgServer', 'coordinationServer'],
 	'backend' => ['appServer', 'auctionBidServer'],
-	'frontend' => ['webServer', 'lbServer', 'ipManager'],
+	'frontend' => ['webServer'],
 	'infrastucture' => [],
 	}
 );
 
 # Valid service implementations for each service type
 our %serviceImpls = (
-	'ipManager'   => ['keepalived'],
 	'coordinationServer'    => ['zookeeper'],
-	'lbServer'    => ['haproxy'],
 	'webServer'   => [ 'nginx' ],
 	'appServer'   => [ 'tomcat' ],
 	'auctionBidServer'   => [ 'auctionbidservice' ],

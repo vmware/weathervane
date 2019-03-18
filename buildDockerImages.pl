@@ -137,9 +137,6 @@ runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f
 # appServerWarmer
 runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 runAndLog($fileout, "cp ./dist/auctionAppServerWarmer.jar ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
-# configurationManager
-runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
-runAndLog($fileout, "cp ./dist/auctionConfigManager.jar ./dockerImages/configurationmanager/auctionConfigManager.jar");
 # tomcat
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
@@ -244,8 +241,7 @@ foreach my $imageName (@imageNames) {
 
 # Clean up
 runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
-runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionConfigManager.jar");
-runAndLog($fileout, "rm -f ./dockerImages/configurationmanager/auctionAppServerWarmer.jar");
+runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
 runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-bid/webapps");
 runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");

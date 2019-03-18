@@ -852,21 +852,21 @@ sub startServices {
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypes = $serviceTiersHashRef->{$serviceTier};
 	$logger->debug("startServices for serviceTier $serviceTier, serviceTypes = @$serviceTypes");
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for starting the 
-			# service instances
-			my $serviceRef = $servicesRef->[0];
-			$serviceRef->start($serviceType, $users, $setupLogDir);
-		} else {
-			next;
+	if ($serviceTypesRef) {	
+		foreach my $serviceType (@$serviceTypes) {
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for starting the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$serviceRef->start($serviceType, $users, $setupLogDir);
+			} else {
+				next;
+			}
 		}
+		# Don't return until all services are ready
+		$self->isRunningAndUpDataServices($serviceTier, $logFile);
 	}
-	
-	# Don't return until all services are ready
-	$self->isRunningAndUpDataServices($serviceTier, $logFile);
-	
 	close $logFile;
 	
 }
@@ -888,23 +888,23 @@ sub stopServices {
 
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};	
-	foreach my $serviceType ( reverse @$serviceTypesRef ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for stopping the 
-			# service instances
-			my $serviceRef = $servicesRef->[0];
-			if ( $serviceRef->isReachable() ) {
-				$logger->debug( "stop " . $serviceRef->getDockerName() . "\n" );
-				$serviceRef->stop($serviceType, $setupLogDir);
+	if ($serviceTypesRef) {
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for stopping the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				if ( $serviceRef->isReachable() ) {
+					$logger->debug( "stop " . $serviceRef->getDockerName() . "\n" );
+					$serviceRef->stop($serviceType, $setupLogDir);
+				}
+			} else {
+				next;
 			}
-		} else {
-			next;
 		}
-		
+		my $allIsStopped = $self->waitForServicesStopped($serviceTier, 15, 6, 15, $logFile);
 	}
-	
-	my $allIsStopped = $self->waitForServicesStopped($serviceTier, 15, 6, 15, $logFile);
 	close $logFile;
 	
 }
@@ -947,25 +947,27 @@ sub waitForServicesRunning {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	while ($retries >= 0) {
-		my $allIsRunning = 1;
-		foreach my $serviceType ( reverse @$serviceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			if ($#{$servicesRef} >= 0) {
-				# Use the first instance of the service for removing the 
-				# service instances
-				my $serviceRef = $servicesRef->[0];
-				$allIsRunning &= $serviceRef->isRunning($logFile);
-			} else {
-				next;
+	if ($serviceTypesRef) {
+		while ($retries >= 0) {
+			my $allIsRunning = 1;
+			foreach my $serviceType ( reverse @$serviceTypesRef ) {
+				my $servicesRef = $self->getAllServicesByType($serviceType);
+				if ($#{$servicesRef} >= 0) {
+					# Use the first instance of the service for removing the 
+					# service instances
+					my $serviceRef = $servicesRef->[0];
+					$allIsRunning &= $serviceRef->isRunning($logFile);
+				} else {
+					next;
+				}
 			}
-		}
 		
-		if ($allIsRunning) {
-			return 1;
+			if ($allIsRunning) {
+				return 1;
+			}
+			sleep $periodSeconds;
+			$retries--;
 		}
-		sleep $periodSeconds;
-		$retries--;
 	}
 	return 0;
 }
@@ -979,25 +981,26 @@ sub waitForServicesStopped {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	while ($retries >= 0) {
-		my $allIsStopped = 1;
-		foreach my $serviceType ( reverse @$serviceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			if ($#{$servicesRef} >= 0) {
-				# Use the first instance of the service for removing the 
-				# service instances
-				my $serviceRef = $servicesRef->[0];
-				$allIsStopped &= $serviceRef->isStopped($logFile);
-			} else {
-				next;
+	if ($serviceTypesRef) {
+		while ($retries >= 0) {
+			my $allIsStopped = 1;
+			foreach my $serviceType ( reverse @$serviceTypesRef ) {
+				my $servicesRef = $self->getAllServicesByType($serviceType);
+				if ($#{$servicesRef} >= 0) {
+					# Use the first instance of the service for removing the 
+					# service instances
+					my $serviceRef = $servicesRef->[0];
+					$allIsStopped &= $serviceRef->isStopped($logFile);
+				} else {
+					next;
+				}
 			}
+			if ($allIsStopped) {
+				return 1;
+			}
+			sleep $periodSeconds;
+			$retries--;
 		}
-		
-		if ($allIsStopped) {
-			return 1;
-		}
-		sleep $periodSeconds;
-		$retries--;
 	}
 	return 0;
 }
@@ -1011,25 +1014,27 @@ sub waitForServicesUp {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	while ($retries >= 0) {
-		my $allIsUp = 1;
-		foreach my $serviceType ( reverse @$serviceTypesRef ) {
-			my $servicesRef = $self->getAllServicesByType($serviceType);
-			if ($#{$servicesRef} >= 0) {
-				# Use the first instance of the service for removing the 
-				# service instances
-				my $serviceRef = $servicesRef->[0];
-				$allIsUp &= $serviceRef->isUp($logFile);
-			} else {
-				next;
+	if ($serviceTypesRef) {
+		while ($retries >= 0) {
+			my $allIsUp = 1;
+			foreach my $serviceType ( reverse @$serviceTypesRef ) {
+				my $servicesRef = $self->getAllServicesByType($serviceType);
+				if ($#{$servicesRef} >= 0) {
+					# Use the first instance of the service for removing the 
+					# service instances
+					my $serviceRef = $servicesRef->[0];
+					$allIsUp &= $serviceRef->isUp($logFile);
+				} else {
+					next;
+				}
 			}
-		}
 		
-		if ($allIsUp) {
-			return 1;
+			if ($allIsUp) {
+				return 1;
+			}
+			sleep $periodSeconds;
+			$retries--;
 		}
-		sleep $periodSeconds;
-		$retries--;
 	}
 	return 0;
 }
@@ -1042,15 +1047,17 @@ sub removeServices {
 
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	foreach my $serviceType ( reverse @$serviceTypesRef ) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		if ($#{$servicesRef} >= 0) {
-			# Use the first instance of the service for removing the 
-			# service instances
-			my $serviceRef = $servicesRef->[0];
-			$serviceRef->remove($setupLogDir);
-		} else {
-			next;
+	if ($serviceTypesRef) {
+		foreach my $serviceType ( reverse @$serviceTypesRef ) {
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			if ($#{$servicesRef} >= 0) {
+				# Use the first instance of the service for removing the 
+				# service instances
+				my $serviceRef = $servicesRef->[0];
+				$serviceRef->remove($setupLogDir);
+			} else {
+				next;
+			}
 		}
 	}
 }

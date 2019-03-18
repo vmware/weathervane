@@ -206,13 +206,13 @@ sub configure {
 		}
 		elsif ( $inline =~ /[^\$]upstream\sbid/ ) {
 			print FILEOUT $inline;
-			print FILEOUT "least_conn;\n";s
+			print FILEOUT "least_conn;\n";
 			do {
 				$inline = <FILEIN>;
 			} while ( !( $inline =~ /}/ ) );
-		
+
 			# Add the balancer lines for each bid server
-			my $bidServersRef  =$self->appInstance->getAllServicesByType('auctionBidServer');
+			my $bidServersRef  = $self->appInstance->getAllServicesByType('auctionBidServer');
 			if ($#{$bidServersRef} >= 0) {
 				# Add the balancer lines for each bid server
 				foreach my $bidServer (@$bidServersRef) {

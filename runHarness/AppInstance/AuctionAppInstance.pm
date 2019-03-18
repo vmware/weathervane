@@ -451,12 +451,7 @@ sub getSpringProfilesActive {
 	my $dbsRef = $self->getAllServicesByType('dbServer');
 	my $db     = $dbsRef->[0]->getImpl();
 
-	if ( $db eq "mysql" ) {
-		$springProfilesActive = "mysql";
-	}
-	else {
-		$springProfilesActive = "postgresql";
-	}
+	$springProfilesActive = "postgresql";
 
 	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
 	if ( $appServerCacheImpl eq "ehcache" ) {

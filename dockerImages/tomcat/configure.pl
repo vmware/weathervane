@@ -33,21 +33,9 @@ close FILEIN;
 close FILEOUT;
 
 # Configure server.xml
-my $driverClassName;
-if ( $db eq "mysql" ) {
-	$driverClassName = "com.mysql.jdbc.Driver";
-}
-elsif ( $db eq "postgresql" ) {
-	$driverClassName = "org.postgresql.Driver";
-}
+my $driverClassName = "org.postgresql.Driver";
 
-my $dbUrl;
-if ( $db eq "mysql" ) {
-	$dbUrl = "jdbc:mysql://" . $dbHostname . ":" . $dbPort . "/auction";
-}
-elsif ( $db eq "postgresql" ) {
-	$dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
-}
+my $dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
 
 open( FILEIN,  "/root/apache-tomcat-auction1/conf/server.xml") or die "Can't open file /root/apache-tomcat-auction1/conf/server.xml: $!\n";
 open( FILEOUT, ">/opt/apache-tomcat-auction1/conf/server.xml" ) or die "Can't open file /opt/apache-tomcat-auction1/conf/server.xml: $!\n";

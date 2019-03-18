@@ -26,27 +26,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	
 	 <context:property-placeholder location="classpath*:META-INF/spring/*.properties" />
 
-
-	<beans profile="mysql">
-		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"    
-    		p:driverClassName="com.mysql.jdbc.Driver"
-	    	p:url="jdbc:mysql://${DBHOSTNAME:AuctionDb1}:${DBPORT:3306}/auction"
-	    	p:username="auction"
-		    p:password="auction"   
-    		p:initialSize="10"
-   			p:minIdle="10"
-    		p:maxIdle="500"
-    		p:maxActive="2000"
-    		p:maxWait="6000"
-    		p:testOnBorrow="false"
-    		p:testOnReturn="false"
-    		p:testWhileIdle="false"   
-			p:validationQuery="select 1"
-    		p:timeBetweenEvictionRunsMillis="30000"
-    		p:minEvictableIdleTimeMillis="30000"
-		/>
-	</beans>
-
 	<beans profile="postgresql">
 		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"    
     		p:driverClassName="org.postgresql.Driver"
@@ -66,7 +45,5 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     		p:minEvictableIdleTimeMillis="30000"
 		/>
 	</beans>
-
-
 	
 </beans>

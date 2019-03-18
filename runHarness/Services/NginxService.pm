@@ -258,16 +258,6 @@ sub configure {
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /rewrite rules go here/ ) {
 			print FILEOUT $inline;
-			if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-				print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-				print FILEOUT "set \$size \$1;\n";
-				print FILEOUT "rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-				print FILEOUT "}\n";
-				print FILEOUT "location /imageStore{\n";
-				print FILEOUT "root /mnt;\n";
-				print FILEOUT "}\n";
-
-			}
 		}
 		elsif ( $inline =~ /^\s*listen\s+443/ ) {
 			print FILEOUT "    listen   " . $self->internalPortMap->{"https"} . " ssl backlog=16384 ;\n";
@@ -289,16 +279,6 @@ sub configure {
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /rewrite rules go here/ ) {
 			print FILEOUT $inline;
-			if ( $self->getParamValue('imageStoreType') eq "filesystem" ) {
-				print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-				print FILEOUT "set \$size \$1;\n";
-				print FILEOUT "rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-				print FILEOUT "}\n";
-				print FILEOUT "location /imageStore{\n";
-				print FILEOUT "root /mnt;\n";
-				print FILEOUT "}\n";
-
-			}
 		}
 		elsif ( $inline =~ /^\s*listen\s+80/ ) {
 			print FILEOUT "    listen   " . $self->internalPortMap->{"http"} . " backlog=16384 ;\n";

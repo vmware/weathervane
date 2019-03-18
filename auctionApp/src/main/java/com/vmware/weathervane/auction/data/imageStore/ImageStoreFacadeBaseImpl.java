@@ -20,7 +20,6 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,8 +41,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.repository.ImageInfoRepository;
 
 /**
- * This is an implementation of the ImageStoreFacade that stores all images in a
- * single directory on the filesystem..
+ * This is the base implementation of the ImageStoreFacade 
  * 
  * @author Hal
  *

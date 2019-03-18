@@ -32,8 +32,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 
 /**
- * This is an implementation of the ImageStoreFacade that stores all images
- * in a single directory on the filesystem..
+ * This is an implementation of the ImageStoreFacade that stores all images in memory
  * 
  * @author Hal
  *

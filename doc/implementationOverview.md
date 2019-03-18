@@ -59,7 +59,7 @@ classes for the domain model for the Auction application, as well as for the
 data-access objects (DAOs) and repository classes used to bridge between the
 object model and the relational and NoSQL data stores.  It also contains the
 code for the ImageStore, including implementations for placing the imageStore
-in-memory, in a filesystem, or in MongoDB.
+in-memory or in MongoDB.
 
 auctionApp is written in Java.
 

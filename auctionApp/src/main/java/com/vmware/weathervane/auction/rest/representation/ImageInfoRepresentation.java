@@ -74,8 +74,6 @@ public class ImageInfoRepresentation extends Representation implements Serializa
 
 		Map<RestAction, String> itemImageLinks = new HashMap<Representation.RestAction, String>();
 
-		String path = theImageInfo.getFilepath();
-
 		String urlPath;
 		if (cacheable) {
 			urlPath = ReadItemImageCacheablePath;
@@ -83,26 +81,14 @@ public class ImageInfoRepresentation extends Representation implements Serializa
 			urlPath = ReadItemImagePath;
 		}
 		
-		if (path == null) {
-			/*
-			 *  If the path to the image is empty, then create the REST url
-			 *  that the application will understand.
-			 */
-			Map<String, String> replacements = new HashMap<String, String>();
-
-			// Link for READ image
-			replacements.put("itemId", Long.toString(theImageInfo.getEntityid()));
-			replacements.put("imageId", theImageInfo.getId().toString());
-			path = replaceTokens(urlPath, replacements);
-		} else {
-			/*
-			 *  If the path to the image is set, then create a filesystem
-			 *  url that the web server will handle.
-			 */
-			path = "image/" + path + "." + theImageInfo.getFormat(); 
-		}
-
-		itemImageLinks.put(RestAction.READ, path);
+		/*
+		 *  Create the REST url that the application will understand.
+		 */
+		Map<String, String> replacements = new HashMap<String, String>();
+		// Link for READ image
+		replacements.put("itemId", Long.toString(theImageInfo.getEntityid()));
+		replacements.put("imageId", theImageInfo.getId().toString());
+		itemImageLinks.put(RestAction.READ, replaceTokens(urlPath, replacements));
 
 		return itemImageLinks;
 	}

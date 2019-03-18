@@ -177,13 +177,11 @@ public class DBLoader {
 					"The spring.profiles.active property must be set for the dbLoader. " + messageString);
 		}
 		String imageStoreType;
-		if (springProfilesActive.contains("Filesystem")) {
-			imageStoreType = "filesystem";
-		} else if (springProfilesActive.contains("Mongo")) {
+		if (springProfilesActive.contains("Mongo")) {
 			imageStoreType = "mongodb";
 		} else {
 			throw new RuntimeException(
-					"The spring.profiles.active property be either imagesInMongo or imagesInFilesystem for the DBLoader. " + messageString);
+					"The spring.profiles.active property be imagesInMongo for the DBLoader. " + messageString);
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {

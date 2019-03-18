@@ -139,14 +139,12 @@ public class DBPrep {
 			throw new RuntimeException("The spring.profiles.active property must be set for DBPrep");
 		}
 		String imageStoreType;
-		if (springProfilesActive.contains("Filesystem")) {
-			imageStoreType = "filesystem";
-		} else if (springProfilesActive.contains("Mongo")) {
+		if (springProfilesActive.contains("Mongo")) {
 			imageStoreType = "mongodb";
 		} else {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
-					"The spring.profiles.active property be either imagesInMongo or imagesInFilesystem for DBPrep.");
+					"The spring.profiles.active property be imagesInMongo for DBPrep.");
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {

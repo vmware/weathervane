@@ -86,17 +86,6 @@ open( FILEOUT, ">/tmp/ssl.conf" )
 while ( my $inline = <FILEIN> ) {
 	if ( $inline =~ /rewrite rules go here/ ) {
 		print FILEOUT $inline;
-		if ( $imageStoreType eq "filesystem" ) {
-			print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-			print FILEOUT "set \$size \$1;\n";
-			print FILEOUT
-"rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-			print FILEOUT "}\n";
-			print FILEOUT "location /imageStore{\n";
-			print FILEOUT "root /mnt;\n";
-			print FILEOUT "}\n";
-
-		}
 	}
 	elsif ( $inline =~ /^\s*listen\s+443/ ) {
 		print FILEOUT "    listen   " . $httpsPort . " ssl backlog=16384 ;\n";
@@ -120,17 +109,6 @@ open( FILEOUT, ">/tmp/default.conf" )
 while ( my $inline = <FILEIN> ) {
 	if ( $inline =~ /rewrite rules go here/ ) {
 		print FILEOUT $inline;
-		if ( $imageStoreType eq "filesystem" ) {
-			print FILEOUT "if (\$query_string ~ \"size=(.*)\$\") {\n";
-			print FILEOUT "set \$size \$1;\n";
-			print FILEOUT
-"rewrite ^/auction/image/([^\.]*)\.(.*)\$ /imageStore/\$1_\$size.\$2;\n";
-			print FILEOUT "}\n";
-			print FILEOUT "location /imageStore{\n";
-			print FILEOUT "root /mnt;\n";
-			print FILEOUT "}\n";
-
-		}
 	}
 	elsif ( $inline =~ /^\s*listen\s+80/ ) {
 		print FILEOUT "    listen   " . $httpPort

@@ -12,8 +12,6 @@
   	"appInstances" : [
   	  {
   	  	"dataManagerInstance" : {},
-  	  	"configurationManagers" : [ {} ],
-  	  	"elasticityServices" : [],
   	  	"coordinationServers" : [ {} ],
   	  	"lbServers" : [],
   	  	"webServers" : [ {} ],

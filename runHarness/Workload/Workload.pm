@@ -693,8 +693,8 @@ sub getAppInstanceStatsSummary {
 			if ( $serviceType eq "ipManager" ) {
 				next;
 			}
-			my $servicesListRef = $appInstance->getActiveServicesByType($serviceType);
-			my $numServices     = $appInstance->getNumActiveOfServiceType($serviceType);
+			my $servicesListRef = $appInstance->getAllServicesByType($serviceType);
+			my $numServices     = $appInstance->getTotalNumOfServiceType($serviceType);
 			if ( $numServices < 1 ) {
 
 				# Only include services for which there is an instance
@@ -707,8 +707,8 @@ sub getAppInstanceStatsSummary {
 		$csv{ $prefix . "imageStoreType" } = $appInstance->getParamValue("imageStoreType");
 
 		foreach my $serviceType (@$serviceTypes) {
-			my $servicesListRef = $appInstance->getActiveServicesByType($serviceType);
-			my $numServices     = $appInstance->getNumActiveOfServiceType($serviceType);
+			my $servicesListRef = $appInstance->getAllServicesByType($serviceType);
+			my $numServices     = $appInstance->getTotalNumOfServiceType($serviceType);
 			if ( $numServices < 1 ) {
 
 				# Only include services for which there is an instance

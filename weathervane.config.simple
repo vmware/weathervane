@@ -9,8 +9,6 @@
 "numWorkloads" : 1,
 "numAppInstances" : 1,
 "numDrivers" : 1,
-"numConfigurationManagers" : 1,
-#"numElasticityServices" : 0,
 "numCoordinationServers" : 1,
 #"numLbServers" : 0,
 "numWebServers" : 1,

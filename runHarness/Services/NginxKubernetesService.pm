@@ -48,17 +48,17 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $workerConnections < 100 ) {
 		$workerConnections = 100;
 	}
 	if ( $self->getParamValue('nginxWorkerConnections') ) {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
 
-	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
-	my $numAuctionBidServers = $self->appInstance->getNumActiveOfServiceType('auctionBidServer');
+	my $numWebServers = $self->appInstance->getTotalNumOfServiceType('webServer');
+	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 
 	open( FILEIN,  "$configDir/kubernetes/nginx.yaml" ) or die "$configDir/kubernetes/nginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/nginx-$namespace.yaml" )             or die "Can't open file /tmp/nginx-$namespace.yaml: $!\n";
@@ -159,7 +159,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

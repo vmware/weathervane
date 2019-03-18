@@ -1183,7 +1183,6 @@ sub startRun {
 	}
 
 	# Let the appInstances know that the workload is running.
-	# The elasticityService needs to know.
 	callMethodOnObjectsParallel( 'workloadRunning',
 		$self->workload->appInstancesRef );
 
@@ -2288,13 +2287,6 @@ sub isPassed {
 			  . " uses a user load path so not using proportions." );
 		$usedLoadPath = 1;
 	}
-	my $configPath = $appInstanceRef->getConfigPath();
-	if ( $#$configPath >= 0 ) {
-		$logger->debug( "AppInstance "
-			  . $appInstanceNum
-			  . " uses a config path so not using proportions." );
-		$usedLoadPath = 1;
-	}
 
 	if ($usedLoadPath) {
 
@@ -2324,10 +2316,6 @@ sub parseStats {
 	foreach my $appInstance (@$appInstancesRef) {
 		my $userLoadPath = $appInstance->getLoadPath();
 		if ( $#$userLoadPath >= 0 ) {
-			$anyUsedLoadPath = 1;
-		}
-		my $configPath = $appInstance->getConfigPath();
-		if ( $#$configPath >= 0 ) {
 			$anyUsedLoadPath = 1;
 		}
 	}

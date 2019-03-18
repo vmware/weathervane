@@ -172,7 +172,7 @@ sub configure {
 	my $nginxServerRoot  = $self->getParamValue('nginxServerRoot');
 	my $configDir        = $self->getParamValue('configDir');
 
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $workerConnections < 100 ) {
 		$workerConnections = 100;
 	}
@@ -180,13 +180,13 @@ sub configure {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
 
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
 
 	# Modify nginx.conf and then copy to web server
 	open( FILEIN,  "$configDir/nginx/nginx.conf" ) or die "Can't open file $configDir/nginx/nginx.conf: $!";
 	open( FILEOUT, ">/tmp/nginx$suffix.conf" )            or die "Can't open file /tmp/nginx.conf: $!";
 
-	my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef  =$self->appInstance->getAllServicesByType('appServer');
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /[^\$]upstream\sapp/ ) {
 			print FILEOUT $inline;
@@ -210,9 +210,9 @@ sub configure {
 			do {
 				$inline = <FILEIN>;
 			} while ( !( $inline =~ /}/ ) );
-		
+
 			# Add the balancer lines for each bid server
-			my $bidServersRef  =$self->appInstance->getActiveServicesByType('auctionBidServer');
+			my $bidServersRef  = $self->appInstance->getAllServicesByType('auctionBidServer');
 			if ($#{$bidServersRef} >= 0) {
 				# Add the balancer lines for each bid server
 				foreach my $bidServer (@$bidServersRef) {
@@ -371,7 +371,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

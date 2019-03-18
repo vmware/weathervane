@@ -76,7 +76,7 @@ override 'create' => sub {
 		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $workerConnections < 100 ) {
 		$workerConnections = 100;
 	}
@@ -85,7 +85,7 @@ override 'create' => sub {
 	}
 	$envVarMap{'WORKERCONNECTIONS'} = $workerConnections;
 	
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
 	$envVarMap{'PERSERVERCONNECTIONS'} = $perServerConnections;
 	
 	$envVarMap{'KEEPALIVETIMEOUT'} = $self->getParamValue('nginxKeepaliveTimeout');
@@ -96,7 +96,7 @@ override 'create' => sub {
 	$envVarMap{'HTTPSPORT'} = $self->internalPortMap->{"https"};
 	
 	# Add the appserver names for the balancer
-	my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef  =$self->appInstance->getAllServicesByType('appServer');
 	my $appServersString = "";
 	my $cnt = 1;
 	foreach my $appServer (@$appServersRef) {
@@ -323,7 +323,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

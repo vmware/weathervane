@@ -192,7 +192,7 @@ sub configure {
 		
 	`$sshConnectString rm $httpdServerRoot/conf.d/* 2>&1`;
 
-	my $maxClients = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $maxClients = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $maxClients < 100 ) {
 		$maxClients = 100;
 	}
@@ -337,7 +337,7 @@ sub configure {
 			} while ( !( $inline =~ /<\/Proxy/ ) );
 
 			# Add the balancer lines for each app server
-			my $appServersRef  =  $self->appInstance->getActiveServicesByType('appServer');		
+			my $appServersRef  =  $self->appInstance->getAllServicesByType('appServer');		
 			my $cnt = 1;
 			foreach my $appServer (@$appServersRef) {
 				my $appHostname = $appServer->host->hostName;
@@ -432,7 +432,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

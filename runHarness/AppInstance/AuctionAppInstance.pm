@@ -155,7 +155,6 @@ override 'checkConfig' => sub {
 	my $numMsgServers            = $self->getNumActiveOfServiceType('msgServer');
 	my $numDbServers             = $self->getNumActiveOfServiceType('dbServer');
 	my $numFileServers           = $self->getNumActiveOfServiceType('fileServer');
-	my $numConfigurationManagers = $self->getNumActiveOfServiceType('configurationManager');
 	my $numElasticityServers     = $self->getNumActiveOfServiceType('elasticityService');
 	my $numNosqlServers          = $self->getNumActiveOfServiceType('nosqlServer');
 
@@ -232,13 +231,6 @@ override 'checkConfig' => sub {
 	if ( $numAppServers < 1 ) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The number of application servers must be 1 or greater");
 		return 0;
-	}
-
-	if ( $numConfigurationManagers == 0 ) {
-		if ( $self->getParamValue('prewarmAppServers')  && !$self->getParamValue('clusterName')) {
-			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: Can't pre-warm appServers when there is no Configuration Manager");
-			return 0;
-		}
 	}
 
 	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
@@ -476,35 +468,6 @@ override 'redeploy' => sub {
 		print $logfile "$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"\n";
 		$out = `$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"`;
 		$logger->debug("$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"  out = $out");
-		print $logfile $out;
-
-	}
-
-	# redeploy the configuration service
-	my $configManagersRef = $self->getAllServicesByType('configurationManager');
-	foreach my $server (@$configManagersRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-
-		print $logfile
-"$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar\n";
-		my $out =
-		  `$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar`;
-		$logger->debug("$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar  out = $out");
 		print $logfile $out;
 
 	}

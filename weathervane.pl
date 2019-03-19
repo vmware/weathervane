@@ -646,12 +646,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		# Create and add all of the services for the appInstance.
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
 		foreach my $serviceType (@$serviceTypesRef) {
-
-			# Need to create IP manager last once we know which is the edge service
-			if ( $serviceType eq 'ipManager' ) {
-				next;
-			}
-
 			my @services;
 
 			# Get the service instance parameters
@@ -706,66 +700,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$weathervane_logger->debug(
 			"EdgeService for application $appInstanceNum in workload $workloadNum is $edgeService");
 		$appInstanceParamHashRef->{'edgeService'} = $edgeService;
-
-		# Only configure IP manager services if we are using virtual IPs for this appInstance
-		my $useVirtualIp = $appInstanceParamHashRef->{'useVirtualIp'};
-		if ($useVirtualIp) {
-			$weathervane_logger->debug("Configuring IP Managers for virtualIp");
-			$appInstanceParamHashRef->{'numIpManagers'}   = $appInstance->getTotalNumOfServiceType($edgeService);
-			$appInstanceParamHashRef->{"ipManagerSuffix"} = $appInstanceParamHashRef->{ $edgeService . "Suffix" };
-
-			my @services;
-			my $serviceType = 'ipManager';
-
-			# Get the service instance parameters
-			$nextInstanceNum = 1;
-			$numDefault      = $appInstanceParamHashRef->{ "num" . ucfirst($serviceType) . "s" };
-			my $svcInstanceParamHashRefs =
-			  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault,
-				$serviceType . "s",
-				$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-			$nextInstanceNum += $numDefault;
-			$instancesListRef = $appInstanceParamHashRef->{ $serviceType . "s" };
-			$instancesParamHashRefs =
-			  Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef,
-				$serviceType . "s",
-				$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-			push @$svcInstanceParamHashRefs, @$instancesParamHashRefs;
-
-			my $numScvInstances = $#{$svcInstanceParamHashRefs} + 1;
-			if ( $logger->is_debug() ) {
-				$logger->debug(
-					"For workload $workloadNum and appInstance $appInstanceNum, have $numScvInstances ${serviceType}s."
-				);
-				$logger->debug("Their Param hash refs are:");
-				foreach my $paramHashRef (@$svcInstanceParamHashRefs) {
-					my $tmp = $json->encode($paramHashRef);
-					$logger->debug($tmp);
-				}
-			}
-
-			# Create the service instances and add them to the appInstance
-			my $svcNum = 1;
-			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {
-				$svcInstanceParamHashRef->{"instanceNum"} = $svcNum;
-				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
-				my $service =
-				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances,
-					$appInstance, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
-				push @services, $service;
-
-				# Create the ComputeResource for the service
-				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, !$service->getParamValue('useDocker') );
-
-				$svcNum++;
-			}
-
-			$appInstance->setServicesByType( $serviceType, \@services );
-
-		}
-		else {
-			$appInstanceParamHashRef->{'numIpManagers'} = 0;
-		}
 
 		# Create and add the dataManager
 		my $dataManagerParamHashRef =

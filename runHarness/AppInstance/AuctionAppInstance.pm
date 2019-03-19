@@ -58,14 +58,6 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-# AppInstance variables for keepalived
-has 'wwwIpAddrs' => (
-	is        => 'rw',
-	isa       => 'ArrayRef[Str]',
-	predicate => 'has_wwwIpAddrs',
-);
-
-
 override 'initialize' => sub {
 	my ($self) = @_;
 		

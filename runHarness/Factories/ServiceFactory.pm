@@ -15,7 +15,6 @@ package ServiceFactory;
 
 use Moose;
 use MooseX::Storage;
-use Services::KeepalivedService;
 use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
@@ -108,12 +107,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 		}
-	}
-	elsif ( $serviceName eq "keepalived" ) {
-		$service = KeepalivedService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	elsif ( $serviceName eq "zookeeper" ) {
 		if ($paramHashRef->{'clusterName'}) {

@@ -35,7 +35,7 @@ BEGIN {
 my @constructedNameParameters = ( "hostName", "vmName" );
 my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers", "webServers",   "msgServers",
+	"coordinationServers", "webServers",   "msgServers",
 	"appServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
 );
@@ -43,15 +43,12 @@ my @instancesWithConstructedNames = (
 my @dockerNameParameters = ( "dockerName" );
 my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers", "webServers",   "msgServers",
+	"coordinationServers", "webServers",   "msgServers",
 	"appServers",    "auctionBidServers",	"dataManagerInstance"
 );
 
 my @constructedAppInstanceNameParameters     = ("appInstanceName");
 my @instancesWithConstructedAppInstanceNames = ( "appInstances", );
-
-my @constructedWwwHostnameParameters     = ("wwwHostname");
-my @instancesWithConstructedWwwHostnames = ( "appInstances", );
 
 my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath');
@@ -530,29 +527,6 @@ sub getInstanceParamHashRef {
 
 			}
 
-			if (   ( $param ~~ @constructedWwwHostnameParameters )
-				&& ( $instanceKey ~~ @instancesWithConstructedWwwHostnames ) )
-			{
-				if ($useAllSuffixes) {
-					$wkldSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadSuffix" );
-					if ($wkldSuffix) {
-						$wkldNum =
-						  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadNum" );
-						$wkldSuffix .= $wkldNum;
-					}
-					$appInstanceSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "appInstanceSuffix" );
-					if ($appInstanceSuffix) {
-						$appInstanceSuffix .= $instanceNum;
-					}
-				}
-				my $prefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "wwwHostnamePrefix" );
-				$value = $prefix . $wkldSuffix . $appInstanceSuffix;
-
-			}
-
 		}
 		$instanceParamHash{$param} = $value;
 
@@ -817,23 +791,6 @@ $parameters{"hosts"} = {
 	"default"   => [],
 	"parent"    => "runProc",
 	"isa"       => "host",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"ipManager"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"ipManagers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1474,23 +1431,6 @@ $parameters{"numWorkloads"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"numIpManagers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"useVirtualIp"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"numCoordinationServers"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1673,13 +1613,6 @@ $parameters{"edgeService"} = {
 };
 
 # parameters for selecting service implementations
-$parameters{"ipManagerImpl"} = {
-	"type"      => "=s",
-	"default"   => "keepalived",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "zookeeper",
@@ -2511,15 +2444,6 @@ $parameters{"rabbitmqPort"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to keepalived
-$parameters{"keepalivedServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/keepalived",
-	"parent"    => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlDataDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbData/postgresql",
@@ -2736,23 +2660,6 @@ $parameters{"rampupInterval"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"wwwHostnamePrefix"} = {
-	"type"    => "=s",
-	"default" => "www",
-	"parent"  => "appInstance",
-	"usageText" =>
-	  "This is the suffix for the hostname that is used as the main entry-point for a Auction application.",
-	"showUsage" => 0,
-};
-
-$parameters{"wwwHostname"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"hostnamePrefix"} = {
 	"type"      => "=s",
 	"default"   => "Auction",
@@ -2799,14 +2706,6 @@ $parameters{"workloadDriverSuffix"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-$parameters{"ipManagerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-
 };
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",

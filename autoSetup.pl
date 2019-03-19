@@ -328,10 +328,6 @@ runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-bid/lib/postgresql-9.4.1212.jre7.jar"
 );
 
-print "Installing keepalived\n";
-print $fileout "Installing keepalived\n";
-runAndLog( $fileout, "yum install -y keepalived" );
-
 print "Installing sysstat\n";
 print $fileout "Installing sysstat\n";
 runAndLog( $fileout,

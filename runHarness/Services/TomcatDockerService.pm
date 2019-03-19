@@ -130,11 +130,6 @@ override 'create' => sub {
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-	if ( $self->isEdgeService() && $useVirtualIp ) {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
-	}
 	foreach my $key ( keys %{ $self->internalPortMap } ) {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
@@ -247,14 +242,10 @@ sub setPortNumbers {
 	my ( $self ) = @_;
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-
 	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if (!$useVirtualIp) {
-		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
-		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-	} 
+	$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+	  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
 	$self->internalPortMap->{"shutdown"} = 8005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );

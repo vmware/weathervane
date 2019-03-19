@@ -690,9 +690,6 @@ sub getAppInstanceStatsSummary {
 		my $impl         = $self->getParamValue('workloadImpl');
 		my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 		foreach my $serviceType (@$serviceTypes) {
-			if ( $serviceType eq "ipManager" ) {
-				next;
-			}
 			my $servicesListRef = $appInstance->getAllServicesByType($serviceType);
 			my $numServices     = $appInstance->getTotalNumOfServiceType($serviceType);
 			if ( $numServices < 1 ) {

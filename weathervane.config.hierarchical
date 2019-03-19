@@ -13,7 +13,6 @@
   	  {
   	  	"dataManagerInstance" : {},
   	  	"coordinationServers" : [ {} ],
-  	  	"lbServers" : [],
   	  	"webServers" : [ {} ],
   	  	"appServers" : [ {} ],
   	  	"msgServers" : [ {} ],

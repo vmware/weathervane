@@ -508,13 +508,6 @@ override 'configure' => sub {
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
 	$self->registerPortsWithHost();
 	
-	my $secondariesRef = $self->secondaries;
-	foreach my $server (@$secondariesRef) {
-		$scpConnectString = $server->host->scpConnectString;
-		$scpHostString    = $server->host->scpHostString;
-`$scpConnectString /tmp/java.security root\@$scpHostString:$javaHome/jre/lib/security/java.security`;
-	}
-
 	# Customize the behaviorSpecs for this run
 	my $sourceBehaviorSpecDirName = "$workloadProfileHome/behaviorSpecs";
 	my $targetBehaviorSpecDirName =
@@ -569,7 +562,7 @@ override 'configure' => sub {
 
 	# make sure nscd is not running
 	$self->host->stopNscd();
-	$secondariesRef = $self->secondaries;
+	my $secondariesRef = $self->secondaries;
 	foreach my $server (@$secondariesRef) {
 		$server->host->stopNscd();
 	}

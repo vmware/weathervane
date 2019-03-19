@@ -35,25 +35,20 @@ BEGIN {
 my @constructedNameParameters = ( "hostName", "vmName" );
 my @instancesWithConstructedNames = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "fileServers",      "viHosts",      "viMgmtHostInstance",
+	"coordinationServers", "webServers",   "msgServers",
+	"appServers",      "viHosts",      "viMgmtHostInstance",
 	"auctionBidServers", "dataManagerInstance"
 );
 
 my @dockerNameParameters = ( "dockerName" );
 my @instancesWithDockerName = (
 	"drivers", "nosqlServers", "dbServers",
-	"ipManagers", "coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "auctionBidServers", "fileServers",	"dataManagerInstance"
+	"coordinationServers", "webServers",   "msgServers",
+	"appServers",    "auctionBidServers",	"dataManagerInstance"
 );
 
 my @constructedAppInstanceNameParameters     = ("appInstanceName");
 my @instancesWithConstructedAppInstanceNames = ( "appInstances", );
-
-my @constructedWwwHostnameParameters     = ("wwwHostname");
-my @instancesWithConstructedWwwHostnames = ( "appInstances", );
 
 my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath');
@@ -532,29 +527,6 @@ sub getInstanceParamHashRef {
 
 			}
 
-			if (   ( $param ~~ @constructedWwwHostnameParameters )
-				&& ( $instanceKey ~~ @instancesWithConstructedWwwHostnames ) )
-			{
-				if ($useAllSuffixes) {
-					$wkldSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadSuffix" );
-					if ($wkldSuffix) {
-						$wkldNum =
-						  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadNum" );
-						$wkldSuffix .= $wkldNum;
-					}
-					$appInstanceSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "appInstanceSuffix" );
-					if ($appInstanceSuffix) {
-						$appInstanceSuffix .= $instanceNum;
-					}
-				}
-				my $prefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "wwwHostnamePrefix" );
-				$value = $prefix . $wkldSuffix . $appInstanceSuffix;
-
-			}
-
 		}
 		$instanceParamHash{$param} = $value;
 
@@ -823,23 +795,6 @@ $parameters{"hosts"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"ipManager"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"ipManagers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServer"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -853,23 +808,6 @@ $parameters{"coordinationServers"} = {
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServer"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -921,23 +859,6 @@ $parameters{"nosqlServers"} = {
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "nosqlServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"fileServer"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"fileServers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "fileServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1439,7 +1360,6 @@ $parameters{"dockerServiceImages"} = {
 		"nginx"      => "weathervane-nginx",
 		"tomcat"     => "weathervane-tomcat",
 		"auctionbidservice"     => "weathervane-auctionbidservice",
-		"haproxy"    => "weathervane-haproxy",
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
 		"mongodb"    => "weathervane-mongodb",
@@ -1511,37 +1431,11 @@ $parameters{"numWorkloads"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"numIpManagers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"useVirtualIp"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"numCoordinationServers"} = {
 	"type"      => "=i",
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numLbServers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1620,15 +1514,6 @@ $parameters{"numMsgServers"} = {
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "msgServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numFileServers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "fileServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1723,31 +1608,16 @@ $parameters{"appInstanceImpl"} = {
 $parameters{"edgeService"} = {
 	"type"      => "=s",
 	"parent"    => "appInstance",
-	"default"   => "lbServer",
+	"default"   => "webServer",
 	"showUsage" => 0,
 };
 
 # parameters for selecting service implementations
-$parameters{"ipManagerImpl"} = {
-	"type"      => "=s",
-	"default"   => "keepalived",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "zookeeper",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which coordination server to use.  Currently must be zookeeper.",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServerImpl"} = {
-	"type"      => "=s",
-	"default"   => "haproxy",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which load-balancer to use.  Currently must be haproxy.",
 	"showUsage" => 0,
 };
 $parameters{"appServerImpl"} = {
@@ -1782,14 +1652,14 @@ $parameters{"webServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "nginx",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which Web Server to use.\n\tMust be one of: httpd or nginx",
+	"usageText" => "Controls which Web Server to use.\n\tMust be nginx",
 	"showUsage" => 1,
 };
 $parameters{"dbServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "postgresql",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which database to use.\n\tMust be one of: mysql, postgresql",
+	"usageText" => "Controls which database to use.\n\tMust be postgresql",
 	"showUsage" => 1,
 };
 $parameters{"nosqlServerImpl"} = {
@@ -1806,19 +1676,12 @@ $parameters{"msgServerImpl"} = {
 	"usageText" => "Controls which message server to use.\n\t" . "Currently only RabbitMQ is supported.",
 	"showUsage" => 0,
 };
-$parameters{"fileServerImpl"} = {
-	"type"      => "=s",
-	"default"   => "nfs",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which file server to use.\n\t" . "Currently only NFS is supported.",
-	"showUsage" => 0,
-};
 $parameters{"imageStoreType"} = {
 	"type"      => "=s",
 	"default"   => "mongodb",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which imageStore implementation to use.\n\t"
-	  . "Must be one of: mongodb, filesystem, filesystemApp, or memory",
+	  . "Must be one of: mongodb, or memory",
 	"showUsage" => 1,
 };
 
@@ -2217,62 +2080,6 @@ $parameters{"auctionBidServerJvmOpts"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"httpdKeepalive"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdKeepaliveTimeout"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxKeepaliveRequests"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxClients"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdThreadsPerChild"} = {
-	"type"      => "=i",
-	"default"   => 100,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMinSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 25,
-	"usageText" => "",
-	"parent"    => "webServer",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 2000,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # parameters specific to Nginx
 $parameters{"nginxKeepaliveTimeout"} = {
 	"type"      => "=i",
@@ -2322,78 +2129,12 @@ $parameters{"nginxCacheVolumeSize"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to haproxy
-$parameters{"haproxyProcPerCpu"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyTerminateTLS"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyAppServerMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 10000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"frontendConnectionMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-# Parameters specific to MySQL
-$parameters{"mysqlStatsInterval"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlInnodbBufferPoolSize"} = {
-	"type"      => "=s",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlInnodbBufferPoolSizePct"} = {
-	"type"      => "=f",
-	"default"   => 0.75,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlMaxConnections"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 # Parameters specific to PostgreSQL
@@ -2478,54 +2219,6 @@ $parameters{"mongodbCompact"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to NFS
-$parameters{"nfsProcessCount"} = {
-	"type"      => "=i",
-	"default"   => 32,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsServiceName"} = {
-	"type"      => "=s",
-	"default"   => "nfs-server",
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"nfsRsize"} = {
-	"type"      => "=i",
-	"default"   => 65536,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsWsize"} = {
-	"type"      => "=i",
-	"default"   => 1048567,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsServerAsync"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nfsClientAsync"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "fileServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
 
 $parameters{"appServerEnableJprofiler"} = {
 	"type"      => "!",
@@ -2594,14 +2287,6 @@ $parameters{"igniteCopyOnRead"} = {
 };
 
 
-# parameters specific to Apache httpd
-$parameters{"httpdServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/httpd",
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"nginxServerRoot"} = {
 	"type"      => "=s",
 	"default"   => "/etc/nginx",
@@ -2614,21 +2299,6 @@ $parameters{"nginxDocumentRoot"} = {
 	"type"      => "=s",
 	"default"   => "/usr/share/nginx/html",
 	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"httpdDocumentRoot"} = {
-	"type"      => "=s",
-	"default"   => "/var/www/vhosts/auction/html",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"haproxyServerRoot"} = {
-	"type"      => "=s",
-	"parent"    => "lbServer",
-	"default"   => "/etc/haproxy",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2687,21 +2357,6 @@ $parameters{"coordinationServerPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
 	"parent"    => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServerPortOffset"} = {
-	"type"      => "=i",
-	"default"   => 7000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerPortStep"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "lbServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2774,14 +2429,6 @@ $parameters{"nosqlServerPortStep"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-
-$parameters{"mysqlPort"} = {
-	"type"      => "=i",
-	"default"   => 3306,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"postgresqlPort"} = {
 	"type"      => "=i",
 	"default"   => 5432,
@@ -2793,31 +2440,6 @@ $parameters{"rabbitmqPort"} = {
 	"type"      => "=i",
 	"default"   => 5672,
 	"parent"    => "msgServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-# Parameters specific to keepalived
-$parameters{"keepalivedServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/keepalived",
-	"parent"    => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/mysql",
-	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -3038,32 +2660,6 @@ $parameters{"rampupInterval"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"imageStoreDir"} = {
-	"type"    => "=s",
-	"default" => "/mnt/imageStore",
-	"parent"  => "appInstance",
-	"usageText" =>
-"This is the location of the directory in which images are stored when the\n\timageStore type is filesystem.   This is the \n\tdirectory that is exported by NFS and mounted by other VMs.",
-	"showUsage" => 0,
-};
-
-$parameters{"wwwHostnamePrefix"} = {
-	"type"    => "=s",
-	"default" => "www",
-	"parent"  => "appInstance",
-	"usageText" =>
-	  "This is the suffix for the hostname that is used as the main entry-point for a Auction application.",
-	"showUsage" => 0,
-};
-
-$parameters{"wwwHostname"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"hostnamePrefix"} = {
 	"type"      => "=s",
 	"default"   => "Auction",
@@ -3111,24 +2707,9 @@ $parameters{"workloadDriverSuffix"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"ipManagerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-
-};
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Cs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -3171,13 +2752,6 @@ $parameters{"nosqlServerSuffix"} = {
 $parameters{"msgServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Msg",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"fileServerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "File",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

@@ -182,14 +182,11 @@ sub setPortNumbers {
 	my ( $self ) = @_;
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 
 	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if (!$useVirtualIp) {
-		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
-		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-	} 
+	$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+	  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
 	$self->internalPortMap->{"shutdown"} = 8005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
@@ -266,21 +263,8 @@ sub configure {
 	my $db            = $dbService->getImpl();
 	my $dbPort        = $dbService->portMap->{$db};
 
-	my $driverClassName;
-	if ( $db eq "mysql" ) {
-		$driverClassName = "com.mysql.jdbc.Driver";
-	}
-	elsif ( $db eq "postgresql" ) {
-		$driverClassName = "org.postgresql.Driver";
-	}
-
-	my $dbUrl;
-	if ( $db eq "mysql" ) {
-		$dbUrl = "jdbc:mysql://" . $dbHostname . ":" . $dbPort . "/auction";
-	}
-	elsif ( $db eq "postgresql" ) {
-		$dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
-	}
+	my $driverClassName = "org.postgresql.Driver";
+	my $dbUrl = "jdbc:postgresql://" . $dbHostname . ":" . $dbPort . "/auction";
 
 	open( FILEIN,  "$configDir/tomcat/server.xml" );
 	open( FILEOUT, ">/tmp/server${suffix}-N${nodeNum}.xml" );

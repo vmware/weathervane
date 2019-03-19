@@ -58,14 +58,6 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-# AppInstance variables for keepalived
-has 'wwwIpAddrs' => (
-	is        => 'rw',
-	isa       => 'ArrayRef[Str]',
-	predicate => 'has_wwwIpAddrs',
-);
-
-
 override 'initialize' => sub {
 	my ($self) = @_;
 		
@@ -81,31 +73,20 @@ override 'getEdgeService' => sub {
 		", appInstance ",               $self->getParamValue('appInstanceNum')
 	);
 
-	my $numLbServers  = $self->getTotalNumOfServiceType('lbServer');
 	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
 	my $numAppServers = $self->getTotalNumOfServiceType('appServer');
 	$logger->debug(
-		"getEdgeService: numLbServers = $numLbServers, numWebServers = $numWebServers, numAppServers = $numAppServers");
+		"getEdgeService: numWebServers = $numWebServers, numAppServers = $numAppServers");
 
 	# Used to keep track of which server is acting as the edge (client-facing) service
 	my $edgeServer;
-
-	if ( $numLbServers == 0 ) {
-		if ( $numWebServers == 0 ) {
-
-			# small configuration. App server is the edge service
-			$edgeServer = "appServer";
-		}
-		else {
-
-			# medium configuration. Web server is the edge service
-			$edgeServer = "webServer";
-		}
+	if ( $numWebServers == 0 ) {
+		# small configuration. App server is the edge service
+		$edgeServer = "appServer";
 	}
 	else {
-
-		# large configuration. load-balancer is the edge service
-		$edgeServer = "lbServer";
+		# medium configuration. Web server is the edge service
+		$edgeServer = "webServer";
 	}
 
 	$logger->debug(
@@ -117,7 +98,6 @@ override 'getEdgeService' => sub {
 	);
 
 	return $edgeServer;
-
 };
 
 override 'checkConfig' => sub {
@@ -129,13 +109,11 @@ override 'checkConfig' => sub {
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
 	my $edgeService              = $self->getParamValue('edgeService');
-	my $numLbServers             = $self->getTotalNumOfServiceType('lbServer');
 	my $numCoordinationServers   = $self->getTotalNumOfServiceType('coordinationServer');
 	my $numWebServers            = $self->getTotalNumOfServiceType('webServer');
 	my $numAppServers            = $self->getTotalNumOfServiceType('appServer');
 	my $numMsgServers            = $self->getTotalNumOfServiceType('msgServer');
 	my $numDbServers             = $self->getTotalNumOfServiceType('dbServer');
-	my $numFileServers           = $self->getTotalNumOfServiceType('fileServer');
 	my $numNosqlServers          = $self->getTotalNumOfServiceType('nosqlServer');
 
 	my $minimumUsers = $self->getParamValue('minimumUsers');
@@ -160,22 +138,6 @@ override 'checkConfig' => sub {
 	if ( !( $imageStoreType ~~ @WeathervaneTypes::imageStoreTypes ) ) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The imageStore must be one of: @WeathervaneTypes::imageStoreTypes");
 		return 0;
-	}
-
-	if ( ( $imageStoreType eq "filesystem" ) || ( $imageStoreType eq "filesystemApp" ) ) {
-		if ( $numFileServers <= 0 ) {
-			$console_logger->error(
-"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is filesystem or filesystemApp, then number of fileServers must be 1 or more, got $numFileServers"
-			);
-			return 0;
-		}
-	}
-	else {
-		if ( $numFileServers > 0 ) {
-			$console_logger->error(
-				"Workload $workloadNum, AppInstance $appInstanceNum: When the imageStoreType is not filesystem or filesystemApp, then number of fileServers must be 0");
-			return 0;
-		}
 	}
 
 	if ( ( $numCoordinationServers != 1 ) && ( $numCoordinationServers != 3 ) ) {
@@ -409,16 +371,7 @@ override 'redeploy' => sub {
 		my $scpConnectString = $server->host->scpConnectString;
 		my $scpHostString    = $server->host->scpHostString;
 		my $webServerImpl    = $server->getParamValue('webServerImpl');
-		my $webContentRoot;
-		if ( $webServerImpl eq 'httpd' ) {
-			$webContentRoot = $self->getParamValue('httpdDocumentRoot');
-		}
-		elsif ( $webServerImpl eq 'nginx' ) {
-			$webContentRoot = $self->getParamValue('nginxDocumentRoot');
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only httpd and nginx are supported .as web servers\n";
-		}
+		my $webContentRoot = $self->getParamValue('nginxDocumentRoot');
 
 		print $logfile "$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"\n";
 		my $out = `$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"`;
@@ -451,12 +404,7 @@ sub getSpringProfilesActive {
 	my $dbsRef = $self->getAllServicesByType('dbServer');
 	my $db     = $dbsRef->[0]->getImpl();
 
-	if ( $db eq "mysql" ) {
-		$springProfilesActive = "mysql";
-	}
-	else {
-		$springProfilesActive = "postgresql";
-	}
+	$springProfilesActive = "postgresql";
 
 	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
 	if ( $appServerCacheImpl eq "ehcache" ) {
@@ -467,10 +415,7 @@ sub getSpringProfilesActive {
 	}
 
 	my $imageStore = $self->getParamValue('imageStoreType');
-	if ( ( $imageStore eq "filesystem" ) || ( $imageStore eq "filesystemApp" ) ) {
-		$springProfilesActive .= ",imagesInFilesystem";
-	}
-	elsif ( $imageStore eq "mongodb" ) {
+	if ( $imageStore eq "mongodb" ) {
 		$springProfilesActive .= ",imagesInMongo";
 	}
 	elsif ( $imageStore eq "memory" ) {

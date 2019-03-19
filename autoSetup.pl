@@ -207,7 +207,6 @@ else {
 print "Setting up various configuration files.  See autoSetup.log for details\n";
 print $fileout "Setting up various configuration files.  See autoSetup.log for details\n";
 runAndLog( $fileout, "cp configFiles/host/$os/sysctl.conf /etc/" );
-runAndLog( $fileout, "cp configFiles/host/$os/rsyslog.conf /etc/" );
 runAndLog( $fileout, "cp configFiles/host/$os/config /etc/selinux/" );
 runAndLog( $fileout, "cp configFiles/host/$os/login /etc/pam.d/login" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits.conf /etc/security/limits.conf" );
@@ -251,9 +250,7 @@ print $fileout "Creating directories under /mnt\n";
 runAndLog( $fileout, "mkdir /mnt/dbData" );
 runAndLog( $fileout, "mkdir /mnt/dbLogs" );
 runAndLog( $fileout, "mkdir /mnt/dbData/postgresql" );
-runAndLog( $fileout, "mkdir /mnt/dbData/mysql" );
 runAndLog( $fileout, "mkdir /mnt/dbLogs/postgresql" );
-runAndLog( $fileout, "mkdir /mnt/dbLogs/mysql" );
 runAndLog( $fileout, "mkdir /mnt/mongoData" );
 runAndLog( $fileout, "mkdir /mnt/imageStore" );
 runAndLog( $fileout, "mkdir /mnt/zookeeper" );
@@ -313,9 +310,6 @@ runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/temp" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/logs" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-auction1/lib" );
 runAndLog( $fileout,
-"curl -s http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar -o /opt/apache-tomcat-auction1/lib/mysql-connector-java-5.1.41.jar"
-);
-runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-auction1/lib/postgresql-9.4.1212.jre7.jar"
 );
 
@@ -331,38 +325,8 @@ runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/temp" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/logs" );
 runAndLog( $fileout, "mkdir /opt/apache-tomcat-bid/lib" );
 runAndLog( $fileout,
-"curl -s http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar -o /opt/apache-tomcat-bid/lib/mysql-connector-java-5.1.41.jar"
-);
-runAndLog( $fileout,
 "curl -s http://central.maven.org/maven2/org/postgresql/postgresql/9.4.1212.jre7/postgresql-9.4.1212.jre7.jar -o /opt/apache-tomcat-bid/lib/postgresql-9.4.1212.jre7.jar"
 );
-
-print "Fetching and installing Httpd\n";
-print $fileout "Fetching and installing Httpd\n";
-runAndLog( $fileout, "yum install -y httpd" );
-runAndLog( $fileout, "mkdir /var/cache/apache" );
-runAndLog( $fileout, "chmod 777 /var/cache/apache" );
-runAndLog( $fileout, "mkdir -p /var/www/vhosts/auction/html" );
-runAndLog( $fileout, "cp /root/weathervane/dist/auctionWeb.tgz /var/www/vhosts/auction/html/" );
-runAndLog( $fileout, "cd /var/www/vhosts/auction/html; tar zxf auctionWeb.tgz 2>&1; rm -r auctionWeb.tgz" );
-runAndLog( $fileout, "mkdir /etc/systemd/system/httpd.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/httpd.service.d/limits.conf" );
-
-print "Installing keepalived\n";
-print $fileout "Installing keepalived\n";
-runAndLog( $fileout, "yum install -y keepalived" );
-
-print "Installing haproxy\n";
-print $fileout "Installing haproxy\n";
-runAndLog( $fileout, "yum install -y haproxy" );
-runAndLog( $fileout, "yum install -y mod_ssl" );
-runAndLog( $fileout,
-	"curl -s http://www.dest-unreach.org/socat/download/socat-1.7.3.0.tar.gz -o /tmp/socat-1.7.3.0.tar.gz" );
-runAndLog( $fileout, "tar zxf /tmp/socat-1.7.3.0.tar.gz" );
-runAndLog( $fileout, "cd /root/weathervane/socat-1.7.3.0;./configure 2>&1;make 2>&1;make install" );
-runAndLog( $fileout, "rm -rf /root/weathervane/socat-1.7.3.0" );
-runAndLog( $fileout, "mkdir /etc/systemd/system/haproxy.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/haproxy.service.d/limits.conf" );
 
 print "Installing sysstat\n";
 print $fileout "Installing sysstat\n";
@@ -391,46 +355,6 @@ runAndLog( $fileout, "cd /usr/share/nginx/html; tar zxf auctionWeb.tgz 2>&1; rm 
 runAndLog( $fileout, "chown -R nginx:nginx /usr/share/nginx" );
 runAndLog( $fileout, "mkdir /etc/systemd/system/nginx.service.d" );
 runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/nginx.service.d/limits.conf" );
-
-print "Installing mysql\n";
-print $fileout "Installing mysql\n";
-if ( $os eq "centos6" ) {
-	runAndLog( $fileout,
-"curl -s http://repo.mysql.com/mysql-community-release-el6-5.noarch.rpm -o /tmp/mysql-community-release-el6-5.noarch.rpm"
-	);
-	runAndLog( $fileout, "yum install -y /tmp/mysql-community-release-el6-5.noarch.rpm" );
-}
-elsif ( $os eq "centos7" ) {
-	runAndLog( $fileout,
-"curl -s http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm -o /tmp/mysql-community-release-el7-5.noarch.rpm"
-	);
-	runAndLog( $fileout, "yum install -y /tmp/mysql-community-release-el7-5.noarch.rpm" );
-}
-runAndLog( $fileout, "yum install -y mysql-community-server" );
-if ( $os eq "centos6" ) {
-	runAndLog( $fileout, "ln -s /etc/init.d/mysqld /etc/init.d/mysql" );
-}
-runAndLog( $fileout, "cp /root/weathervane/configFiles/mysql/my.cnf /etc/my.cnf" );
-runAndLog( $fileout, "chown -R mysql:mysql /mnt/dbData/mysql" );
-runAndLog( $fileout, "chown -R mysql:mysql /mnt/dbLogs/mysql" );
-runAndLog( $fileout, "service mysqld start" );
-runAndLog( $fileout, "mysql -u root -e \"CREATE USER 'auction' IDENTIFIED BY 'auction';\"" );
-runAndLog( $fileout, "mysql -u root -e \"GRANT ALL ON *.* TO 'auction';\"" );
-runAndLog( $fileout, "mysql -u root -e \"GRANT ALL ON *.* TO 'auction'\@'localhost';\"" );
-runAndLog( $fileout, "mysql -u root -e \"drop user ''\@'localhost';\"" );
-runAndLog( $fileout, "mysql -u root -e \"SET PASSWORD=PASSWORD('weathervane');\"" );
-runAndLog( $fileout, "service mysqld stop" );
-runAndLog( $fileout, "echo 'LimitNOFILE=infinity' >> /lib/systemd/system/mysqld.service");
-runAndLog( $fileout, "echo 'LimitMEMLOCK=infinity' >> /lib/systemd/system/mysqld.service");
-runAndLog( $fileout, "mkdir /etc/systemd/system/mysqld.service.d" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits-systemd.conf /etc/systemd/system/mysqld.service.d/limits.conf" );
-
-if ( $os eq "centos6" ) {
-	runAndLog( $fileout, "chkconfig mysql off" );
-}
-elsif ( $os eq "centos7" ) {
-	runAndLog( $fileout, "systemctl disable mysqld" );
-}
 
 print "Installing postgresql93\n";
 print $fileout "Installing postgresql93\n";
@@ -486,9 +410,6 @@ runAndLog( $fileout, "chmod +x /usr/local/bin/rabbitmqadmin" );
 print "Installing mongodb-org\n";
 runAndLog( $fileout, "yum install -y mongodb-org" );
 runAndLog( $fileout, "chkconfig mongod off" );
-
-print "Installing nfs\n";
-runAndLog( $fileout, "yum install -y nfs-utils" );
 
 print "Installing Perl Modules\n";
 print $fileout "Installing Perl Modules\n";

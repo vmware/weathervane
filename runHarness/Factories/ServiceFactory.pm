@@ -15,10 +15,6 @@ package ServiceFactory;
 
 use Moose;
 use MooseX::Storage;
-use Services::KeepalivedService;
-use Services::HaproxyService;
-use Services::HaproxyDockerService;
-use Services::HttpdService;
 use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
@@ -27,7 +23,6 @@ use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
 use Services::AuctionBidService;
-use Services::MysqlService;
 use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
@@ -40,7 +35,6 @@ use Services::ZookeeperDockerService;
 use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
-use Services::NfsService;
 use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
@@ -114,31 +108,6 @@ sub getServiceByType {
 				);
 		}
 	}
-	elsif ( $serviceName eq "keepalived" ) {
-		$service = KeepalivedService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "haproxy" ) {
-		if ($docker) {
-			$service = HaproxyDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {
-			$service = HaproxyService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-	}
-	elsif ( $serviceName eq "httpd" ) {
-			$service = HttpdService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-	}
 	elsif ( $serviceName eq "zookeeper" ) {
 		if ($paramHashRef->{'clusterName'}) {
 			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
@@ -180,12 +149,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
-	}
-	elsif ( $serviceName eq "mysql" ) {
-		$service = MysqlService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	elsif ( $serviceName eq "postgresql" ) {
 		if ($paramHashRef->{'clusterName'}) {
@@ -246,12 +209,6 @@ sub getServiceByType {
 				appInstance => $appInstance,
 			);
 		}
-	}
-	elsif ( $serviceName eq "nfs" ) {
-		$service = NfsService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	else {
 		die "No matching service name $serviceName available to ServiceFactory";

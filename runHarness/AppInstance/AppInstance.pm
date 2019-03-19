@@ -320,39 +320,20 @@ sub hasLoadPath {
 	}
 }
 
-sub getWwwHostname {
-	my ($self) = @_;
-	return $self->getParamValue('wwwHostname');
-}
-
-sub getWwwIpAddrsRef {
+sub getEdgeAddrsRef {
 	my ($self) = @_;
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 
-	my $wwwIpAddrsRef = [];
-	if ( $self->getParamValue('useVirtualIp') ) {
-		$logger->debug("configure for workload $workloadNum, appInstance uses virtualIp");
-		my $wwwHostname = $self->getWwwHostname();
-		my $wwwIpsRef = Utils::getIpAddresses($wwwHostname);
-		foreach my $ip (@$wwwIpsRef) {
-			# When using virtualIP addresses, all edge services must use the same
-			# default port numbers
-			push @$wwwIpAddrsRef, [$ip, 80, 443];				
-		}
-	}
-	else {
-		my $edgeService  = $self->getEdgeService();
-		my $edgeServices = $self->getAllServicesByType($edgeService);
-		$logger->debug(
-			"configure for workload $workloadNum, appInstance does not use virtualIp. edgeService is $edgeService"
-		);
-		foreach my $service (@$edgeServices) {
-			push @$wwwIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
-		}
+	my $edgeIpAddrsRef = [];
+	my $edgeService  = $self->getEdgeService();
+	my $edgeServices = $self->getAllServicesByType($edgeService);
+	$logger->debug("configure for workload $workloadNum, edgeService is $edgeService");
+	foreach my $service (@$edgeServices) {
+		push @$edgeIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
 	}
 	
-	return $wwwIpAddrsRef;
+	return $edgeIpAddrsRef;
 }
 
 sub clearReloadDb {
@@ -1626,11 +1607,7 @@ sub sanityCheckServices {
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	my $passed       = 1;
 	foreach my $serviceType (@$serviceTypes) {
-		if ( $serviceType eq "ipManager" ) {
-			next;
-		}
 		my $servicesListRef = $self->getAllServicesByType($serviceType);
-
 		foreach my $service (@$servicesListRef) {
 			$passed = $service->sanityCheck($cleanupLogDir) && $passed;
 		}
@@ -1721,11 +1698,7 @@ sub getHostStatsSummary {
 	my $impl         = $self->getParamValue('workloadImpl');
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
-		if ( $serviceType eq "ipManager" ) {
-			next;
-		}
 		my $servicesListRef = $self->getAllServicesByType($serviceType);
-
 		foreach my $service (@$servicesListRef) {
 			my $hostname;
 			if ($service->host->isCluster) {
@@ -1762,9 +1735,6 @@ sub getHostStatsSummary {
 	print HOSTCSVFILE "\n";
 
 	foreach my $serviceType (@$serviceTypes) {
-		if ( $serviceType eq "ipManager" ) {
-			next;
-		}
 		$logger->debug("getHostStatsSummary aggregating stats for hosts running service type $serviceType");
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		my $numServices = $#$servicesRef + 1;

@@ -312,7 +312,6 @@ sub createRunConfigHash {
 	my $usersPerAuctionScaleFactor =
 	  $self->getParamValue('usersPerAuctionScaleFactor');
 	my $rampupInterval = $self->getParamValue('rampupInterval');
-	my $useVirtualIp   = $self->getParamValue('useVirtualIp');
 	my $secondariesRef = $self->secondaries;
 
 	my $workloadProfile  = $self->getParamValue('workloadProfile');
@@ -441,9 +440,9 @@ sub createRunConfigHash {
 		$logger->debug("createRunConfigHash configuring statsIntervalSpec " . $statsIntervalSpec->{'name'});
 
 		# There should be one target for each IP address
-		# associated with the www hostname for each appInstance
-		my $wwwIpAddrsRef = $appInstance->getWwwIpAddrsRef();
-		my $numVIPs = $#{$wwwIpAddrsRef} + 1;
+		# associated with the edge service for each appInstance
+		my $edgeIpAddrsRef = $appInstance->getEdgeAddrsRef();
+		my $numVIPs = $#{$edgeIpAddrsRef} + 1;
 	    $logger->debug("createRunConfigHash appInstance $instanceNum has $numVIPs targets");
 
 		$workload->{"targets"} = [];
@@ -452,9 +451,9 @@ sub createRunConfigHash {
 		for ( my $vipNum = 0 ; $vipNum < $numVIPs ; $vipNum++ ) {
 			my $target = {};
 
-			my $serverName = $wwwIpAddrsRef->[$vipNum]->[0];
-			my $httpPort   = $wwwIpAddrsRef->[$vipNum]->[1];
-			my $httpsPort  = $wwwIpAddrsRef->[$vipNum]->[2];
+			my $serverName = $edgeIpAddrsRef->[$vipNum]->[0];
+			my $httpPort   = $edgeIpAddrsRef->[$vipNum]->[1];
+			my $httpsPort  = $edgeIpAddrsRef->[$vipNum]->[2];
 
 			$target->{"type"}      = "http";
 			$target->{"hostname"}  = "$serverName";
@@ -504,66 +503,11 @@ override 'configure' => sub {
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
 	my $rampupInterval      = $self->getParamValue('rampupInterval');
-	my $useVirtualIp        = $self->getParamValue('useVirtualIp');
 	my $tmpDir              = $self->getParamValue('tmpDir');
 
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
 	$self->registerPortsWithHost();
-
-	# configure the java DNS cache TTL on all drivers
-	my $scpConnectString = $self->host->scpConnectString;
-	my $scpHostString    = $self->host->scpHostString;
-	my $javaHome         = $ENV{'JAVA_HOME'};
-	if ( !( defined $javaHome ) ) {
-		$console_logger->warn(
-"The environment variable JAVA_HOME must be defined in order for Weathervane to run."
-		);
-		return 0;
-	}
-
-`$scpConnectString root\@$scpHostString:$javaHome/jre/lib/security/java.security /tmp/java.security.orig `;
-	open( JAVASEC, "/tmp/java.security.orig" )
-	  || die "Can't open /tmp/java.security.orig for reading: $!";
-	open( JAVASECTMP, ">/tmp/java.security" )
-	  || die "Can't open /tmp/java.security for writing: $!";
-	while ( my $inline = <JAVASEC> ) {
-
-		if ( $inline =~ /networkaddress.cache.ttl/ ) {
-			if ($useVirtualIp) {
-				print JAVASECTMP "networkaddress.cache.ttl = "
-				  . $self->getParamValue('driverJvmDnsTtl') . "\n";
-			}
-			else {
-				print JAVASECTMP "#networkaddress.cache.ttl = "
-				  . $self->getParamValue('driverJvmDnsTtl') . "\n";
-			}
-		}
-		elsif ( $inline =~ /networkaddress.cache.negative.ttl/ ) {
-			if ($useVirtualIp) {
-				print JAVASECTMP "networkaddress.cache.negative.ttl = "
-				  . $self->getParamValue('driverJvmDnsTtl') . "\n";
-			}
-			else {
-				print JAVASECTMP "#networkaddress.cache.negative.ttl = "
-				  . $self->getParamValue('driverJvmDnsTtl') . "\n";
-			}
-		}
-		else {
-			print JAVASECTMP $inline;
-		}
-	}
-	close JAVASEC;
-	close JAVASECTMP;
-
-`$scpConnectString /tmp/java.security root\@$scpHostString:$javaHome/jre/lib/security/java.security`;
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $server (@$secondariesRef) {
-		$scpConnectString = $server->host->scpConnectString;
-		$scpHostString    = $server->host->scpHostString;
-`$scpConnectString /tmp/java.security root\@$scpHostString:$javaHome/jre/lib/security/java.security`;
-	}
-
+	
 	# Customize the behaviorSpecs for this run
 	my $sourceBehaviorSpecDirName = "$workloadProfileHome/behaviorSpecs";
 	my $targetBehaviorSpecDirName =
@@ -618,7 +562,7 @@ override 'configure' => sub {
 
 	# make sure nscd is not running
 	$self->host->stopNscd();
-	$secondariesRef = $self->secondaries;
+	my $secondariesRef = $self->secondaries;
 	foreach my $server (@$secondariesRef) {
 		$server->host->stopNscd();
 	}
@@ -1623,39 +1567,6 @@ sub stopAppStatsCollection {
 
 		$numTimeoffsetsDeleted =
 		  `PGPASSWORD=auction $connectString \"DELETE FROM fixedtimeoffset;\"`;
-		print LOG "numTimeoffsetsDeleted = $numTimeoffsetsDeleted\n";
-
-	}
-	else {
-		$connectString =
-"mysql  -u auction -pauction -h $dbHostname --database=auction --skip-column-names -s -e ";
-		$avgBidCompletionDelay =
-`$connectString \"SELECT AVG(delay)/1000 FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND  timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($avgBidCompletionDelay);
-		print LOG "avgBidCompletionDelay = $avgBidCompletionDelay\n";
-
-		$stddevBidCompletionDelay =
-`$connectString \"SELECT STDDEV(delay)/1000 FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND  timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($stddevBidCompletionDelay);
-		print LOG "stddevBidCompletionDelay = $stddevBidCompletionDelay\n";
-
-		$avgItemDuration =
-`$connectString \"SELECT avg(TIMESTAMPDIFF(SECOND, biddingStartTime, biddingEndTime)) FROM highbid WHERE biddingEndTime IS NOT NULL AND biddingStartTime IS NOT NULL AND  '$steadyStateStartTimestamp'<  biddingEndTime AND biddingStartTime <  '$steadyStateEndTimestamp';\"`;
-		chomp($avgItemDuration);
-		print LOG "avgItemDuration = $avgItemDuration\n";
-
-		$avgCompletionsPerBid =
-`$connectString \"SELECT AVG(numCompletedBids) FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($avgCompletionsPerBid);
-		print LOG "avgCompletionsPerBid = $avgCompletionsPerBid\n";
-
-		$stddevCompletionsPerBid =
-`$connectString \"SELECT STDDEV(numCompletedBids) FROM bidcompletiondelay WHERE '$steadyStateStartTimestamp' < timestamp AND timestamp < '$steadyStateEndTimestamp' ;\"`;
-		chomp($stddevCompletionsPerBid);
-		print LOG "stddevCompletionsPerBid = $stddevCompletionsPerBid\n";
-
-		$numTimeoffsetsDeleted =
-		  `$connectString \"DELETE FROM fixedtimeoffset;\"`;
 		print LOG "numTimeoffsetsDeleted = $numTimeoffsetsDeleted\n";
 
 	}

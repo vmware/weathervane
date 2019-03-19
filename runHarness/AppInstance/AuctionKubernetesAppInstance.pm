@@ -160,7 +160,7 @@ override 'cleanup' => sub {
 	
 };
 
-override 'getWwwIpAddrsRef' => sub {
+override 'getEdgeAddrsRef' => sub {
 	my ($self) = @_;
 	my $cluster = $self->host;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");

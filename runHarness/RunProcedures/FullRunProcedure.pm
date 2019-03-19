@@ -145,14 +145,6 @@ override 'run' => sub {
 		$debug_logger->debug("Unregister port numbers");
 		$self->unRegisterPortNumbers();
 
-		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
-		if ($sanityPassed) {
-			$console_logger->info("All Sanity Checks Passed");
-		}
-		else {
-			$console_logger->info("Sanity Checks Failed");
-		}
-
 		# clean up old logs and stats
 		$self->cleanup($cleanupLogDir);
 	}

@@ -202,13 +202,6 @@ sub clearDataBeforeStart {
 	
 }
 
-override 'sanityCheck' => sub {
-	my ($self, $cleanupLogDir) = @_;
-	my $console_logger = get_logger("Console");
-
-	return 1;	
-};
-
 override 'stopStatsCollection' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbKubernetesService");

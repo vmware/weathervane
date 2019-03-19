@@ -1113,34 +1113,6 @@ sub setExternalPortNumbers {
 	$self->portMap->{'mongoc3'} = $self->internalPortMap->{'mongoc3'};
 }
 
-override 'sanityCheck' => sub {
-	my ($self, $cleanupLogDir) = @_;
-	my $console_logger = get_logger("Console");
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $logName          = "$cleanupLogDir/SanityCheckMongoDB-$hostname.log";
-	my $dir = $self->getParamValue('mongodbDataDir');
-
-	my $dblog;
-	open( $dblog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	my $cmdString = "$sshConnectString df -h $dir";
-	my $cmdout = `$cmdString`;
-	print $dblog "$cmdString\n";
-	print $dblog "$cmdout\n";
-
-	close $dblog;
-
-	if ($cmdout =~ /100\%/) {
-		$console_logger->error("Failed Sanity Check: MongoDB Data Directory $dir is full on $hostname.");
-		return 0;
-	} else {
-		return 1;
-	}
-	
-};
-
 sub stopStatsCollection {
 	my ($self) = @_;
 

@@ -119,16 +119,6 @@ sub run {
 	);
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
-
-	## power control.
-	if ( $self->getParamValue('powerOnVms') || $self->getParamValue('powerOffVms') ) {
-		$debug_logger->debug("doPowerControl");
-		$self->doPowerControl();
-
-		# Only do powercontrol the first run
-		$self->setParamValue( 'powerOnVms',  0 );
-		$self->setParamValue( 'powerOffVms', 0 );
-	}
 	
 	# Now get the cpu and memory config of all hosts
 	$self->getCpuMemConfig();

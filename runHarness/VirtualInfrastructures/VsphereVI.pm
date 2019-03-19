@@ -40,8 +40,7 @@ override 'initializeVmInfo' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::VirtualInfrastructures:VsphereVI");
 
-	if ( ( $self->getParamValue('logLevel') >= 4 ) || ( $self->getParamValue('powerOnVms') )
-		|| ( $self->getParamValue('powerOffVms') ) ) {
+	if ($self->getParamValue('logLevel') >= 4) {
 
 		# get information on all of the VMs on the hosts
 		my $vmsInfoHashRef = $self->vmsInfoHashRef;
@@ -90,30 +89,6 @@ sub getVMPowerState {
 	}
 
 	return \%vmList;
-}
-
-sub powerOnVM {
-	my ( $self, $vmName ) = @_;
-	my $vmsInfoHashRef = $self->vmsInfoHashRef;
-	my $vmInfoHashRef  = $vmsInfoHashRef->{$vmName};
-	my $vmid           = $vmInfoHashRef->{"vmid"};
-	my $viHostname     = $vmInfoHashRef->{"hostname"};
-
-	# TODO Need error handling
-	`ssh  -o 'StrictHostKeyChecking no' root\@$viHostname vim-cmd /vmsvc/power.on $vmid`;
-
-}
-
-sub powerOffVM {
-	my ( $self, $vmName ) = @_;
-	my $vmsInfoHashRef = $self->vmsInfoHashRef;
-	my $vmInfoHashRef  = $vmsInfoHashRef->{$vmName};
-	my $vmid           = $vmInfoHashRef->{"vmid"};
-	my $viHostname     = $vmInfoHashRef->{"hostname"};
-
-	# TODO Need error handling
-	`ssh  -o 'StrictHostKeyChecking no' root\@$viHostname vim-cmd /vmsvc/power.shutdown $vmid`;
-
 }
 
 sub startStatsCollection {

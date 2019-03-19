@@ -1181,43 +1181,6 @@ $parameters{"loadDb"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"powerOnVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOnVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs for the run are powered on.  For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOnVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-$parameters{"powerOffVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs whose names start with the hostnamePrefix that are on the viHosts and \n\t"
-	  . "that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-
-$parameters{"powerOffAllVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffAllVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs on the viHosts that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
-	"showUsage" => 0,
-};
-
 # stats collection script call-out variables
 $parameters{"startStatsScript"} = {
 	"type"      => "=s",

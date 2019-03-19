@@ -160,30 +160,6 @@ override 'cleanup' => sub {
 	
 };
 
-override 'getWwwIpAddrsRef' => sub {
-	my ($self) = @_;
-	my $cluster = $self->host;
-	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	
-	my $wwwIpAddrsRef = [];
-	
-	# Get the IP addresses of the nginx-ingress in this appInstance's namespace
-	my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-	if ($#{$ipAddrsRef} < 0) {
-		$logger->error("There are no IP addresses for the Kubernetes nodes");
-		exit 1;
-	}
-	
-	# Get the nodePort numbers for the ingress-controller-nginx service
-	my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
-	my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
-	
-	foreach my $ipAddr (@$ipAddrsRef) {
-		push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
-	}
-	return $wwwIpAddrsRef;
-};
-
 override 'getServiceConfigParameters' => sub {
 	my ( $self, $service, $serviceType ) = @_;
 	my %serviceParameters = ();

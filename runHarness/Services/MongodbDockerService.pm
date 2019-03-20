@@ -507,8 +507,6 @@ override 'start' => sub {
 
 	$self->configureAfterStart($logPath, $mongosHostPortListRef);
 
-	$self->host->startNscd();
-
 };
 
 
@@ -871,10 +869,6 @@ sub startMongosServers {
 			".  Port number is ", $appServer->internalPortMap->{'mongos'}
 		);
 
-		# Make sure this port is open, but don't register it with the host
-		# since the appServer will do that when it starts
-		$appServer->host->openPortNumber( $appServer->internalPortMap->{'mongos'} );
-
 	}
 
 	return [$mongosSvrHostnames[0], $mongosSvrPorts[0]];
@@ -1025,30 +1019,11 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname                    = $self->getIpAddr();
-	my $port                        = $self->portMap->{'mongod'};
-	my $name                        = $self->getParamValue('dockerName');
-	my $dataManager                 = $self->appInstance->dataManager;
-	my $dataManagerSshConnectString = $dataManager->host->sshConnectString;
-
-	my $pid = fork();
-	if ( $pid == 0 ) {
-`$dataManagerSshConnectString \"mongostat --port $port --host $hostname -n $numIntervals $intervalLengthSec > /tmp/mongostat_${hostname}_$name.txt\"`;
-		exit;
-	}
-
 }
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $dataManager      = $self->appInstance->dataManager;
-	my $scpConnectString = $dataManager->host->scpConnectString;
-	my $scpHostString    = $dataManager->host->scpHostString;
-
-	my $out = `$scpConnectString root\@$scpHostString:/tmp/mongostat_${hostname}_$name.txt $destinationPath/. 2>&1`;
-
 }
 
 sub cleanStatsFiles {

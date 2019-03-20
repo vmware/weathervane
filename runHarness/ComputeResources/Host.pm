@@ -39,54 +39,10 @@ has 'ipAddr' => (
 	lazy    => 1,
 );
 
-has 'cpus' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
-has 'memKb' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
-has 'supportsPowerControl' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
 has 'isGuest' => (
 	is  => 'rw',
 	isa => 'Bool',
 	default => 0,
-);
-
-# This will be set to true if host is running any non-dockerized service
-has 'isNonDocker' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-has 'sshConnectString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'scpConnectString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'scpHostString' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'tmpStoragePath' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "/tmp",
 );
 
 has 'paramHashRef' => (
@@ -94,8 +50,6 @@ has 'paramHashRef' => (
 	isa     => 'HashRef',
 	default => sub { {} },
 );
-
-has 'runLog' => ( is => 'rw', );
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
@@ -106,12 +60,7 @@ override 'initialize' => sub {
 		$console_logger->error("Must specify a hostname for all host instances.");
 		exit(-1);
 	}
-
 	$self->hostName($hostname);
-
-	$self->sshConnectString( "ssh -o 'StrictHostKeyChecking no' root\@" . $hostname . " " );
-	$self->scpConnectString("scp -o 'StrictHostKeyChecking no'");
-	$self->scpHostString( $hostname );
 
 	super();
 
@@ -152,10 +101,6 @@ sub unRegisterPortNumber {
 sub getDockerServiceImages {
 	my ($self) = @_;
 	return $self->getParamValue('dockerServiceImages');
-}
-
-sub getCpuMemConfig {
-	my ($self) = @_;
 }
 
 

@@ -1245,14 +1245,6 @@ $parameters{"useDocker"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerCpus"} = {
-	"type"      => "=f",
-	"default"   => 0,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerCpuShares"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1272,14 +1264,6 @@ $parameters{"dockerCpuSetCpus"} = {
 $parameters{"dockerCpuSetMems"} = {
 	"type"      => "=s",
 	"default"   => "unset",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"dockerMemory"} = {
-	"type"      => "=s",
-	"default"   => 0,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1842,14 +1826,6 @@ $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"driverJvmDnsTtl"} = {
-	"type"      => "=i",
-	"default"   => 5,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"maxLogLines"} = {
 	"type"      => "=i",
 	"default"   => 4000,
@@ -1870,6 +1846,22 @@ $parameters{"webServerMem"} = {
 	"type"      => "=s",
 	"default"   => "10Gi",
 	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverMem"} = {
+	"type"      => "=s",
+	"default"   => "7Gi",
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2182,15 +2174,6 @@ $parameters{"mongodbCompact"} = {
 	"showUsage" => 0,
 };
 
-
-$parameters{"appServerEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 # parameters specific to the bid service
 $parameters{"bidServiceCatalinaHome"} = {
 	"type"      => "=s",
@@ -2203,14 +2186,6 @@ $parameters{"bidServiceCatalinaHome"} = {
 $parameters{"bidServiceCatalinaBase"} = {
 	"type"      => "=s",
 	"default"   => "/opt/apache-tomcat-bid",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"auctionBidServiceEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2912,20 +2887,6 @@ $parameters{"statsInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"driverEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"dbLoaderEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };

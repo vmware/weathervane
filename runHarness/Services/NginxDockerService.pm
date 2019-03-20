@@ -149,7 +149,6 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
 	my $hostname         = $self->host->hostName;
 	my $name = $self->getParamValue('dockerName');
 	my $logName          = "$logPath/StartNginxDocker-$hostname-$name.log";
@@ -170,8 +169,6 @@ sub startInstance {
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 	}
 	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 
 	close $applog;
 }
@@ -338,8 +335,8 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom($applog, $name, "$nginxServerRoot/*.conf", "$logpath/.");
-	$self->host->dockerScpFileFrom($applog, $name, "$nginxServerRoot/conf.d/*.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/*.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/conf.d/*.conf", "$logpath/.");
 	close $applog;
 
 }

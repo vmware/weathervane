@@ -27,7 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
 
-
 has 'isCluster' => (
 	is  => 'rw',
 	isa => 'Bool',

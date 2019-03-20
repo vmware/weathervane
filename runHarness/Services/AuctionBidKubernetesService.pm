@@ -73,10 +73,6 @@ sub configure {
 
 	my $completeJVMOpts .= $self->getParamValue('auctionBidServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
-	if ( $self->getParamValue('appServerEnableJprofiler') ) {
-		$completeJVMOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";

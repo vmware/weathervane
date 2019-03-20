@@ -25,12 +25,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'VirtualInfrastructure';
 
-has '+name' => ( default => 'vsphere', );
-
-has '+version' => ( default => '5.5', );
-
-has '+description' => ( default => 'VMware vSphere 5.5', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();

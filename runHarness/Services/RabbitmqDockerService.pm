@@ -122,7 +122,6 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
 	my $hostname         = $self->host->hostName;
 	my $name = $self->getParamValue('dockerName');
 	my $logName          = "$logPath/StartRabbitmqDocker-$hostname-$name.log";
@@ -145,8 +144,6 @@ sub startInstance {
 		$self->portMap->{'dist'} = $portMapRef->{$self->internalPortMap->{'dist'}};
 	}
 	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 
 	sleep 5;
 
@@ -393,8 +390,8 @@ sub getConfigFiles {
 
 	$self->host->dockerExec($applog, $name, "rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt");
 
-	$self->host->dockerScpFileFrom($applog, $name, "/tmp/{hostname}_rabbitmqctl_report.txt", "$logpath/.");
-	$self->host->dockerScpFileFrom($applog, $name, "/etc/rabbitmq/*", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "/tmp/{hostname}_rabbitmqctl_report.txt", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "/etc/rabbitmq/*", "$logpath/.");
 	close $applog;
 	
 }

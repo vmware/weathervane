@@ -57,7 +57,6 @@ override 'initialize' => sub {
 
 sub run {
 	my ( $self ) = @_;
-	my $runLog             = $self->runLog;
 	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $outputDir          = $self->getParamValue('outputDir');
 	my $tmpDir             = $self->getParamValue('tmpDir');
@@ -114,9 +113,6 @@ sub run {
 	);
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
-
-	# Now get the cpu and memory config of all hosts
-	$self->getCpuMemConfig();
 	
 	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
 
@@ -143,14 +139,6 @@ sub run {
 
 	# Copy the version file into the output directory
 	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-
-	# Make sure that all hosts are running the same version of Weathervane
-	my $allSame = $self->checkVersions();
-	if (!$allSame) {
-		$console_logger->info("Mismatching Weathervane versions detected.");		
-		$console_logger->info("To synchronize the version of Weathervane on all hosts to match the local host, use the --redeploy flag.");
-		exit;		
-	}
 		
 	# Prepare the data for this run and start the data services
 	$console_logger->info("Preparing data for use in current run.\n");

@@ -50,8 +50,6 @@ has 'osType' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	
-	# A GuestHost supports power control
-	$self->supportsPowerControl(1);
 	$self->isGuest(1);
 	
 	super();

@@ -80,24 +80,6 @@ sub registerService {
 	exit(-1);	
 }
 
-# Services use this method to notify the host that they are using 
-# a particular port number
-sub registerPortNumber {
-	my ($self, $portNumber) = @_;
-	my $console_logger = get_logger("Console");
-	
-	$console_logger->error("registerPortNumber called on a Host object that does not support that method.");
-	exit(-1);
-}
-
-sub unRegisterPortNumber {
-	my ($self, $portNumber) = @_;
-	my $console_logger = get_logger("Console");
-	
-	$console_logger->error("unRegisterPortNumber called on a Host object that does not support that method.");
-	exit(-1);
-}
-
 sub getDockerServiceImages {
 	my ($self) = @_;
 	return $self->getParamValue('dockerServiceImages');

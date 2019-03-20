@@ -226,14 +226,6 @@ sub setExternalPortNumbers {
 	}
 }
 
-sub unRegisterPortNumbers {
-	my ( $self ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->unRegisterPortNumbers();
-	}
-}
-
 sub isUp {
 	my ( $self, $logDir ) = @_;
 

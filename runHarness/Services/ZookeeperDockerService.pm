@@ -109,9 +109,6 @@ sub startInstance {
 	);
 
 	$self->setExternalPortNumbers();
-	
-	$self->registerPortsWithHost();
-	
 	close $applog;
 };
 

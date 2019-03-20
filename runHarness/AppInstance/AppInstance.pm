@@ -767,30 +767,6 @@ sub setExternalPortNumbers {
 	);
 }
 
-sub unRegisterPortNumbers {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"unRegisterPortNumbers start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	$self->dataManager->unRegisterPortsWithHost();
-
-	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "unRegisterPortNumbers " . $service->getDockerName() . "\n" );
-			$service->unRegisterPortsWithHost();
-		}
-	}
-}
-
 sub setLoadPathType {
 	my ( $self, $loadPathType ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");

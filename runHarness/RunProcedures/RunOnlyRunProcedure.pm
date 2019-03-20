@@ -173,9 +173,6 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		$debug_logger->debug("Unregister port numbers");
-		$self->unRegisterPortNumbers();
-
 		# clean up old logs and stats
 		$self->cleanup($cleanupLogDir);
 	}

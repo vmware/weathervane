@@ -143,7 +143,6 @@ sub startInstance {
 		$self->portMap->{'mgmt'} = $portMapRef->{$self->internalPortMap->{'mgmt'}};
 		$self->portMap->{'dist'} = $portMapRef->{$self->internalPortMap->{'dist'}};
 	}
-	$self->registerPortsWithHost();
 
 	sleep 5;
 

@@ -86,56 +86,6 @@ override 'registerService' => sub {
 
 };
 
-# Services use this method to notify the host that they are using
-# a particular port number
-override 'registerPortNumber' => sub {
-	my ( $self, $portNumber, $service ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
-	$logger->debug( "Registering port $portNumber for host ", $self->hostName );
-
-	my $portMapHashRef = $self->portMapHashRef;
-
-	if ( exists $portMapHashRef->{$portNumber} ) {
-
-		# Notify about conflict and exit
-		my $conflictService = $portMapHashRef->{$portNumber};
-		$console_logger->error(
-			"Conflict on port $portNumber on host ",
-			$self->hostName,
-			". Required by both ",
-			$conflictService->getDockerName(),
-			" from Workload ",
-			$conflictService->getWorkloadNum(),
-			" AppInstance ",
-			$conflictService->getAppInstanceNum(),
-			" and ",
-			$service->getDockerName(),
-			" from Workload ",
-			$service->getWorkloadNum(),
-			" AppInstance ",
-			$service->getAppInstanceNum(),
-			"."
-		);
-		exit(-1);
-	}
-
-	$portMapHashRef->{$portNumber} = $service;
-};
-
-override 'unRegisterPortNumber' => sub {
-	my ( $self, $portNumber ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
-	$logger->debug( "Unregistering port $portNumber for host ",
-		$self->hostName );
-
-	my $portMapHashRef = $self->portMapHashRef;
-	if ( exists $portMapHashRef->{$portNumber} ) {
-		delete $portMapHashRef->{$portNumber};
-	}
-};
-
 override 'startStatsCollection' => sub {
 	my $logger = get_logger("Weathervane::Hosts::LinuxGuest");
 	super();

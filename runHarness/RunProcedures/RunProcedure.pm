@@ -403,14 +403,6 @@ sub setExternalPortNumbers {
 	}
 }
 
-sub unRegisterPortNumbers {
-	my ($self) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->unRegisterPortNumbers();
-	}
-}
-
 sub isUp {
 	my ( $self, $setupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'isUp', $self->workloadsRef, $setupLogDir );

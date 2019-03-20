@@ -79,7 +79,7 @@ override 'create' => sub {
 	my %volumeMap;
 	if ($self->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
 		$volumeMap{"/mnt/dbData/postgresql"} = $self->getParamValue('postgresqlDataVolume');
-		$volumeMap{"/mnt/dbLogs/postgresql"} = $self->getParamValue('postgresqlLogVolume')Dir;
+		$volumeMap{"/mnt/dbLogs/postgresql"} = $self->getParamValue('postgresqlLogVolume');
 	}
 
 	my %envVarMap;
@@ -148,7 +148,6 @@ sub startInstance {
 		# For bridged networking, ports get assigned at start time
 		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
 	}
-	$self->registerPortsWithHost();
 	
 	$self->doVacuum($applog);
 

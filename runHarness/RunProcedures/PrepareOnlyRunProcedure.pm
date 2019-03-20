@@ -123,9 +123,6 @@ sub run {
 	$debug_logger->debug("stop services");
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
-
-	$debug_logger->debug("Unregister port numbers");
-	$self->unRegisterPortNumbers();
 	
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
 	$self->cleanup($setupLogDir);

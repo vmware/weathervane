@@ -237,7 +237,6 @@ sub prepareData {
 				# Load the data
 				# Need to stop and restart services so that we can clear out any old data
 				$appInstance->stopServices("data", $logPath);
-				$appInstance->unRegisterPortNumbers();
 				$appInstance->clearDataServicesBeforeStart($logPath);
 				$appInstance->startServices("data", $logPath);
 				# Make sure that the services know their external port numbers
@@ -314,7 +313,6 @@ sub prepareData {
 	# stop the data services. They must be started in the main process
 	# so that the port numbers are available
 	$appInstance->stopServices("data", $logPath);
-	$appInstance->unRegisterPortNumbers();
 
 	close $logHandle;
 }

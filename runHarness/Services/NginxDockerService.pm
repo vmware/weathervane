@@ -152,7 +152,6 @@ sub startInstance {
 		$self->portMap->{"http"} = $portMapRef->{$self->internalPortMap->{"http"}};
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 	}
-	$self->registerPortsWithHost();
 
 	close $applog;
 }

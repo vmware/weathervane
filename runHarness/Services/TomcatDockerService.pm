@@ -184,8 +184,6 @@ sub startInstance {
 		$self->portMap->{"shutdown"} = $portMapRef->{ $self->internalPortMap->{"shutdown"} };
 	}
 
-	$self->registerPortsWithHost();
-
 	close $applog;
 }
 

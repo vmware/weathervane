@@ -77,16 +77,6 @@ override 'registerService' => sub {
 
 };
 
-override 'registerPortNumber' => sub {
-	my ( $self ) = @_;
-
-};
-
-override 'unRegisterPortNumber' => sub {
-	my ( $self ) = @_;
-
-};
-
 __PACKAGE__->meta->make_immutable;
 
 1;

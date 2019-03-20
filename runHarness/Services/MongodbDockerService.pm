@@ -502,7 +502,6 @@ override 'start' => sub {
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		$nosqlServer->setExternalPortNumbers();
-		$nosqlServer->registerPortsWithHost();
 	}
 
 	$self->configureAfterStart($logPath, $mongosHostPortListRef);

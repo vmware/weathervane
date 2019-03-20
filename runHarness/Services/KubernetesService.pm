@@ -40,20 +40,6 @@ override 'initialize' => sub {
 
 };
 
-override 'registerPortsWithHost' => sub {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-
-};
-
-override 'unRegisterPortsWithHost' => sub {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-
-};
-
-
 # Stop all of the services needed for the Nginx service
 override 'stop' => sub {
 	my ($self, $serviceType, $logPath)            = @_;

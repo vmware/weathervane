@@ -506,7 +506,6 @@ override 'configure' => sub {
 	my $tmpDir              = $self->getParamValue('tmpDir');
 
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
-	$self->registerPortsWithHost();
 	
 	# Customize the behaviorSpecs for this run
 	my $sourceBehaviorSpecDirName = "$workloadProfileHome/behaviorSpecs";
@@ -730,7 +729,6 @@ sub initializeRun {
 	foreach my $secondary (@$secondariesRef) {
 		push @$driversRef, $secondary;
 		$secondary->setPortNumber($port);
-		$secondary->registerPortsWithHost();
 	}
 	push @$driversRef, $self;
 
@@ -1219,10 +1217,6 @@ sub stopRun {
 	# Now stop and remove all of the driver containers
 	foreach my $driver (@$driversRef) {
 		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
-	}
-
-	foreach my $driver (@$driversRef) {
-		$driver->unRegisterPortsWithHost();
 	}
 
 	close $logHandle;

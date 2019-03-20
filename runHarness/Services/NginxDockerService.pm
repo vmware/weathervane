@@ -56,23 +56,7 @@ override 'create' => sub {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	my %volumeMap;
-	my $instanceNumber = $self->getParamValue('instanceNum');
-	my $dataDir = "/mnt/cache/nginx$instanceNumber";
-	if ($host->getParamValue('nginxUseNamedVolumes') || $host->getParamValue('vicHost')) {
-		$dataDir = $self->getParamValue('nginxCacheVolume') . $instanceNumber;
-		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $dataDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('nginxCacheVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
-		}
-	}	
-#	$volumeMap{"/var/cache/nginx"} = $dataDir;
-		
+	my %volumeMap;		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();
 	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );

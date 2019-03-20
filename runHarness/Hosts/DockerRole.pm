@@ -597,16 +597,13 @@ sub dockerVolumeCreate {
 }
 
 sub dockerVolumeExists {
-	my ( $self, $logFileHandle, $volumeName ) = @_;
-	print $logFileHandle "dockerVolumeExists $volumeName\n";
+	my ( $self, $volumeName ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
 	$logger->debug("dockerVolumeExists $volumeName");
 	
 	my $dockerHostString  = $self->dockerHostString;
 	my $cmd = "$dockerHostString docker volume ls -q";
-	print $logFileHandle "$cmd\n";
 	my $out = `$cmd`;
-	print $logFileHandle "$out\n";
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
 		chomp($line);
@@ -711,7 +708,7 @@ sub dockerCopyFrom {
 # In the weathervane config file, CPU limits are specified using Kubernetes 
 # notation.  Were we convert these to Docker notation for use in Docker commands.
 # The strings have already been validated for proper K8S notation
-sub convertsK8sCpuString {
+sub convertK8sCpuString {
 	my ( $self, $k8sCpuString ) = @_;
 	my $dockerCpuString = $k8sCpuString;
 	# A K8S CPU limit should be either a real number (e.g. 1.5), which
@@ -725,7 +722,7 @@ sub convertsK8sCpuString {
 # In the weathervane config file, memory limits are specified using Kubernetes 
 # notation.  Were we convert these to Docker notation for use in Docker commands.
 # The strings have already been validated for proper K8S notation
-sub convertsK8sMemString {
+sub convertK8sMemString {
 	my ( $self, $k8sMemString ) = @_;
 	# Both K8s and Docker Memory limits are an integer followed by an optional suffix.
 	# The legal suffixes in K8s are:

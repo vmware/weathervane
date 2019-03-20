@@ -2060,30 +2060,6 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"nginxUseNamedVolumes"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nginxCacheVolume"} = {
-	"type"      => "=s",
-	"default"   => "nginxCache",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"nginxCacheVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "12GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"frontendConnectionMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 10,
@@ -2382,14 +2358,6 @@ $parameters{"rabbitmqPort"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/postgresql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -2411,22 +2379,6 @@ $parameters{"postgresqlDataVolume"} = {
 	"default"   => "postgresqlData",
 	"parent"    => "appInstance",
 	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlDataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "20Gi",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/postgresql",
-	"usageText" => "",
-	"parent"    => "appInstance",
 	"showUsage" => 0,
 };
 
@@ -2478,14 +2430,6 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoData",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"mongodbUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -2505,14 +2449,6 @@ $parameters{"mongodbDataStorageClass"} = {
 $parameters{"mongodbDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "mongoData",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbDataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "200Gi",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

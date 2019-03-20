@@ -526,20 +526,9 @@ sub startMongodServers {
 		my $name        = $nosqlServer->getParamValue('dockerName');
 		
 		my %volumeMap;
-		my $dataDir = $nosqlServer->getParamValue('mongodbDataDir');
 		if ($self->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
-			$dataDir = $nosqlServer->getParamValue('mongodbDataVolume');
-			# use named volumes.  Create volume if it doesn't exist
-			if (!$host->dockerVolumeExists($dblog, $dataDir)) {
-				# Create the volume
-				my $volumeSize = 0;
-				if ($host->getParamValue('vicHost')) {
-					$volumeSize = $nosqlServer->getParamValue('mongodbDataVolumeSize');
-				}
-				$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
-			}
+			$volumeMap{"/mnt/mongoData"} = $nosqlServer->getParamValue('mongodbDataVolume');
 		}
-		$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 		my %envVarMap;
 		$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
@@ -605,20 +594,9 @@ sub startMongocServers {
 		
 			my $host = $nosqlServer->host;
 			my %volumeMap;
-			my $dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataDir");
 			if ($self->appInstance->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
-				$dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolume");
-				# use named volumes.  Create volume if it doesn't exist
-				if (!$host->dockerVolumeExists($dblog, $dataDir)) {
-					# Create the volume
-					my $volumeSize = 0;
-					if ($host->getParamValue('vicHost')) {
-						$volumeSize = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolumeSize");
-					}
-					$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
-				}
+				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolume");;
 			}
-			$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $dataDir;
 
 			my %envVarMap;
 			$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};

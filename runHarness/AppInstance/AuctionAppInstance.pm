@@ -178,6 +178,7 @@ override 'checkConfig' => sub {
 	}
 	
 	# Validate the the CPU and Mem sizings are in valid Kubernetes format
+	my $workloadImpl    = $self->getParamValue('workloadImpl');
 	my $serviceTypesRef = $WeathervaneTypes::dockerServiceTypes{$workloadImpl};
 	push @$serviceTypesRef, "driver";
 	foreach my $serviceType (@$serviceTypesRef) {
@@ -204,6 +205,38 @@ override 'checkConfig' => sub {
 		}
 	}
 
+	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
+	if ($self->getParamValue("useDocker")) {
+		my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+		foreach my $nosqlServer (@$nosqlServersRef) {
+			my $host = $nosqlServer->host;
+			if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+				# use named volumes.  Error if does not exist
+				my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
+				if (!$host->dockerVolumeExists($volumeName)) {
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					return 0;
+				}
+			}
+		}
+		my $dbServersRef = $self->getAllServicesByType("dbServer");
+		foreach my $dbServer (@$dbServersRef) {
+			my $host = $dbServer->host;
+			if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
+				# use named volumes.  Error if does not exist
+				my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
+				if (!$host->dockerVolumeExists($volumeName)) {
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					return 0;
+				}
+				$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
+				if (!$host->dockerVolumeExists($volumeName)) {
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					return 0;
+				}
+			}
+		}
+	}
 	return 1;
 };
 

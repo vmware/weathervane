@@ -25,6 +25,8 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'VirtualInfrastructure';
 
+has '+name' => ( default => 'vsphere', );
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();

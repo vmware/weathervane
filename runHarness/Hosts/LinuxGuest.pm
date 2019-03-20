@@ -173,7 +173,7 @@ override 'cleanStatsFiles' => sub {
 
 override 'getLogFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
-	super($destinationPath);
+	super();
 };
 
 override 'cleanLogFiles' => sub {

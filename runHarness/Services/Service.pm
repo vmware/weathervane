@@ -140,41 +140,26 @@ override 'initialize' => sub {
 		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
 	}
 	
+	my $serviceType = $self->getParamValue( 'serviceType' );
+	my $cpus = $self->getParamValue( $serviceType . "Cpus" );
+	my $mem = $self->getParamValue( $serviceType . "Mem" );
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-	if ($self->getParamValue('dockerCpus')) {
-		$self->dockerConfigHashRef->{'cpus'} = $self->getParamValue('dockerCpus');
+	if ($cpus) {
+		$self->dockerConfigHashRef->{'cpus'} = $cpus;
 	}
 	if ($self->getParamValue('dockerCpuShares')) {
 		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
 	} 
 	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
-		
-		if ($self->getParamValue('dockerCpus') == 0) {
-			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-			# set dockerCpus accordingly so that services can know how many CPUs the 
-			# container has when configuring
-			my $numCpus = 0;
-			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
-			foreach my $cpuGroup (@cpuGroups) {
-				if ($cpuGroup =~ /-/) {
-					# This cpu group is a range
-					my @rangeEnds = split(/-/,$cpuGroup);
-					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-				} else {
-					$numCpus++;
-				}
-			}
-			$self->setParamValue('dockerCpus', $numCpus);
-		}
 	}
 	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
 	}
-	if ($self->getParamValue('dockerMemory')) {
-		$self->dockerConfigHashRef->{'memory'} = $self->getParamValue('dockerMemory');
+	if ($mem) {
+		$self->dockerConfigHashRef->{'memory'} = $mem;
 	}
 	if ($self->getParamValue('dockerMemorySwap')) {
 		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
@@ -203,7 +188,6 @@ sub registerPortsWithHost {
  			$self->host->registerPortNumber($portNumber, $self);
 		}				
 	}
-
 }
 
 sub unRegisterPortsWithHost {
@@ -217,7 +201,6 @@ sub unRegisterPortsWithHost {
  			$self->host->unRegisterPortNumber($portNumber);
 		}				
 	}
-
 }
 
 sub setAppInstance {
@@ -505,31 +488,31 @@ sub checkSizeAndTruncate {
 	my ($self, $path, $filename, $maxLogLines) = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
 
-	my $sshConnectString = $self->host->sshConnectString;
-	
-	$logger->debug("checkSizeAndTruncate.  path = $path, filename = $filename, maxLogLines = $maxLogLines");	
-	
-	my $wc = `$sshConnectString wc -l $path/$filename 2>&1`;
-	if ($wc =~ /^(\d*)\s/) {
-		$wc = $1;
-	} else {
-		return;
-	}
-	$logger->debug("checkSizeAndTruncate.  wc = $wc");	
-	
-	if ($wc > $maxLogLines) {
-		# The log is too large.  Truncate it to maxLogLines by taking
-		# The start and end of the file
-		$logger->debug("checkSizeAndTruncate.  Truncating file");	
-		my $halfLines = floor($maxLogLines/2);
-		`$sshConnectString "head -n $halfLines $path/$filename > $path/$filename.head"`;
-		`$sshConnectString "tail -n $halfLines $path/$filename > $path/$filename.tail"`;
-		`$sshConnectString "mv -f $path/$filename.head $path/$filename"`;
-		`$sshConnectString "echo \"   +++++++ File truncated to $maxLogLines lines. Middle section removed.++++++   \" >> $path/$filename"`;
-		`$sshConnectString "cat $path/$filename.tail >> $path/$filename"`;
-		`$sshConnectString "rm -f $path/$filename.tail "`;
-		
-	}
+#	my $sshConnectString = $self->host->sshConnectString;
+#	
+#	$logger->debug("checkSizeAndTruncate.  path = $path, filename = $filename, maxLogLines = $maxLogLines");	
+#	
+#	my $wc = `$sshConnectString wc -l $path/$filename 2>&1`;
+#	if ($wc =~ /^(\d*)\s/) {
+#		$wc = $1;
+#	} else {
+#		return;
+#	}
+#	$logger->debug("checkSizeAndTruncate.  wc = $wc");	
+#	
+#	if ($wc > $maxLogLines) {
+#		# The log is too large.  Truncate it to maxLogLines by taking
+#		# The start and end of the file
+#		$logger->debug("checkSizeAndTruncate.  Truncating file");	
+#		my $halfLines = floor($maxLogLines/2);
+#		`$sshConnectString "head -n $halfLines $path/$filename > $path/$filename.head"`;
+#		`$sshConnectString "tail -n $halfLines $path/$filename > $path/$filename.tail"`;
+#		`$sshConnectString "mv -f $path/$filename.head $path/$filename"`;
+#		`$sshConnectString "echo \"   +++++++ File truncated to $maxLogLines lines. Middle section removed.++++++   \" >> $path/$filename"`;
+#		`$sshConnectString "cat $path/$filename.tail >> $path/$filename"`;
+#		`$sshConnectString "rm -f $path/$filename.tail "`;
+#		
+#	}
 	
 }
 

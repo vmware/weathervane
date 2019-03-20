@@ -79,8 +79,6 @@ has 'seqnum' => (
 	isa => 'Int',
 );
 
-has 'runLog' => ( is => 'rw', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
@@ -185,18 +183,6 @@ sub getRunProcedureImpl {
 	my $paramHashRef = $self->paramHashRef;
 
 	return $paramHashRef->{'runProcedure'};
-}
-
-# Tell the hosts to go get their CPU and memory configuration
-sub getCpuMemConfig {
-	my ($self)       = @_;
-	my $hostsRef     = $self->hostsRef;
-	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-
-	foreach my $host (@$hostsRef) {
-		$host->getCpuMemConfig();
-	}
-
 }
 
 sub killOldWorkloadDrivers {
@@ -1112,49 +1098,6 @@ sub getNextRunInfo {
 	}
 
 	return $returnString;
-}
-
-sub checkVersions {
-	my ($self)          = @_;
-	my $logger          = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $console_logger  = get_logger("Console");
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-
-	# Get this host's version number
-	my $localVersion = `cat $weathervaneHome/version.txt 2>&1`;
-	$logger->debug("For checkVersions.  localVersion is $localVersion");
-
-	my $allSame = 1;
-	foreach my $host ( @{ $self->hostsRef } ) {
-
-		if ($host->meta->name eq "KubernetesCluster") {
-			next;
-		}
-
-		if (!$host->isNonDocker() || $host->getParamValue('vicHost')) {
-			next;
-		}
-
-		# Get the host's version number
-		my $hostname         = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		my $version          = `$sshConnectString \"cat $weathervaneHome/version.txt\" 2>&1`;
-		if ( $version =~ /No route/ ) {
-			next;
-		}
-		$logger->debug("For checkVersions.  Version on $hostname is $version");
-
-		# If different, update the weathervane directory on that host
-		if ( $localVersion ne $version ) {
-			$allSame = 0;
-			$console_logger->info(
-				"Warning: Version of Weathervane on host $hostname does not match that on local host.");
-			$console_logger->info("Remote version is $version.  Local version is $localVersion.");
-		}
-
-	}
-
-	return $allSame;
 }
 
 sub writeUsersTxt {

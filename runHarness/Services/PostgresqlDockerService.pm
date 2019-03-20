@@ -67,10 +67,8 @@ override 'create' => sub {
 	my $host         = $self->host;
 	my $impl             = $self->getImpl();
 	my $logDir           = $self->getParamValue('postgresqlLogDir');
-	my $sshConnectString = $self->host->sshConnectString;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 
-	#	`$sshConnectString chmod -R 777 $logDir`;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name-$time.log";
@@ -173,8 +171,6 @@ sub startInstance {
 		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
 	}
 	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 	
 	$self->doVacuum($applog);
 
@@ -408,7 +404,7 @@ sub getConfigFiles {
 #	open( $applog, ">$logName" )
 #	  || die "Error opening /$logName:$!";
 
-#	$self->host->dockerScpFileFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
+#	$self->host->dockerCopyFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
 
 #	close $applog;
 

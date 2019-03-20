@@ -176,6 +176,33 @@ override 'checkConfig' => sub {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter igniteAuthTokenCacheMode must be either LOCAL or REPLICATED");
 		return 0;
 	}
+	
+	# Validate the the CPU and Mem sizings are in valid Kubernetes format
+	my $serviceTypesRef = $WeathervaneTypes::dockerServiceTypes{$workloadImpl};
+	push @$serviceTypesRef, "driver";
+	foreach my $serviceType (@$serviceTypesRef) {
+		# A K8S CPU limit should be either a real number (e.g. 1.5), which
+		# is legal docker notation, or an integer followed an "m" to indicate a millicpu
+		my $cpus = $self->getParamValue($serviceType . "Cpus");
+		if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $cpus is not a valid value for ${serviceType}Cpus.");
+			$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
+		}
+
+		# K8s Memory limits are an integer followed by an optional suffix.
+		# The legal suffixes in K8s are:
+		#  * E, P, T, G, M, K (powers of 10)
+		#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
+		my $mem = $self->getParamValue($serviceType . "Mem");
+		if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $mem is not a valid value for ${serviceType}Mem.");
+			$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
+		}
+	}
 
 	return 1;
 };
@@ -202,17 +229,6 @@ override 'redeploy' => sub {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		$logger->debug("Calling pullDockerImage for $serviceType services ");
 		foreach my $service (@$servicesRef) {
-			my $host = $service->host;
-			my $hostname = $host->hostName;
-			my $sshConnectString = $host->sshConnectString;	
-			if ($host->isNonDocker()) {			
-				my $ls          = `$sshConnectString \"ls\" 2>&1`;
-				if ( $ls =~ /No route/ ) {
-					# This host is not up so can't redeploy
-					$logger->debug("Don't redeploy to $hostname as it is not up.");
-					next;
-				}
-			}
 			$logger->debug( "Calling pullDockerImage for service ", $service->meta->name );
 			$service->pullDockerImage($logfile);
 		}
@@ -222,178 +238,14 @@ override 'redeploy' => sub {
 	# to app servers and data manager
 	my $nosqlServicesRef = $self->getAllServicesByType('nosqlServer');
 	my $nosqlServer      = $nosqlServicesRef->[0];
-	if ( $nosqlServer->getParamValue('useDocker') ) {
-		my $appServicesRef = $self->getAllServicesByType('appServer');
-		foreach my $appServer (@$appServicesRef) {
-			my $host = $appServer->host;
-			my $hostname = $host->hostName;
-			my $sshConnectString = $host->sshConnectString;
-			if ($host->isNonDocker()) {			
-				my $ls          = `$sshConnectString \"ls\" 2>&1`;
-				if ( $ls =~ /No route/ ) {
-					# This host is not up so can't redeploy
-					$logger->debug("Don't redeploy to $hostname as it is not up.");
-					next;
-				}
-			}
-			$appServer->host->dockerPull( $logfile, $nosqlServer->getImpl() );
-		}
-		$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
+	my $appServicesRef = $self->getAllServicesByType('appServer');
+	foreach my $appServer (@$appServicesRef) {
+		$appServer->host->dockerPull( $logfile, $nosqlServer->getImpl() );
 	}
+	$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
 
 	# Pull the datamanager image
-	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
-	
-	# Redeploy the dataManager files
-	my $localHostname = `hostname`; 
-	my $localIpsRef = Utils::getIpAddresses($localHostname);
-	my $hostname         = $self->dataManager->host->hostName;
-	my $ip = Utils::getIpAddress($hostname);		
-	if (!($ip ~~ @$localIpsRef)) {	
-		my $sshConnectString = $self->dataManager->host->sshConnectString;
-		my $scpConnectString = $self->dataManager->host->scpConnectString;
-		my $scpHostString    = $self->dataManager->host->scpHostString;
-
-		my $cmdString = "$sshConnectString rm -r $distDir/* 2>&1";
-		$logger->debug("Redeploy: $cmdString");
-		print $logfile "$cmdString\n";
-		my $out = `$cmdString`;
-		print $logfile $out;
-
-		$cmdString = "$scpConnectString -r $distDir/* root\@$scpHostString:$distDir/.";
-		$logger->debug("Redeploy: $cmdString");
-		print $logfile "$cmdString\n";
-		$out = `$cmdString`;
-		print $logfile $out;
-	}
-	
-	my $appServicesRef = $self->getAllServicesByType('appServer');
-	foreach my $server (@$appServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $appServerImpl    = $server->getParamValue('appServerImpl');
-		my $warDestination;
-		if ( $appServerImpl eq 'tomcat' ) {
-			$warDestination = $self->getParamValue('tomcatCatalinaBase') . "/webapps";
-
-			print $logfile "$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"\n";
-			my $out = `$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"`;
-			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.\n";
-			$out = `$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.`;
-			$logger->debug("$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.\n";
-			$out = `$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.`;
-			$logger->debug("$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.  out = $out");
-			print $logfile $out;
-
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only tomcat is supported as app servers.\n";
-		}
-	}
-
-	my $bidServicesRef = $self->getAllServicesByType('auctionBidServer');
-	foreach my $server (@$bidServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $serverImpl    = $server->getParamValue('auctionBidServerImpl');
-		my $warDestination;
-		if ( $serverImpl eq 'auctionbidservice' ) {
-			$warDestination = $self->getParamValue('bidServiceCatalinaBase') . "/webapps";
-
-			print $logfile "$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"\n";
-			my $out = `$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"`;
-			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war\n";
-			$out = `$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war`;
-			$logger->debug("$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war  out = $out");
-			print $logfile $out;
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only auctionbidservice is supported as bid server.\n";
-		}
-	}
-
-	my $webServicesRef = $self->getAllServicesByType('webServer');
-	foreach my $server (@$webServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $webServerImpl    = $server->getParamValue('webServerImpl');
-		my $webContentRoot = $self->getParamValue('nginxDocumentRoot');
-
-		print $logfile "$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"\n";
-		my $out = `$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"`;
-		$logger->debug("$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.\n";
-		$out = `$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.`;
-		$logger->debug("$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"\n";
-		$out = `$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"`;
-		$logger->debug("$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"\n";
-		$out = `$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"`;
-		$logger->debug("$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"  out = $out");
-		print $logfile $out;
-
-	}
+	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");	
 };
 
 sub getSpringProfilesActive {
@@ -560,14 +412,7 @@ sub getServiceConfigParameters {
 			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
 		}
 
-		my $numCpus;
-		if ( $service->useDocker() && $service->getParamValue('dockerCpus')) {
-			$numCpus = $service->getParamValue('dockerCpus');
-		}
-		else {
-			$numCpus = $service->host->cpus;
-		}
-		
+		my $numCpus = $service->getParamValue("${serviceType}Cpus");
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
 		if (!$highBidQueueConcurrency) {
 			$highBidQueueConcurrency = $numCpus;

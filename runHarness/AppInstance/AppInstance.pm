@@ -1771,8 +1771,6 @@ sub getHostStatsSummary {
 			}
 			print HOSTCSVFILE "\n";
 
-			$service->host->stopNscd();
-
 		}
 
 		# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"

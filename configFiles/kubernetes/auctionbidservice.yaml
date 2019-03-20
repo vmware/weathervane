@@ -50,9 +50,6 @@ spec:
         - containerPort: 8443
           name: httpsport
           protocol: TCP
-        - containerPort: 8849
-          name: jprofilerport
-          protocol: TCP
         livenessProbe:
           exec:
             command:
@@ -89,8 +86,6 @@ spec:
     name: httpport
   - port: 8443
     name: httpsport
-  - port: 8849
-    name: jprofilerport
   selector:
     app: auction
     tier: backend

@@ -58,7 +58,7 @@ sub configure {
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
-	my $numCpus            = 2;
+	my $numCpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
@@ -79,10 +79,6 @@ sub configure {
 
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
-	if ( $self->getParamValue('appServerEnableJprofiler') ) {
-		$completeJVMOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";

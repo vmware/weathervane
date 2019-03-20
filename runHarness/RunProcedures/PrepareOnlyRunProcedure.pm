@@ -44,11 +44,6 @@ has 'reloadDb' => (
 	isa => 'Bool',
 );
 
-has 'isPowerControl' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
 has 'isUpRetries' => (
 	is  => 'rw',
 	isa => 'Int',
@@ -62,7 +57,6 @@ override 'initialize' => sub {
 
 sub run {
 	my ( $self ) = @_;
-	my $runLog             = $self->runLog;
 	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $outputDir          = $self->getParamValue('outputDir');
 	my $tmpDir             = $self->getParamValue('tmpDir');
@@ -120,9 +114,6 @@ sub run {
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
 	
-	# Now get the cpu and memory config of all hosts
-	$self->getCpuMemConfig();
-	
 	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
 
 	# Make sure that no previous Benchmark processes are still running
@@ -144,14 +135,6 @@ sub run {
 		$console_logger->info("Redeploying artifacts for application and workload-driver nodes");
 		callMethodOnObjectsParallel2( 'redeploy', $self->workloadsRef, $setupLogDir, $self->hostsRef );
 		$self->setParamValue( 'redeploy', 0 );
-	}
-	
-	# Make sure that all hosts are running the same version of Weathervane
-	my $allSame = $self->checkVersions();
-	if (!$allSame) {
-		$console_logger->info("Mismatching Weathervane versions detected.");		
-		$console_logger->info("To synchronize the version of Weathervane on all hosts to match the local host, use the --redeploy flag.");
-		exit;		
 	}
 	
 	# Copy the version file into the output directory

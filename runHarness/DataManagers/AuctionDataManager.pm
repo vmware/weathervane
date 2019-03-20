@@ -54,42 +54,6 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-	if ($self->getParamValue('dockerCpus')) {
-		$self->dockerConfigHashRef->{'cpus'} = $self->getParamValue('dockerCpus');
-	}
-	if ($self->getParamValue('dockerCpuShares')) {
-		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
-	} 
-	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
-		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
-		
-		if ($self->getParamValue('dockerCpus') == 0) {
-			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-			# set dockerCpus accordingly so that services can know how many CPUs the 
-			# container has when configuring
-			my $numCpus = 0;
-			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
-			foreach my $cpuGroup (@cpuGroups) {
-				if ($cpuGroup =~ /-/) {
-					# This cpu group is a range
-					my @rangeEnds = split(/-/,$cpuGroup);
-					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-				} else {
-					$numCpus++;
-				}
-			}
-			$self->setParamValue('dockerCpus', $numCpus);
-		}
-	}
-	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
-		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
-	}
-	if ($self->getParamValue('dockerMemory')) {
-		$self->dockerConfigHashRef->{'memory'} = $self->getParamValue('dockerMemory');
-	}
-	if ($self->getParamValue('dockerMemorySwap')) {
-		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
-	}	
 
 	super();
 };
@@ -703,7 +667,6 @@ sub loadData {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $appInstance      = $self->appInstance;
-	my $sshConnectString = $self->host->sshConnectString;
 
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
 

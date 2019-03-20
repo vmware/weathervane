@@ -3,6 +3,10 @@
 "micro" : {
   "maxUsers" : 1000,
   "maxDuration" : 3600, 
+  
+  "driverCpus" : "1",
+  "driverMem" :  "1g",
+  "driverJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
 
   "numWebServers" : 1,
   "webServerCpus" : "100m",
@@ -22,7 +26,7 @@
   
   "numAppServers" : 1,
   "appServerCpus" : "100m",
-  "appServerMem" : "2Gi",
+  "appServerMem" : "1Gi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,

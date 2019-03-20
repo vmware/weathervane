@@ -66,7 +66,6 @@ override 'create' => sub {
 	my $hostname         = $self->host->hostName;
 	my $host         = $self->host;
 	my $impl             = $self->getImpl();
-	my $logDir           = $self->getParamValue('postgresqlLogDir');
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 
 	my $time     = `date +%H:%M`;
@@ -78,31 +77,10 @@ override 'create' => sub {
 
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
-	my $hostDataDir = $self->getParamValue('postgresqlDataDir');
 	if ($self->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
-		$hostDataDir = $self->getParamValue('postgresqlDataVolume');
-		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $hostDataDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('postgresqlDataVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $hostDataDir, $volumeSize);
-		}
-
-		$logDir           = $self->getParamValue('postgresqlLogVolume');
-		if (!$host->dockerVolumeExists($applog, $logDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('postgresqlLogVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $logDir, $volumeSize);
-		}
+		$volumeMap{"/mnt/dbData/postgresql"} = $self->getParamValue('postgresqlDataVolume');
+		$volumeMap{"/mnt/dbLogs/postgresql"} = $self->getParamValue('postgresqlLogVolume')Dir;
 	}
-	$volumeMap{"/mnt/dbData/postgresql"} = $hostDataDir;
-	$volumeMap{"/mnt/dbLogs/postgresql"} = $logDir;
 
 	my %envVarMap;
 	$envVarMap{"POSTGRES_USER"}     = "auction";

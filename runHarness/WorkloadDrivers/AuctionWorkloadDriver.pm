@@ -571,6 +571,7 @@ override 'redeploy' => sub {
 
 	# Update the docker image here
 	$self->host->dockerPull( $logfile, "auctionworkloaddriver");
+	my $secondariesRef = $self->secondaries;
 	foreach my $server (@$secondariesRef) {
 		$server->host->dockerPull( $logfile, "auctionworkloaddriver");	
 	}
@@ -1589,82 +1590,6 @@ sub getHostStatsSummary {
 	my ( $self, $csvRef, $baseDestinationPath, $filePrefix ) = @_;
 	my $logger = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	
-	tie( my %csvRefByHostname, 'Tie::IxHash' );
-	my $headers = "";
-
-	my $workloadDriverHostsRef = $self->getWorkloadDriverHosts();
-	foreach my $host (@$workloadDriverHostsRef) {
-		my $hostname        = $host->hostName;
-		my $destinationPath = $baseDestinationPath . "/" . $hostname;
-		if (   ( !exists $csvRefByHostname{$hostname} )
-			|| ( !defined $csvRefByHostname{$hostname} ) )
-		{
-			$csvRefByHostname{$hostname} =
-			  $host->getStatsSummary($destinationPath);
-		}
-	}
-
-	# put the headers and values into the summary file
-	my $hostname    = $self->host->hostName;
-	my $csvHashRef  = $csvRefByHostname{$hostname};
-	my $workloadNum = $self->getParamValue('workloadNum');
-	open( HOSTCSVFILE,
-		">>$baseDestinationPath/${filePrefix}host_stats_summary.csv" )
-	  or die
-"Can't open $baseDestinationPath/${filePrefix}host_stats_summary.csv: $!\n";
-	print HOSTCSVFILE "Service Type,Hostname,IP Addr";
-	foreach my $key ( keys %$csvHashRef ) {
-		print HOSTCSVFILE ",$key";
-	}
-	print HOSTCSVFILE "\n";
-
-	print HOSTCSVFILE "workloadDriver,"
-	  . $self->host->hostName . ","
-	  . $self->host->ipAddr;
-
-	my @avgKeys = ( "cpuUT", "cpuIdle_stdDev", "avgWait" );
-	foreach my $key ( keys %$csvHashRef ) {
-		if ( $key ~~ @avgKeys ) {
-			$csvRef->{"wkldDriver_average_$key"} = $csvHashRef->{$key};
-		}
-		else {
-			$csvRef->{"wkldDriver_total_$key"} = $csvHashRef->{$key};
-		}
-		print HOSTCSVFILE "," . $csvHashRef->{$key};
-	}
-	print HOSTCSVFILE "\n";
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $secHost = $secondary->host;
-		$csvHashRef = $csvRefByHostname{ $secHost->hostName };
-		print HOSTCSVFILE "workloadDriver,"
-		  . $secHost->hostName . ","
-		  . $secHost->ipAddr;
-		foreach my $key ( keys %$csvHashRef ) {
-
-			if ( $key ~~ @avgKeys ) {
-				$csvRef->{"wkldDriver_average_$key"} += $csvHashRef->{$key};
-			}
-			else {
-				$csvRef->{"wkldDriver_total_$key"} += $csvHashRef->{$key};
-			}
-			print HOSTCSVFILE "," . $csvHashRef->{$key};
-		}
-		print HOSTCSVFILE "\n";
-	}
-
-# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"
-	foreach my $key (@avgKeys) {
-		if ((exists $csvRef->{"wkldDriver_average_$key"}) && (defined $csvRef->{"wkldDriver_average_$key"})) {
-			$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
-		} else {
-			$logger->debug("getHostStatsSummary csvRef value uninitialized for key wkldDriver_average_$key");
-		}
-	}
-
-	close HOSTCSVFILE;
-
 }
 
 sub getWorkloadAppStatsSummary {

@@ -149,7 +149,6 @@ sub stopAuctionDataManagerContainer {
 	my $name        = $self->getParamValue('dockerName');
 
 	$self->host->dockerStopAndRemove( $applog, $name );
-
 }
 
 # Auction data manager always uses docker
@@ -185,18 +184,31 @@ sub prepareDataServices {
 	$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 
-	# stop the auctiondatamanager container
-	$self->stopAuctionDataManagerContainer ($logHandle);
-
 	# Start the data services
 	if ($reloadDb) {
 		# Avoid an extra stop/start cycle for the data services since we know
 		# we are reloading the data
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
+	
 	$appInstance->startServices("data", $logPath);
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();	
+	
+	if ( !$self->isDataLoaded( $users, $logPath ) ) {
+		# Need to stop and restart services so that we can clear out any old data
+		$appInstance->stopServices("data", $logPath);
+		$appInstance->clearDataServicesBeforeStart($logPath);
+		$appInstance->startServices("data", $logPath);
+		# Make sure that the services know their external port numbers
+		$self->appInstance->setExternalPortNumbers();
+
+		# This will stop and restart the data manager so that it has the right port numbers
+		$self->startAuctionDataManagerContainer ($users, $logHandle);
+
+		$logger->debug( "All data services configured and started for appInstance "
+			  . "$appInstanceNum of workload $workloadNum.  " );
+	}
 	
 	close $logHandle;
 }
@@ -238,75 +250,20 @@ sub prepareData {
 	}
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
 		
-	$self->startAuctionDataManagerContainer ($users, $logHandle);
-
-	my $loadedData = 0;
-	if ($reloadDb) {
+	if ($reloadDb || !$self->isDataLoaded( $users, $logPath )) {
 		$appInstance->clearDataServicesAfterStart($logPath);
-
-		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-		$loadedData = 1;
 
 		# Clear reloadDb so we don't reload on each run of a series
 		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
-		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->getParamValue('loadDb') ) {
-				$console_logger->info(
-					    "Data is not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Loading data." );
+		$console_logger->info( "Data is already loaded for appInstance "
+			  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
 
-				# Load the data
-				# Need to stop and restart services so that we can clear out any old data
-				$appInstance->stopServices("data", $logPath);
-				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->startServices("data", $logPath);
-				# Make sure that the services know their external port numbers
-				$self->appInstance->setExternalPortNumbers();
-
-				# This will stop and restart the data manager so that it has the right port numbers
-				$self->startAuctionDataManagerContainer ($users, $logHandle);
-
-				$logger->debug( "All data services configured and started for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
-
-				# Make sure that all of the data services are up
-				my $allUp = $appInstance->isUpDataServices($logPath);
-				if ( !$allUp ) {
-					$console_logger->error( "Couldn't bring up all data services for appInstance "
-						  . "$appInstanceNum of workload $workloadNum." );
-					return 0;
-				}
-
-				$logger->debug( "Clear data services after start for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
-				$appInstance->clearDataServicesAfterStart($logPath);
-
-				$retVal = $self->loadData( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-				$loadedData = 1;
-
-			}
-			else {
-				$console_logger->error( "Data not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
-				);
-				return 0;
-
-			}
-		}
-		else {
-			$console_logger->info( "Data is already loaded for appInstance "
-				  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
-
-			# cleanup the databases from any previous run
-			$self->cleanData( $users, $logHandle );
-
-
-		}
+		# cleanup the databases from any previous run
+		$self->cleanData( $users, $logHandle );
 	}
 	
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";

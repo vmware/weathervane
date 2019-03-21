@@ -1171,16 +1171,6 @@ $parameters{"responseTimePassingPercentile"} = {
 	"showUsage" => 0,
 };
 
-
-# parameters related to loading the DB
-$parameters{"loadDb"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # stats collection script call-out variables
 $parameters{"startStatsScript"} = {
 	"type"      => "=s",

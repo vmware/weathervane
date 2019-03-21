@@ -68,6 +68,9 @@ sub startAuctionKubernetesDataManagerContainer {
 	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
+	# stop the auctiondatamanager container
+	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionDataManager-$namespace.yaml" )             or die "Can't open file /tmp/auctionDataManager-$namespace.yaml: $!\n";
 	
@@ -127,9 +130,6 @@ sub startAuctionKubernetesDataManagerContainer {
 		$retries--;
 	}
 	return 0;
-	
-	
-	
 }
 
 sub stopAuctionKubernetesDataManagerContainer {
@@ -159,9 +159,6 @@ sub prepareDataServices {
 
 	$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
-
-	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
 
 	# Start the data services
 	if ($reloadDb) {
@@ -198,43 +195,30 @@ sub prepareData {
 
 	$self->startAuctionKubernetesDataManagerContainer ($users, $logHandle);
 		
-	my $loadedData = 0;
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
 		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-		$loadedData = 1;
 
 		# Clear reloadDb so we don't reload on each run of a series
 		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->getParamValue('loadDb') ) {
-				$console_logger->info(
-					    "Data is not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Loading data." );
+			$console_logger->info(
+				    "Data is not loaded for $users users for appInstance "
+				  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
-				# Load the data
-				$appInstance->stopServices("data", $logPath);
-				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->startServices("data", $logPath);
-				$appInstance->clearDataServicesAfterStart($logPath);
+			# Load the data
+			$appInstance->stopServices("data", $logPath);
+			$appInstance->clearDataServicesBeforeStart($logPath);
+			$appInstance->startServices("data", $logPath);
+			$appInstance->clearDataServicesAfterStart($logPath);
 
-				$retVal = $self->loadData( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-				$loadedData = 1;
-
-			}
-			else {
-				$console_logger->error( "Data not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
-				);
-				return 0;
-
-			}
+			$retVal = $self->loadData( $users, $logPath );
+			if ( !$retVal ) { return 0; }
 		}
 		else {
 			$console_logger->info( "Data is already loaded for appInstance "

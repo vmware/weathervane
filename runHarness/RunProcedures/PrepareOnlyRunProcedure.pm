@@ -34,11 +34,6 @@ extends 'RunProcedure';
 
 has '+name' => ( default => 'Prepare-Only', );
 
-has 'loadDb' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
 has 'reloadDb' => (
 	is  => 'rw',
 	isa => 'Bool',

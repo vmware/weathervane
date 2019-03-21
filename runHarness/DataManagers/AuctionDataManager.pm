@@ -167,6 +167,38 @@ sub getIpAddr {
 	return $self->host->ipAddr;
 }
 
+sub prepareDataServices {
+	my ( $self, $users, $logPath ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+
+	# stop the auctiondatamanager container
+	$self->stopAuctionDataManagerContainer ($logHandle);
+
+	# Start the data services
+	if ($reloadDb) {
+		# Avoid an extra stop/start cycle for the data services since we know
+		# we are reloading the data
+		$appInstance->clearDataServicesBeforeStart($logPath);
+	}
+	$appInstance->startServices("data", $logPath);
+	# Make sure that the services know their external port numbers
+	$self->appInstance->setExternalPortNumbers();	
+	
+	close $logHandle;
+}
+
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
@@ -181,26 +213,17 @@ sub prepareData {
 
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
+	open( $logHandle, ">>$logName" ) or do {
 		$console_logger->error("Error opening $logName:$!");
 		return 0;
 	};
 
-	$console_logger->info(
-		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	# Start the data services
-	if ($reloadDb) {
-		# Avoid an extra stop/start cycle for the data services since we know
-		# we are reloading the data
-		$appInstance->clearDataServicesBeforeStart($logPath);
-	}
-	$appInstance->startServices("data", $logPath);
-	# Make sure that the services know their external port numbers
-	$self->appInstance->setExternalPortNumbers();
 	sleep(10);
+	# Make sure that the services know their external port numbers
+	$self->appInstance->setExternalPortNumbers();	
 
 	# Make sure that all of the data services are up
 	$logger->debug(
@@ -309,10 +332,6 @@ sub prepareData {
 
 	# stop the auctiondatamanager container
 	$self->stopAuctionDataManagerContainer ($logHandle);
-
-	# stop the data services. They must be started in the main process
-	# so that the port numbers are available
-	$appInstance->stopServices("data", $logPath);
 
 	close $logHandle;
 }

@@ -142,6 +142,35 @@ sub stopAuctionKubernetesDataManagerContainer {
 
 }
 
+sub prepareDataServices {
+	my ( $self, $users, $logPath ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+
+	# stop the auctiondatamanager container
+	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+
+	# Start the data services
+	if ($reloadDb) {
+		# Avoid an extra stop/start cycle for the data services since we know
+		# we are reloading the data
+		$appInstance->clearDataServicesBeforeStart($logPath);
+	}
+	$appInstance->startServices("data", $logPath);
+
+	close $logHandle;
+}
+
+
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
@@ -155,27 +184,14 @@ sub prepareData {
 
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
+	open( $logHandle, ">>$logName" ) or do {
 		$console_logger->error("Error opening $logName:$!");
 		return 0;
 	};
 
-	$console_logger->info(
-		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
-
-	# Start the data services
-	if ($reloadDb) {
-		# Avoid an extra stop/start cycle for the data services since we know
-		# we are reloading the data
-		$appInstance->clearDataServicesBeforeStart($logPath);
-	}
-	$appInstance->startServices("data", $logPath);
-	
 	$self->startAuctionKubernetesDataManagerContainer ($users, $logHandle);
 		
 	my $loadedData = 0;

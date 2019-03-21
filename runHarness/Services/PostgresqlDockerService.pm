@@ -408,6 +408,7 @@ sub getMaxLoadedUsers {
 	  || die "Error opening /$logName:$!";
 	
 	my $maxUsers = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
+	chomp($maxUsers);
 	$maxUsers += 0;
 	
 	close $applog;

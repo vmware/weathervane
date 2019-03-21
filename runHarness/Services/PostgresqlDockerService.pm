@@ -400,7 +400,7 @@ sub getStatsSummary {
 # Get the max number of users loaded in the database
 sub getMaxLoadedUsers {
 	my ($self) = @_;
-	my $logName          = "$logPath/StartPostgresqlDocker-$hostname-$name-$time.log";
+	my $logName          = "$logPath/getMaxLoadedUsers.log";
 	my $name        = $self->getParamValue('dockerName');
 
 	my $applog;

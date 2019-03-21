@@ -5,7 +5,6 @@ COPY apache-tomcat-bid /opt/apache-tomcat-bid
 COPY apache-tomcat-bid /root/apache-tomcat-bid
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
-COPY jprofiler8 /opt/jprofiler8
 
 ENV CATALINA_BASE /opt/apache-tomcat-bid
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0

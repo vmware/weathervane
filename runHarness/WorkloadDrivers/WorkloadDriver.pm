@@ -112,34 +112,6 @@ sub getNextPortMultiplier {
 	return $retVal;
 }
 
-sub registerPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For workloadDriver on host ", $self->host->hostName, " registering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->registerPortNumber($portNumber, $self);
-		}				
-	}
-
-}
-
-sub unRegisterPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For workload driver on host ", $self->host->hostName, " unregistering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->unRegisterPortNumber($portNumber);
-		}				
-	}
-
-}
-
 sub setHost {
 	my ($self, $host) = @_;
 	

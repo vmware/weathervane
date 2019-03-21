@@ -109,11 +109,6 @@ sub startInstance {
 	);
 
 	$self->setExternalPortNumbers();
-	
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
-	
 	close $applog;
 };
 
@@ -285,7 +280,7 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom( $applog, $name, "$zookeeperRoot/conf/zoo.cfg", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$zookeeperRoot/conf/zoo.cfg", "$logpath/." );
 
 	close $applog;
 

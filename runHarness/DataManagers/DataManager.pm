@@ -121,34 +121,6 @@ sub setWorkloadDriver {
 	$self->workloadDriver($driver);
 }
 
-sub registerPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::DataManagers::DataManager");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For dataManager, registering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->registerPortNumber($portNumber, $self);
-		}				
-	}
-
-}
-
-sub unRegisterPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::DataManagers::DataManager");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For dataManager, unregistering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->unRegisterPortNumber($portNumber);
-		}				
-	}
-
-}
-
 sub getWorkloadNum {
 	my ($self) = @_;
 	return $self->getParamValue('workloadNum');
@@ -168,6 +140,10 @@ sub getDockerName {
 
 sub loadData {
 	die "Can only loadData for a concrete sub-class of DataManager";
+}
+
+sub prepareDataServices {
+	die "Can only prepareDataServices for a concrete sub-class of DataManager";
 }
 
 sub prepareData {

@@ -74,10 +74,8 @@ override 'create' => sub {
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
-	my $numCpus            = $self->host->cpus;
-	if ($self->getParamValue('dockerCpus')) {
-		$numCpus = $self->getParamValue('dockerCpus');
-	}
+	my $serviceType = $self->getParamValue( 'serviceType' );
+	my $numCpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
@@ -94,10 +92,6 @@ override 'create' => sub {
 
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
-	if ( $self->getParamValue('appServerEnableJprofiler') ) {
-		$completeJVMOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";
@@ -189,9 +183,6 @@ sub startInstance {
 		$self->portMap->{"https"} = $portMapRef->{ $self->internalPortMap->{"https"} };
 		$self->portMap->{"shutdown"} = $portMapRef->{ $self->internalPortMap->{"shutdown"} };
 	}
-
-	$self->registerPortsWithHost();
-	$self->host->startNscd();
 
 	close $applog;
 }
@@ -331,7 +322,7 @@ sub getStatsFiles {
 	`mv /tmp/$hostname-$name-performanceMonitor.csv $logpath/. 2>&1`;
 	`mv /tmp/$hostname-$name-performanceMonitor.json $logpath/. 2>&1`;
 
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc*.log", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc*.log", "$logpath/." );
 
 	close $applog;
 
@@ -396,8 +387,8 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/conf/*",        "$logpath/." );
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/bin/setenv.sh", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/conf/*",        "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/bin/setenv.sh", "$logpath/." );
 	close $applog;
 
 }

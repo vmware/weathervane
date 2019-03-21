@@ -767,30 +767,6 @@ sub setExternalPortNumbers {
 	);
 }
 
-sub unRegisterPortNumbers {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"unRegisterPortNumbers start ",
-		"Workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('instanceNum')
-	);
-	my $impl = $self->getParamValue('workloadImpl');
-
-	$self->dataManager->unRegisterPortsWithHost();
-
-	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesRef) {
-			$logger->debug( "unRegisterPortNumbers " . $service->getDockerName() . "\n" );
-			$service->unRegisterPortsWithHost();
-		}
-	}
-}
-
 sub setLoadPathType {
 	my ( $self, $loadPathType ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -1643,6 +1619,20 @@ sub cleanData {
 	return $self->dataManager->cleanData( $users, $setupLogDir );
 }
 
+sub prepareDataServices {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $users = $self->users;
+	$logger->debug(
+		"prepareDataServices for workload ", $self->getParamValue('workloadNum'),
+		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		", users ",            $users,
+		", logDir ",            $setupLogDir
+	);
+
+	return $self->dataManager->prepareDataServices( $users, $setupLogDir );
+}
+
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -1692,113 +1682,6 @@ sub getHostStatsSummary {
 		", appInstance ",                    $self->getParamValue('appInstanceNum')
 	);
 	tie( my %csvRefByHostname, 'Tie::IxHash' );
-
-	# Get the list of all hosts used in this workload and
-	# get the stats for each such host
-	my $impl         = $self->getParamValue('workloadImpl');
-	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
-	foreach my $serviceType (@$serviceTypes) {
-		my $servicesListRef = $self->getAllServicesByType($serviceType);
-		foreach my $service (@$servicesListRef) {
-			my $hostname;
-			if ($service->host->isCluster) {
-				$hostname = $service->host->clusterName;
-			}
-			else {
-				$hostname = $service->host->hostName;
-				if ($service->host->getParamValue('vicHost')) {
-					return;
-				}
-			}
-			if (   ( !exists $csvRefByHostname{$hostname} )
-				|| ( !defined $csvRefByHostname{$hostname} ) )
-			{
-				my $destinationPath = $statsLogPath . "/" . $hostname;
-				$csvRefByHostname{$hostname} = $service->host->getStatsSummary($destinationPath);
-			}
-
-		}
-	}
-
-	# Compute averages for each service type and print a
-	# file with the stats for all services
-	my $workloadNum     = $self->getParamValue('workloadNum');
-	my $summaryFileName = "${filePrefix}host_stats_summary.csv";
-	open( HOSTCSVFILE, ">>$statsLogPath/$summaryFileName" )
-	  or die "Can't open $statsLogPath/$summaryFileName: $!\n";
-	print HOSTCSVFILE "Service Type, Hostname, IP Addr";
-	my $firstKey   = ( keys %csvRefByHostname )[0];
-	my $csvHashRef = $csvRefByHostname{$firstKey};
-	foreach my $key ( keys %$csvHashRef ) {
-		print HOSTCSVFILE ", $key";
-	}
-	print HOSTCSVFILE "\n";
-
-	foreach my $serviceType (@$serviceTypes) {
-		$logger->debug("getHostStatsSummary aggregating stats for hosts running service type $serviceType");
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		my $numServices = $#$servicesRef + 1;
-		if ( $numServices < 1 ) {
-			$logger->debug("getHostStatsSummary there are no active ${serviceType}s to aggregate over");
-
-			# Only include services for which there is an instance
-			next;
-		}
-		tie( my %accumulatedCsv, 'Tie::IxHash' );
-		%accumulatedCsv = ();
-		my @avgKeys = ( "cpuUT", "cpuIdle_stdDev", "avgWait" );
-		foreach my $service (@$servicesRef) {
-			$csvHashRef = $csvRefByHostname{ $service->host->hostName };
-			print HOSTCSVFILE "$serviceType," . $service->host->hostName . "," . $service->host->ipAddr;
-			foreach my $key ( keys %$csvHashRef ) {
-				if ( $key ~~ @avgKeys ) {
-					if ( !( exists $accumulatedCsv{"${serviceType}_average_$key"} ) ) {
-						$accumulatedCsv{"${serviceType}_average_$key"} = $csvHashRef->{$key};
-					}
-					else {
-						$accumulatedCsv{"${serviceType}_average_$key"} += $csvHashRef->{$key};
-					}
-				}
-				else {
-					if ( !( exists $accumulatedCsv{"${serviceType}_total_$key"} ) ) {
-						$accumulatedCsv{"${serviceType}_total_$key"} = $csvHashRef->{$key};
-					}
-					else {
-						$accumulatedCsv{"${serviceType}_total_$key"} += $csvHashRef->{$key};
-					}
-				}
-				print HOSTCSVFILE "," . $csvHashRef->{$key};
-			}
-			print HOSTCSVFILE "\n";
-
-			$service->host->stopNscd();
-
-		}
-
-		# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"
-		my $targetUtilizationServiceType = $self->getParamValue('targetUtilizationServiceType');
-		foreach my $key (@avgKeys) {
-			$accumulatedCsv{"${serviceType}_average_$key"} /= $numServices;
-			if (   ( $key eq 'cpuUT' )
-				&& ( $serviceType eq $targetUtilizationServiceType ) )
-			{
-				$self->lastTargetUtUtilization( $accumulatedCsv{"${serviceType}_average_$key"} );
-			}
-		}
-
-		# Now add the key/value pairs to the returned csv
-		foreach my $key ( keys %accumulatedCsv ) {
-			$csvRef->{ $prefix . $key } = $accumulatedCsv{$key};
-		}
-
-	}
-	close HOSTCSVFILE;
-	$logger->debug(
-		"getHostStatsSummary finished for workload ",
-		$self->getParamValue('workloadNum'),
-		", appInstance ",
-		$self->getParamValue('appInstanceNum')
-	);
 }
 
 sub getStatsSummary {

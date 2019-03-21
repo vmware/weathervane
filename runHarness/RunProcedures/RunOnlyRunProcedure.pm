@@ -83,9 +83,6 @@ override 'run' => sub {
 	$debug_logger->debug("killOldWorkloadDrivers");
 	$self->killOldWorkloadDrivers("/tmp");
 
-	# Now get the cpu and memory config of all hosts
-	$self->getCpuMemConfig();
-
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
@@ -175,9 +172,6 @@ override 'run' => sub {
 		else {
 			$console_logger->info("Sanity Checks Failed");
 		}
-
-		$debug_logger->debug("Unregister port numbers");
-		$self->unRegisterPortNumbers();
 
 		# clean up old logs and stats
 		$self->cleanup($cleanupLogDir);

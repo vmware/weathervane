@@ -133,7 +133,7 @@ sub createCluster {
 }
 
 sub createComputeResource {
-	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef, $useAllSuffixes, $isNonDocker) = @_;
+	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef, $useAllSuffixes) = @_;
 	my $weathervane_logger = get_logger("Weathervane");
 
 	my $json = JSON->new;
@@ -160,7 +160,6 @@ sub createComputeResource {
 		$retArrayRef = createHost( $hostParamHashRef, $runProcedure, $instance, $ipToHostHashRef );
 
 		my ($createdNew, $host) = @$retArrayRef;
-		$host->isNonDocker($isNonDocker);
 	}
 	
 	return $retArrayRef;
@@ -391,10 +390,6 @@ if ($stop) {
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 
-# Create a file for logging the output
-my $runLog;
-open( $runLog, ">>$weathervaneHome/console.log" ) || die "Error opening $weathervaneHome/console.log:$!";
-
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($paramsHashRef);
 	$logger->debug( "The paramsHashRef after command-line and configfile is :\n" . $tmp );
@@ -580,7 +575,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef);
 
 	# Create the computeResource for the primary driver
-	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1 );
+	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
@@ -605,7 +600,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef);
 
 		# Create the host for the secondary driver
-		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1 );
+		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -626,7 +621,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
 		if ($appInstanceParamHashRef->{'clusterName'}) {
 			# App instances running on clusters have a cluster object
-			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1 );			
+			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);			
 		}
 		push @appInstances, $appInstance;
 
@@ -686,7 +681,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					$appInstance, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
 				push @services, $service;
 				# Create the ComputeResource for the service
-				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, !$service->getParamValue('useDocker') );
+				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);
 				
 				$svcNum++;
 			}
@@ -717,7 +712,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$dataManager->setWorkloadDriver($workloadDriver);
 
 		# Create the ComputeResource for the dataManager
-		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes, 1);
+		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);
 
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 
@@ -739,10 +734,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 }
 
 $runProcedure->setWorkloads( \@workloads );
-
-# Tell the hosts to configure the information that they need for pinning
-# containers to CPUs on docker hosts
-#$runProcedure->configureDockerHostCpuPinning();
 
 # Create the Virtual Infrastructure
 my $viParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runProcedureParamHashRef,
@@ -779,7 +770,7 @@ if ( $logger->is_debug() ) {
 }
 
 foreach my $viMgmtHostInstanceParamHashRef (@$viMgmtHostInstanceParamHashRefs) {
-	my $viMgmtHost = HostFactory->getVIMgmtHost($viMgmtHostInstanceParamHashRef);
+	my $viMgmtHost = HostFactory->getVIHost($viMgmtHostInstanceParamHashRef);
 	$vi->addManagementHost($viMgmtHost);
 	$viMgmtHost->setVirtualInfrastructure($vi);
 }

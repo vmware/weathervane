@@ -54,42 +54,6 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-	if ($self->getParamValue('dockerCpus')) {
-		$self->dockerConfigHashRef->{'cpus'} = $self->getParamValue('dockerCpus');
-	}
-	if ($self->getParamValue('dockerCpuShares')) {
-		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
-	} 
-	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
-		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
-		
-		if ($self->getParamValue('dockerCpus') == 0) {
-			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-			# set dockerCpus accordingly so that services can know how many CPUs the 
-			# container has when configuring
-			my $numCpus = 0;
-			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
-			foreach my $cpuGroup (@cpuGroups) {
-				if ($cpuGroup =~ /-/) {
-					# This cpu group is a range
-					my @rangeEnds = split(/-/,$cpuGroup);
-					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-				} else {
-					$numCpus++;
-				}
-			}
-			$self->setParamValue('dockerCpus', $numCpus);
-		}
-	}
-	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
-		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
-	}
-	if ($self->getParamValue('dockerMemory')) {
-		$self->dockerConfigHashRef->{'memory'} = $self->getParamValue('dockerMemory');
-	}
-	if ($self->getParamValue('dockerMemorySwap')) {
-		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
-	}	
 
 	super();
 };
@@ -185,7 +149,6 @@ sub stopAuctionDataManagerContainer {
 	my $name        = $self->getParamValue('dockerName');
 
 	$self->host->dockerStopAndRemove( $applog, $name );
-
 }
 
 # Auction data manager always uses docker
@@ -203,6 +166,56 @@ sub getIpAddr {
 	return $self->host->ipAddr;
 }
 
+sub prepareDataServices {
+	my ( $self, $users, $logPath ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $appInstance    = $self->appInstance;
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $reloadDb       = $self->getParamValue('reloadDb');
+	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $logHandle;
+	open( $logHandle, ">$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+
+	# Start the data services
+	if ($reloadDb) {
+		# Avoid an extra stop/start cycle for the data services since we know
+		# we are reloading the data
+		$appInstance->clearDataServicesBeforeStart($logPath);
+	}
+	
+	$appInstance->startServices("data", $logPath);
+	# Make sure that the services know their external port numbers
+	$self->appInstance->setExternalPortNumbers();	
+	
+	# This will stop and restart the data manager so that it has the right port numbers
+	$self->startAuctionDataManagerContainer ($users, $logHandle);
+
+	if ( !$self->isDataLoaded( $users, $logPath ) ) {
+		# Need to stop and restart services so that we can clear out any old data
+		$appInstance->stopServices("data", $logPath);
+		$appInstance->clearDataServicesBeforeStart($logPath);
+		$appInstance->startServices("data", $logPath);
+		# Make sure that the services know their external port numbers
+		$self->appInstance->setExternalPortNumbers();
+
+		# This will stop and restart the data manager so that it has the right port numbers
+		$self->startAuctionDataManagerContainer ($users, $logHandle);
+
+		$logger->debug( "All data services configured and started for appInstance "
+			  . "$appInstanceNum of workload $workloadNum.  " );
+	}
+	
+	close $logHandle;
+}
+
 sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
@@ -217,26 +230,17 @@ sub prepareData {
 
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
+	open( $logHandle, ">>$logName" ) or do {
 		$console_logger->error("Error opening $logName:$!");
 		return 0;
 	};
 
-	$console_logger->info(
-		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	# Start the data services
-	if ($reloadDb) {
-		# Avoid an extra stop/start cycle for the data services since we know
-		# we are reloading the data
-		$appInstance->clearDataServicesBeforeStart($logPath);
-	}
-	$appInstance->startServices("data", $logPath);
-	# Make sure that the services know their external port numbers
-	$self->appInstance->setExternalPortNumbers();
 	sleep(10);
+	# Make sure that the services know their external port numbers
+	$self->appInstance->setExternalPortNumbers();	
 
 	# Make sure that all of the data services are up
 	$logger->debug(
@@ -249,76 +253,17 @@ sub prepareData {
 	}
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
 		
-	$self->startAuctionDataManagerContainer ($users, $logHandle);
-
-	my $loadedData = 0;
-	if ($reloadDb) {
+	if ($reloadDb || !$self->isDataLoaded( $users, $logPath )) {
 		$appInstance->clearDataServicesAfterStart($logPath);
-
-		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-		$loadedData = 1;
-
-		# Clear reloadDb so we don't reload on each run of a series
-		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
-		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->getParamValue('loadDb') ) {
-				$console_logger->info(
-					    "Data is not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Loading data." );
+		$console_logger->info( "Data is already loaded for appInstance "
+			  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
 
-				# Load the data
-				# Need to stop and restart services so that we can clear out any old data
-				$appInstance->stopServices("data", $logPath);
-				$appInstance->unRegisterPortNumbers();
-				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->startServices("data", $logPath);
-				# Make sure that the services know their external port numbers
-				$self->appInstance->setExternalPortNumbers();
-
-				# This will stop and restart the data manager so that it has the right port numbers
-				$self->startAuctionDataManagerContainer ($users, $logHandle);
-
-				$logger->debug( "All data services configured and started for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
-
-				# Make sure that all of the data services are up
-				my $allUp = $appInstance->isUpDataServices($logPath);
-				if ( !$allUp ) {
-					$console_logger->error( "Couldn't bring up all data services for appInstance "
-						  . "$appInstanceNum of workload $workloadNum." );
-					return 0;
-				}
-
-				$logger->debug( "Clear data services after start for appInstance "
-					  . "$appInstanceNum of workload $workloadNum.  Checking if they are up." );
-				$appInstance->clearDataServicesAfterStart($logPath);
-
-				$retVal = $self->loadData( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-				$loadedData = 1;
-
-			}
-			else {
-				$console_logger->error( "Data not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
-				);
-				return 0;
-
-			}
-		}
-		else {
-			$console_logger->info( "Data is already loaded for appInstance "
-				  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
-
-			# cleanup the databases from any previous run
-			$self->cleanData( $users, $logHandle );
-
-
-		}
+		# cleanup the databases from any previous run
+		$self->cleanData( $users, $logHandle );
 	}
 	
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
@@ -327,8 +272,6 @@ sub prepareData {
 	my $cmdOut = `$dockerHostString docker exec $name perl /prepareData.pl`;
 	print $logHandle "Output: $cmdOut, \$? = $?\n";
 	$logger->debug("Output: $cmdOut, \$? = $?");
-
-
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		$self->stopAuctionDataManagerContainer ($logHandle);
@@ -346,11 +289,6 @@ sub prepareData {
 
 	# stop the auctiondatamanager container
 	$self->stopAuctionDataManagerContainer ($logHandle);
-
-	# stop the data services. They must be started in the main process
-	# so that the port numbers are available
-	$appInstance->stopServices("data", $logPath);
-	$appInstance->unRegisterPortNumbers();
 
 	close $logHandle;
 }
@@ -703,7 +641,6 @@ sub loadData {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $appInstance      = $self->appInstance;
-	my $sshConnectString = $self->host->sshConnectString;
 
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
 

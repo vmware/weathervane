@@ -1171,53 +1171,6 @@ $parameters{"responseTimePassingPercentile"} = {
 	"showUsage" => 0,
 };
 
-
-# parameters related to loading the DB
-$parameters{"loadDb"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"powerOnVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOnVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs for the run are powered on.  For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOnVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-$parameters{"powerOffVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs whose names start with the hostnamePrefix that are on the viHosts and \n\t"
-	  . "that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-
-$parameters{"powerOffAllVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffAllVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs on the viHosts that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
-	"showUsage" => 0,
-};
-
 # stats collection script call-out variables
 $parameters{"startStatsScript"} = {
 	"type"      => "=s",
@@ -1282,14 +1235,6 @@ $parameters{"useDocker"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerCpus"} = {
-	"type"      => "=f",
-	"default"   => 0,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerCpuShares"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1309,14 +1254,6 @@ $parameters{"dockerCpuSetCpus"} = {
 $parameters{"dockerCpuSetMems"} = {
 	"type"      => "=s",
 	"default"   => "unset",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"dockerMemory"} = {
-	"type"      => "=s",
-	"default"   => 0,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1879,14 +1816,6 @@ $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"driverJvmDnsTtl"} = {
-	"type"      => "=i",
-	"default"   => 5,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"maxLogLines"} = {
 	"type"      => "=i",
 	"default"   => 4000,
@@ -1907,6 +1836,22 @@ $parameters{"webServerMem"} = {
 	"type"      => "=s",
 	"default"   => "10Gi",
 	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverMem"} = {
+	"type"      => "=s",
+	"default"   => "7Gi",
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2105,30 +2050,6 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"nginxUseNamedVolumes"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nginxCacheVolume"} = {
-	"type"      => "=s",
-	"default"   => "nginxCache",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"nginxCacheVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "12GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"frontendConnectionMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 10,
@@ -2219,15 +2140,6 @@ $parameters{"mongodbCompact"} = {
 	"showUsage" => 0,
 };
 
-
-$parameters{"appServerEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 # parameters specific to the bid service
 $parameters{"bidServiceCatalinaHome"} = {
 	"type"      => "=s",
@@ -2240,14 +2152,6 @@ $parameters{"bidServiceCatalinaHome"} = {
 $parameters{"bidServiceCatalinaBase"} = {
 	"type"      => "=s",
 	"default"   => "/opt/apache-tomcat-bid",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"auctionBidServiceEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2444,14 +2348,6 @@ $parameters{"rabbitmqPort"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/postgresql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -2473,22 +2369,6 @@ $parameters{"postgresqlDataVolume"} = {
 	"default"   => "postgresqlData",
 	"parent"    => "appInstance",
 	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlDataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "20Gi",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/postgresql",
-	"usageText" => "",
-	"parent"    => "appInstance",
 	"showUsage" => 0,
 };
 
@@ -2540,14 +2420,6 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoData",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"mongodbUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -2567,14 +2439,6 @@ $parameters{"mongodbDataStorageClass"} = {
 $parameters{"mongodbDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "mongoData",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbDataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "200Gi",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2949,20 +2813,6 @@ $parameters{"statsInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"driverEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"dbLoaderEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };

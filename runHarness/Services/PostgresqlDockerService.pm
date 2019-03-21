@@ -66,11 +66,8 @@ override 'create' => sub {
 	my $hostname         = $self->host->hostName;
 	my $host         = $self->host;
 	my $impl             = $self->getImpl();
-	my $logDir           = $self->getParamValue('postgresqlLogDir');
-	my $sshConnectString = $self->host->sshConnectString;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 
-	#	`$sshConnectString chmod -R 777 $logDir`;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name-$time.log";
@@ -80,31 +77,10 @@ override 'create' => sub {
 
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
-	my $hostDataDir = $self->getParamValue('postgresqlDataDir');
 	if ($self->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
-		$hostDataDir = $self->getParamValue('postgresqlDataVolume');
-		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $hostDataDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('postgresqlDataVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $hostDataDir, $volumeSize);
-		}
-
-		$logDir           = $self->getParamValue('postgresqlLogVolume');
-		if (!$host->dockerVolumeExists($applog, $logDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('postgresqlLogVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $logDir, $volumeSize);
-		}
+		$volumeMap{"/mnt/dbData/postgresql"} = $self->getParamValue('postgresqlDataVolume');
+		$volumeMap{"/mnt/dbLogs/postgresql"} = $self->getParamValue('postgresqlLogVolume');
 	}
-	$volumeMap{"/mnt/dbData/postgresql"} = $hostDataDir;
-	$volumeMap{"/mnt/dbLogs/postgresql"} = $logDir;
 
 	my %envVarMap;
 	$envVarMap{"POSTGRES_USER"}     = "auction";
@@ -172,9 +148,6 @@ sub startInstance {
 		# For bridged networking, ports get assigned at start time
 		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
 	}
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 	
 	$self->doVacuum($applog);
 
@@ -230,19 +203,13 @@ sub clearDataAfterStart {
 
 sub doVacuum {
 	my ( $self, $fileout ) = @_;
-	my $hostname    = $self->host->hostName;
-	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getParamValue( $serviceType . "Impl" );
-	my $port        = $self->portMap->{$impl};
-
-	my $cmdout =
-	  `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"`;
-	print $fileout
-	  "PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"\n";
+	my $name        = $self->getParamValue('dockerName');
+	
+	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
+	print $fileout "psql -U auction  -t -q --command=\"vacuum analyze;\"\n";
 	print $fileout $cmdout;
-	$cmdout = `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"checkpoint;\"`;
-	print $fileout
-	  "PGPASSWORD=\"postgres\"  psql -p $port -U postgres -d auction -h $hostname -c \"checkpoint;\"\n";
+	$cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"checkpoint;\"");
+	print $fileout "psql -U auction  -t -q --command=\"checkpoint;\"\n";
 	print $fileout $cmdout;
 
 }
@@ -408,7 +375,7 @@ sub getConfigFiles {
 #	open( $applog, ">$logName" )
 #	  || die "Error opening /$logName:$!";
 
-#	$self->host->dockerScpFileFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
+#	$self->host->dockerCopyFrom( $applog, $name, "/mnt/dbData/postgresql/postgresql.conf", "$logpath/." );
 
 #	close $applog;
 
@@ -433,13 +400,18 @@ sub getStatsSummary {
 # Get the max number of users loaded in the database
 sub getMaxLoadedUsers {
 	my ($self) = @_;
+	my $logName          = "/dev/null";
+	my $name        = $self->getParamValue('dockerName');
+
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
 	
-	my $hostname = $self->getIpAddr();
-	my $impl = $self->getImpl() ;
-	my $port             = $self->portMap->{$impl};
-	my $maxUsers = `psql --host $hostname --port $port -U auction  -t -q --command="select maxusers from dbbenchmarkinfo;"`;
+	my $maxUsers = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
+	chomp($maxUsers);
 	$maxUsers += 0;
 	
+	close $applog;
 	return $maxUsers;
 }
 

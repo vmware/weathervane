@@ -263,14 +263,7 @@ override 'getServiceConfigParameters' => sub {
 		$jvmOpts .= " -DITEMPREVIEWIMAGECACHESIZE=$itemPreviewImageCacheSize ";
 		$jvmOpts .= " -DITEMFULLIMAGECACHESIZE=$itemFullImageCacheSize ";
 		
-		my $numCpus;
-		if ( $service->getParamValue('dockerCpus')) {
-			$numCpus = $service->getParamValue('dockerCpus');
-		}
-		else {
-			$numCpus = 2;
-		}
-
+		my $numCpus = $service->getParamValue("${serviceType}Cpus");
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
 		if (!$highBidQueueConcurrency) {
 			$highBidQueueConcurrency = $numCpus;

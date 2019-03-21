@@ -502,12 +502,9 @@ override 'start' => sub {
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
 		$nosqlServer->setExternalPortNumbers();
-		$nosqlServer->registerPortsWithHost();
 	}
 
 	$self->configureAfterStart($logPath, $mongosHostPortListRef);
-
-	$self->host->startNscd();
 
 };
 
@@ -528,20 +525,9 @@ sub startMongodServers {
 		my $name        = $nosqlServer->getParamValue('dockerName');
 		
 		my %volumeMap;
-		my $dataDir = $nosqlServer->getParamValue('mongodbDataDir');
 		if ($self->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
-			$dataDir = $nosqlServer->getParamValue('mongodbDataVolume');
-			# use named volumes.  Create volume if it doesn't exist
-			if (!$host->dockerVolumeExists($dblog, $dataDir)) {
-				# Create the volume
-				my $volumeSize = 0;
-				if ($host->getParamValue('vicHost')) {
-					$volumeSize = $nosqlServer->getParamValue('mongodbDataVolumeSize');
-				}
-				$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
-			}
+			$volumeMap{"/mnt/mongoData"} = $nosqlServer->getParamValue('mongodbDataVolume');
 		}
-		$volumeMap{"/mnt/mongoData"} = $dataDir;
 
 		my %envVarMap;
 		$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
@@ -607,20 +593,9 @@ sub startMongocServers {
 		
 			my $host = $nosqlServer->host;
 			my %volumeMap;
-			my $dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataDir");
 			if ($self->appInstance->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
-				$dataDir = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolume");
-				# use named volumes.  Create volume if it doesn't exist
-				if (!$host->dockerVolumeExists($dblog, $dataDir)) {
-					# Create the volume
-					my $volumeSize = 0;
-					if ($host->getParamValue('vicHost')) {
-						$volumeSize = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolumeSize");
-					}
-					$host->dockerVolumeCreate($dblog, $dataDir, $volumeSize);
-				}
+				$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $nosqlServer->getParamValue("mongodbC${curCfgSvr}DataVolume");;
 			}
-			$volumeMap{"/mnt/mongoC${curCfgSvr}data"} = $dataDir;
 
 			my %envVarMap;
 			$envVarMap{"MONGODPORT"} = $nosqlServer->internalPortMap->{'mongod'};
@@ -871,10 +846,6 @@ sub startMongosServers {
 			".  Port number is ", $appServer->internalPortMap->{'mongos'}
 		);
 
-		# Make sure this port is open, but don't register it with the host
-		# since the appServer will do that when it starts
-		$appServer->host->openPortNumber( $appServer->internalPortMap->{'mongos'} );
-
 	}
 
 	return [$mongosSvrHostnames[0], $mongosSvrPorts[0]];
@@ -1025,30 +996,11 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname                    = $self->getIpAddr();
-	my $port                        = $self->portMap->{'mongod'};
-	my $name                        = $self->getParamValue('dockerName');
-	my $dataManager                 = $self->appInstance->dataManager;
-	my $dataManagerSshConnectString = $dataManager->host->sshConnectString;
-
-	my $pid = fork();
-	if ( $pid == 0 ) {
-`$dataManagerSshConnectString \"mongostat --port $port --host $hostname -n $numIntervals $intervalLengthSec > /tmp/mongostat_${hostname}_$name.txt\"`;
-		exit;
-	}
-
 }
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
-	my $dataManager      = $self->appInstance->dataManager;
-	my $scpConnectString = $dataManager->host->scpConnectString;
-	my $scpHostString    = $dataManager->host->scpHostString;
-
-	my $out = `$scpConnectString root\@$scpHostString:/tmp/mongostat_${hostname}_$name.txt $destinationPath/. 2>&1`;
-
 }
 
 sub cleanStatsFiles {

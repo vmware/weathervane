@@ -21,7 +21,6 @@ use Hosts::LinuxGuest;
 use Hosts::DockerRole;
 use Hosts::VICHost;
 use Hosts::ESXiHost;
-use Hosts::VirtualCenterHost;
 use Parameters qw(getParamValue);
 use Log::Log4perl qw(get_logger);
 
@@ -62,24 +61,6 @@ sub getVIHost{
 		$host = ESXiHost->new(
 			'paramHashRef' => $paramHashRef,
 
-		);
-	}
-	else {
-		die "No matching virtualInfrastructure type available to hostFactory";
-	}
-
-	$host->initialize();
-
-	return $host;
-}
-
-sub getVIMgmtHost {
-	my ( $self, $paramHashRef) = @_;
-	my $host;
-	my $viType = $paramHashRef->{'virtualInfrastructureType'};
-	if ( $viType eq "vsphere" ) {
-		$host = VirtualCenterHost->new(
-			'paramHashRef' => $paramHashRef,
 		);
 	}
 	else {

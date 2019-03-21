@@ -506,7 +506,6 @@ override 'configure' => sub {
 	my $tmpDir              = $self->getParamValue('tmpDir');
 
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
-	$self->registerPortsWithHost();
 	
 	# Customize the behaviorSpecs for this run
 	my $sourceBehaviorSpecDirName = "$workloadProfileHome/behaviorSpecs";
@@ -560,13 +559,6 @@ override 'configure' => sub {
 		}
 	}
 
-	# make sure nscd is not running
-	$self->host->stopNscd();
-	my $secondariesRef = $self->secondaries;
-	foreach my $server (@$secondariesRef) {
-		$server->host->stopNscd();
-	}
-
 	return 1;
 
 };
@@ -576,129 +568,9 @@ override 'redeploy' => sub {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $distDir         = $self->getParamValue('distDir');
-	my $localHostname   = `hostname`;
-	my $localIpsRef     = Utils::getIpAddresses($localHostname);
-	$logger->debug(
-		"Redeploying.  Local IPs = " . join( ", ", @$localIpsRef ) );
-
-	# Get this host's version number
-	my $sshConnectString = $self->host->sshConnectString;
-	my $localVersion =
-	  `$sshConnectString \"cat $weathervaneHome/version.txt\" 2>&1`;
-	$logger->debug("For redeploy.  localVersion is $localVersion");
-
-	foreach my $host (@$hostsRef) {
-		
-		if ($host->getParamValue('vicHost')) {
-			next;
-		}
-
-		# Get the host's version number
-		my $hostname = $host->hostName;
-
-		my $ip = Utils::getIpAddress($hostname);
-		$logger->debug("Redeploying to $hostname.  IPs = $ip");
-
-		if ( $ip ~~ @$localIpsRef ) {
-			$logger->debug(
-				"Don't redeploy to $hostname as it is the runHarness host");
-
-			# Don't redeploy on the run harness host
-			next;
-		}
-
-		my $sshConnectString = $host->sshConnectString;
-		my $scpConnectString = $host->scpConnectString;
-		my $scpHostString    = $host->scpHostString;
-
-		my $version =
-		  `$sshConnectString \"cat $weathervaneHome/version.txt\" 2>&1`;
-		if ( $version =~ /No route/ ) {
-
-			# This host is not up so can't redeploy
-			$logger->debug("Don't redeploy to $hostname as it is not up.");
-			next;
-		}
-		$logger->debug("For redeploy.  Version on $hostname is $version");
-
-		# If different, update the weathervane directory on that host
-		if ( $localVersion ne $version ) {
-
-# Copy the entire weathervane directory to every host that has a different version number
-			$logger->debug("Redeploying to $hostname");
-`$scpConnectString -r $weathervaneHome/auctionConfigManager/* root\@$scpHostString:$weathervaneHome/auctionConfigManager/.`;
-`$scpConnectString -r $weathervaneHome/auctionApp/* root\@$scpHostString:$weathervaneHome/auctionApp/.`;
-`$scpConnectString -r $weathervaneHome/auctionWeb/* root\@$scpHostString:$weathervaneHome/auctionWeb/.`;
-`$scpConnectString -r $weathervaneHome/autoSetup.pl root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/buildDockerImages.pl root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/build.gradle root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/configFiles/* root\@$scpHostString:$weathervaneHome/configFiles/.`;
-`$scpConnectString -r $weathervaneHome/dbLoader/* root\@$scpHostString:$weathervaneHome/dbLoader/.`;
-`$scpConnectString -r $weathervaneHome/doc/* root\@$scpHostString:$weathervaneHome/doc/.`;
-`$scpConnectString -r $weathervaneHome/dockerImages/* root\@$scpHostString:$weathervaneHome/dockerImages/.`;
-`$scpConnectString -r $weathervaneHome/gradlew root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/gradle.properties root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/images/* root\@$scpHostString:$weathervaneHome/images/.`;
-`$scpConnectString -r $weathervaneHome/runHarness/* root\@$scpHostString:$weathervaneHome/runHarness/.`;
-`$scpConnectString -r $weathervaneHome/settings.gradle root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/weathervane.pl root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/weathervane_users_guide.docx root\@$scpHostString:$weathervaneHome/.`;
-`$scpConnectString -r $weathervaneHome/workloadDriver/* root\@$scpHostString:$weathervaneHome/workloadDriver/.`;
-`$scpConnectString -r $weathervaneHome/workloadConfiguration/* root\@$scpHostString:$weathervaneHome/workloadConfiguration/.`;
-`$scpConnectString -r $weathervaneHome/version.txt root\@$scpHostString:$weathervaneHome/.`;
-		}
-
-		# Always update the excutables
-		my $cmdString = "$sshConnectString rm -r $distDir/* 2>&1";
-		$logger->debug("Redeploy: $cmdString");
-		`$cmdString`;
-		$cmdString =
-		  "$scpConnectString -r $distDir/* root\@$scpHostString:$distDir/.";
-		$logger->debug("Redeploy: $cmdString");
-		`$cmdString`;
-
-	}
-
-	# also always update the workload profiles on the drivers
-	my $workloadProfileDir = $self->getParamValue('workloadProfileDir');
-	my $scpConnectString   = $self->host->scpConnectString;
-	my $scpHostString      = $self->host->scpHostString;
-	$sshConnectString = $self->host->sshConnectString;
-	my $hostname = $self->host->hostName;
-	my $ip       = Utils::getIpAddress($hostname);
-	if ( !( $ip ~~ @$localIpsRef ) ) {
-		my $cmdString = "$sshConnectString rm -r $workloadProfileDir/* 2>&1";
-		$logger->debug("Redeploy: $cmdString");
-		`$cmdString`;
-		$cmdString =
-"$scpConnectString -r $workloadProfileDir/* root\@$scpHostString:$workloadProfileDir/.";
-		$logger->debug("Redeploy: $cmdString");
-		`$cmdString`;
-	}
-	my $secondariesRef = $self->secondaries;
-	foreach my $server (@$secondariesRef) {
-
-		my $hostname = $server->host->hostName;
-		my $ip       = Utils::getIpAddress($hostname);
-		if ( !( $ip ~~ @$localIpsRef ) ) {
-			$sshConnectString = $server->host->sshConnectString;
-			$scpConnectString = $server->host->scpConnectString;
-			$scpHostString    = $server->host->scpHostString;
-			my $cmdString =
-			  "$sshConnectString rm -r $workloadProfileDir/* 2>&1";
-			$logger->debug("Redeploy: $cmdString");
-			`$cmdString`;
-			$cmdString =
-"$scpConnectString -r $workloadProfileDir/* root\@$scpHostString:$workloadProfileDir/.";
-			$logger->debug("Redeploy: $cmdString");
-			`$cmdString`;
-		}
-	}
-
 	# Update the docker image here
 	$self->host->dockerPull( $logfile, "auctionworkloaddriver");
+	my $secondariesRef = $self->secondaries;
 	foreach my $server (@$secondariesRef) {
 		$server->host->dockerPull( $logfile, "auctionworkloaddriver");	
 	}
@@ -775,10 +647,6 @@ sub startAuctionWorkloadDriverContainer {
 	if ( $driver->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
 	}
-	if ( $driver->getParamValue('driverEnableJprofiler') ) {
-		$driverJvmOpts .=
-"  -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m ";
-	}
 
 	if ( $maxConnPerUser > 0 ) {
 		$driverJvmOpts .= " -DMAXCONNPERUSER=" . $maxConnPerUser;
@@ -803,38 +671,22 @@ sub startAuctionWorkloadDriverContainer {
 	my $dockerConfigHashRef = {};	
 	$dockerConfigHashRef->{'net'} = "host";
 
-	if ($driver->getParamValue('dockerCpus')) {
-		$dockerConfigHashRef->{'cpus'} = $driver->getParamValue('dockerCpus');
+	my $numCpus = $driver->getParamValue('driverCpus');
+	my $mem = $driver->getParamValue('driverMem');
+	if ($numCpus) {
+		$dockerConfigHashRef->{'cpus'} = $numCpus;
 	}
 	if ($driver->getParamValue('dockerCpuShares')) {
 		$dockerConfigHashRef->{'cpu-shares'} = $driver->getParamValue('dockerCpuShares');
 	} 
 	if ($driver->getParamValue('dockerCpuSetCpus') ne "unset") {
-		$dockerConfigHashRef->{'cpuset-cpus'} = $driver->getParamValue('dockerCpuSetCpus');
-		
-		if ($driver->getParamValue('dockerCpus') == 0) {
-			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-			# set dockerCpus accordingly so that services can know how many CPUs the 
-			# container has when configuring
-			my $numCpus = 0;
-			my @cpuGroups = split(/,/, $driver->getParamValue('dockerCpuSetCpus'));
-			foreach my $cpuGroup (@cpuGroups) {
-				if ($cpuGroup =~ /-/) {
-					# This cpu group is a range
-					my @rangeEnds = split(/-/,$cpuGroup);
-					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-				} else {
-					$numCpus++;
-				}
-			}
-			$driver->setParamValue('dockerCpus', $numCpus);
-		}
+		$dockerConfigHashRef->{'cpuset-cpus'} = $driver->getParamValue('dockerCpuSetCpus');		
 	}
 	if ($driver->getParamValue('dockerCpuSetMems') ne "unset") {
 		$dockerConfigHashRef->{'cpuset-mems'} = $driver->getParamValue('dockerCpuSetMems');
 	}
-	if ($driver->getParamValue('dockerMemory')) {
-		$dockerConfigHashRef->{'memory'} = $driver->getParamValue('dockerMemory');
+	if ($mem) {
+		$dockerConfigHashRef->{'memory'} = $mem;
 	}
 	if ($driver->getParamValue('dockerMemorySwap')) {
 		$dockerConfigHashRef->{'memory-swap'} = $driver->getParamValue('dockerMemorySwap');
@@ -877,7 +729,6 @@ sub initializeRun {
 	foreach my $secondary (@$secondariesRef) {
 		push @$driversRef, $secondary;
 		$secondary->setPortNumber($port);
-		$secondary->registerPortsWithHost();
 	}
 	push @$driversRef, $self;
 
@@ -1368,10 +1219,6 @@ sub stopRun {
 		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
 	}
 
-	foreach my $driver (@$driversRef) {
-		$driver->unRegisterPortsWithHost();
-	}
-
 	close $logHandle;
 	return 1;
 
@@ -1587,9 +1434,6 @@ sub getAppStatsFiles {
 
 sub cleanAppStatsFiles {
 	my ($self) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-
-	`$sshConnectString \"rm -f /tmp/queryStats.txt 2>&1\"`;
 }
 
 sub stopStatsCollection {
@@ -1603,15 +1447,15 @@ sub stopStatsCollection {
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $workloadNum = $self->getParamValue('workloadNum');
-	
-	my $hostname = $self->host->hostName;
-	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $secHostname = $secondary->host->hostName;
-`ssh  -o 'StrictHostKeyChecking no'  root\@$secHostname cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
-	}
+# ToDo: Add a script to the docker image to do this:
+#	my $hostname = $self->host->hostName;
+#	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
+#
+#	my $secondariesRef = $self->secondaries;
+#	foreach my $secondary (@$secondariesRef) {
+#		my $secHostname = $secondary->host->hostName;
+#`ssh  -o 'StrictHostKeyChecking no'  root\@$secHostname cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
+#	}
 
 }
 
@@ -1634,9 +1478,9 @@ sub getStatsFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
-	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/appInstance*.csv", "$destinationPath/." );
-	$self->host->dockerScpFileFrom( $applog, $name, "/tmp/appInstance*-summary.txt", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance*.csv", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance*-summary.txt", "$destinationPath/." );
 
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
@@ -1644,24 +1488,13 @@ sub getStatsFiles {
 		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
 		$name     = $secondary->getParamValue('dockerName');
-		$secondary->host->dockerScpFileFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
+		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
 	}
 
 }
 
 sub cleanStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $workloadNum      = $self->getParamValue('workloadNum');
-
-	`$sshConnectString rm -f /tmp/gc-W${workloadNum}*.log 2>&1`;
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $secHostname = $secondary->host->hostName;
-`ssh  -o 'StrictHostKeyChecking no'  root\@$secHostname  \"rm -f /tmp/gc-W${workloadNum}*.log 2>&1\"`;
-	}
 }
 
 sub getLogFiles {
@@ -1672,21 +1505,6 @@ sub getLogFiles {
 
 sub cleanLogFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $suffix = $self->suffix;
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $sshConnectString = $secondary->host->sshConnectString;
-		my $hostname         = $secondary->host->hostName;
-		my $cmdString =
-		  "$sshConnectString \"rm /tmp/run_$hostname$suffix.log\" 2>&1";
-		`$cmdString`;
-	}
-
-	my $sshConnectString = $self->host->sshConnectString;
-	my $cmdString = "$sshConnectString \"rm /tmp/run$suffix.log\"  2>&1 ";
-	`$cmdString`;
-
 }
 
 sub parseLogFiles {
@@ -1766,82 +1584,6 @@ sub getHostStatsSummary {
 	my ( $self, $csvRef, $baseDestinationPath, $filePrefix ) = @_;
 	my $logger = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	
-	tie( my %csvRefByHostname, 'Tie::IxHash' );
-	my $headers = "";
-
-	my $workloadDriverHostsRef = $self->getWorkloadDriverHosts();
-	foreach my $host (@$workloadDriverHostsRef) {
-		my $hostname        = $host->hostName;
-		my $destinationPath = $baseDestinationPath . "/" . $hostname;
-		if (   ( !exists $csvRefByHostname{$hostname} )
-			|| ( !defined $csvRefByHostname{$hostname} ) )
-		{
-			$csvRefByHostname{$hostname} =
-			  $host->getStatsSummary($destinationPath);
-		}
-	}
-
-	# put the headers and values into the summary file
-	my $hostname    = $self->host->hostName;
-	my $csvHashRef  = $csvRefByHostname{$hostname};
-	my $workloadNum = $self->getParamValue('workloadNum');
-	open( HOSTCSVFILE,
-		">>$baseDestinationPath/${filePrefix}host_stats_summary.csv" )
-	  or die
-"Can't open $baseDestinationPath/${filePrefix}host_stats_summary.csv: $!\n";
-	print HOSTCSVFILE "Service Type,Hostname,IP Addr";
-	foreach my $key ( keys %$csvHashRef ) {
-		print HOSTCSVFILE ",$key";
-	}
-	print HOSTCSVFILE "\n";
-
-	print HOSTCSVFILE "workloadDriver,"
-	  . $self->host->hostName . ","
-	  . $self->host->ipAddr;
-
-	my @avgKeys = ( "cpuUT", "cpuIdle_stdDev", "avgWait" );
-	foreach my $key ( keys %$csvHashRef ) {
-		if ( $key ~~ @avgKeys ) {
-			$csvRef->{"wkldDriver_average_$key"} = $csvHashRef->{$key};
-		}
-		else {
-			$csvRef->{"wkldDriver_total_$key"} = $csvHashRef->{$key};
-		}
-		print HOSTCSVFILE "," . $csvHashRef->{$key};
-	}
-	print HOSTCSVFILE "\n";
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $secHost = $secondary->host;
-		$csvHashRef = $csvRefByHostname{ $secHost->hostName };
-		print HOSTCSVFILE "workloadDriver,"
-		  . $secHost->hostName . ","
-		  . $secHost->ipAddr;
-		foreach my $key ( keys %$csvHashRef ) {
-
-			if ( $key ~~ @avgKeys ) {
-				$csvRef->{"wkldDriver_average_$key"} += $csvHashRef->{$key};
-			}
-			else {
-				$csvRef->{"wkldDriver_total_$key"} += $csvHashRef->{$key};
-			}
-			print HOSTCSVFILE "," . $csvHashRef->{$key};
-		}
-		print HOSTCSVFILE "\n";
-	}
-
-# Now turn the total into averages for the "cpuUT", "cpuIdle_stdDev", and "avgWait"
-	foreach my $key (@avgKeys) {
-		if ((exists $csvRef->{"wkldDriver_average_$key"}) && (defined $csvRef->{"wkldDriver_average_$key"})) {
-			$csvRef->{"wkldDriver_average_$key"} /= ( $#{$secondariesRef} + 2 );
-		} else {
-			$logger->debug("getHostStatsSummary csvRef value uninitialized for key wkldDriver_average_$key");
-		}
-	}
-
-	close HOSTCSVFILE;
-
 }
 
 sub getWorkloadAppStatsSummary {

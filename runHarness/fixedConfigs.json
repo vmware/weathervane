@@ -3,6 +3,10 @@
 "micro" : {
   "maxUsers" : 1000,
   "maxDuration" : 3600, 
+  
+  "driverCpus" : "1",
+  "driverMem" :  "2g",
+  "driverJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
 
   "numWebServers" : 1,
   "webServerCpus" : "100m",

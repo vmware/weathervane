@@ -18,7 +18,6 @@ use MooseX::Storage;
 
 use namespace::autoclean;
 
-use Hosts::VIMgmtHost;
 use Hosts::VIHost;
 use Factories::HostFactory;
 use WeathervaneTypes;
@@ -47,7 +46,7 @@ has 'description' => (
 # Attributes for a specific instance
 has 'managementHosts' => (
 	is  => 'rw',
-	isa => 'ArrayRef[VIMgmtHost]',
+	isa => 'ArrayRef[VIHost]',
 	default => sub { [] },
 );
 

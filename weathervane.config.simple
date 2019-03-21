@@ -21,8 +21,6 @@
 
 #"logLevel" : 0,
 #"runStrategy" : "single",
-#"powerOnVms" : false,
-#"powerOffVms" : false,
 
 #"numViHosts" : 0,
 

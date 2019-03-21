@@ -100,6 +100,11 @@ sub prepareData {
 	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->appInstancesRef, $setupLogDir );
 }
 
+sub prepareDataServices {
+	my ( $self, $setupLogDir ) = @_;
+	callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );
+}
+
 sub clearReloadDb {
 	my ($self) = @_;
 	my $appInstanceRef = $self->appInstancesRef;
@@ -223,14 +228,6 @@ sub setExternalPortNumbers {
 	my $appInstanceRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstanceRef) {
 		$appInstance->setExternalPortNumbers();
-	}
-}
-
-sub unRegisterPortNumbers {
-	my ( $self ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->unRegisterPortNumbers();
 	}
 }
 

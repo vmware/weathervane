@@ -15,24 +15,17 @@ package ServiceFactory;
 
 use Moose;
 use MooseX::Storage;
-use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
-use Services::TomcatService;
 use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
-use Services::AuctionBidService;
-use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
-use Services::MongodbService;
 use Services::MongodbKubernetesService;
 use Services::MongodbDockerService;
-use Services::ZookeeperService;
 use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
-use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
 use Log::Log4perl qw(get_logger);
@@ -76,14 +69,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$service = TomcatDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-		else {
-			$service = TomcatService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -97,15 +84,9 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes");
 			exit(-1);
-		}
-		else {
-				$service = AuctionBidService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
 		}
 	}
 	elsif ( $serviceName eq "zookeeper" ) {
@@ -116,14 +97,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$service = ZookeeperDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-		else {
-			$service = ZookeeperService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -137,14 +112,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$service = NginxDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-		else {
-			$service = NginxService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -158,13 +127,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$service = PostgresqlDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {	
-			$service = PostgresqlService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -178,13 +142,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
+		} else {
 			$service = MongodbDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {			
-			$service = MongodbService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -198,13 +157,8 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 			}		
-		} elsif ($docker) {
-			$service = RabbitmqDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
 		} else {
-			$service = RabbitmqService->new(
+			$service = RabbitmqDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);

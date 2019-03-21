@@ -31,7 +31,6 @@ has 'virtualInfrastructure' => (
 
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-
 	super();
 };
 

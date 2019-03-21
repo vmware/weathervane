@@ -16,6 +16,7 @@ package DockerRole;
 use Moose::Role;
 use MooseX::Storage;
 use MIME::Base64;
+use POSIX;
 use Log::Log4perl qw(get_logger);
 use Utils qw(getIpAddress);
 
@@ -113,7 +114,7 @@ sub dockerStopAndRemove {
 		}
 	
 		$logger->debug("name = $name, Removing.");
-		my $out = `$dockerHostString docker rm -f $name`;
+		my $out = `$dockerHostString docker rm -f $name 2>&1`;
 		print $logFileHandle "$dockerHostString docker rm -f $name\n";
 		print $logFileHandle "$out\n";
 		$logger->debug("name = $name, Result of remove: $out");
@@ -365,10 +366,11 @@ sub dockerCreate {
 	my $cpusString = "";
 	my $cpuSetCpusString = "";
 	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+		my $cpus = $self->convertK8sCpuString($dockerConfigHashRef->{"cpus"});
 		if (!$isVicHost) {
-			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+			$cpusString = sprintf("--cpus=%0.2f", $cpus);
 		} else {
-			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+			$cpuSetCpusString = "--cpuset-cpus=". $cpus;
 		}
 	}
 
@@ -383,7 +385,7 @@ sub dockerCreate {
 	
 	my $memoryString = "";
 	if (defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
-		$memoryString = "--memory=". $dockerConfigHashRef->{"memory"};
+		$memoryString = "--memory=". $self->convertK8sMemString($dockerConfigHashRef->{"memory"});
 	}
 	
 	my $memorySwapString = "";
@@ -400,7 +402,7 @@ sub dockerCreate {
 		$cmd = "";
 	}
 	
-	my $cmdString = "$dockerHostString docker create --sysctl kernel.sem='250 32000 32 2000' --ulimit nofile=1048576:1048576 $envString $volumeString $netString $portString "
+	my $cmdString = "$dockerHostString docker create $envString $volumeString $netString $portString "
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $entryPointString " 
 		. " --name $name $namespace/$imageName:$version $cmd 2>&1";
@@ -472,10 +474,11 @@ sub dockerRun {
 	my $cpusString = "";
 	my $cpuSetCpusString = "";
 	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+		my $cpus = $self->convertK8sCpuString($dockerConfigHashRef->{"cpus"});
 		if (!$isVicHost) {
-			$cpusString = sprintf("--cpus=%0.2f", $dockerConfigHashRef->{"cpus"});
+			$cpusString = sprintf("--cpus=%0.2f", $cpus);
 		} else {
-			$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpus"};
+			$cpuSetCpusString = "--cpuset-cpus=". $cpus;
 		}
 	}
 
@@ -490,7 +493,7 @@ sub dockerRun {
 	
 	my $memoryString = "";
 	if (defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
-		$memoryString = "--memory=". $dockerConfigHashRef->{"memory"};
+		$memoryString = "--memory=". $self->convertK8sMemString($dockerConfigHashRef->{"memory"});
 	}
 	
 	my $memorySwapString = "";
@@ -512,7 +515,7 @@ sub dockerRun {
 		$cmd = "";
 	}
 	
-	my $cmdString = "$dockerHostString docker run --sysctl kernel.sem='250 32000 32 2000' --ulimit nofile=1048576:1048576 -d $envString $volumeString $netString $portString "
+	my $cmdString = "$dockerHostString docker run -d $envString $volumeString $netString $portString "
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $ttyString $entryPointString " 
 		. " --name $name $namespace/$imageName:$version $cmd 2>&1";
@@ -594,16 +597,13 @@ sub dockerVolumeCreate {
 }
 
 sub dockerVolumeExists {
-	my ( $self, $logFileHandle, $volumeName ) = @_;
-	print $logFileHandle "dockerVolumeExists $volumeName\n";
+	my ( $self, $volumeName ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
 	$logger->debug("dockerVolumeExists $volumeName");
 	
 	my $dockerHostString  = $self->dockerHostString;
 	my $cmd = "$dockerHostString docker volume ls -q";
-	print $logFileHandle "$cmd\n";
 	my $out = `$cmd`;
-	print $logFileHandle "$out\n";
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
 		chomp($line);
@@ -674,50 +674,114 @@ sub dockerExec {
 	return $out;
 }
 
-sub dockerScpFileTo {
+sub dockerCopyTo {
 	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	my $hostname = $self->hostName;
-	my $scpConnectString = $self->scpConnectString;
-	my $localHostname    = `hostname`;
-	chomp($localHostname);
-	my $localHostIP   = getIpAddress($localHostname);
 	
-	my $maxRetries = 5;
+	my $dockerHostString  = $self->dockerHostString;
+	$logger->debug("dockerCopyTo serviceName = $name");
+	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile 2>&1";
+	my $out = `$cmdString`;
+	$logger->debug("$cmdString");
+	print $logFileHandle "$cmdString\n";
+	$logger->debug("docker cp output: $out");
+	print $logFileHandle "$out\n";
 	
-	while ($maxRetries > 0) {
-		my $scpString = "sh -c \"$scpConnectString root\@$localHostIP:$sourceFile $destFile\"";
-		$logger->debug("hostname = $hostname, localHostIP = $localHostIP, name = $name, scpString = $scpString");
-		my $out = $self->dockerExec($logFileHandle, $name, $scpString);
-		if ($out =~ /Connection\stimed\sout/) {
-		  $maxRetries--;		
-		} else {
-		  last;
-		}
-	}
+	return $out;
 }
 
-sub dockerScpFileFrom {
+sub dockerCopyFrom {
 	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	my $hostname = $self->hostName;
-	my $scpConnectString = $self->scpConnectString;
-	my $localHostname    = `hostname`;
-	chomp($localHostname);
-	my $localHostIP   = getIpAddress($localHostname);
-
-	my $maxRetries = 5;
+	my $dockerHostString  = $self->dockerHostString;
+	$logger->debug("dockerCopyTo serviceName = $name");
+	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile 2>&1";
+	my $out = `$cmdString`;
+	$logger->debug("$cmdString");
+	print $logFileHandle "$cmdString\n";
+	$logger->debug("docker cp output: $out");
+	print $logFileHandle "$out\n";
 	
-	while ($maxRetries > 0) {
-		my $scpString = "sh -c \"$scpConnectString $sourceFile root\@$localHostIP:$destFile\"";
-		$logger->debug("hostname = $hostname, localHostIP = $localHostIP, name = $name, scpString = $scpString");
-		my $out = $self->dockerExec($logFileHandle, $name, $scpString);
-			if ($out =~ /Connection\stimed\sout/) {
-		  $maxRetries--;		
+	return $out;
+}
+
+# In the weathervane config file, CPU limits are specified using Kubernetes 
+# notation.  Were we convert these to Docker notation for use in Docker commands.
+# The strings have already been validated for proper K8S notation
+sub convertK8sCpuString {
+	my ( $self, $k8sCpuString ) = @_;
+	my $dockerCpuString = $k8sCpuString;
+	# A K8S CPU limit should be either a real number (e.g. 1.5), which
+	# is legal docker notation, or an integer followed an "m" to indicate a millicpu
+	if ($k8sCpuString =~ /(\d+)m$/) {
+		$dockerCpuString = $1 * 0.001;
+	}
+	return $dockerCpuString;
+}
+
+# In the weathervane config file, memory limits are specified using Kubernetes 
+# notation.  Were we convert these to Docker notation for use in Docker commands.
+# The strings have already been validated for proper K8S notation
+sub convertK8sMemString {
+	my ( $self, $k8sMemString ) = @_;
+	# Both K8s and Docker Memory limits are an integer followed by an optional suffix.
+	# The legal suffixes in K8s are:
+	#  * E, P, T, G, M, K (powers of 10)
+	#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
+	# The legal suffixes in Docker are:
+	#  * g, m, k, b (powers of 2)
+	$k8sMemString =~ /^(\d+)(.*)$/;
+	my $dockerMemString = $1;
+	my $suffix = $2;
+	if ($suffix) {
+		if ($suffix =~ /i/) {
+			# Already a power of 2 notation
+			if ($suffix =~ /E/) {
+				$dockerMemString *= 1024 * 1024 * 1024;
+				$suffix = "g";
+			} elsif ($suffix =~ /P/) {				
+				$dockerMemString *= 1024 * 1024;
+				$suffix = "g";
+			} elsif ($suffix =~ /T/) {
+				$dockerMemString *= 1024;
+				$suffix = "g";				
+			} else {
+				$suffix =~ /(.)i/;
+				$suffix = lc($1);
+			}
 		} else {
-		  last;
+			# Power of 10 notation
+			if ($suffix =~ /E/) {
+				$dockerMemString *= 1000 * 1000 * 1000;
+				# Convert from G to Gi
+				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$suffix = "g";
+			} elsif ($suffix =~ /P/) {				
+				$dockerMemString *= 1000 * 1000;
+				# Convert from G to Gi
+				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$suffix = "g";
+			} elsif ($suffix =~ /T/) {
+				$dockerMemString *= 1000;
+				# Convert from G to Gi
+				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$suffix = "g";
+			} elsif ($suffix =~ /G/) {				
+				# Convert from G to Gi
+				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$suffix = "g";
+			} elsif ($suffix =~ /M/) {				
+				# Convert from M to Mi
+				$dockerMemString = trunc(round($dockerMemString * 0.9537));
+				$suffix = "m";
+			} elsif ($suffix =~ /K/) {				
+				# Convert from K to Ki
+				$dockerMemString = trunc(round($dockerMemString * 0.9766));
+				$suffix = "k";
+			} 	
 		}
 	}
+	return "$dockerMemString$suffix";
 }
 
 1;

@@ -23,7 +23,7 @@ use Log::Log4perl qw(get_logger :levels);
 use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsParallel1 callMethodsOnObjectParallel
   callMethodsOnObjectParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
   callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
-  callMethodOnObjectsParamListParallel1);
+  callMethodOnObjectsParamListParallel1 callMethodOnObjects1);
 use Instance;
 use Utils qw(getIpAddresses getIpAddress);
 
@@ -367,6 +367,13 @@ sub clearReloadDb {
 sub cleanData {
 	my ( $self, $cleanupLogDir ) = @_;
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
+}
+
+sub prepareDataServices {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("prepareDataServices with logDir $setupLogDir");
+	callMethodOnObjects1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );
 }
 
 sub prepareData {

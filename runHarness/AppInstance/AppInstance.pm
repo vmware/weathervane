@@ -1619,6 +1619,20 @@ sub cleanData {
 	return $self->dataManager->cleanData( $users, $setupLogDir );
 }
 
+sub prepareDataServices {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	my $users = $self->users;
+	$logger->debug(
+		"prepareDataServices for workload ", $self->getParamValue('workloadNum'),
+		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		", users ",            $users,
+		", logDir ",            $setupLogDir
+	);
+
+	return $self->dataManager->prepareDataServices( $users, $setupLogDir );
+}
+
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");

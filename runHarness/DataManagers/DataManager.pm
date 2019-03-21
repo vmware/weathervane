@@ -142,6 +142,10 @@ sub loadData {
 	die "Can only loadData for a concrete sub-class of DataManager";
 }
 
+sub prepareDataServices {
+	die "Can only prepareDataServices for a concrete sub-class of DataManager";
+}
+
 sub prepareData {
 	die "Can only prepareData for a concrete sub-class of DataManager";
 }

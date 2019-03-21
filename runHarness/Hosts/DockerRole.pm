@@ -114,7 +114,7 @@ sub dockerStopAndRemove {
 		}
 	
 		$logger->debug("name = $name, Removing.");
-		my $out = `$dockerHostString docker rm -f $name`;
+		my $out = `$dockerHostString docker rm -f $name 2>&1`;
 		print $logFileHandle "$dockerHostString docker rm -f $name\n";
 		print $logFileHandle "$out\n";
 		$logger->debug("name = $name, Result of remove: $out");

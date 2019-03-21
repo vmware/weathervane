@@ -69,7 +69,7 @@ sub startAuctionKubernetesDataManagerContainer {
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
 	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+	$self->stopAuctionKubernetesDataManagerContainer ($applog);
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionDataManager-$namespace.yaml" )             or die "Can't open file /tmp/auctionDataManager-$namespace.yaml: $!\n";

@@ -203,19 +203,13 @@ sub clearDataAfterStart {
 
 sub doVacuum {
 	my ( $self, $fileout ) = @_;
-	my $hostname    = $self->host->hostName;
-	my $serviceType = $self->getParamValue('serviceType');
-	my $impl        = $self->getParamValue( $serviceType . "Impl" );
-	my $port        = $self->portMap->{$impl};
-
-	my $cmdout =
-	  `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"`;
-	print $fileout
-	  "PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"vacuum analyze;\"\n";
+	my $name        = $self->getParamValue('dockerName');
+	
+	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
+	print $fileout "psql -U auction  -t -q --command=\"vacuum analyze;\"\n";
 	print $fileout $cmdout;
-	$cmdout = `PGPASSWORD=\"auction\"  psql -p $port -U auction -d auction -h $hostname -c \"checkpoint;\"`;
-	print $fileout
-	  "PGPASSWORD=\"postgres\"  psql -p $port -U postgres -d auction -h $hostname -c \"checkpoint;\"\n";
+	$cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"checkpoint;\"");
+	print $fileout "psql -U auction  -t -q --command=\"checkpoint;\"\n";
 	print $fileout $cmdout;
 
 }
@@ -406,13 +400,17 @@ sub getStatsSummary {
 # Get the max number of users loaded in the database
 sub getMaxLoadedUsers {
 	my ($self) = @_;
+	my $logName          = "$logPath/StartPostgresqlDocker-$hostname-$name-$time.log";
+	my $name        = $self->getParamValue('dockerName');
+
+	my $applog;
+	open( $applog, ">$logName" )
+	  || die "Error opening /$logName:$!";
 	
-	my $hostname = $self->getIpAddr();
-	my $impl = $self->getImpl() ;
-	my $port             = $self->portMap->{$impl};
-	my $maxUsers = `psql --host $hostname --port $port -U auction  -t -q --command="select maxusers from dbbenchmarkinfo;"`;
+	my $maxUsers = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
 	$maxUsers += 0;
 	
+	close $appLog
 	return $maxUsers;
 }
 

@@ -16,7 +16,7 @@ if [ "$MODE" == 'firstrun' ]; then
   echo "Initialize postgres" >&2
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/initdb -D /mnt/dbData/postgresql
 
-  mv /pg_hba.conf /mnt/dbData/postgresql/.
+  cp /pg_hba.conf /mnt/dbData/postgresql/.
 
   # Start postgresql
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -w start
@@ -26,6 +26,9 @@ if [ "$MODE" == 'firstrun' ]; then
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database auction owner auction;"
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database root owner root;"
 
+  # Create the database and tables
+  . /clearAfterStart.sh
+  
   # Stop postgresql
   sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -m fast -w stop
 

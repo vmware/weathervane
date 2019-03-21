@@ -5,7 +5,7 @@
   "maxDuration" : 3600, 
   
   "driverCpus" : "1",
-  "driverMem" :  "1g",
+  "driverMem" :  "2g",
   "driverJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
 
   "numWebServers" : 1,
@@ -26,7 +26,7 @@
   
   "numAppServers" : 1,
   "appServerCpus" : "100m",
-  "appServerMem" : "1Gi",
+  "appServerMem" : "2Gi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,

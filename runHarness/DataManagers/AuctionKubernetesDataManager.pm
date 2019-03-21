@@ -146,6 +146,10 @@ sub prepareDataServices {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+	my $reloadDb       = $self->getParamValue('reloadDb');
+	my $appInstance    = $self->appInstance;
+	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {

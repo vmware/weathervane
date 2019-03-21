@@ -133,6 +133,10 @@ sub run {
 	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
 		
 	# Prepare the data for this run and start the data services
+	# Start the data services for all AppInstances.  This happens serially so
+	# that we don't have to spawn processes and lose port number info.
+	$self->prepareDataServices($setupLogDir);	
+	# Prepare the data for this run.  This happens in parallel on all appInstances
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);
 	if ( !$dataPrepared ) {

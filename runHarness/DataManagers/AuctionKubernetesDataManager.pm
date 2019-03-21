@@ -201,9 +201,6 @@ sub prepareData {
 		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-
-		# Clear reloadDb so we don't reload on each run of a series
-		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {

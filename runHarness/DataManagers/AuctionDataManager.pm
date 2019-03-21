@@ -195,6 +195,9 @@ sub prepareDataServices {
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();	
 	
+	# This will stop and restart the data manager so that it has the right port numbers
+	$self->startAuctionDataManagerContainer ($users, $logHandle);
+
 	if ( !$self->isDataLoaded( $users, $logPath ) ) {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
@@ -254,9 +257,6 @@ sub prepareData {
 		$appInstance->clearDataServicesAfterStart($logPath);
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-
-		# Clear reloadDb so we don't reload on each run of a series
-		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
 		$console_logger->info( "Data is already loaded for appInstance "
@@ -272,8 +272,6 @@ sub prepareData {
 	my $cmdOut = `$dockerHostString docker exec $name perl /prepareData.pl`;
 	print $logHandle "Output: $cmdOut, \$? = $?\n";
 	$logger->debug("Output: $cmdOut, \$? = $?");
-
-
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		$self->stopAuctionDataManagerContainer ($logHandle);

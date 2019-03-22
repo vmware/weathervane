@@ -130,7 +130,7 @@ sub startDataManagerContainer {
 }
 
 sub stopDataManagerContainer {
-	my ( $self ) = @_;
+	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $cluster = $self->host;
 	
@@ -232,7 +232,7 @@ sub prepareData {
 	$logger->debug("Output: $cmd");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
-		$self->stopDataManagerContainer();
+		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
 
@@ -246,7 +246,7 @@ sub prepareData {
 #	}
 
 	# stop the auctiondatamanager container
-	$self->stopDataManagerContainer();
+	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
 }

@@ -140,7 +140,7 @@ sub startDataManagerContainer {
 }
 
 sub stopDataManagerContainer {
-	my ( $self ) = @_;
+	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
@@ -205,7 +205,7 @@ sub prepareDataServices {
 		$self->appInstance->setExternalPortNumbers();
 
 		# stop and restart the data manager so that it has the right port numbers
-		$self->stopDataManagerContainer();
+		$self->stopDataManagerContainer($logHandle);
 		$self->startDataManagerContainer($users, $logHandle);
 
 		$logger->debug( "All data services configured and started for appInstance "
@@ -273,7 +273,7 @@ sub prepareData {
 	$logger->debug("Output: $cmdOut, \$? = $?");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
-		$self->stopDataManagerContainer();
+		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
 
@@ -287,7 +287,7 @@ sub prepareData {
 	}
 
 	# stop the auctiondatamanager container
-	$self->stopDataManagerContainer();
+	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
 }

@@ -866,6 +866,13 @@ sub stopServices {
 	
 }
 
+sub stopDataManager {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	$logger->debug("stopDataManager with logDir $setupLogDir");
+	$self->dataManager->stopDataManagerContainer();
+}
+
 sub isRunningAndUpDataServices {
 	my ( $self, $serviceTier, $logFile ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");

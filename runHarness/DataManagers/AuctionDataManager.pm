@@ -63,15 +63,13 @@ sub setMongosDocker {
 	$self->mongosDocker($mongosDockerName);
 }
 
-sub startAuctionDataManagerContainer {
+sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $name        = $self->getParamValue('dockerName');
 	
-	$self->host->dockerStopAndRemove( $applog, $name );
-
 	# Calculate the values for the environment variables used by the auctiondatamanager container
 	my %envVarMap;
 	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
@@ -141,8 +139,8 @@ sub startAuctionDataManagerContainer {
 	);
 }
 
-sub stopAuctionDataManagerContainer {
-	my ( $self, $applog ) = @_;
+sub stopDataManagerContainer {
+	my ( $self ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
@@ -196,7 +194,7 @@ sub prepareDataServices {
 	$self->appInstance->setExternalPortNumbers();	
 	
 	# This will stop and restart the data manager so that it has the right port numbers
-	$self->startAuctionDataManagerContainer ($users, $logHandle);
+	$self->startDataManagerContainer ($users, $logHandle);
 
 	if ( !$self->isDataLoaded( $users, $logPath ) ) {
 		# Need to stop and restart services so that we can clear out any old data
@@ -206,8 +204,9 @@ sub prepareDataServices {
 		# Make sure that the services know their external port numbers
 		$self->appInstance->setExternalPortNumbers();
 
-		# This will stop and restart the data manager so that it has the right port numbers
-		$self->startAuctionDataManagerContainer ($users, $logHandle);
+		# stop and restart the data manager so that it has the right port numbers
+		$self->stopDataManagerContainer();
+		$self->startDataManagerContainer($users, $logHandle);
 
 		$logger->debug( "All data services configured and started for appInstance "
 			  . "$appInstanceNum of workload $workloadNum.  " );
@@ -274,7 +273,7 @@ sub prepareData {
 	$logger->debug("Output: $cmdOut, \$? = $?");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
-		$self->stopAuctionDataManagerContainer ($logHandle);
+		$self->stopDataManagerContainer();
 		return 0;
 	}
 
@@ -288,7 +287,7 @@ sub prepareData {
 	}
 
 	# stop the auctiondatamanager container
-	$self->stopAuctionDataManagerContainer ($logHandle);
+	$self->stopDataManagerContainer();
 
 	close $logHandle;
 }

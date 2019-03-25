@@ -52,8 +52,6 @@ override 'initialize' => sub {
 
 sub run {
 	my ( $self ) = @_;
-	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
-	my $outputDir          = $self->getParamValue('outputDir');
 	my $tmpDir             = $self->getParamValue('tmpDir');
 	my $console_logger     = get_logger("Console");
 	my $debug_logger       = get_logger("Weathervane::RunProcedures::PrepareOnlyRunProcedure");
@@ -61,26 +59,19 @@ sub run {
 	my @pids;
 	my $pid;
 
-	# Get the sequence number of the next run
+	# Get the minor sequence number of the next run
+	my $sequenceNumberFile = "$tmpDir/minorsequence.num";
 	my $seqnum;
 	if ( -e "$sequenceNumberFile" ) {
 		open SEQFILE, "<$sequenceNumberFile";
 		$seqnum = <SEQFILE>;
 		close SEQFILE;
-		if ( -e "$outputDir/$seqnum" ) {
-			print "Next run number is $seqnum, but directory for run $seqnum already exists in $outputDir\n";
-			exit -1;
-		}
 		open SEQFILE, ">$sequenceNumberFile";
 		my $nextSeqNum = $seqnum + 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
 	else {
-		if ( -e "$outputDir/0" ) {
-			print "Sequence number file is missing, but run 0 already exists in $outputDir\n";
-			exit -1;
-		}
 		$seqnum = 0;
 		open SEQFILE, ">$sequenceNumberFile";
 		my $nextSeqNum = 1;
@@ -88,10 +79,13 @@ sub run {
 		close SEQFILE;
 	}
 	$self->seqnum($seqnum);
-	
-	# clean out the tmp directory
-	`rm -r $tmpDir/* 2>&1`;
 
+	# Now send all output to new subdir 	
+	$tmpDir = "$tmpDir/$seqnum";
+	if ( !( -e $tmpDir ) ) {
+		`mkdir $tmpDir`;
+	}
+	
 	# directory for logs related to start/stop/etc
 	my $setupLogDir = $tmpDir . "/setupLogs";
 	if ( !( -e $setupLogDir ) ) {
@@ -129,9 +123,6 @@ sub run {
 		$self->setParamValue( 'redeploy', 0 );
 	}
 
-	# Copy the version file into the output directory
-	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-		
 	# Prepare the data for this run and start the data services
 	# Start the data services for all AppInstances.  This happens serially so
 	# that we don't have to spawn processes and lose port number info.
@@ -140,7 +131,7 @@ sub run {
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);
 	if ( !$dataPrepared ) {
-		$self->cleanupAfterFailure( "Could not properly load or prepare data for run $seqnum.  Exiting.", $seqnum, $tmpDir, $outputDir );
+		$self->cleanupAfterFailure( "Could not properly load or prepare data for run $seqnum.  Exiting.", $seqnum, $tmpDir );
 	}
 
 	$self->clearReloadDb();

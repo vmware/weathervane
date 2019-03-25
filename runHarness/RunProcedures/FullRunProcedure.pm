@@ -21,7 +21,7 @@ use Parameters qw(getParamValue);
 use POSIX;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callMethodsOnObjectParallel);
 
 use strict;
 
@@ -46,20 +46,19 @@ override 'run' => sub {
 
 	super();
 
-	my $outputDir = $self->getParamValue('outputDir');
-	my $tmpDir    = $self->getParamValue('tmpDir');
+	my $tmpDir = $self->tmpDir;
 	my $seqnum = $self->seqnum;
 
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	# configure the workload driver
-	my $ok = callBooleanMethodOnObjectsParallel( 'configureWorkloadDriver',
-		$self->workloadsRef );
+	my $ok = callBooleanMethodOnObjectsParallel1( 'configureWorkloadDriver',
+		$self->workloadsRef, $tmpDir );
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Couldn't configure the workload driver properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -75,7 +74,7 @@ override 'run' => sub {
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Workload driver did not initialze properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -95,7 +94,7 @@ override 'run' => sub {
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Workload driver did not start properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -118,13 +117,13 @@ override 'run' => sub {
 	);
 
 	## get the config files
-	$self->getConfigFiles();
+	$self->getConfigFiles($tmpDir);
 
 	## get the stats files
-	$self->getStatsFiles();
+	$self->getStatsFiles($tmpDir);
 
 	## get the logs
-	$self->getLogFiles();
+	$self->getLogFiles($tmpDir);
 
 	my $sanityPassed = 1;
 
@@ -166,11 +165,7 @@ override 'run' => sub {
 
 	## for each service and the workload driver, parse stats
 	# and gather up the headers and values for the results csv
-	my $csvHashRef = $self->getStatsSummary($seqnum);
-
-	my $resultsDir = "$outputDir/$seqnum";
-	`mkdir -p $resultsDir`;
-	`mv $tmpDir/* $resultsDir/.`;
+	my $csvHashRef = $self->getStatsSummary($seqnum, $tmpDir);
 
 	# Todo: Add parsing of logs for errors
 	# my $isRunError = $self->parseLogs()
@@ -186,7 +181,6 @@ override 'run' => sub {
 		'isPassable'            => 1,
 		'isPassed'              => $isPassed,
 		'runNum'                => $seqnum,
-		'resultsDir'            => $resultsDir,
 		'resultsSummaryHashRef' => $csvHashRef,
 
 		#		'metricsHashRef'        => $self->workloadDriver->getResultMetrics(),

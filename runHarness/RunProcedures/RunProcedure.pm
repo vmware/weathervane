@@ -79,50 +79,13 @@ has 'seqnum' => (
 	isa => 'Int',
 );
 
+has 'tmpDir' => (
+	is  => 'rw',
+	isa => 'Str',
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-
-	# if the tmpDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $tmpDir = $self->getParamValue('tmpDir');
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue( 'tmpDir', $tmpDir );
-
-	# if the outputDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $outputDir = $self->getParamValue('outputDir');
-	if ( !( $outputDir =~ /^\// ) ) {
-		$outputDir = $weathervaneHome . "/" . $outputDir;
-	}
-	$self->setParamValue( 'outputDir', $outputDir );
-
-	# if the distDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $distDir         = $self->getParamValue('distDir');
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue( 'distDir', $distDir );
-
-	# if the sequenceNumberFile doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
-	if ( !( $sequenceNumberFile =~ /^\// ) ) {
-		$sequenceNumberFile = $weathervaneHome . "/" . $sequenceNumberFile;
-	}
-	$self->setParamValue( 'sequenceNumberFile', $sequenceNumberFile );
-
-	# make sure the directories exist
-	if ( !( -e $tmpDir ) ) {
-		`mkdir $tmpDir`;
-	}
-
-	if ( !( -e $outputDir ) ) {
-		`mkdir -p $outputDir`;
-	}
 
 	my $logLevel = $self->getParamValue('logLevel');
 	if ( ( $logLevel < 0 ) || ( $logLevel > 4 ) ) {
@@ -467,7 +430,7 @@ sub removeServices {
 }
 
 sub cleanupAfterFailure {
-	my ( $self, $errorMessage, $seqnum, $tmpDir, $outputDir ) = @_;
+	my ( $self, $errorMessage, $seqnum, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
 
 	if ( !$self->getParamValue('stopOnFailure') ) {
@@ -492,10 +455,6 @@ sub cleanupAfterFailure {
 
 	# clean up old logs and stats
 	$self->cleanup($cleanupLogDir);
-
-	my $resultsDir = "$outputDir/$seqnum";
-	`mkdir -p $resultsDir`;
-	`mv $tmpDir/* $resultsDir/.`;
 
 	$console_logger->error("$errorMessage\n");
 	exit(-1);
@@ -578,11 +537,11 @@ sub stopStatsCollection {
 }
 
 sub getStatsFiles {
-	my ($self)       = @_;
+	my ($self, $tmpDir)       = @_;
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/statistics";
+	my $baseDestinationPath = $tmpDir . "/statistics";
 	my $destinationPath;
 	
 	my $logLevel = $self->getParamValue('logLevel');
@@ -755,13 +714,12 @@ sub cleanLogFiles {
 }
 
 sub getLogFiles {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $pid;
 	my @pids;
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 
-	my $tmpDir = $self->getParamValue('tmpDir');
 	my $baseDestinationPath =  "$tmpDir/logs";
 	my $destinationPath;
 
@@ -838,13 +796,13 @@ sub getLogFiles {
 }
 
 sub getConfigFiles {
-	my ($self)       = @_;
+	my ($self, $tmpDir)       = @_;
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 	my $pid;
 	my @pids;
 
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/configuration";
+	my $baseDestinationPath = $tmpDir . "/configuration";
 	my $destinationPath;
 
 	if ( $self->getParamValue('logLevel') >= 1 ) {
@@ -947,12 +905,12 @@ sub printCsv {
 }
 
 sub getStatsSummary {
-	my ( $self, $seqnum ) = @_;
+	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger              = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $workloadsRef        = $self->workloadsRef;
 	my $logLevel            = $self->getParamValue('logLevel');
 	my $fullFilePath        = $self->getParamValue('fullFilePath');
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/statistics";
+	my $baseDestinationPath = $tmpDir . "/statistics";
 	my $destinationPath;
 	tie( my %csv, 'Tie::IxHash' );
 
@@ -973,7 +931,7 @@ sub getStatsSummary {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $self->getParamValue('tmpDir') );
+		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -985,7 +943,7 @@ sub getStatsSummary {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadSummary( $self->getParamValue('tmpDir') );
+		my $tmpCsvRef = $workload->getWorkloadSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1009,7 +967,7 @@ sub getStatsSummary {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary();
+		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary($tmpDir);
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1048,7 +1006,7 @@ sub getStatsSummary {
 				$usePrefix = 1;
 			}
 
-			my $tmpCsvRef = $workload->getStatsSummary( $baseDestinationPath, $usePrefix );
+			my $tmpCsvRef = $workload->getStatsSummary( $baseDestinationPath, $usePrefix, $tmpDir );
 			my @keys = keys %$tmpCsvRef;
 			foreach my $key (@keys) {
 				$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1100,9 +1058,8 @@ sub getNextRunInfo {
 }
 
 sub writeUsersTxt {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $tmpDir = $self->getParamValue('tmpDir');
 	open( my $fileOut, ">$tmpDir/users.txt" ) or die "Error opening $tmpDir/users.txt:$!";
 
 	my $workloadsRef = $self->workloadsRef;
@@ -1113,11 +1070,10 @@ sub writeUsersTxt {
 }
 
 sub checkUsersTxt {
-	my ($self)         = @_;
+	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
 
-	my $tmpDir = $self->getParamValue('tmpDir');
 	open( my $filein, "$tmpDir/users.txt" ) or do {
 		$console_logger->info("The runOnly runProcedure must be run after a prepareOnly runProcedure.");
 		return 0;

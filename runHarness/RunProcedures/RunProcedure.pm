@@ -456,6 +456,14 @@ sub stopServices {
 	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
 }
 
+sub stopDataManager {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("stopDataManager with logDir $setupLogDir");
+	
+	callMethodOnObjectsParallel1( 'stopDataManager', $self->workloadsRef, $setupLogDir );
+}
+
 sub removeServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -487,6 +495,8 @@ sub cleanupAfterFailure {
 	$self->getConfigFiles();
 
 	## stop the services
+	$self->stopDataManager($tmpDir);
+		
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 

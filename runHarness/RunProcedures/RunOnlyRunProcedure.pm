@@ -162,6 +162,8 @@ override 'run' => sub {
 	if ( $self->getParamValue('stopServices') ) {
 
 		## stop the services
+		$self->stopDataManager($cleanupLogDir);
+		
 		my @tiers = qw(frontend backend data infrastructure);
 		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 

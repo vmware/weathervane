@@ -58,6 +58,7 @@ override 'run' => sub {
 	$self->killOldWorkloadDrivers("/tmp");
 
 	## stop the services
+	$self->stopDataManager($tmpDir);
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 

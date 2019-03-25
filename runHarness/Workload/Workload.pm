@@ -316,6 +316,14 @@ sub stopServices {
 	
 }
 
+sub stopDataManager {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger         = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("stopDataManager with logDir $setupLogDir");
+	
+	callMethodOnObjectsParallel1( 'stopDataManager', $self->appInstancesRef, $setupLogDir );
+}
+
 sub removeServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger         = get_logger("Weathervane::Workload::Workload");

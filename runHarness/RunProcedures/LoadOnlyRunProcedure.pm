@@ -116,6 +116,7 @@ sub run {
 	$self->killOldWorkloadDrivers($setupLogDir);
 
 	$debug_logger->debug("stop services");
+	$self->stopDataManager($setupLogDir);		
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
 	

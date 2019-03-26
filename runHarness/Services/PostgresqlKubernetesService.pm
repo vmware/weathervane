@@ -42,7 +42,7 @@ override 'initialize' => sub {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	$logger->debug("clearDataBeforeStart for $name");
 }
 
@@ -50,7 +50,7 @@ sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $cluster    = $self->host;
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 
 	$logger->debug("clearDataAfterStart for $name");
 
@@ -233,7 +233,7 @@ sub getConfigFiles {
 
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("startStatsCollection");
 
@@ -258,7 +258,7 @@ override 'stopStatsCollection' => sub {
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("stopStatsCollection");
 	# Get interesting views on the pg_stats table
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $cluster = $self->host;
 	
 	open( STATS, ">/tmp/postgresql_stats_$hostname.txt" ) or die "Error opening /tmp/postgresql_stats_$hostname.txt:$!";
@@ -302,7 +302,7 @@ override 'stopStatsCollection' => sub {
 
 override 'getStatsFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("getStatsFiles");
 

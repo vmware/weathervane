@@ -214,7 +214,7 @@ override 'checkConfig' => sub {
 				# use named volumes.  Error if does not exist
 				my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
 				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 					return 0;
 				}
 			}
@@ -226,12 +226,12 @@ override 'checkConfig' => sub {
 				# use named volumes.  Error if does not exist
 				my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
 				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 					return 0;
 				}
 				$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
 				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
+					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 					return 0;
 				}
 			}
@@ -536,7 +536,7 @@ sub getServiceConfigParameters {
 		else {
 
 			# The mongos will be running on this app server
-			$nosqlHostname = $service->host->hostName;
+			$nosqlHostname = $service->host->name;
 			if ( $service->mongosDocker ) {
 				$nosqlHostname = $service->mongosDocker;
 			}

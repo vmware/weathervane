@@ -542,7 +542,7 @@ sub getLogFiles {
 		exit(-1);
 	}
 	elsif ( $pid == 0 ) {
-		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->hostName;
+		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -599,7 +599,7 @@ sub getConfigFiles {
 		exit(-1);
 	}
 	elsif ( $pid == 0 ) {
-		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->hostName;
+		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}

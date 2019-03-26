@@ -150,7 +150,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::AuctionBidKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

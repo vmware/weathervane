@@ -27,11 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'ComputeResource';
 
-has 'hostName' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 has 'ipAddr' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -39,28 +34,10 @@ has 'ipAddr' => (
 	lazy    => 1,
 );
 
-has 'isGuest' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-has 'paramHashRef' => (
-	is      => 'rw',
-	isa     => 'HashRef',
-	default => sub { {} },
-);
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $console_logger = get_logger("Console");
 	
-	my $hostname = $self->getParamValue('hostName');
-	if (!$hostname) {
-		$console_logger->error("Must specify a hostname for all host instances.");
-		exit(-1);
-	}
-	$self->hostName($hostname);
 
 	super();
 
@@ -69,7 +46,7 @@ override 'initialize' => sub {
 sub _get_ipAddr {
 	my ($self) = @_;
 
-	return getIpAddress($self->hostName);
+	return getIpAddress($self->name);
 }
 
 sub registerService {
@@ -98,7 +75,7 @@ sub equals {
 sub toString {
 	my ($self) = @_;
 
-	return "Host name = " . $self->hostName . ", IP Address = " . $self->ipAddr;
+	return "Host name = " . $self->name . ", IP Address = " . $self->ipAddr;
 }
 __PACKAGE__->meta->make_immutable;
 

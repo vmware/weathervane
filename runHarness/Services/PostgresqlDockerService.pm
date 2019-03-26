@@ -42,8 +42,8 @@ override 'initialize' => sub {
 sub stopInstance {
 	my ( $self, $logPath ) = @_;
 
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name             = $self->name;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName          = "$logPath/StopPostgresqlDocker-$hostname-$name-$time.log";
@@ -62,8 +62,8 @@ sub stopInstance {
 override 'create' => sub {
 	my ( $self, $logPath ) = @_;
 
-	my $name             = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name             = $self->name;
+	my $hostname         = $self->host->name;
 	my $host         = $self->host;
 	my $impl             = $self->getImpl();
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
@@ -126,8 +126,8 @@ override 'create' => sub {
 sub startInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name             = $self->name;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName          = "$logPath/StartPostgresqlDocker-$hostname-$name-$time.log";
@@ -157,8 +157,8 @@ sub startInstance {
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
 
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName  = "$logPath/RemovePostgresqlDocker-$hostname-$name-$time.log";
@@ -175,15 +175,15 @@ override 'remove' => sub {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	$logger->debug("clearDataBeforeStart for $name");
 }
 
 sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 
 	$logger->debug("clearDataAfterStart for $name");
 
@@ -203,7 +203,7 @@ sub clearDataAfterStart {
 
 sub doVacuum {
 	my ( $self, $fileout ) = @_;
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	
 	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
 	print $fileout "psql -U auction  -t -q --command=\"vacuum analyze;\"\n";
@@ -222,7 +222,7 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning( $fileout, $name );
 
@@ -241,7 +241,7 @@ sub setPortNumbers {
 sub setExternalPortNumbers {
 	my ($self) = @_;
 	
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
@@ -263,8 +263,8 @@ sub configure {
 
 sub stopStatsCollection {
 	my ($self)      = @_;
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 	my $serviceType = $self->getParamValue('serviceType');
 	my $impl        = $self->getParamValue( $serviceType . "Impl" );
 	my $port        = $self->internalPortMap->{$impl};
@@ -282,8 +282,8 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 	my $serviceType = $self->getParamValue('serviceType');
 	my $impl        = $self->getParamValue( $serviceType . "Impl" );
 	my $port        = $self->internalPortMap->{$impl};
@@ -301,8 +301,8 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 
 	my $logName = "/tmp/PostgresqlStatsEndOfSteadyState-$hostname-$name.log";
 
@@ -312,8 +312,8 @@ sub getStatsFiles {
 
 sub cleanStatsFiles {
 	my ($self)   = @_;
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 
 	my $logName = "/tmp/PostgresqlStatsEndOfSteadyState-$hostname-$name.log";
 
@@ -324,8 +324,8 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -361,8 +361,8 @@ sub parseLogFiles {
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -401,7 +401,7 @@ sub getStatsSummary {
 sub getMaxLoadedUsers {
 	my ($self) = @_;
 	my $logName          = "/dev/null";
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 
 	my $applog;
 	open( $applog, ">$logName" )

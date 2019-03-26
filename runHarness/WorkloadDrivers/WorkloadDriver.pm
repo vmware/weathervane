@@ -73,6 +73,11 @@ has 'portMap' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $paramHashRef = $self->paramHashRef;
+	
+	# Assign a name to this driver
+	my $workloadNum = $self->getWorkloadNum();
+	my $instanceNum = $self->getParamValue("instanceNum");
+	$self->name("driverW${workloadNum}I${instanceNum}")
 
 	my $weathervaneHome        = $paramHashRef->{ 'weathervaneHome' };
 	my $workloadDriverDir = $self->getParamValue('workloadDriverDir');

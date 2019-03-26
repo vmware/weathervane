@@ -92,7 +92,7 @@ override 'startServices' => sub {
 	my $users  = $self->dataManager->getParamValue('maxUsers');
 	my $impl         = $self->getParamValue('workloadImpl');
 
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
@@ -174,7 +174,6 @@ override 'getEdgeAddrsRef' => sub {
 		exit 1;
 	}
 	
-	# Get the nodePort numbers for the ingress-controller-nginx service
 	my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
 	my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
 	

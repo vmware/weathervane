@@ -591,7 +591,7 @@ sub getStatsFiles {
 		# get stats files from hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
-			$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+			$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 			if ( !( -e $destinationPath ) ) {
 				`mkdir -p $destinationPath`;
 			}
@@ -780,7 +780,7 @@ sub getLogFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -858,7 +858,7 @@ sub getConfigFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}

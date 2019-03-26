@@ -105,6 +105,12 @@ has 'removeUrl' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 
+	# Assign a name to this service
+	my $serviceType = $self->getParamValue('serviceType');
+	my $workloadNum = $self->getWorkloadNum();
+	my $appInstanceNum = $self->getAppInstanceNum();
+	my $instanceNum = $self->getParamValue("instanceNum");
+	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}")
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $configDir  = $self->getParamValue('configDir');
@@ -165,6 +171,7 @@ override 'initialize' => sub {
 		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
 	}
 		
+	
 	super();
 
 };
@@ -242,8 +249,8 @@ sub create {
 		return;
 	}
 	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
@@ -269,7 +276,7 @@ sub create {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -383,7 +390,7 @@ sub sanityCheck {
 
 sub isReachable {
 	my ($self, $fileout) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	
 	my $pingResult = `ping -c 1 $hostname`;
 	
@@ -421,7 +428,7 @@ sub useDocker {
 sub getDockerName {
 	my ($self) = @_;
 	
-	return $self->getParamValue("dockerName");
+	return $self->name;
 }
 
 sub getPort {

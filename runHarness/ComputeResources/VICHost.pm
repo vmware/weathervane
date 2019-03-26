@@ -11,60 +11,25 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package GuestHost;
+package VICHost;
 
 use Moose;
 use MooseX::Storage;
-use ComputeResources::Host;
+use ComputeResources::DockerHost;
 use VirtualInfrastructures::VirtualInfrastructure;
 use WeathervaneTypes;
+use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'Host';
-
-has 'vmName' => (
-	is  => 'rw',
-	isa => 'Str',
-	predicate => 'has_vmName',
-);
-
-has 'possibleVmNamesRef' => (
-	is      => 'rw',
-	default => sub { [] },
-	isa     => 'ArrayRef[Str]',
-);
-
-has 'serviceType' => (
-	is  => 'rw',
-	isa => 'ServiceType',
-);
-
-has 'osType' => (
-	is  => 'rw',
-	isa => 'Str',
-);
+extends 'DockerHost';
 
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-	
-	$self->isGuest(1);
-	
 	super();
 };
-
-sub addVmName {
-	my ( $self, $vmName ) = @_;
-	my $possibleVmNamesRef = $self->possibleVmNamesRef;
-	push @$possibleVmNamesRef, $vmName;
-}
-
-sub setVmName {
-	my ( $self, $vmName ) = @_;
-	$self->vmName($vmName);	
-}
 
 __PACKAGE__->meta->make_immutable;
 

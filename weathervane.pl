@@ -330,7 +330,7 @@ $appender->layout($layout);
 $console_logger->add_appender($appender);
 
 my $weathervane_logger = get_logger("Weathervane");
-$weathervane_logger->level($WARN);
+$weathervane_logger->level($DEBUG);
 $layout   = Log::Log4perl::Layout::PatternLayout->new("%d %p> %F{1}:%L %M - %m%n");
 $appender = Log::Log4perl::Appender->new(
 	"Log::Dispatch::File",

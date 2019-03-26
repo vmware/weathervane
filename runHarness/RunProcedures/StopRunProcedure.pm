@@ -65,9 +65,6 @@ override 'run' => sub {
 	# clean up old logs and stats
 	$self->cleanup($tmpDir);
 	
-	# clean out the tmp directory
-	`rm -r $tmpDir/* 2>&1`;
-
 	my $runResult = RunResult->new(
 		'runNum'     => '-1',
 		'isPassable' => 0,

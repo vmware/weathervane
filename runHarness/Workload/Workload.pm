@@ -121,7 +121,7 @@ sub initializeRun {
 	if ( $self->useSuffix ) {
 		$suffix = $self->suffix;
 	}
-	return $self->primaryDriver->initializeRun( $seqnum, $tmpDir, $suffix );
+	return $self->primaryDriver->initializeRun( $seqnum, $tmpDir, $suffix, $tmpDir );
 }
 
 sub startRun {
@@ -132,7 +132,7 @@ sub startRun {
 	if ( $self->useSuffix ) {
 		$suffix = $self->suffix;
 	}
-	return $self->primaryDriver->startRun( $seqnum, $tmpDir, $suffix );
+	return $self->primaryDriver->startRun( $seqnum, $tmpDir, $suffix, $tmpDir );
 }
 
 sub stopRun {
@@ -346,7 +346,7 @@ sub clearDataServicesAfterStart {
 }
 
 sub configureWorkloadDriver {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	my $workloadDriver = $self->primaryDriver;
 
 	my $suffix = "";
@@ -354,7 +354,7 @@ sub configureWorkloadDriver {
 		$suffix = $self->suffix;
 	}
 
-	$workloadDriver->configure( $self->appInstancesRef, $suffix );
+	$workloadDriver->configure( $self->appInstancesRef, $suffix, $tmpDir );
 }
 
 sub cleanStatsFiles {
@@ -436,7 +436,7 @@ sub cleanLogFiles {
 }
 
 sub startStatsCollection {
-	my ($self)            = @_;
+	my ($self, $tmpDir)            = @_;
 	my $console_logger    = get_logger("Console");
 	my $workloadDriver    = $self->primaryDriver;
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
@@ -448,7 +448,7 @@ sub startStatsCollection {
 	$workloadDriver->startAppStatsCollection( $intervalLengthSec, $numIntervals );
 
 	if ( $logLevel >= 3 ) {
-		callMethodOnObjectsParallel( 'startStatsCollection', $self->appInstancesRef );
+		callMethodOnObjectsParallel1( 'startStatsCollection', $self->appInstancesRef, $tmpDir );
 
 		# Start starts collection on workload driver
 		$workloadDriver->startStatsCollection( $intervalLengthSec, $numIntervals );
@@ -729,10 +729,10 @@ sub getAppInstanceStatsSummary {
 }
 
 sub getWorkloadAppStatsSummary {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	tie( my %csv, 'Tie::IxHash' );
 
-	return $self->primaryDriver->getWorkloadAppStatsSummary();
+	return $self->primaryDriver->getWorkloadAppStatsSummary($tmpDir);
 
 }
 
@@ -759,7 +759,7 @@ sub getHostStatsSummary {
 }
 
 sub getStatsSummary {
-	my ( $self, $statsLogPath, $usePrefix ) = @_;
+	my ( $self, $statsLogPath, $usePrefix, $tmpDir ) = @_;
 
 	tie( my %csv, 'Tie::IxHash' );
 	my $newBaseDestinationPath = $statsLogPath;
@@ -768,7 +768,7 @@ sub getStatsSummary {
 	}
 
 	# First get the stats for the workload driver
-	$self->primaryDriver->getStatsSummary( \%csv, $newBaseDestinationPath . "/workloadDriver" );
+	$self->primaryDriver->getStatsSummary( \%csv, $newBaseDestinationPath . "/workloadDriver", $tmpDir );
 
 	# Get the host stats by service type for each app instance
 	my $appInstancesRef = $self->appInstancesRef;

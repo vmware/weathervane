@@ -87,14 +87,6 @@ override 'initialize' => sub {
 	}
 	$self->setParamValue( 'distDir', $distDir );
 	
-	# if the tmpDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $tmpDir = $self->getParamValue('tmpDir');
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue( 'tmpDir', $tmpDir );
-	
 	super();
 
 };

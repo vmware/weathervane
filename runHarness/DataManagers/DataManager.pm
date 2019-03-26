@@ -96,12 +96,6 @@ override 'initialize' => sub {
 	}
 	$self->setParamValue('dbLoaderDir', $dbLoaderDir);
 
-	my $tmpDir    =  $self->getParamValue('tmpDir' ); 
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue('tmpDir', $tmpDir);
-
 	super();
 
 };

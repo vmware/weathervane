@@ -135,7 +135,7 @@ sub getAppInstanceNum {
 sub getDockerName {
 	my ($self) = @_;
 	
-	return $self->getParamValue("dockerName");
+	return $self->name;
 }
 
 sub loadData {

@@ -17,10 +17,11 @@ use Moose;
 use MooseX::Storage;
 use MooseX::ClassAttribute;
 use Moose::Util qw( apply_all_roles );
-use Hosts::LinuxGuest;
-use Hosts::DockerRole;
-use Hosts::VICHost;
-use Hosts::ESXiHost;
+use ComputeResources::LinuxGuest;
+use ComputeResources::DockerRole;
+use ComputeResources::VICHost;
+use ComputeResources
+::ESXiHost;
 use Parameters qw(getParamValue);
 use Log::Log4perl qw(get_logger);
 
@@ -33,7 +34,7 @@ sub getHost {
 	my $logger = get_logger("Weathervane::Factories::HostFactory");
 	my $host;	
 	my $isVIC = $paramsHashRef->{'vicHost'};	
-	my $hostname = $paramsHashRef->{'hostName'};
+	my $hostname = $paramsHashRef->{'name'};
 	
 	if ($isVIC) {
 		$logger->debug("Creating a VIC Host with hostname $hostname");

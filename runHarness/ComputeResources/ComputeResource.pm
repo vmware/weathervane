@@ -27,10 +27,15 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
 
-has 'isCluster' => (
+has 'name' => (
 	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
+	isa => 'Str',
+);
+
+has 'servicesRef' => (
+	is      => 'rw',
+	default => sub { [] },
+	isa     => 'ArrayRef[Service]',
 );
 
 override 'initialize' => sub {
@@ -72,7 +77,7 @@ sub getConfigFiles {
 sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::ComputeResources::ComputeResource");
-	$logger->debug("cleanLogFiles host = ", $self->hostName);
+	$logger->debug("cleanLogFiles host = ", $self->name);
 
 }
 

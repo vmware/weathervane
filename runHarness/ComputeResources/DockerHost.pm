@@ -11,22 +11,66 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package DockerRole;
+package DockerHost;
 
-use Moose::Role;
 use MooseX::Storage;
 use MIME::Base64;
 use POSIX;
 use Log::Log4perl qw(get_logger);
 use Utils qw(getIpAddress);
-
+use ComputeResources::Host
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
+extends 'Host';
+
+has 'dockerHostString' => (
+	is  => 'rw',
+	isa => 'Str',
+);
+
+# used to track docker names that are used on this host
+has 'dockerNameHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
+override 'initialize' => sub {
+	my ( $self, $paramHashRef ) = @_;
+	my $hostname   = $self->name;
+	my $dockerPort = $self->getParamValue('dockerHostPort');
+	$self->dockerHostString( "DOCKER_HOST=" . $hostname . ":" . $dockerPort );
+		
+	super();
+};
+
+override 'registerService' => sub {
+	my ( $self, $serviceRef ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
+	my $servicesRef    = $self->servicesRef;
+
+	my $dockerName = $serviceRef->name;
+	$logger->debug( "Registering service $dockerName with host ",
+		$self->name );
+
+	if ( $serviceRef->useDocker() ) {
+		if ( exists $self->dockerNameHashRef->{$dockerName} ) {
+			$console_logger->error( "Have two services on host ",
+				$self->name, " with docker name $dockerName." );
+			exit(-1);
+		}
+		$self->dockerNameHashRef->{$dockerName} = 1;
+	}
+
+	push @$servicesRef, $serviceRef;
+
+};
 sub dockerExists {
 	my ( $self, $logFileHandle, $name ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;
 	
 	my $out = `$dockerHostString docker ps -a`;
@@ -50,7 +94,7 @@ sub dockerExists {
 
 sub dockerIsRunning {
 	my ( $self, $logFileHandle, $name ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -82,7 +126,7 @@ sub dockerIsRunning {
 
 sub dockerStop {
 	my ( $self, $logFileHandle, $name ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -96,17 +140,17 @@ sub dockerStop {
 
 sub dockerStopAndRemove {
 	my ( $self, $logFileHandle, $name ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
-	print $logFileHandle "dockerStopAndRemove for $name " . $self->hostName .  " \n";
+	print $logFileHandle "dockerStopAndRemove for $name " . $self->name .  " \n";
 	
 	my $dockerHostString  = $self->dockerHostString;
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
-	print $logFileHandle "dockerStopAndRemove $name exists on" . $self->hostName .  "\n";
+	print $logFileHandle "dockerStopAndRemove $name exists on" . $self->name .  "\n";
 		$logger->debug("name = $name, exists");
 		if ($self->dockerIsRunning($logFileHandle, $name)) {
-			print $logFileHandle "dockerStopAndRemove $name is running on" . $self->hostName .  "\n";
+			print $logFileHandle "dockerStopAndRemove $name is running on" . $self->name .  "\n";
 			$logger->debug("name = $name, isRunning.  Stopping.");
 			my $out = `$dockerHostString docker stop $name`;
 			print $logFileHandle "$dockerHostString docker stop $name\n";
@@ -125,7 +169,7 @@ sub dockerStopAndRemove {
 
 sub dockerStart {
 	my ( $self, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -140,7 +184,7 @@ sub dockerStart {
 		my $logcontents = $self->dockerGetLogs($logFileHandle, $name);
 		print $logFileHandle "Error: Container did not start.  Logs:\n";
 		print $logFileHandle $logcontents;
-		die "Docker container $name did not start on host " . $self->hostName;
+		die "Docker container $name did not start on host " . $self->name;
 	}	
 	
 	return $self->dockerPort( $name);
@@ -149,7 +193,7 @@ sub dockerStart {
 
 sub dockerNetIsHostOrExternal {
 	my ( $self, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerNetIsHostOrExternal dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
 
@@ -170,12 +214,12 @@ sub dockerNetIsHostOrExternal {
 		}
 	}
 	
-	die("Network $dockerNetName not found on host ", $self->hostName);
+	die("Network $dockerNetName not found on host ", $self->name);
 }
 
 sub dockerNetIsExternal {
 	my ( $self, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerNetIsExternal dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
 
@@ -196,7 +240,7 @@ sub dockerNetIsExternal {
 		}
 	}
 	
-	die("Network $dockerNetName not found on host ", $self->hostName);
+	die("Network $dockerNetName not found on host ", $self->name);
 }
 
 sub dockerPort {
@@ -218,7 +262,7 @@ sub dockerPort {
 
 sub dockerRestart {
 	my ( $self, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	my $dockerHostString  = $self->dockerHostString;
 	
@@ -230,7 +274,7 @@ sub dockerRestart {
 		my $logcontents = $self->dockerGetLogs($logFileHandle, $name);
 		print $logFileHandle "Error: Container did not start.  Logs:\n";
 		print $logFileHandle $logcontents;
-		die "Docker container $name did not start on host " . $self->hostName;
+		die "Docker container $name did not start on host " . $self->name;
 	}	
 	
 	$out = `$dockerHostString docker port $name`;
@@ -250,7 +294,7 @@ sub dockerRestart {
 
 sub dockerKill {
 	my ( $self, $signal, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerKill name = $name");
 	my $dockerHostString  = $self->dockerHostString;
 	
@@ -263,7 +307,7 @@ sub dockerKill {
 
 sub dockerReload {
 	my ( $self, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	my $dockerHostString  = $self->dockerHostString;
 	
@@ -290,8 +334,8 @@ sub dockerReload {
 
 sub dockerPull {
 	my ( $self, $logFileHandle, $impl) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	$logger->debug("dockerPull for host ", $self->hostName, ", impl = $impl");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	$logger->debug("dockerPull for host ", $self->name, ", impl = $impl");
 	my $version  = $self->getParamValue('dockerWeathervaneVersion');
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -308,7 +352,7 @@ sub dockerPull {
 sub dockerCreate {
 	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
 		$envVarHashRef, $dockerConfigHashRef, $entryPoint, $cmd) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 
 	my $version  = $self->getParamValue('dockerWeathervaneVersion');
@@ -416,7 +460,7 @@ sub dockerCreate {
 sub dockerRun {
 	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
 		$envVarHashRef, $dockerConfigHashRef, $entryPoint, $cmd, $needsTty) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name, impl = $impl, envVarHashRef values = " . (values %$envVarHashRef));
 
 	my $version  = $self->getParamValue('dockerWeathervaneVersion');
@@ -528,7 +572,7 @@ sub dockerRun {
 		my $logcontents = $self->dockerGetLogs($logFileHandle, $name);
 		print $logFileHandle "Error: Container did not start.  Logs:\n";
 		print $logFileHandle $logcontents;
-		$logger->error("Docker container $name did not start on host " . $self->hostName);
+		$logger->error("Docker container $name did not start on host " . $self->name);
 	}	
 	
 	$out = `$dockerHostString docker port $name`;
@@ -549,7 +593,7 @@ sub dockerRun {
 
 sub dockerGetLogs {
 	my ( $self, $logFileHandle, $name ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -563,7 +607,7 @@ sub dockerGetLogs {
 
 sub dockerFollowLogs {
 	my ( $self, $logFileHandle, $name, $outFile ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerFollowLogs name = $name, outfile = $outFile, dockerHostString = $dockerHostString");
@@ -578,7 +622,7 @@ sub dockerFollowLogs {
 sub dockerVolumeCreate {
 	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
 	print $logFileHandle "dockerVolumeCreate $volumeName\n";
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerVolumeCreate $volumeName");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -598,7 +642,7 @@ sub dockerVolumeCreate {
 
 sub dockerVolumeExists {
 	my ( $self, $volumeName ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerVolumeExists $volumeName");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -619,7 +663,7 @@ sub dockerVolumeExists {
 sub dockerRm {
 	my ( $self, $logFileHandle, $name ) = @_;
 	print $logFileHandle "dockerRm $name\n";
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -646,7 +690,7 @@ sub dockerGetIp {
 
 sub dockerGetExternalNetIP {
 	my ( $self, $name, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
 	my $cmd = "$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.$dockerNetName.IPAddress }}' $name 2>&1";
@@ -659,8 +703,8 @@ sub dockerGetExternalNetIP {
 
 sub dockerExec {
 	my ( $self, $logFileHandle, $name, $commandString ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
-	my $hostname = $self->hostName;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	my $hostname = $self->name;
 	my $dockerHostString  = $self->dockerHostString;
 	
 	$logger->debug("name = $name, hostname = $hostname");
@@ -676,7 +720,7 @@ sub dockerExec {
 
 sub dockerCopyTo {
 	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerCopyTo serviceName = $name");
@@ -692,7 +736,7 @@ sub dockerCopyTo {
 
 sub dockerCopyFrom {
 	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerRole");
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerCopyTo serviceName = $name");
 	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile 2>&1";
@@ -783,5 +827,88 @@ sub convertK8sMemString {
 	}
 	return "$dockerMemString$suffix";
 }
+
+override 'startStatsCollection' => sub {
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	super();
+
+	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
+	my $console_logger   = get_logger("Console");
+	my $hostname         = $self->name;
+
+};
+
+override 'stopStatsCollection' => sub {
+	my ($self) = @_;
+	super();
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	$logger->debug( "StopStatsCollect for " . $self->name );
+
+};
+
+override 'getStatsFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	super();
+
+	my $hostname         = $self->name;
+
+};
+
+override 'cleanStatsFiles' => sub {
+	my ($self) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+		
+	super();
+
+};
+
+override 'getLogFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	super();
+};
+
+override 'cleanLogFiles' => sub {
+	my ($self)   = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	super();
+};
+
+override 'parseLogFiles' => sub {
+	my ($self) = @_;
+	super();
+
+};
+
+override 'getConfigFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	super();
+
+};
+
+override 'parseStats' => sub {
+	my ( $self, $storagePath ) = @_;
+	super();
+
+};
+
+override 'getStatsSummary' => sub {
+	my ( $self, $statsFileDir ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	my $hostname = $self->name;
+	$logger->debug("getStatsSummary on $hostname.");
+
+	my $csvRef = ParseSar::parseSar( $statsFileDir, "${hostname}_sar.txt" );
+
+	my $superCsvRef = super();
+	for my $key ( keys %$superCsvRef ) {
+		$superCsvRef->{$key} = $superCsvRef->{$key};
+	}
+	return $csvRef;
+};
+
+__PACKAGE__->meta->make_immutable;
 
 1;

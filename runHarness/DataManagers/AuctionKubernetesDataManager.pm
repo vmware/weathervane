@@ -178,7 +178,7 @@ sub prepareData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
@@ -259,7 +259,7 @@ sub pretouchData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 	
@@ -648,7 +648,7 @@ sub cleanData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;
 

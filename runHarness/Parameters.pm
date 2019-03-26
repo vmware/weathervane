@@ -32,24 +32,6 @@ BEGIN {
 	  qw(getParamDefault getParamType getParamKeys getParamValue setParamValue usage fullUsage mergeParameters);
 }
 
-my @constructedNameParameters = ( "hostName", "vmName" );
-my @instancesWithConstructedNames = (
-	"drivers", "nosqlServers", "dbServers",
-	"coordinationServers", "webServers",   "msgServers",
-	"appServers",      "viHosts",      "viMgmtHostInstance",
-	"auctionBidServers", "dataManagerInstance"
-);
-
-my @dockerNameParameters = ( "dockerName" );
-my @instancesWithDockerName = (
-	"drivers", "nosqlServers", "dbServers",
-	"coordinationServers", "webServers",   "msgServers",
-	"appServers",    "auctionBidServers",	"dataManagerInstance"
-);
-
-my @constructedAppInstanceNameParameters     = ("appInstanceName");
-my @instancesWithConstructedAppInstanceNames = ( "appInstances", );
-
 my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
@@ -421,7 +403,7 @@ sub getMostSpecificValue {
 }
 
 sub getInstanceParamHashRef {
-	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $instanceNum, $allParamsRef, $useAllSuffixes )
+	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $instanceNum, $allParamsRef )
 	  = @_;
 
 	my %instanceParamHash;
@@ -432,104 +414,28 @@ sub getInstanceParamHashRef {
 	}
 	my $isa = $Parameters::parameters{$instanceKey}->{"isa"};
 
-	my $appInstanceSuffix = "";
+	my $appInstanceSuffix = "A";
 	my $appInstanceNum    = "";
-	if (   $useAllSuffixes
-		&& ( exists $parentHashRef->{'appInstanceSuffix'} )
+	if (( exists $parentHashRef->{'appInstanceSuffix'} )
 		&& ( $parentHashRef->{'appInstanceSuffix'} )
 		&& ( exists $parentHashRef->{'appInstanceNum'} )
 		&& ( $parentHashRef->{'appInstanceNum'} ) )
 	{
-		$appInstanceSuffix = $parentHashRef->{'appInstanceSuffix'};
 		$appInstanceNum    = $parentHashRef->{'appInstanceNum'};
 	}
-	my $wkldSuffix = "";
+	my $wkldSuffix = "W";
 	my $wkldNum    = "";
-	if (   $useAllSuffixes
-		&& ( exists $parentHashRef->{'workloadSuffix'} )
-		&& ( $parentHashRef->{'workloadSuffix'} )
-		&& ( exists $parentHashRef->{'workloadNum'} )
+	if (( exists $parentHashRef->{'workloadNum'} )
 		&& ( $parentHashRef->{'workloadNum'} ) )
 	{
-		$wkldSuffix = $parentHashRef->{'workloadSuffix'};
 		$wkldNum    = $parentHashRef->{'workloadNum'};
 	}
 
 	# Iterate through the parameters, adding the most specific value to the
 	# paramHash.  Construct the parameters that must be built for specific instance types
 	foreach my $param (@$allParamsRef) {
-
 		my $value = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $param );
-
-		# Construct the parameters that are not set and so should be constructed for certain instance types
-		if ( !$value ) {
-
-			# Add the parameters that must be constructed based on the default rules
-			if ( ( $param ~~ @constructedNameParameters ) && ( $instanceKey ~~ @instancesWithConstructedNames ) ) {
-
-				# No name was explicitly specified, so we need to construct one.
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				my $suffix = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $isa . "Suffix" );
-				$value =
-				    $hostnamePrefix
-				  . $wkldSuffix
-				  . $wkldNum
-				  . $appInstanceSuffix
-				  . $appInstanceNum
-				  . $suffix
-				  . $instanceNum;
-			}
-
-			if ( ( $param ~~ @dockerNameParameters ) && ( $instanceKey ~~ @instancesWithDockerName ) ) {
-
-				# No name was explicitly specified, so we need to construct one.
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				my $suffix = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $isa . "Suffix" );
-				$value =
-				    $hostnamePrefix
-				  . $wkldSuffix
-				  . $wkldNum
-				  . $appInstanceSuffix
-				  . $appInstanceNum
-				  . $suffix
-				  . $instanceNum
-				  . "D";
-			}
-
-			if (   ( $param ~~ @constructedAppInstanceNameParameters )
-				&& ( $instanceKey ~~ @instancesWithConstructedAppInstanceNames ) )
-			{
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				if ($useAllSuffixes) {
-					$wkldSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadSuffix" );
-					$wkldNum = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadNum" );
-					if ($wkldSuffix) {
-						$wkldSuffix .= $wkldNum;
-					}
-					else {
-						$wkldSuffix = "W" . $wkldNum;
-					}
-
-					$appInstanceSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "appInstanceSuffix" );
-					if ($appInstanceSuffix) {
-						$appInstanceSuffix .= $instanceNum;
-					}
-					else {
-						$appInstanceSuffix = "I" . $instanceNum;
-					}
-				}
-				$value = $hostnamePrefix . $wkldSuffix . $appInstanceSuffix;
-
-			}
-
-		}
 		$instanceParamHash{$param} = $value;
-
 	}
 
 	# Set the instanceNum in the params
@@ -543,10 +449,7 @@ sub getInstanceParamHashRef {
 # The startingInstanceNumber is used to assign instanceNumbers to instance
 # parameters that require a number.
 sub getDefaultInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey, $startingInstanceNum, $useAllSuffixes ) = @_;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
+	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey, $startingInstanceNum ) = @_;
 
 	my @instanceParamHashRefs = ();
 	my $isa                   = $Parameters::parameters{$instanceKey}->{"isa"};
@@ -559,8 +462,7 @@ sub getDefaultInstanceParamHashRefs {
 	  )
 	{
 		my $instanceParamHashRef =
-		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $instanceNum, $allParamsRef,
-			$useAllSuffixes );
+		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $instanceNum, $allParamsRef);
 		push @instanceParamHashRefs, $instanceParamHashRef;
 	}
 
@@ -572,11 +474,8 @@ sub getDefaultInstanceParamHashRefs {
 # The startingInstanceNumber is used to assign instanceNumbers to instance
 # parameters that require a number.
 sub getInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey, $startingInstanceNum, $useAllSuffixes ) =
+	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey, $startingInstanceNum ) =
 	  @_;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
 
 	my @instanceParamHashRefs = ();
 	my $instanceNum           = $startingInstanceNum;
@@ -588,7 +487,7 @@ sub getInstanceParamHashRefs {
 
 		my $instanceParamHashRef =
 		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
-			$allParamsRef, $useAllSuffixes );
+			$allParamsRef );
 		push @instanceParamHashRefs, $instanceParamHashRef;
 
 		$instanceNum++;
@@ -601,11 +500,8 @@ sub getInstanceParamHashRefs {
 # dataManager, etc.
 # Instance number for singletons is assumed to be 1
 sub getSingletonInstanceParamHashRef {
-	my ( $paramsHashRef, $parentParamHashRef, $instanceKey, $useAllSuffixes ) = @_;
+	my ( $paramsHashRef, $parentParamHashRef, $instanceKey ) = @_;
 	my $instanceNum = 1;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
 	my $instanceHashRef = {};
 	if ( exists $parentParamHashRef->{$instanceKey} ) {
 		$instanceHashRef = $parentParamHashRef->{$instanceKey};
@@ -618,7 +514,7 @@ sub getSingletonInstanceParamHashRef {
 	my $allParamsRef = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, $instanceHashRef );
 
 	return getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
-		$allParamsRef, $useAllSuffixes );
+		$allParamsRef );
 
 }
 
@@ -910,38 +806,6 @@ $parameters{"auctionBidServers"} = {
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "auctionBidServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"hostName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"vmName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"dockerName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"appInstanceName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2388,14 +2252,6 @@ $parameters{"postgresqlLogVolume"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlLogVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "20Gi",
-	"usageText" => "",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlConfDir"} = {
 	"type"      => "=s",
 	"default"   => "/mnt/dbData/postgresql",
@@ -2520,39 +2376,6 @@ $parameters{"rampupInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"hostnamePrefix"} = {
-	"type"      => "=s",
-	"default"   => "Auction",
-	"parent"    => "",
-	"usageText" => "This is the prefix used for hostnames and VM names.",
-	"showUsage" => 1,
-};
-
-$parameters{"appInstanceSuffix"} = {
-	"type"      => "=s",
-	"default"   => "I",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"useAllSuffixes"} = {
-	"type"    => "!",
-	"default" => JSON::false,
-	"parent"  => "",
-	"usageText" =>
-	  "Controls whether to use workload and appInstance suffixes in hostnames when only one workload or appInstance.",
-	"showUsage" => 0,
-};
-
-$parameters{"workloadSuffix"} = {
-	"type"      => "=s",
-	"default"   => "W",
-	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };

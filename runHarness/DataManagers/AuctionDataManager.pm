@@ -68,7 +68,7 @@ sub startAuctionDataManagerContainer {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	
 	$self->host->dockerStopAndRemove( $applog, $name );
 
@@ -146,7 +146,7 @@ sub stopAuctionDataManagerContainer {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 
 	$self->host->dockerStopAndRemove( $applog, $name );
 }
@@ -222,7 +222,7 @@ sub prepareData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $maxUsers = $self->getParamValue('maxUsers');
 	my $appInstance    = $self->appInstance;
@@ -299,7 +299,7 @@ sub pretouchData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 
@@ -634,8 +634,8 @@ sub loadData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
@@ -707,8 +707,8 @@ sub isDataLoaded {
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
-	my $hostname = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name        = $self->name;
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $applog;
@@ -741,7 +741,7 @@ sub cleanData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 
 	my $appInstance = $self->appInstance;
 	my $retVal      = 0;

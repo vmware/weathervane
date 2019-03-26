@@ -189,7 +189,7 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	my $portMapRef = $self->host->dockerPort($name );
 
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
@@ -222,9 +222,9 @@ sub configureAfterStart {
 	my ($self, $logPath, $mongosHostPortListRef)            = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger = get_logger("Weathervane::Services::MongodbService");
-	my $name     = $self->getParamValue('dockerName');
+	my $name     = $self->name;
 	my $host = $self->host;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $impl     = $self->getImpl();
 
 	my $logName = "$logPath/ConfigureAfterStartMongodbDocker-$hostname-$name.log";
@@ -520,9 +520,9 @@ sub startMongodServers {
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $host = $nosqlServer->host;
-		my $hostname = $host->hostName;
+		my $hostname = $host->name;
 		my $impl     = $nosqlServer->getImpl();
-		my $name        = $nosqlServer->getParamValue('dockerName');
+		my $name        = $nosqlServer->name;
 		
 		my %volumeMap;
 		if ($self->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
@@ -588,8 +588,8 @@ sub startMongocServers {
 	while ( $curCfgSvr <= $self->numConfigServers ) {
 
 		foreach my $nosqlServer (@$nosqlServersRef) {
-			$logger->debug( "Creating config server $curCfgSvr on ", $nosqlServer->host->hostName );
-			print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->hostName . "\n";
+			$logger->debug( "Creating config server $curCfgSvr on ", $nosqlServer->host->name );
+			print $dblog "Creating config server $curCfgSvr on " . $nosqlServer->host->name . "\n";
 		
 			my $host = $nosqlServer->host;
 			my %volumeMap;
@@ -642,7 +642,7 @@ sub startMongocServers {
 				$nosqlServer->portMap->{"mongoc$curCfgSvr"} = $configPort;
 			}
 
-			my $mongoHostname    = $nosqlServer->host->hostName;
+			my $mongoHostname    = $nosqlServer->host->name;
 			if ( $configdbString ne "" ) {
 				$configdbString .= ",";
 			} else {
@@ -743,7 +743,7 @@ sub startMongosServers {
 	my %hostsMongosCreated;
 	my $numMongos = 0;
 	foreach my $appServer (@$serversRef) {
-		my $appHostname = $appServer->host->hostName;
+		my $appHostname = $appServer->host->name;
 		my $appIpAddr   = $appServer->host->ipAddr;
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $appIpAddr;
 
@@ -842,7 +842,7 @@ sub startMongosServers {
 		push @mongosSvrHostnames, $appHostname;
 		push @mongosSvrPorts, $appServer->internalPortMap->{'mongos'};
 		$logger->debug(
-			"Started mongos on ", $appServer->host->hostName,
+			"Started mongos on ", $appServer->host->name,
 			".  Port number is ", $appServer->internalPortMap->{'mongos'}
 		);
 
@@ -898,7 +898,7 @@ sub stopMongodServers {
 	#  stop all of the mongod servers
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServer (@$nosqlServersRef) {	
-		my $name     = $nosqlServer->getParamValue('dockerName');
+		my $name     = $nosqlServer->name;
 		my $host = $nosqlServer->host;
 		$host->dockerStopAndRemove($dblog, $name );
 	}
@@ -947,7 +947,7 @@ sub stopMongosServers {
 		if ( exists $hostsMongosStopped{$ipAddr} ) {
 			next;
 		}
-		$logger->debug("Stopping mongos on " . $server->host->hostName);
+		$logger->debug("Stopping mongos on " . $server->host->name);
 		$hostsMongosStopped{$ipAddr} = 1;
 		$server->host->dockerStopAndRemove( $dblog, $dockerName );
 	}
@@ -956,14 +956,14 @@ sub stopMongosServers {
 sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	$logger->debug("clearDataAfterStart for $name");
 }
 
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name        = $self->name;
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
 	$logger->debug("clearDataBeforeStart for $name");
 	
@@ -985,7 +985,7 @@ sub isUp {
 sub isRunning {
 	my ( $self, $fileout ) = @_;
 
-	return $self->host->dockerIsRunning( $fileout, $self->getParamValue('dockerName') );
+	return $self->host->dockerIsRunning( $fileout, $self->name );
 
 }
 
@@ -1000,13 +1000,13 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 }
 
 sub cleanStatsFiles {
 	my ($self)   = @_;
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 
 	my $out = `rm -f /tmp/mongostat_${hostname}-$name.txt 2>&1`;
 
@@ -1015,8 +1015,8 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name        = $self->getParamValue('dockerName');
-	my $hostname    = $self->host->hostName;
+	my $name        = $self->name;
+	my $hostname    = $self->host->name;
 	my $appInstance = $self->appInstance;
 	
 	
@@ -1063,7 +1063,7 @@ sub getLogFiles {
 				my $configServerHost = $configServer->host;
 				my $logContents =
 				  $configServerHost->dockerGetLogs( $dblog, "mongoc$curCfgSvr-W${wkldNum}I${appInstNum}" );
-				$hostname = $configServerHost->hostName;
+				$hostname = $configServerHost->name;
 
 				open( $logfile, ">$logpath/mongoc$curCfgSvr-$hostname.log" )
 				  or die "Error opening $logpath/mongoc$curCfgSvr-$hostname.log: $!\n";
@@ -1095,7 +1095,7 @@ sub getLogFiles {
 				$hostsMongosCreated{$appIpAddr} = 1;
 
 				my $logContents = $appServer->host->dockerGetLogs( $dblog, "mongos" );
-				$hostname = $appServer->host->hostName;
+				$hostname = $appServer->host->name;
 				open( $logfile, ">$logpath/mongos-$hostname.log" )
 				  or die "Error opening $logpath/mongos-$hostname.log: $!\n";
 
@@ -1109,7 +1109,7 @@ sub getLogFiles {
 			my $localMongoPort;
 			if ( !exists $hostsMongosCreated{$dataManagerIpAddr} ) {
 				my $logContents = $dataManagerDriver->host->dockerGetLogs( $dblog, "mongos" );
-				$hostname = $dataManagerDriver->host->hostName;
+				$hostname = $dataManagerDriver->host->name;
 				open( $logfile, ">$logpath/mongos-$hostname.log" )
 				  or die "Error opening $logpath/mongos-$hostname.log: $!\n";
 
@@ -1140,8 +1140,8 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 	my $appInstance = $self->appInstance;
 	`mkdir -p $destinationPath`;
 

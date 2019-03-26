@@ -56,12 +56,12 @@ override 'registerService' => sub {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $servicesRef    = $self->servicesRef;
 
-	my $dockerName = $serviceRef->getDockerName();
-	$logger->debug( "Registering service $dockerName with cluster ",
+	my $name = $serviceRef->name;
+	$logger->debug( "Registering service $name with cluster ",
 		$self->clusterName );
 
 	if ( $serviceRef->useDocker() ) {
-			$console_logger->error( "Service $dockerName running on cluster ",
+			$console_logger->error( "Service $name running on kubernetesCluster ",
 				$self->clusterName, " should not have useDocker set to true." );
 			exit(-1);
 	}

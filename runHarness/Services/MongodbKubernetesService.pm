@@ -194,7 +194,7 @@ sub clearDataAfterStart {
 
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $logger = get_logger("Weathervane::Services::MongodbKubernetesService");
 	$logger->debug("clearDataBeforeStart for $name");
 	
@@ -210,7 +210,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::MongodbKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

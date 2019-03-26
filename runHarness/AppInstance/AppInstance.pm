@@ -28,6 +28,11 @@ use namespace::autoclean;
 
 extends 'Instance';
 
+has 'name' => (
+	is  => 'rw',
+	isa => 'Str',
+);
+
 has 'users' => (
 	is  => 'rw',
 	isa => 'Int',
@@ -131,6 +136,11 @@ override 'initialize' => sub {
 	super();
 
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+
+	# Assign a name to this service
+	my $workloadNum = $self->getWorkloadNum();
+	my $appInstanceNum = $self->getAppInstanceNum();
+	$self->name("W${workloadNum}A${appInstanceNum}")
 
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
 	$self->minRateStep( $self->getParamValue('minRateStep') );
@@ -245,21 +255,21 @@ sub getTotalNumOfServiceType {
 }
 
 sub getServiceByTypeAndName {
-	my ( $self, $serviceType, $dockerName ) = @_;
+	my ( $self, $serviceType, $name ) = @_;
 	my $servicesByTypeHashRef = $self->servicesByTypeHashRef;
 	my $servicesListRef       = $servicesByTypeHashRef->{$serviceType};
 	my $logger                = get_logger("Weathervane::AppInstance::AppInstance");
 
 	foreach my $service (@$servicesListRef) {
-		if ( $service->getParamValue("dockerName") eq $dockerName ) {
-			$logger->debug( "getServiceByTypeAndName for type $serviceType and name $dockerName "
+		if ( $service->name eq $name ) {
+			$logger->debug( "getServiceByTypeAndName for type $serviceType and name $name "
 				  . "returning service on host "
-				  . $service->host->hostName );
+				  . $service->host->name );
 			return $service;
 		}
 	}
 
-	$logger->debug( "getServiceByTypeAndName for type $serviceType and name $dockerName. " . "Service not found." );
+	$logger->debug( "getServiceByTypeAndName for type $serviceType and name $name. " . "Service not found." );
 	return "";
 }
 
@@ -790,7 +800,7 @@ sub startServices {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl         = $self->getParamValue('workloadImpl');
 	
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
@@ -832,7 +842,7 @@ sub stopServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl   = $self->getParamValue('workloadImpl');
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	$logger->debug("stopServices for serviceTier $serviceTier, workload ",
 		$self->getParamValue('workloadNum'),
 		", appInstance ",
@@ -1031,7 +1041,7 @@ sub isUp {
 	my $allUp = 1;
 	my $isUp;
 
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	my $logName         = "$logPath/isUp-$appInstanceName.log";
 	my $log;
 	open( $log, " > $logName " ) or die " Error opening $logName: $!";
@@ -1053,7 +1063,7 @@ sub isUp {
 					# no more retries so give an error
 					my $hostname = $service->host->clusterName;
 					if (!$hostname) {
-						$hostname = $service->host->hostName;
+						$hostname = $service->host->name;
 					}
 					$console_logger->error( "Couldn't start $serviceType "
 						  . $service->getImpl() . " on "
@@ -1088,7 +1098,7 @@ sub isUpDataServices {
 	my $allUp;
 	my $impl = $self->getParamValue('workloadImpl');
 
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	my $logName         = "$logPath/isUpDataServices-$appInstanceName.log";
 	my $log;
 	open( $log, " > $logName " ) or die " Error opening $logName: $!";
@@ -1112,7 +1122,7 @@ sub isUpDataServices {
 						# no more retries so give an error
 						$console_logger->error( "Couldn't start $serviceType "
 							  . $service->getImpl() . " on "
-							  . $service->host->hostName
+							  . $service->host->name
 							  . ". Check logs for run. " );
 					}
 				}
@@ -1317,7 +1327,7 @@ sub cleanStatsFiles {
 			my $servicesRef = $self->getAllServicesByType($serviceType);
 			foreach my $service (@$servicesRef) {
 				if ( $service->isReachable() ) {
-					$logger->debug( ": CleanStatsFiles for " . $service->getParamValue('dockerName') . "\n" );
+					$logger->debug( ": CleanStatsFiles for " . $service->name . "\n" );
 					$pid = fork();
 					if ( !defined $pid ) {
 						$logger->error("Couldn't fork a process: $!");
@@ -1357,7 +1367,7 @@ sub cleanLogFiles {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			if ( $service->isReachable() ) {
-				$logger->debug( ": cleanLogFiles for " . $service->getParamValue('dockerName') . "\n" );
+				$logger->debug( ": cleanLogFiles for " . $service->name . "\n" );
 				$pid = fork();
 				if ( !defined $pid ) {
 					$logger->error("Couldn't fork a process: $!");
@@ -1445,7 +1455,7 @@ sub getStatsFiles {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
 			if ( $service->isReachable() ) {
-				my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->hostName;
+				my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $service->host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -1488,7 +1498,7 @@ sub getLogFiles {
 					if ($service->host->isCluster) {
 						$name = $service->host->clusterName;
 					} else {
-						$name = $service->host->hostName;
+						$name = $service->host->name;
 					}
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
@@ -1549,7 +1559,7 @@ sub getConfigFiles {
 					if ($service->host->isCluster) {
 						$name = $service->host->clusterName;
 					} else {
-						$name = $service->host->hostName;
+						$name = $service->host->name;
 					}
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {

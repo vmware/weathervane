@@ -29,7 +29,6 @@ has 'paramHashRef' => (
 
 sub initialize {
 	my ( $self ) = @_;
-
 }
 
 sub getParamValue {

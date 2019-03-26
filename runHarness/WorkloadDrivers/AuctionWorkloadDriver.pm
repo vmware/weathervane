@@ -327,15 +327,15 @@ sub createRunConfigHash {
 
 	$runRef->{"name"} = "runW${workloadNum}";
 
-	$runRef->{"statsHost"}          = $self->host->hostName;
+	$runRef->{"statsHost"}          = $self->host->name;
 	$runRef->{"portNumber"}         = $port;
 	$runRef->{"statsOutputDirName"} = "/tmp";
 
 	$runRef->{"hosts"} = [];
-	push @{ $runRef->{"hosts"} }, $self->host->hostName;
+	push @{ $runRef->{"hosts"} }, $self->host->name;
 	foreach my $secondary (@$secondariesRef) {
-		$logger->debug("createRunConfigHash adding host " . $secondary->host->hostName);
-		push @{ $runRef->{"hosts"} }, $secondary->host->hostName;
+		$logger->debug("createRunConfigHash adding host " . $secondary->host->name);
+		push @{ $runRef->{"hosts"} }, $secondary->host->name;
 	}
 
 	$runRef->{"workloads"} = [];
@@ -629,7 +629,7 @@ sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum    = $driver->getParamValue('workloadNum');
-	my $name        = $driver->getParamValue('dockerName');
+	my $name        = $driver->name;
 		
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -701,7 +701,7 @@ sub startAuctionWorkloadDriverContainer {
 sub stopAuctionWorkloadDriverContainer {
 	my ( $self, $applog, $driver ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $name        = $driver->getParamValue('dockerName');
+	my $name        = $driver->name;
 
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -736,10 +736,10 @@ sub initializeRun {
 	foreach my $secondary (@$secondariesRef) {
 		my $pid              = fork();
 		if ( $pid == 0 ) {
-			my $hostname = $secondary->host->hostName;
+			my $hostname = $secondary->host->name;
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
 			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName        = $secondary->getParamValue('dockerName');
+			my $secondaryName        = $secondary->name;
 			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
 			exit;
 		}
@@ -750,7 +750,7 @@ sub initializeRun {
 	if ( $pid == 0 ) {
 		$logger->debug("Starting primary driver for workload $workloadNum");
 		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
-		my $name        = $self->getParamValue('dockerName');
+		my $name        = $self->name;
 		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
 		exit;
 	}
@@ -766,7 +766,7 @@ sub initializeRun {
 		foreach my $driver (@$driversRef) {
 			my $isUp = $driver->isUp();
 			$logger->debug( "For driver "
-				  . $driver->host->hostName
+				  . $driver->host->name
 				  . " isUp returned $isUp" );
 			if ( !$isUp ) {
 				$allUp = 0;
@@ -812,7 +812,7 @@ sub initializeRun {
 
 	my $req;
 	my $res;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $url      = "http://$hostname:$port/run/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -853,7 +853,7 @@ sub initializeRun {
 		close FILE;
 
 		foreach my $driver (@$driversRef) {
-			my $hostname = $driver->host->hostName;
+			my $hostname = $driver->host->name;
 			my $url      = "http://$hostname:$port/behaviorSpec";
 			$logger->debug("Sending POST to $url with contents:\n$contents");
 			$req = HTTP::Request->new( POST => $url );
@@ -880,7 +880,7 @@ sub initializeRun {
 	}
 
 	# Now send the initialize message to the runService
-	$hostname = $self->host->hostName;
+	$hostname = $self->host->name;
 	$url      = "http://$hostname:$port/run/$runName/initialize";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -954,7 +954,7 @@ sub startRun {
 	my $runContent = "{}";
 	my $pid1       = fork();
 	if ( $pid1 == 0 ) {
-		my $hostname = $self->host->hostName;
+		my $hostname = $self->host->name;
 		my $url      = "http://$hostname:$port/run/$runName/start";
 		$logger->debug("Sending POST to $url");
 		$req = HTTP::Request->new( POST => $url );
@@ -986,7 +986,7 @@ sub startRun {
 	$statsStartedMsg->{'timestamp'} = time;
 	my $statsStartedContent = $json->encode($statsStartedMsg);
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $url      = "http://$hostname:$port/stats/started/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -1165,7 +1165,7 @@ sub stopRun {
 	my $workloadNum             = $self->getParamValue('workloadNum');
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	my $logName = "$logDir/StopRun$suffix.log";
 	my $logHandle;
@@ -1231,7 +1231,7 @@ sub isUp {
 	my $workloadNum = $self->getParamValue('workloadNum');
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
@@ -1266,7 +1266,7 @@ sub isStarted {
 	my $workloadNum = $self->getParamValue('workloadNum');
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
@@ -1295,7 +1295,7 @@ sub isStarted {
 
 sub stopAppStatsCollection {
 	my ($self) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	# Collection of app stats is currently disabled
 	return;
@@ -1448,12 +1448,12 @@ sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $workloadNum = $self->getParamValue('workloadNum');
 # ToDo: Add a script to the docker image to do this:
-#	my $hostname = $self->host->hostName;
+#	my $hostname = $self->host->name;
 #	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
 #
 #	my $secondariesRef = $self->secondaries;
 #	foreach my $secondary (@$secondariesRef) {
-#		my $secHostname = $secondary->host->hostName;
+#		my $secHostname = $secondary->host->name;
 #`ssh  -o 'StrictHostKeyChecking no'  root\@$secHostname cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
 #	}
 
@@ -1461,10 +1461,10 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $baseDestinationPath ) = @_;
-	my $hostname           = $self->host->hostName;
+	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
 	my $workloadNum      = $self->getParamValue('workloadNum');
-	my $name               = $self->getParamValue('dockerName');
+	my $name               = $self->name;
 		
 	if ( !( -e $destinationPath ) ) {
 		`mkdir -p $destinationPath`;
@@ -1484,10 +1484,10 @@ sub getStatsFiles {
 
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
-		my $secHostname     = $secondary->host->hostName;
+		my $secHostname     = $secondary->host->name;
 		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
-		$name     = $secondary->getParamValue('dockerName');
+		$name     = $secondary->name;
 		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
 	}
 
@@ -1499,7 +1499,7 @@ sub cleanStatsFiles {
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 }
 
@@ -1708,7 +1708,7 @@ sub getStatsSummary {
 
 		tie( my %accumulatedCsv, 'Tie::IxHash' );
 
-		my $hostname = $self->host->hostName;
+		my $hostname = $self->host->name;
 		my $logPath  = $statsLogPath . "/" . $hostname;
 		`mkdir -p $logPath`;
 		my $csvHashRef =
@@ -1736,7 +1736,7 @@ sub getStatsSummary {
 		my $secondariesRef = $self->secondaries;
 		my $numServices    = $#{$secondariesRef} + 2;
 		foreach my $secondary (@$secondariesRef) {
-			my $secHostname = $secondary->host->hostName;
+			my $secHostname = $secondary->host->name;
 			my $logPath     = $statsLogPath . "/" . $secHostname;
 			`mkdir -p $logPath`;
 			$csvHashRef =
@@ -1810,7 +1810,7 @@ sub getNumActiveUsers {
 	$json = $json->pretty(1);
 
 	# Get the number of users on the primary driver
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 
 	my $url = "http://$hostname:$port/run/$runName/users";
@@ -1836,7 +1836,7 @@ sub getNumActiveUsers {
 	# get the number of users on each secondary driver
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
-		$hostname = $secondary->host->hostName;
+		$hostname = $secondary->host->name;
 		$port     = $secondary->portMap->{'http'};
 
 		$url = "http://$hostname:$port/run/$runName/users";
@@ -1895,7 +1895,7 @@ sub setNumActiveUsers {
 		my $users =
 		  $self->adjustUsersForLoadInterval( $numUsers, $driverNum,
 			$#workloadDrivers + 1 );
-		my $hostname = $driver->host->hostName;
+		my $hostname = $driver->host->name;
 		my $port     = $driver->portMap->{'http'};
 		my $url =
 		  "http://$hostname:$port/run/$runName/workload/$appInstanceName/users";
@@ -1957,7 +1957,7 @@ sub parseStats {
 	my $workloadNum             = $self->getParamValue('workloadNum');
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $tmpDir = $self->getParamValue( 'tmpDir' );
 
 	if ($self->resultsValid) {

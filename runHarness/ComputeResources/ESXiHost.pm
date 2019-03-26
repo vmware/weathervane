@@ -15,7 +15,7 @@ package ESXiHost;
 
 use Moose;
 use MooseX::Storage;
-use Hosts::VIHost;
+use ComputeResources::VIHost;
 use StatsParsers::ParseEsxtop qw( parseEsxtop );
 use Parameters qw(getParamValue);
 use Log::Log4perl qw(get_logger);
@@ -41,7 +41,7 @@ sub startStatsCollection {
 	my $console_logger   = get_logger("Console");
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 	
-	my $hostname         = $self->hostName;
+	my $hostname         = $self->name;
 	$logger->debug("Starting stats collection for ESXi Host " . $hostname);
 	
 	
@@ -78,10 +78,10 @@ sub startStatsCollection {
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
-	my $hostname = $self->hostName;
+	my $hostname = $self->name;
 	if (-e "/tmp/${hostname}_esxtop.csv") {	
 		if (-s "/tmp/${hostname}_esxtop.csv") {
-			my $hostname         = $self->hostName;
+			my $hostname         = $self->name;
 			$logger->debug("Gathering stats file /tmp/${hostname}_esxtop.csv for ESXi Host " . $hostname);
 			`cp /tmp/${hostname}_esxtop.csv $destinationPath/${hostname}_esxtop.csv`;
 		} else {
@@ -97,7 +97,7 @@ sub getStatsFiles {
 sub cleanStatsFiles {
 	my ($self) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
-	my $hostname         = $self->hostName;
+	my $hostname         = $self->name;
 	$logger->debug("Removing stats file /tmp/${hostname}_esxtop.csv for ESXi Host " . $hostname);
 	`rm -f /tmp/${hostname}_esxtop.csv 2>&1`;
 	`rm -f /tmp/${hostname}_esxtop.stderr 2>&1`;
@@ -106,7 +106,7 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
-	my $hostname = $self->hostName;
+	my $hostname = $self->name;
 
 }
 
@@ -114,7 +114,7 @@ sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 
-	my $hostname = $self->hostName;
+	my $hostname = $self->name;
 
 }
 
@@ -128,7 +128,7 @@ sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 
-	my $hostname = $self->hostName;
+	my $hostname = $self->name;
 }
 
 sub getEsxtopPctUsed {
@@ -169,7 +169,7 @@ sub getEsxtopPctUsed {
 sub getStatsSummary {
 	my ( $self, $statsFilePath, $users ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
-	my $hostname     = $self->hostName;
+	my $hostname     = $self->name;
 	$logger->debug("getStatsSummary for ESXi Host " . $hostname);
 
 	tie( my %csv, 'Tie::IxHash' );

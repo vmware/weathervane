@@ -69,22 +69,10 @@ sub createHost {
 	my $createdNew = 0;
 	if ( exists $ipToHostHashRef->{$hostIP} ) {
 		$host = $ipToHostHashRef->{$hostIP};
-		if ( $host->isGuest ) {
-			$host->addVmName($hostname);
-			if ( $hostParamHashRef->{'vmName'} ) {
-				$host->addVmName( $hostParamHashRef->{'vmName'} );
-			}
-		}
 	}
 	else {
 		$createdNew = 1;
 		$host       = HostFactory->getHost($hostParamHashRef);
-		if ( $host->isGuest ) {
-			$host->addVmName($hostname);
-			if ( $hostParamHashRef->{'vmName'} ) {
-				$host->addVmName( $hostParamHashRef->{'vmName'} );
-			}
-		}
 		$runProcedure->addHost($host);
 		$ipToHostHashRef->{$hostIP} = $host;
 	}
@@ -133,7 +121,7 @@ sub createCluster {
 }
 
 sub createComputeResource {
-	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef, $useAllSuffixes) = @_;
+	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef) = @_;
 	my $weathervane_logger = get_logger("Weathervane");
 
 	my $json = JSON->new;
@@ -146,14 +134,14 @@ sub createComputeResource {
 	my $retArrayRef;
 	if ($instanceParamHashRef->{"clusterName"}) {
 		my $clusterParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
-			"clusters", $useAllSuffixes );
+			"clusters" );
 		$weathervane_logger->debug( "For cluster ", $instanceParamHashRef->{'clusterName'}, " the Param hash ref is:" );
 		my $tmp = $json->encode($clusterParamHashRef);
 		$weathervane_logger->debug($tmp);
 		$retArrayRef = createCluster( $clusterParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef );		
 	} else {
 		my $hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
-			"hosts", $useAllSuffixes );
+			"hosts" );
 		$weathervane_logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
 		my $tmp = $json->encode($hostParamHashRef);
 		$weathervane_logger->debug($tmp);
@@ -406,8 +394,7 @@ my $runManager = RunManagerFactory->getRunManager($runManagerParamHashRef);
 
 # Build the runProcedure
 my $runProcedureParamHashRef =
-  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runManagerParamHashRef, "runProcInstance",
-	$runManagerParamHashRef->{'useAllSuffixes'} );
+  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runManagerParamHashRef, "runProcInstance" );
 
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($runProcedureParamHashRef);
@@ -424,10 +411,9 @@ $runManager->setRunProcedure($runProcedure);
 my %ipToHostHash;
 my $instancesListRef = $runProcedureParamHashRef->{"hosts"};
 my $hostsParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "hosts", 1,
-	$runProcedureParamHashRef->{'useAllSuffixes'} );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "hosts", 1 );
 foreach my $paramHashRef (@$hostsParamHashRefs) {
-	$logger->debug( "For host ", $paramHashRef->{'hostName'}, " the Param hash ref is:" );
+	$logger->debug( "For host ", $paramHashRef->{'name'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
 	my $retArrayRef = createHost( $paramHashRef, $runProcedure, 0, \%ipToHostHash );
@@ -443,8 +429,7 @@ foreach my $paramHashRef (@$hostsParamHashRefs) {
 my %clusterNameToClusterHash;
 $instancesListRef = $runProcedureParamHashRef->{"clusters"};
 my $clustersParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "clusters", 1,
-	$runProcedureParamHashRef->{'useAllSuffixes'} );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "clusters", 1);
 foreach my $paramHashRef (@$clustersParamHashRefs) {
 	$logger->debug( "For cluster ", $paramHashRef->{'clusterName'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
@@ -462,12 +447,12 @@ my $nextInstanceNum = 1;
 my $numDefault      = $runProcedureParamHashRef->{"numWorkloads"};
 my $workloadsParamHashRefs =
   Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $numDefault, "workloads",
-	$nextInstanceNum, $runProcedureParamHashRef > {'useAllSuffixes'} );
+	$nextInstanceNum );
 $nextInstanceNum += $numDefault;
 $instancesListRef = $runProcedureParamHashRef->{"workloads"};
 my $instancesParamHashRefs =
   Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "workloads",
-	$nextInstanceNum, $runProcedureParamHashRef > {'useAllSuffixes'} );
+	$nextInstanceNum );
 push @$workloadsParamHashRefs, @$instancesParamHashRefs;
 
 my $numWorkloads = $#{$workloadsParamHashRefs} + 1;
@@ -500,14 +485,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 }
 $logger->debug("The max number of appInstances is $maxNumAppInstances");
 
-# Decide whether to use all suffixes in the hostnames
-my $useAllSuffixes = 0;
-if ( ( $numWorkloads > 1 ) || ( $maxNumAppInstances > 1 ) ) {
-	$logger->debug(
-		"Setting useAllSuffixes to 1.  numWorkloads = $numWorkloads, maxNumAppInstances = $maxNumAppInstances");
-	$useAllSuffixes = 1;
-}
-
 # Create the workload instances and all of their sub-parts
 $workloadNum = 1;
 my @workloads;
@@ -526,12 +503,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	$numDefault      = $workloadParamHashRef->{"numAppInstances"};
 	my $appInstanceParamHashRefs =
 	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "appInstances",
-		$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		$nextInstanceNum);
 	$nextInstanceNum += $numDefault;
 	$instancesListRef = $workloadParamHashRef->{"appInstances"};
 	$instancesParamHashRefs =
 	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "appInstances",
-		$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		$nextInstanceNum);
 	push @$appInstanceParamHashRefs, @$instancesParamHashRefs;
 
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
@@ -549,12 +526,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	$numDefault      = $workloadParamHashRef->{"numDrivers"};
 	my $driversParamHashRefs =
 	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault,
-		"drivers", $nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		"drivers", $nextInstanceNum);
 	$nextInstanceNum += $numDefault;
 	$instancesListRef = $workloadParamHashRef->{"drivers"};
 	$instancesParamHashRefs =
 	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef,
-		"drivers", $nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		"drivers", $nextInstanceNum);
 	push @$driversParamHashRefs, @$instancesParamHashRefs;
 
 	if ( $#$driversParamHashRefs < 0 ) {
@@ -575,7 +552,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef);
 
 	# Create the computeResource for the primary driver
-	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash );
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
@@ -600,7 +577,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef);
 
 		# Create the host for the secondary driver
-		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash );
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -621,7 +598,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
 		if ($appInstanceParamHashRef->{'clusterName'}) {
 			# App instances running on clusters have a cluster object
-			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);			
+			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash);			
 		}
 		push @appInstances, $appInstance;
 
@@ -648,14 +625,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			$numDefault      = $appInstanceParamHashRef->{ "num" . ucfirst($serviceType) . "s" };
 			my $svcInstanceParamHashRefs =
 			  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault,
-				$serviceType . "s",
-				$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+				$serviceType . "s", $nextInstanceNum);
 			$nextInstanceNum += $numDefault;
 			$instancesListRef = $appInstanceParamHashRef->{ $serviceType . "s" };
 			$instancesParamHashRefs =
 			  Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef,
-				$serviceType . "s",
-				$nextInstanceNum, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+				$serviceType . "s", $nextInstanceNum );
 			push @$svcInstanceParamHashRefs, @$instancesParamHashRefs;
 
 			my $numScvInstances = $#{$svcInstanceParamHashRefs} + 1;
@@ -677,11 +652,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				$svcInstanceParamHashRef->{"instanceNum"} = $svcNum;
 				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
 				my $service =
-				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances,
-					$appInstance, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance );
 				push @services, $service;
 				# Create the ComputeResource for the service
-				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);
+				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash);
 				
 				$svcNum++;
 			}
@@ -698,8 +672,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 		# Create and add the dataManager
 		my $dataManagerParamHashRef =
-		  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $appInstanceParamHashRef,
-			"dataManagerInstance", $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes );
+		  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $appInstanceParamHashRef, "dataManagerInstance");
 		if ( $logger->is_debug() ) {
 			my $tmp = $json->encode($dataManagerParamHashRef);
 			$logger->debug(
@@ -712,7 +685,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$dataManager->setWorkloadDriver($workloadDriver);
 
 		# Create the ComputeResource for the dataManager
-		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash, $workloadParamHashRef->{'useAllSuffixes'} || $useAllSuffixes);
+		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash);
 
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 

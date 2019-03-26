@@ -58,8 +58,8 @@ override 'create' => sub {
 		return;
 	}
 
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 	my $impl     = $self->getImpl();
 
 	my $logName = "$logPath/CreateTomcatDocker-$hostname-$name.log";
@@ -133,7 +133,7 @@ override 'create' => sub {
 	my $entryPoint = "";
 
 	$self->host->dockerRun(
-		$applog, $self->getParamValue('dockerName'),
+		$applog, $self->name,
 		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
 		$entryPoint, $cmd, $self->needsTty
 	);
@@ -146,8 +146,8 @@ sub stopInstance {
 	my $logger = get_logger("Weathervane::Services::TomcatDockerService");
 	$logger->debug("stop TomcatDockerService");
 
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/StopTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -161,8 +161,8 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/StartTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -191,8 +191,8 @@ override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatDockerService");
 	$logger->debug("logPath = $logPath");
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/RemoveTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -223,7 +223,7 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning( $fileout, $name );
 
@@ -244,7 +244,7 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self)     = @_;
-	my $name       = $self->getParamValue('dockerName');
+	my $name       = $self->name;
 	
 	my $portMapRef = $self->host->dockerPort($name);
 
@@ -272,8 +272,8 @@ sub configure {
 sub stopStatsCollection {
 	my ($self)   = @_;
 	my $port     = $self->portMap->{"http"};
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 
 	if ( $self->getParamValue('appServerPerformanceMonitor') ) {
 `curl -s -o /tmp/$hostname-$name-performanceMonitor.csv http://$hostname:$port/auction/javasimon/data/table.csv?type=STOPWATCH&type=COUNTER&timeFormat=NANOSECOND `;
@@ -286,8 +286,8 @@ sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $setupLogDir        = $self->getParamValue('tmpDir') . "/setupLogs";
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 
 	my $logName = "$setupLogDir/StartStatsCollectionTomcatDocker-$hostname-$name.log";
@@ -305,8 +305,8 @@ sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
 
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -339,8 +339,8 @@ sub getLogFiles {
 	$logger->debug("getLogFiles");
 
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -373,8 +373,8 @@ sub parseLogFiles {
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -425,8 +425,8 @@ sub getStatsSummary {
 		my $numServices = $#{$servicesRef} + 1;
 		my $csvHashRef;
 		foreach my $service (@$servicesRef) {
-			my $name    = $service->getParamValue('dockerName');
-			my $logPath = $statsLogPath . "/" . $service->host->hostName . "/$name";
+			my $name    = $service->name;
+			my $logPath = $statsLogPath . "/" . $service->host->name . "/$name";
 			$csvHashRef = ParseGC::parseGCLog( $logPath, "", $gcviewerDir );
 
 			if ( !$addedHeaders ) {
@@ -439,7 +439,7 @@ sub getStatsSummary {
 				$addedHeaders = 1;
 			}
 
-			print HOSTCSVFILE $service->host->hostName . "," . $service->host->ipAddr;
+			print HOSTCSVFILE $service->host->name . "," . $service->host->ipAddr;
 			foreach my $key ( keys %$csvHashRef ) {
 				print HOSTCSVFILE "," . $csvHashRef->{$key};
 				if ( $csvHashRef->{$key} eq "na" ) {

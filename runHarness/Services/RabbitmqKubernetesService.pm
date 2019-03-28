@@ -111,13 +111,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace );
-	if ( $response =~ /auction/ ) {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace, 'auction', $numServers)) { 
 		return 1;
 	}
-	else {
-		return 0;
-	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {

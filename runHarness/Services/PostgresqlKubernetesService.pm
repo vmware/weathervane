@@ -200,13 +200,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
-		return 0;
-	} else {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace, '', $numServers)) { 
 		return 1;
 	}
+	return 0;
 };
 
 sub cleanLogFiles {

@@ -923,10 +923,13 @@ sub waitForServicesRunning {
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
+					# Use the first instance of the service for isRunning the 
 					# service instances
 					my $serviceRef = $servicesRef->[0];
 					$allIsRunning &= $serviceRef->isRunning($logFile);
+					if (!$allIsRunning) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}
@@ -957,10 +960,13 @@ sub waitForServicesStopped {
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
+					# Use the first instance of the service for isStopped the 
 					# service instances
 					my $serviceRef = $servicesRef->[0];
 					$allIsStopped &= $serviceRef->isStopped($logFile);
+					if (!$allIsStopped) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}
@@ -990,10 +996,13 @@ sub waitForServicesUp {
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
+					# Use the first instance of the service for isUp the 
 					# service instances
 					my $serviceRef = $servicesRef->[0];
 					$allIsUp &= $serviceRef->isUp($logFile);
+					if (!$allIsUp) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}

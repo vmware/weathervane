@@ -86,13 +86,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"\$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
-		return 0;
-	} else {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"\$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace, '', $numServers)) { 
 		return 1;
 	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {

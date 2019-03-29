@@ -40,7 +40,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxService");
 	$logger->debug("Configure Nginx kubernetes");
 	print $dblog "Configure Nginx Kubernetes\n";

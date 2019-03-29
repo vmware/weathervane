@@ -43,7 +43,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperKubernetesService");
 	$logger->debug("Configure Zookeeper kubernetes");
 	print $dblog "Configure Zookeeper Kubernetes\n";
@@ -53,6 +53,8 @@ sub configure {
 
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
+
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/zookeeper.yaml" ) or die "$configDir/kubernetes/zookeeper.yaml: $!\n";
 	open( FILEOUT, ">/tmp/zookeeper-$namespace.yaml" )             or die "Can't open file /tmp/zookeeper-$namespace.yaml: $!\n";
@@ -71,6 +73,9 @@ sub configure {
 		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
 		}
 		else {
 			print FILEOUT $inline;

@@ -47,7 +47,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatKubernetesService");
 	$logger->debug("Configure Tomcat kubernetes");
 	print $dblog "Configure Tomcat Kubernetes\n";

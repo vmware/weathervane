@@ -47,7 +47,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::AuctionBidKubernetesService");
 	$logger->debug("Configure AuctionBidService kubernetes");
 	print $dblog "Configure AuctionBidService Kubernetes\n";

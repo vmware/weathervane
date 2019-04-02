@@ -666,7 +666,7 @@ sub loadData {
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
 		if ($line =~ /Loading/) {
-  			print "$line\n";			
+			$console_logger->info("$line\n");
 		} 
    	}
    	close $pipe;	

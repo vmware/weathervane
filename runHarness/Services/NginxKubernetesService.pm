@@ -40,7 +40,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxService");
 	$logger->debug("Configure Nginx kubernetes");
 	print $dblog "Configure Nginx Kubernetes\n";
@@ -120,13 +120,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s -w \"%{http_code}\n\" -o /dev/null http://127.0.0.1:80", $self->namespace );
-	if ( $response =~ /200/ ) {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s -w \"%{http_code}\n\" -o /dev/null http://127.0.0.1:80", $self->namespace, '200', $numServers)) { 
 		return 1;
 	}
-	else {
-		return 0;
-	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {

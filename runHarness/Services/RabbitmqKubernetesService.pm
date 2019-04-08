@@ -53,7 +53,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("Configure Rabbitmq kubernetes");
 	print $dblog "Configure Rabbitmq Kubernetes\n";
@@ -73,6 +73,8 @@ sub configure {
 	} elsif (lc($totalMemoryUnit) eq "ki") {
 		$totalMemoryUnit = "kB";
 	}
+
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/rabbitmq.yaml" ) or die "$configDir/kubernetes/rabbitmq.yaml: $!\n";
 	open( FILEOUT, ">/tmp/rabbitmq-$namespace.yaml" )             or die "Can't open file /tmp/rabbitmq-$namespace.yaml: $!\n";
@@ -95,6 +97,9 @@ sub configure {
 		elsif ( $inline =~ /^(\s+)memory:/ ) {
 			print FILEOUT "${1}memory: " . $self->getParamValue('msgServerMem') . "\n";
 		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
+		}
 		else {
 			print FILEOUT $inline;
 		}
@@ -111,13 +116,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace );
-	if ( $response =~ /auction/ ) {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace, 'auction', $numServers)) { 
 		return 1;
 	}
-	else {
-		return 0;
-	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {

@@ -118,7 +118,7 @@ sub startDataManagerContainer {
 	sleep 15;
 	my $retries = 3;
 	while ($retries >= 0) {
-		my $isRunning = $cluster->kubernetesAreAllPodRunning("tier=dataManager", $namespace );
+		my $isRunning = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
 		
 		if ($isRunning) {
 			return 1;

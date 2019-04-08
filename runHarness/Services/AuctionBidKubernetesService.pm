@@ -47,7 +47,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::AuctionBidKubernetesService");
 	$logger->debug("Configure AuctionBidService kubernetes");
 	print $dblog "Configure AuctionBidService Kubernetes\n";
@@ -130,15 +130,11 @@ sub configure {
 
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
-	my $logger = get_logger("Weathervane::Services::AuctionBidKubernetesService");
-	$logger->debug("isUp AuctionBidService kubernetes");
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace );
-	$logger->debug("isUp AuctionBidService kubernetes response = $response");
-	if ( $response =~ /alive/ ) {
-			return 1;
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace, 'alive', $numServers)) { 
+		return 1;
 	}
-
 	return 0;
 };
 

@@ -452,10 +452,10 @@ sub cleanupAfterFailure {
 	}
 
 	## get the logs
-	$self->getLogFiles();
+	$self->getLogFiles($tmpDir);
 
 	## get the config files
-	$self->getConfigFiles();
+	$self->getConfigFiles($tmpDir);
 
 	## stop the services
 	$self->stopDataManager($tmpDir);

@@ -221,17 +221,98 @@ while (<FIXEDCONFIGFILE>) {
 close FIXEDCONFIGFILE;
 my $fixedConfigs = $json->decode($paramJson);
 
+my $weathervaneHome = getParamValue( $paramsHashRef, 'weathervaneHome' );
+
+# if the tmpDir doesn't start with a / then it
+# is relative to weathervaneHome
+my $tmpDir = getParamValue( $paramsHashRef, 'tmpDir');
+if ( !( $tmpDir =~ /^\// ) ) {
+	$tmpDir = $weathervaneHome . "/" . $tmpDir;
+}
+setParamValue( $paramsHashRef, 'tmpDir', $tmpDir );
+
+# if the outputDir doesn't start with a / then it
+# is relative to weathervaneHome
+my $outputDir = getParamValue( $paramsHashRef, 'outputDir' );
+if ( !( $outputDir =~ /^\// ) ) {
+	$outputDir = $weathervaneHome . "/" . $outputDir;
+}
+setParamValue( $paramsHashRef, 'outputDir', $outputDir );
+
+# if the distDir doesn't start with a / then it
+# is relative to weathervaneHome
+my $distDir         = getParamValue( $paramsHashRef, 'distDir' );
+if ( !( $distDir =~ /^\// ) ) {
+	$distDir = $weathervaneHome . "/" . $distDir;
+}
+setParamValue( $paramsHashRef, 'distDir', $distDir );
+
+# if the sequenceNumberFile doesn't start with a / then it
+# is relative to weathervaneHome
+my $sequenceNumberFile = getParamValue( $paramsHashRef, 'sequenceNumberFile' );
+if ( !( $sequenceNumberFile =~ /^\// ) ) {
+	$sequenceNumberFile = $weathervaneHome . "/" . $sequenceNumberFile;
+}
+setParamValue( $paramsHashRef, 'sequenceNumberFile', $sequenceNumberFile );
+
+# make sure the directories exist
+if ( !( -e $tmpDir ) ) {
+	`mkdir $tmpDir`;
+}
+
+if ( !( -e $outputDir ) ) {
+	`mkdir -p $outputDir`;
+}
+
+# Get the sequence number of the next run
+my $seqnum;
+if ( -e "$sequenceNumberFile" ) {
+	open SEQFILE, "<$sequenceNumberFile";
+	$seqnum = <SEQFILE>;
+	close SEQFILE;
+	if ( -e "$outputDir/$seqnum" ) {
+		print "Next run number is $seqnum, but directory for run $seqnum already exists in $outputDir\n";
+		exit -1;
+	}
+	open SEQFILE, ">$sequenceNumberFile";
+	my $nextSeqNum = $seqnum + 1;
+	print SEQFILE $nextSeqNum;
+	close SEQFILE;
+}
+else {
+	if ( -e "$outputDir/0" ) {
+		print "Sequence number file is missing, but run 0 already exists in $outputDir\n";
+		exit -1;
+	}
+	$seqnum = 0;
+	open SEQFILE, ">$sequenceNumberFile";
+	my $nextSeqNum = 1;
+	print SEQFILE $nextSeqNum;
+	close SEQFILE;
+}
+
+#clean out the tmp directory
+`rm -r $tmpDir/* 2>&1`;
+
+# Copy the version file into the output directory
+`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
+
+# Save the original config file and processed command line parameters 
+`cp $configFileName $tmpDir/$configFileName.save`;
+
+open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
+print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
+close PARAMCOMMANDLINEFILE;
 
 # Set up the loggers
-my $weathervaneHome = getParamValue( $paramsHashRef, 'weathervaneHome' );
 my $console_logger = get_logger("Console");
 $console_logger->level($INFO);
 my $layout   = Log::Log4perl::Layout::PatternLayout->new("%d{E MMM d HH:mm:ss yyyy}: %m%n");
 my $appender = Log::Log4perl::Appender->new(
 	"Log::Dispatch::File",
 	name     => "rootConsoleFile",
-	filename => "$weathervaneHome/console.log",
-	mode     => "append",
+	filename => "$tmpDir/console.log",
+	mode     => "write",
 );
 $appender->layout($layout);
 $console_logger->add_appender($appender);
@@ -244,22 +325,23 @@ $appender->layout($layout);
 $console_logger->add_appender($appender);
 
 my $weathervane_logger = get_logger("Weathervane");
-$weathervane_logger->level($WARN);
+$weathervane_logger->level($DEBUG);
 $layout   = Log::Log4perl::Layout::PatternLayout->new("%d %p> %F{1}:%L %M - %m%n");
 $appender = Log::Log4perl::Appender->new(
 	"Log::Dispatch::File",
 	name     => "rootDebugFile",
-	filename => "$weathervaneHome/debug.log",
+	filename => "$tmpDir/debug.log",
 	mode     => "write",
 );
+$console_logger->add_appender($appender); #also send console_logger output to debug log
 $weathervane_logger->add_appender($appender);
 $appender->layout($layout);
 $appender = Log::Log4perl::Appender->new(
 	"Log::Dispatch::Screen",
 	name      => "rootWeathervaneScreen",
 	stderr    => 0,
-	threshold => "WARN",
 );
+$appender->threshold($WARN); #don't spam screen with DEBUG/INFO levels if they are enabled
 $weathervane_logger->add_appender($appender);
 $appender->layout($layout);
 
@@ -787,3 +869,7 @@ $console_logger->info( "Running Weathervane with "
 	  . $runManager->runProcedure->name
 	  . " RunProcedure.\n" );
 $runManager->start();
+
+my $resultsDir = "$outputDir/$seqnum";
+`mkdir -p $resultsDir`;
+`mv $tmpDir/* $resultsDir/.`;

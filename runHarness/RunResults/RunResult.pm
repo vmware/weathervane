@@ -25,11 +25,6 @@ has 'runNum' => (
 	isa => 'Int',
 );
 
-has 'resultsDir' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 has 'isRunError' => (
 	is  => 'rw',
 	isa => 'Bool',

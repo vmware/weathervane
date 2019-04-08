@@ -50,7 +50,7 @@ override 'initialize' => sub {
 
 };
 
-sub startAuctionKubernetesDataManagerContainer {
+sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 
@@ -67,9 +67,6 @@ sub startAuctionKubernetesDataManagerContainer {
 	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
 	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
-
-	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($applog);
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionDataManager-$namespace.yaml" )             or die "Can't open file /tmp/auctionDataManager-$namespace.yaml: $!\n";
@@ -121,7 +118,7 @@ sub startAuctionKubernetesDataManagerContainer {
 	sleep 15;
 	my $retries = 3;
 	while ($retries >= 0) {
-		my $isRunning = $cluster->kubernetesAreAllPodRunning("tier=dataManager", $namespace );
+		my $isRunning = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
 		
 		if ($isRunning) {
 			return 1;
@@ -132,7 +129,7 @@ sub startAuctionKubernetesDataManagerContainer {
 	return 0;
 }
 
-sub stopAuctionKubernetesDataManagerContainer {
+sub stopDataManagerContainer {
 	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $cluster = $self->host;
@@ -193,7 +190,7 @@ sub prepareData {
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	$self->startAuctionKubernetesDataManagerContainer ($users, $logHandle);
+	$self->startDataManagerContainer ($users, $logHandle);
 		
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
@@ -235,6 +232,7 @@ sub prepareData {
 	$logger->debug("Output: $cmd");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
 
@@ -248,7 +246,7 @@ sub prepareData {
 #	}
 
 	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
 }
@@ -574,7 +572,7 @@ sub loadData {
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
 		if ($line =~ /\s+Loading/) {
-  			print "$line\n";			
+			$console_logger->info("$line\n");
 		} 
 		$logger->debug("Got line: $line");
 		print $applog "Got line: $line\n";

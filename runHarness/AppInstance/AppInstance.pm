@@ -876,6 +876,19 @@ sub stopServices {
 	
 }
 
+sub stopDataManager {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	$logger->debug("stopDataManager with logDir $setupLogDir");
+
+	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $logName         = "$setupLogDir/stopDataManager-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
+	$self->dataManager->stopDataManagerContainer($logFile);
+	close $logFile;
+}
+
 sub isRunningAndUpDataServices {
 	my ( $self, $serviceTier, $logFile ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
@@ -914,16 +927,25 @@ sub waitForServicesRunning {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	my $useDocker = $self->getParamValue("useDocker");
 	if ($serviceTypesRef) {
 		while ($retries >= 0) {
 			my $allIsRunning = 1;
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
-					# service instances
-					my $serviceRef = $servicesRef->[0];
-					$allIsRunning &= $serviceRef->isRunning($logFile);
+					foreach my $serviceRef (@$servicesRef) {
+						$allIsRunning &= $serviceRef->isRunning($logFile);
+						if (!$allIsRunning) {
+							last;  #short circuit checking all services
+						}
+						if (!$useDocker) {
+							last;  #for Kubernetes, use only the first instance to check with num
+						}
+					}
+					if (!$allIsRunning) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}
@@ -954,10 +976,13 @@ sub waitForServicesStopped {
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
+					# Use the first instance of the service for isStopped the 
 					# service instances
 					my $serviceRef = $servicesRef->[0];
 					$allIsStopped &= $serviceRef->isStopped($logFile);
+					if (!$allIsStopped) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}
@@ -981,16 +1006,25 @@ sub waitForServicesUp {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
+	my $useDocker = $self->getParamValue("useDocker");
 	if ($serviceTypesRef) {
 		while ($retries >= 0) {
 			my $allIsUp = 1;
 			foreach my $serviceType ( reverse @$serviceTypesRef ) {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
-					# Use the first instance of the service for removing the 
-					# service instances
-					my $serviceRef = $servicesRef->[0];
-					$allIsUp &= $serviceRef->isUp($logFile);
+					foreach my $serviceRef (@$servicesRef) {
+						$allIsUp &= $serviceRef->isUp($logFile);
+						if (!$allIsUp) {
+							last;  #short circuit checking all services
+						}
+						if (!$useDocker) {
+							last;  #for Kubernetes, use only the first instance to check with num
+						}
+					}
+					if (!$allIsUp) {
+						last;  #short circuit checking all types
+					}
 				} else {
 					next;
 				}

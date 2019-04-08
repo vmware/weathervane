@@ -303,7 +303,6 @@ sub createRunConfigHash {
 	my $console_logger = get_logger("Console");
 	my $workloadNum    = $self->getParamValue('workloadNum');
 
-	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $steadyState      = $self->getParamValue('steadyState');
 	my $rampDown         = $self->getParamValue('rampDown');
@@ -487,7 +486,7 @@ sub createRunConfigHash {
 }
 
 override 'configure' => sub {
-	my ( $self, $appInstancesRef, $suffix ) = @_;
+	my ( $self, $appInstancesRef, $suffix, $tmpDir ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
@@ -503,7 +502,6 @@ override 'configure' => sub {
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
 	my $rampupInterval      = $self->getParamValue('rampupInterval');
-	my $tmpDir              = $self->getParamValue('tmpDir');
 
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
 	
@@ -708,7 +706,7 @@ sub stopAuctionWorkloadDriverContainer {
 }
 
 sub initializeRun {
-	my ( $self, $runNum, $logDir, $suffix ) = @_;
+	my ( $self, $runNum, $logDir, $suffix, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$self->suffix($suffix);
@@ -800,7 +798,6 @@ sub initializeRun {
 	  $self->createRunConfigHash( $self->workload->appInstancesRef, $suffix );
 
 	# Save the configuration in file form
-	my $tmpDir              = $self->getParamValue('tmpDir');
 	open( my $configFile, ">$tmpDir/run$suffix.json" )
 	  || die "Can't open $tmpDir/run$suffix.json for writing: $!";
 	print $configFile $json->encode($runRef) . "\n";
@@ -906,7 +903,7 @@ sub initializeRun {
 }
 
 sub startRun {
-	my ( $self, $runNum, $logDir, $suffix ) = @_;
+	my ( $self, $runNum, $logDir, $suffix, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -1073,7 +1070,7 @@ sub startRun {
 					$startedSteadyState = 1;
 				
 					# Start collecting statistics on all hosts and services
-					$self->workload->startStatsCollection();
+					$self->workload->startStatsCollection($tmpDir);
 				} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) { 
 
 					$console_logger->info("Steady-State Complete");
@@ -1527,9 +1524,9 @@ sub getResultMetrics {
 }
 
 sub getWorkloadStatsSummary {
-	my ( $self, $csvRef, $logDir ) = @_;
+	my ( $self, $csvRef, $tmpDir ) = @_;
 
-	if (!$self->parseStats()) {
+	if (!$self->parseStats($tmpDir)) {
 		return;	
 	}
 
@@ -1543,7 +1540,7 @@ sub getWorkloadStatsSummary {
 		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
 		my $prefix = "-AI${appInstanceNum}";
 
-		my $isPassed = $self->isPassed( $appInstanceRef, $logDir );
+		my $isPassed = $self->isPassed( $appInstanceRef, $tmpDir );
 		if ($isPassed) {
 			$csvRef->{"pass$prefix"} = "Y";
 		}
@@ -1587,12 +1584,12 @@ sub getHostStatsSummary {
 }
 
 sub getWorkloadAppStatsSummary {
-	my ( $self, $statsLogPath ) = @_;
+	my ( $self, $tmpDir ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	tie( my %csv, 'Tie::IxHash' );
 
-	if (!$self->parseStats()) {
+	if (!$self->parseStats($tmpDir)) {
 		return \%csv;	
 	}
 
@@ -1685,9 +1682,9 @@ sub getWorkloadAppStatsSummary {
 }
 
 sub getStatsSummary {
-	my ( $self, $csvRef, $statsLogPath ) = @_;
+	my ( $self, $csvRef, $statsLogPath, $tmpDir ) = @_;
 
-	if (!$self->parseStats()) {
+	if (!$self->parseStats($tmpDir)) {
 		return;	
 	}
 
@@ -1922,11 +1919,11 @@ sub setNumActiveUsers {
 }
 
 sub isPassed {
-	my ( $self, $appInstanceRef, $logDir ) = @_;
+	my ( $self, $appInstanceRef, $tmpDir ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	if (!$self->parseStats()) {
+	if (!$self->parseStats($tmpDir)) {
 		return;	
 	}
 
@@ -1950,7 +1947,7 @@ sub isPassed {
 }
 
 sub parseStats {
-	my ( $self ) = @_;
+	my ( $self, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -1958,7 +1955,6 @@ sub parseStats {
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
-	my $tmpDir = $self->getParamValue( 'tmpDir' );
 
 	if ($self->resultsValid) {
 		return 1;

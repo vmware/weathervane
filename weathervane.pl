@@ -309,6 +309,13 @@ else {
 # Copy the version file into the output directory
 `cp $weathervaneHome/version.txt $tmpDir/version.txt`;
 
+# Save the original config file and processed command line parameters 
+`cp $configFileName $tmpDir/$configFileName.save`;
+
+open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
+print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
+close PARAMCOMMANDLINEFILE;
+
 # Set up the loggers
 my $console_logger = get_logger("Console");
 $console_logger->level($INFO);

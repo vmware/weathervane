@@ -572,7 +572,7 @@ sub loadData {
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
 		if ($line =~ /\s+Loading/) {
-  			print "$line\n";			
+			$console_logger->info("$line\n");
 		} 
 		$logger->debug("Got line: $line");
 		print $applog "Got line: $line\n";

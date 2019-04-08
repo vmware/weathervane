@@ -18,7 +18,6 @@ package com.vmware.weathervane.auction.dbloader;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -199,8 +198,6 @@ public class DbLoaderDao {
 		double workForCurrent = currentWork * dbLoaderWorkEstimate.getCurrentWork();
 		double totalWork = workForUsers + workForHistory + workForFuture + workForCurrent;
 
-		DateFormat dateFormat = new SimpleDateFormat("E MMM d HH:mm:ss z yyyy");
-		Date date = new Date();
 		long duration = Math.round(totalWork * 1000);
 		String durationString = String.format(
 				"Loading data -- Initial estimate of total load time is %d hours, %d min, %d sec. ",
@@ -209,7 +206,7 @@ public class DbLoaderDao {
 						- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
 				TimeUnit.MILLISECONDS.toSeconds(duration)
 						- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-		System.out.println(dateFormat.format(date) + ": " + durationString + messageString);
+		System.out.println(durationString + messageString);
 
 	}
 
@@ -347,8 +344,6 @@ public class DbLoaderDao {
 			double totalTimeRemaining = workForUsers + workForHistory + workForFuture
 					+ workForCurrent;
 
-			DateFormat dateFormat = new SimpleDateFormat("E MMM dd HH:mm:ss z yyyy");
-			Date date = new Date();
 			long duration = Math.round(totalTimeRemaining * 1000);
 			String durationString = String
 					.format("Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
@@ -360,7 +355,7 @@ public class DbLoaderDao {
 							TimeUnit.MILLISECONDS.toSeconds(duration)
 									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
 											.toMinutes(duration)));
-			System.out.println(dateFormat.format(date) + ": " + durationString + messageString);
+			System.out.println(durationString + messageString);
 
 			/*
 			 * Adjust the time between updates to be 10% of the estimated

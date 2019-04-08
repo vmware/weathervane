@@ -21,10 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -659,8 +656,6 @@ public class DBLoader {
 			}
 		}
 
-		DateFormat dateFormat = new SimpleDateFormat("E MMM d HH:mm:ss z yyyy");
-		Date date = new Date();
 		currentDoneMillis = System.currentTimeMillis();
 		duration = currentDoneMillis - startTime;
 		durationString = String.format(
@@ -670,7 +665,7 @@ public class DBLoader {
 						- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
 				TimeUnit.MILLISECONDS.toSeconds(duration)
 						- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-		System.out.println(dateFormat.format(date) + ": " + durationString + ". " + messageString);
+		System.out.println(durationString + ". " + messageString);
 
 		/* save the new work estimates in a file */
 		fileName = ".dbLoaderRelativeWork." + imageStoreType + ".json";

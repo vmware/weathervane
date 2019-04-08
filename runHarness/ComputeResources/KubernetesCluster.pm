@@ -253,7 +253,7 @@ sub kubernetesCreateSecret {
 sub kubernetesGetIngressIp {
 	my ( $self, $labelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesAreAllPodRunning LabelString $labelString, namespace $namespace");
+	$logger->debug("kubernetesGetIngressIp LabelString $labelString, namespace $namespace");
 
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
@@ -276,7 +276,7 @@ sub kubernetesGetIngressIp {
 sub kubernetesIngressHasIp {
 	my ( $self, $labelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesAreAllPodRunning LabelString $labelString, namespace $namespace");
+	$logger->debug("kubernetesIngressHasIp LabelString $labelString, namespace $namespace");
 
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
@@ -289,7 +289,7 @@ sub kubernetesIngressHasIp {
 	
 	my @ips = split /\n/, $outString;
 	if ($#ips < 0) {
-		$logger->debug("kubernetesGetIngressIp: There are no ingresses with label $labelString in namespace $namespace");
+		$logger->debug("kubernetesIngressHasIp: There are no ingresses with label $labelString in namespace $namespace");
 		return 0;
 	}
 	
@@ -394,10 +394,10 @@ sub kubernetesGetSizeForPVC {
 		
 }
 
-sub kubernetesAreAllPodRunning {
-	my ( $self, $podLabelString, $namespace ) = @_;
+sub kubernetesAreAllPodRunningWithNum {
+	my ( $self, $podLabelString, $namespace, $num ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
+	$logger->debug("kubernetesAreAllPodRunningWithNum podLabelString $podLabelString, namespace $namespace, num $num");
 
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
@@ -410,24 +410,76 @@ sub kubernetesAreAllPodRunning {
 
 	my @stati = split /\s+/, $outString;
 	if ($#stati < 0) {
-		$logger->debug("kubernetesAreAllPodRunning: There are no pods with label $podLabelString in namespace $namespace");
+		$logger->debug("kubernetesAreAllPodRunningWithNum: There are no pods with label $podLabelString in namespace $namespace");
+		return 0;
+	}
+	
+	my $numFound = $#stati + 1;
+	if ($numFound != $num) {
+		$logger->debug("kubernetesAreAllPodRunningWithNum: Found $numFound of $num pods with label $podLabelString in namespace $namespace");
 		return 0;
 	}
 	
 	foreach my $status (@stati) { 
 		if ($status ne "Running") {
-			$logger->debug("kubernetesAreAllPodRunning: Found a non-running pod: $status");
+			$logger->debug("kubernetesAreAllPodRunningWithNum: Found a non-running pod: $status");
 			return 0;
 		}	
 	}
-	$logger->debug("kubernetesAreAllPodRunning: All pods are running");
+	$logger->debug("kubernetesAreAllPodRunningWithNum: All pods are running");
+	return 1;
+}
+
+sub kubernetesAreAllPodUpWithNum {
+	my ( $self, $serviceTypeImpl, $commandString, $namespace, $findString, $num ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesAreAllPodUpWithNum exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace, findString $findString, num $num");
+
+	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+
+	my $cmd;
+	my $outString;	
+	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace 2>&1";
+	$outString = `$cmd`;
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesAreAllPodUpWithNum: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		exit(-1);
+	}
+	
+	my $numFound = $#names + 1;
+	if ($numFound != $num) {
+		$logger->debug("kubernetesAreAllPodUpWithNum: Found $numFound of $num pods with label $serviceTypeImpl in namespace $namespace");
+		return 0;
+	}
+	
+	foreach my $podName (@names) { 	
+		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString 2>&1";
+		$outString = `$cmd`;
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+		
+		my $exitValue=$? >> 8;
+		if ($exitValue) {
+			$logger->debug("kubernetesAreAllPodUpWithNum: Bad exitValue $exitValue on pod $podName");
+			return 0;
+		}
+		if ( !($findString eq '') && !($outString =~ /$findString/) ) {
+			$logger->debug("kubernetesAreAllPodUpWithNum: No match of $findString to Output on pod $podName");
+			return 0;
+		}	
+	}
+	$logger->debug("kubernetesAreAllPodUpWithNum: Matched $findString to $num pods");
 	return 1;
 }
 
 sub kubernetesDoPodsExist {
 	my ( $self, $podLabelString, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesAreAllPodRunning podLabelString $podLabelString, namespace $namespace");
+	$logger->debug("kubernetesDoPodsExist podLabelString $podLabelString, namespace $namespace");
 
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 

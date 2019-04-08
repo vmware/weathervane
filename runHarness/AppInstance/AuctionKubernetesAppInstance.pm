@@ -343,11 +343,10 @@ override 'getHostStatsSummary' => sub {
 };
 
 override 'startStatsCollection' => sub {
-	my ( $self ) = @_;
+	my ( $self, $tmpDir ) = @_;
 	# start kubectl top
 	my $servicesRef = $self->getAllServicesByType('appServer');
 	my $service = $servicesRef->[0];
-	my $tmpDir           = $self->getParamValue('tmpDir');
 	my $destinationDir = "$tmpDir/statistics/kubernetes";
 	`mkdir -p $destinationDir`;
 	$service->host->kubernetesTopPodAllNamespaces(15, $destinationDir);

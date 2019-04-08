@@ -68,7 +68,7 @@ sub clearDataAfterStart {
 }
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("Configure Postgresql kubernetes");
 	print $dblog "Configure Postgresql Kubernetes\n";
@@ -91,7 +91,7 @@ sub configure {
 
 	my $dataVolumeSize = $self->getParamValue('postgresqlDataVolumeSize');
 	my $logVolumeSize = $self->getParamValue('postgresqlLogVolumeSize');
-
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/postgresql.yaml" ) or die "$configDir/kubernetes/postgresql.yaml: $!\n";
 	open( FILEOUT, ">/tmp/postgresql-$namespace.yaml" )             or die "Can't open file /tmp/postgresql-$namespace.yaml: $!\n";	
@@ -134,6 +134,9 @@ sub configure {
 		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			print FILEOUT "${1}$version\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
 		}
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
 			print FILEOUT $inline;
@@ -200,13 +203,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
-		return 0;
-	} else {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace, '', $numServers)) { 
 		return 1;
 	}
+	return 0;
 };
 
 sub cleanLogFiles {

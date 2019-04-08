@@ -47,7 +47,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatKubernetesService");
 	$logger->debug("Configure Tomcat kubernetes");
 	print $dblog "Configure Tomcat Kubernetes\n";
@@ -152,14 +152,12 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace );
-	if ( $response =~ /alive/ ) {
-		$response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace );
-		if ( $response =~ /ready/ ) {
-			return 1;
-		}
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if (   $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace, 'alive', $numServers ) 
+	    && $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace, 'ready', $numServers )
+	   ) { 
+		return 1;
 	}
-
 	return 0;
 };
 

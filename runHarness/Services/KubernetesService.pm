@@ -102,7 +102,8 @@ override 'isRunning' => sub {
 	my ($self, $fileout) = @_;
 	my $serviceType = $self->getParamValue('serviceType');
 	my $namespace = $self->namespace;
-	return $self->host->kubernetesAreAllPodRunning("type=$serviceType", $namespace );
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	return $self->host->kubernetesAreAllPodRunningWithNum("type=$serviceType", $namespace, $numServers );
 };
 
 

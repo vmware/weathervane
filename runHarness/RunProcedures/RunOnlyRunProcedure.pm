@@ -42,7 +42,7 @@ override 'run' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunOnlyRunProcedure");
-
+	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $tmpDir    = $self->getParamValue('tmpDir');
 
 	# Add appender to the console log to put a copy in the tmpLog directory
@@ -56,26 +56,38 @@ override 'run' => sub {
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
 
-	# Get the minor sequence number of the next run
-	my $sequenceNumberFile = "$tmpDir/minorsequence.num";
-	my $seqnum;
-	if ( -e "$sequenceNumberFile" ) {
-		open SEQFILE, "<$sequenceNumberFile";
-		$seqnum = <SEQFILE>;
+	# Get the major sequence number
+	my $majorSeqNum;
+	if ( -e "$majorSequenceNumberFile" ) {
+		open SEQFILE, "<$majorSequenceNumberFile";
+		$majorSeqNum = <SEQFILE>;
 		close SEQFILE;
-		$seqnum--;
+		$majorSeqNum--; #already incremented in weathervane.pl
+	} else {
+		print "Major sequence number file is missing.\n";
+		exit -1;
+	}
+	# Get the minor sequence number of the next run
+	my $minorSequenceNumberFile = "$tmpDir/minorsequence.num";
+	my $minorSeqNum;
+	if ( -e "$minorSequenceNumberFile" ) {
+		open SEQFILE, "<$minorSequenceNumberFile";
+		$minorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		$minorSeqNum--;
 	}
 	else {
-		$seqnum = 0;
-		open SEQFILE, ">$sequenceNumberFile";
+		$minorSeqNum = 0;
+		open SEQFILE, ">$minorSequenceNumberFile";
 		my $nextSeqNum = 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
+	my $seqnum = $majorSeqNum . "." . $minorSeqNum;
 	$self->seqnum($seqnum);
 
 	# Now send all output to new subdir 	
-	$tmpDir = "$tmpDir/$seqnum";
+	$tmpDir = "$tmpDir/$minorSeqNum";
 	if ( !( -e $tmpDir ) ) {
 		`mkdir $tmpDir`;
 	}

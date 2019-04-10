@@ -212,7 +212,7 @@ sub isEdgeService {
 
 sub getIpAddr {
 	my ($self) = @_;
-	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+	if (((ref $self->host) eq 'DockerHost') && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
 		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
 	}
 	return $self->host->ipAddr;
@@ -220,10 +220,6 @@ sub getIpAddr {
 
 sub create {
 	my ($self, $logPath)            = @_;
-	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
 	
 	my $name = $self->name;
 	my $hostname         = $self->host->name;
@@ -343,11 +339,6 @@ sub pullDockerImage {
 	my ($self, $logfile)            = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
 	
-	if (!$self->getParamValue('useDocker')) {
-		$logger->debug("$self->meta->name is not using docker.  Not pulling.");
-		return;
-	}
-
 	my $impl = $self->getImpl();
 	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->instanceNum);
 	$self->host->dockerPull($logfile, $impl);
@@ -395,12 +386,6 @@ sub isStopped {
 	return 1;
 }
 
-sub useDocker {
-	my ($self) = @_;
-	
-	return $self->getParamValue("useDocker");
-}
-
 sub getDockerName {
 	my ($self) = @_;
 	
@@ -424,7 +409,7 @@ sub getImpl {
 # using docker host networking
 sub corunningDockerized {
 	my ($self, $other) = @_;
-	if (!$self->useDocker() || !$other->useDocker()
+	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})

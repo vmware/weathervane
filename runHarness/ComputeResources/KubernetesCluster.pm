@@ -57,14 +57,7 @@ override 'registerService' => sub {
 	my $servicesRef    = $self->servicesRef;
 
 	my $name = $serviceRef->name;
-	$logger->debug( "Registering service $name with cluster ",
-		$self->clusterName );
-
-	if ( $serviceRef->useDocker() ) {
-			$console_logger->error( "Service $name running on kubernetesCluster ",
-				$self->clusterName, " should not have useDocker set to true." );
-			exit(-1);
-	}
+	$logger->debug( "Registering service $name with cluster ",$self->name );
 
 	push @$servicesRef, $serviceRef;
 

@@ -922,7 +922,6 @@ sub waitForServicesRunning {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	my $useDocker = $self->getParamValue("useDocker");
 	if ($serviceTypesRef) {
 		while ($retries >= 0) {
 			my $allIsRunning = 1;
@@ -934,7 +933,7 @@ sub waitForServicesRunning {
 						if (!$allIsRunning) {
 							last;  #short circuit checking all services
 						}
-						if (!$useDocker) {
+						if ((ref $serviceRef->host) eq "KubernetesCluster") {
 							last;  #for Kubernetes, use only the first instance to check with num
 						}
 					}
@@ -1001,7 +1000,6 @@ sub waitForServicesUp {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
 	my $serviceTypesRef = $serviceTiersHashRef->{$serviceTier};
-	my $useDocker = $self->getParamValue("useDocker");
 	if ($serviceTypesRef) {
 		while ($retries >= 0) {
 			my $allIsUp = 1;
@@ -1013,7 +1011,7 @@ sub waitForServicesUp {
 						if (!$allIsUp) {
 							last;  #short circuit checking all services
 						}
-						if (!$useDocker) {
+						if ((ref $serviceRef->host) eq "KubernetesCluster") {
 							last;  #for Kubernetes, use only the first instance to check with num
 						}
 					}

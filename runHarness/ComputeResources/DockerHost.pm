@@ -57,14 +57,12 @@ override 'registerService' => sub {
 	$logger->debug( "Registering service $dockerName with host ",
 		$self->name );
 
-	if ( $serviceRef->useDocker() ) {
-		if ( exists $self->dockerNameHashRef->{$dockerName} ) {
-			$console_logger->error( "Have two services on host ",
-				$self->name, " with docker name $dockerName." );
-			exit(-1);
-		}
-		$self->dockerNameHashRef->{$dockerName} = 1;
+	if ( exists $self->dockerNameHashRef->{$dockerName} ) {
+		$console_logger->error( "Have two services on host ",
+			$self->name, " with docker name $dockerName." );
+		exit(-1);
 	}
+	$self->dockerNameHashRef->{$dockerName} = 1;
 
 	push @$servicesRef, $serviceRef;
 

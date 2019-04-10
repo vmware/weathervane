@@ -46,10 +46,6 @@ sub startInstance {
 	my ($self, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 
-	if ( !$self->getParamValue('useDocker') ) {
-		return;
-	}
-
 	my $impl     = $self->getImpl();		
 	my $instanceNum = $self->instanceNum;
 	my $hostname = $self->host->name;

@@ -526,6 +526,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	if ( $numWorkloads > 1 ) {
 		$workload->useSuffix(1);
 	}
+	$workload->initialize();
 	push @workloads, $workload;
 
 	# Get the paramHashRefs for the appInstances
@@ -577,6 +578,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
 	$workloadDriver->instanceNum($driverNum);
+	$workloadDriver->initialize();
 	$driverNum++;
 
 	# Add the primary driver to the workload
@@ -603,6 +605,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
+		$secondary->initialize();
 		$driverNum++;
 
 		# Add the secondary driver to the primary
@@ -622,6 +625,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
 		$appInstance->instanceNum($appInstanceNum);
 		$appInstance->workload($workload);
+		$appInstance->initialize();
 		push @appInstances, $appInstance;
 
 		# Overwrite the appInstance's parameters with those specified by the configuration size.
@@ -674,6 +678,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance, $host );
 				$service->instanceNum($svcNum);
 				$service->host($host);
+				$service->initialize();
 				push @services, $service;
 				
 				$svcNum++;
@@ -706,6 +711,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$dataManager->setAppInstance($appInstance);
 		$dataManager->setWorkloadDriver($workloadDriver);
 		$dataManager->host($host);
+		$dataManager->initialize();
 
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 

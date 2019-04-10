@@ -48,8 +48,6 @@ sub getWorkloadDriver {
 		die "No matching workloadDriver for workload type $workloadType";
 	}
 
-	$workloadDriver->initialize();
-
 	return $workloadDriver;
 }
 

@@ -1191,7 +1191,7 @@ $parameters{"dockerServiceImages"} = {
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
 		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
 	},
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 0,
 };

@@ -87,6 +87,7 @@ class_has 'configuredAfterStart' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
+	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 	$logger->debug("initialize called with numNosqlServers = $numNosqlServers");
 	my $console_logger = get_logger("Console");
 	my $appInstance    = $self->appInstance;
@@ -95,7 +96,6 @@ override 'initialize' => sub {
 	my $replicasPerShard = $self->getParamValue('nosqlReplicasPerShard');
 	my $sharded          = $self->getParamValue('nosqlSharded');
 	my $replicated       = $self->getParamValue('nosqlReplicated');
-	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 	
 	my $numNosqlShards = 0;
 	my $numNosqlReplicas = 0;

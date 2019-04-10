@@ -57,7 +57,7 @@ override 'registerService' => sub {
 	my $servicesRef    = $self->servicesRef;
 
 	my $name = $serviceRef->name;
-	$logger->debug( "Registering service $name with cluster ",$self->name );
+	$logger->debug( "Registering service $name with cluster ", $self->name );
 
 	push @$servicesRef, $serviceRef;
 

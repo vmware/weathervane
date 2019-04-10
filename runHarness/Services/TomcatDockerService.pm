@@ -54,10 +54,6 @@ sub setMongosDocker {
 override 'create' => sub {
 	my ( $self, $logPath ) = @_;
 
-	if ( !$self->getParamValue('useDocker') ) {
-		return;
-	}
-
 	my $name     = $self->name;
 	my $hostname = $self->host->name;
 	my $impl     = $self->getImpl();

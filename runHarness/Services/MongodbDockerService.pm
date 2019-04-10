@@ -759,8 +759,7 @@ sub startMongosServers {
 				$logger->debug("For $dockerName, isHostOrExternal so setting mongosDocker on $appHostname to $appHostname");
 				$appServer->setMongosDocker($appHostname);
 			}
-			elsif ( $appServer->useDocker()
-				&& ( $appServer->dockerConfigHashRef->{"net"} eq $self->dockerConfigHashRef->{"net"} ) )
+			elsif ( $appServer->dockerConfigHashRef->{"net"} eq $self->dockerConfigHashRef->{"net"} )
 			{
 				# Also use the internal port if the appServer is also using docker and is on
 				# the same (non-host) network as the mongos, but use the docker name rather than the hostname
@@ -820,8 +819,7 @@ sub startMongosServers {
 			$appServer->setMongosDocker($appHostname);
 			$hostsMongosCreated{$appIpAddr} = $mongosPort;
 		}
-		elsif ( $appServer->useDocker()
-			&& ( $appServer->dockerConfigHashRef->{"net"} eq $self->dockerConfigHashRef->{"net"} ) )
+		elsif ( $appServer->dockerConfigHashRef->{"net"} eq $self->dockerConfigHashRef->{"net"} )
 		{
 			# Also use the internal port if the appServer is also using docker and is on
 			# the same (non-host) network as the mongos, but use the docker name rather than the hostname

@@ -149,16 +149,9 @@ sub stopDataManagerContainer {
 	$self->host->dockerStopAndRemove( $applog, $name );
 }
 
-# Auction data manager always uses docker
-sub useDocker {
-	my ($self) = @_;
-	
-	return 1;
-}
-
 sub getIpAddr {
 	my ($self) = @_;
-	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
+	if (((ref $self->host) eq 'DockerHost') && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
 		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
 	}
 	return $self->host->ipAddr;

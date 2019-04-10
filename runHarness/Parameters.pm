@@ -2219,6 +2219,22 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"postgresqDataVolume"} = {
+	"type"      => "=s",
+	"default"   => "postgresqData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqLogVolume"} = {
+	"type"      => "=s",
+	"default"   => "postgresqlLogs",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlDataStorageClass"} = {
 	"type"      => "=s",
 	"default"   => "fast",

@@ -104,7 +104,7 @@ sub getComputeResourceForInstance {
 	my $console_logger = get_logger("Console");
 
 	# If the instance defines a hostname, then we must use that to find the host.
-	if ((exists $instanceParamHashRef->{"hostname"}) && (defined $instanceParamHashRef->{"hostname"})) {
+	if ($instanceParamHashRef->{"hostname"}) {
 		my $hostname = $instanceParamHashRef->{"hostname"};
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
 		  $console_logger->error("Instance $instanceNum of type $serviceType specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
@@ -117,7 +117,7 @@ sub getComputeResourceForInstance {
 	# the right host from that list as determined by the instanceNum.
 	# The assignment of host to instance wraps if the instanceNum is greater
 	# than the number of hot names specified.
-	if ((exists $instanceParamHashRef->{"${serviceType}Hosts"}) && (defined $instanceParamHashRef->{"${serviceType}Hosts"})) {
+	if ($instanceParamHashRef->{"${serviceType}Hosts"}) {
 		my $hostListRef = $instanceParamHashRef->{"${serviceType}Hosts"};
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
@@ -572,7 +572,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# Create the primary workload driver
-	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash)
+	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash);
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
@@ -598,7 +598,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
-		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash)
+		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash);
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);

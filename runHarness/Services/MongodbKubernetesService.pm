@@ -55,10 +55,10 @@ has 'clearBeforeStart' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
+	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 	$logger->debug("initialize called with numNosqlServers = $numNosqlServers");
 	my $console_logger = get_logger("Console");
 	my $appInstance    = $self->appInstance;
-	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 
 	# Figure out how many shards, and how many replicas per shard.
 	my $replicasPerShard = $self->getParamValue('nosqlReplicasPerShard');

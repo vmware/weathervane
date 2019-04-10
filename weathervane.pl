@@ -149,8 +149,8 @@ sub getComputeResourceForInstance {
 		return $nameToComputeResourceHashRef->{$hostname};		
 	} else {
 		  $console_logger->error("Instance $instanceNum of type $serviceType does not have a hostname defined.\n" . 
-		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n") .
-		     "If using a custom configurationSize, you can also specify the host name using the hostname parameter for this instance";
+		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n" .
+		     "If using a custom configurationSize, you can also specify the host name using the hostname parameter for this instance");
 		  exit(-1);	
 	}
 }

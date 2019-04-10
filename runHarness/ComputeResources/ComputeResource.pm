@@ -19,18 +19,12 @@ use StatsParsers::ParseSar qw(parseSar);
 use Parameters qw(getParamValue);
 use Instance;
 use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddresses getIpAddress);
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
-
-has 'name' => (
-	is  => 'rw',
-	isa => 'Str',
-);
 
 has 'servicesRef' => (
 	is      => 'rw',

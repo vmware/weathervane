@@ -51,7 +51,7 @@ sub startInstance {
 	}
 
 	my $impl     = $self->getImpl();		
-	my $instanceNum = $self->getParamValue("instanceNum");
+	my $instanceNum = $self->instanceNum;
 	my $hostname = $self->host->name;
 	my $name     = $self->name;
 
@@ -68,7 +68,7 @@ sub startInstance {
 	my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
-		my $id =  $zookeeperServer->getParamValue("instanceNum");
+		my $id =  $zookeeperServer->instanceNum;
 		my $hostname = $zookeeperServer->host->name;
 		if ($id == $instanceNum) {
 			$hostname = "0.0.0.0";

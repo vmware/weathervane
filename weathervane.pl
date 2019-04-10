@@ -35,7 +35,6 @@ use lib '/root/weathervane/runHarness';
 
 use Factories::ServiceFactory;
 use Factories::HostFactory;
-use Factories::ClusterFactory;
 use Factories::VIFactory;
 use Factories::RunManagerFactory;
 use Factories::DataManagerFactory;
@@ -44,114 +43,107 @@ use Factories::WorkloadFactory;
 use Factories::AppInstanceFactory;
 use Parameters
   qw(getParamDefault getParamType getParamKeys getParamValue setParamValue mergeParameters usage fullUsage);
-use Utils qw(getIpAddresses getIpAddress);
 use StderrToLogerror;
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 
-sub createHost {
-	my ( $hostParamHashRef, $runProcedure, $instance, $ipToHostHashRef ) = @_;
+sub createDockerHost {
+	my ($hostParamHashRef, $runProcedure, $nameToComputeResourceHashRef) = @_;
 	my $weathervane_logger = get_logger("Weathervane");
 	my $console_logger     = get_logger("Console");
 
-	if ( ( !exists $hostParamHashRef->{'hostName'} ) || ( !defined $hostParamHashRef->{'hostName'} ) ) {
-		$console_logger->error("Hosts defined under the hosts keyword must define a hostName");
+	if ( ( !exists $hostParamHashRef->{'name'} ) || ( !defined $hostParamHashRef->{'name'} ) ) {
+		$console_logger->error("All DockerHost definitions must include a name.");
 		exit(-1);
 	}
-	my $hostname = $hostParamHashRef->{'hostName'};
-	$weathervane_logger->debug("Creating host for host $hostname\n");
-
-	my $hostIP = getIpAddress($hostname);
-	$weathervane_logger->debug("IP address for host $hostname is $hostIP\n");
-
-	my $host       = 0;
-	my $createdNew = 0;
-	if ( exists $ipToHostHashRef->{$hostIP} ) {
-		$host = $ipToHostHashRef->{$hostIP};
-	}
-	else {
-		$createdNew = 1;
-		$host       = HostFactory->getHost($hostParamHashRef);
-		$runProcedure->addHost($host);
-		$ipToHostHashRef->{$hostIP} = $host;
+	my $hostname = $hostParamHashRef->{'name'};
+	if ( exists $nameToComputeResourceHashRef->{$hostIP} ) {
+		$console_logger->error("All DockerHost definitions must have a unique name.  $hostname is used for more than one DockerHost or KubernetesCluster.");
+		exit(-1);
 	}
 
-	if ($instance) {
-		$instance->setHost($host);
-	}
+	$weathervane_logger->debug("Creating dockerHost for host $hostname\n");
+	my $host = HostFactory->getDockerHost($hostParamHashRef);
+	$runProcedure->addHost($host);
+	$nameToComputeResourceHashRef->{$hostname} = $host;
 
-	my @retVal = ($createdNew, $host);
-
-	return \@retVal;
+	return $host;
 }
 
 
-sub createCluster {
-	my ( $clusterParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef ) = @_;
+sub createKubernetesCluster {
+	my ($clusterParamHashRef, $runProcedure, $nameToComputeResourceHashRef) = @_;
 	my $weathervane_logger = get_logger("Weathervane");
 	my $console_logger     = get_logger("Console");
 
-	if ( ( !exists $clusterParamHashRef->{'clusterName'} ) || ( !defined $clusterParamHashRef->{'clusterName'} ) ) {
-		$console_logger->error("Clusters defined under the clusters keyword must define a clusterName");
+	if ( ( !exists $clusterParamHashRef->{'name'} ) || ( !defined $clusterParamHashRef->{'name'} ) ) {
+		$console_logger->error("All KubernetesCluster definitions must include a name.");
 		exit(-1);
-	}
-	my $clusterName = $clusterParamHashRef->{'clusterName'};
+	} 
+	my $clusterName = $clusterParamHashRef->{'name'};
+	if ( ( !exists $clusterParamHashRef->{'kubernetesConfigFile'} ) || ( !defined $clusterParamHashRef->{'kubernetesConfigFile'} ) ) {
+		$console_logger->error("KubernetesCluster $clustername does not have a kubernetesConfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
+		exit(-1);
+	}	
+	if ( exists $nameToComputeResourceHashRef->{$clusterName} ) {
+		$console_logger->error("All KubernetesCluster definitions must have a unique name.  $clusterName is used for more than one DockerHost or KubernetesCluster.");
+		exit(-1);
+	}	
 	$weathervane_logger->debug("Creating cluster for cluster $clusterName\n");
 
-	my $cluster = 0;
-	my $createdNew = 0;
-	if ( exists $clusterNameToClusterHashRef->{$clusterName} ) {
-		$cluster = $clusterNameToClusterHashRef->{$clusterName}
-	}
-	else {
-		$createdNew = 1;
-		$cluster = ClusterFactory->getCluster($clusterParamHashRef);
-		$runProcedure->addCluster($cluster);
-		$clusterNameToClusterHashRef->{$clusterName} = $cluster;
-	}
-
-	if ($instance) {
-		$instance->setHost($cluster);
-	}
-
-	my @retVal = ($createdNew, $cluster);
-
-	return \@retVal;
+	my $cluster = HostFactory->getKubernetesCluster($clusterParamHashRef);
+	$runProcedure->addCluster($cluster);
+	$nameToComputeResourceHashRef->{$clusterName} = $cluster;
+	return $cluster;
 }
 
-sub createComputeResource {
-	my ($paramsHashRef, $instanceParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef, $ipToHostHashRef) = @_;
-	my $weathervane_logger = get_logger("Weathervane");
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	$json = $json->max_depth(4096);
-
-	$weathervane_logger->debug("createComputeResource  ");
+# Get the host to use for an Instance (driver, dataManager, service, etc) 
+sub getComputeResourceForInstance {
+	my ($serviceType, $instance, $nameToComputeResourceHashRef) = @_;
 	
-	my $retArrayRef;
-	if ($instanceParamHashRef->{"clusterName"}) {
-		my $clusterParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
-			"clusters" );
-		$weathervane_logger->debug( "For cluster ", $instanceParamHashRef->{'clusterName'}, " the Param hash ref is:" );
-		my $tmp = $json->encode($clusterParamHashRef);
-		$weathervane_logger->debug($tmp);
-		$retArrayRef = createCluster( $clusterParamHashRef, $runProcedure, $instance, $clusterNameToClusterHashRef );		
-	} else {
-		my $hostParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $instanceParamHashRef,
-			"hosts" );
-		$weathervane_logger->debug( "For host ", $hostParamHashRef->{'hostName'}, " the Param hash ref is:" );
-		my $tmp = $json->encode($hostParamHashRef);
-		$weathervane_logger->debug($tmp);
-		$retArrayRef = createHost( $hostParamHashRef, $runProcedure, $instance, $ipToHostHashRef );
-
-		my ($createdNew, $host) = @$retArrayRef;
+	# If the instance defines a hostname, then we must use that to find the host.
+	if ($instance->getParamValue("hostname")) {
+		my $hostname = $instance->getParamValue("hostname");
+		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
+		  $console_logger->error("Instance " . $instance->name . " specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		return $nameToComputeResourceHashRef->{$hostname};
 	}
 	
-	return $retArrayRef;
+	# If the xxxServerHosts was defined for this serviceType, then use 
+	# the right host from that list as determined by the instanceNum.
+	# The assignment of host to instance wraps if the instanceNum is greater
+	# than the number of hot names specified.
+	if ($instance->getParamValue("${serviceType}Hosts")) {
+		my $hostListRef = $instance->getParamValue("${serviceType}Hosts");
+		my $hostListLength = $#{$hostListRef} + 1;
+		my $instanceNum = $instance->instanceNum;
+		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
+		my $hostname = $hostListRef->[$hostListIndex];
+		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
+		  $console_logger->error("Instance " . $instance->name . " was assigned hostname $hostname from ${serviceType)Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		return $nameToComputeResourceHashRef->{$hostname};		
+	}
 	
+	# At this point we should use the value of appInstanceHost.  If it is not defined, then 
+	# there is an error.
+	my $hostname = $instance->getParamValue("appInstanceHost");
+	if ($hostname) {
+		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
+		  $console_logger->error("Instance " . $instance->name . " was assigned hostname $hostname from appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		return $nameToComputeResourceHashRef->{$hostname};		
+	} else {
+		  $console_logger->error("Instance " . $instance->name . " was does not have a hostname defined.\n" . 
+		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n") .
+		     "If using a custom configurationSize, you can also specify the host name using the hostname parameter for this instance";
+		  exit(-1);	
+	}
 }
 
 # read in the command-line options
@@ -418,14 +410,6 @@ setParamValue( $paramsHashRef, "rampUp",      $rampUp );
 setParamValue( $paramsHashRef, "steadyState", $steadyState );
 setParamValue( $paramsHashRef, "rampDown",    $rampDown );
 
-
-# make sure that JAVA_HOME is defined
-my $javaHome         = $ENV{'JAVA_HOME'};
-if ( !( defined $javaHome ) ) {
-	$console_logger->warn("The environment variable JAVA_HOME must be defined in order for Weathervane to run.");
-	return 0;
-}
-
 # Check for a request for the help text
 my $help = getParamValue( $paramsHashRef, "help" );
 if ($help) {
@@ -467,7 +451,7 @@ if ( $logger->is_debug() ) {
 
 # Start by building the runManager.  It holds the entire structure needed for the run(s)
 my $runManagerParamHashRef =
-  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $paramsHashRef, "runManagerInstance", 0 );
+  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $paramsHashRef, "runManagerInstance" );
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($runManagerParamHashRef);
 	$logger->debug( "The runManager instance paramHashRef is:\n" . $tmp );
@@ -488,53 +472,36 @@ $runProcedure->origParamHashRef($paramsHashRef);
 # Set the run Procedure in the runmanager
 $runManager->setRunProcedure($runProcedure);
 
-# Get the parameters for the hosts that are explicitly defined in
-# The configuration parameters
-my %ipToHostHash;
-my $instancesListRef = $runProcedureParamHashRef->{"hosts"};
+# Create the dockerHosts
+my %nameToComputeResourceHash;
+my $instancesListRef = $runProcedureParamHashRef->{"dockerHosts"};
 my $hostsParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "hosts", 1 );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "dockerHosts" );
 foreach my $paramHashRef (@$hostsParamHashRefs) {
-	$logger->debug( "For host ", $paramHashRef->{'name'}, " the Param hash ref is:" );
+	$logger->debug( "For dockerHost ", $paramHashRef->{'name'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
-	my $retArrayRef = createHost( $paramHashRef, $runProcedure, 0, \%ipToHostHash );
-	my ($createdNew, $host) = @$retArrayRef;
-	if ( !$createdNew ) {
-		$console_logger->warn( "Warning: Have defined multiple host instances in the host block which point "
-			  . "to the same IP address.\nOnly the parameters for the first such host will be used." );
-	}
+	my $host = createDockerHost( $paramHashRef, $runProcedure, \%nameToComputeResourceHash );
 }
 
-# Get the parameters for the clusters that are explicitly defined in
-# The configuration parameters
-my %clusterNameToClusterHash;
-$instancesListRef = $runProcedureParamHashRef->{"clusters"};
+# Create the kubernetesClusters
+$instancesListRef = $runProcedureParamHashRef->{"kubernetesClusters"};
 my $clustersParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "clusters", 1);
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "kubernetesClusters");
 foreach my $paramHashRef (@$clustersParamHashRefs) {
-	$logger->debug( "For cluster ", $paramHashRef->{'clusterName'}, " the Param hash ref is:" );
+	$logger->debug( "For kubernetesCluster ", $paramHashRef->{'name'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
-	my $retArrayRef = createCluster( $paramHashRef, $runProcedure, 0, \%clusterNameToClusterHash );
-	my ($createdNew, $host) = @$retArrayRef;
-	if ( !$createdNew ) {
-		$console_logger->error( "Error: Have defined multiple cluster instances in the cluster block with the same clusterName. This is not allowed." );
-		exit 1;
-	}
+	my $cluster = createCluster( $paramHashRef, $runProcedure, 0, \%nameToComputeResourceHash );
 }
 
 # Get the parameters for the workload instances
-my $nextInstanceNum = 1;
 my $numDefault      = $runProcedureParamHashRef->{"numWorkloads"};
 my $workloadsParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $numDefault, "workloads",
-	$nextInstanceNum );
-$nextInstanceNum += $numDefault;
+  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $numDefault, "workloads" );
 $instancesListRef = $runProcedureParamHashRef->{"workloads"};
 my $instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "workloads",
-	$nextInstanceNum );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "workloads" );
 push @$workloadsParamHashRefs, @$instancesParamHashRefs;
 
 my $numWorkloads = $#{$workloadsParamHashRefs} + 1;
@@ -548,49 +515,26 @@ if ( $logger->is_debug() ) {
 }
 $console_logger->info("Run Configuration has $numWorkloads workloads.");
 
-# Figure out how many appInstances in each workload to that can
-# decide whether we need to use all suffixes.
-my $maxNumAppInstances = 0;
-my $workloadNum        = 1;
-foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
-
-	# Get the paramHashRefs for the appInstances
-
-	my $numAppInstances = $workloadParamHashRef->{"numAppInstances"};
-	$instancesListRef = $workloadParamHashRef->{"appInstances"};
-	$numAppInstances += $#{$instancesListRef} + 1;
-	if ( $numAppInstances > $maxNumAppInstances ) {
-		$maxNumAppInstances = $numAppInstances;
-	}
-	$logger->debug("The number of appInstances for workload $workloadNum is $numAppInstances");
-	$workloadNum++;
-}
-$logger->debug("The max number of appInstances is $maxNumAppInstances");
-
 # Create the workload instances and all of their sub-parts
 $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
-	$workloadParamHashRef->{'workloadNum'} = $workloadNum;
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
+	$workload->instanceNum($workloadNum);
 	if ( $numWorkloads > 1 ) {
 		$workload->useSuffix(1);
 	}
 	push @workloads, $workload;
 
 	# Get the paramHashRefs for the appInstances
-	$nextInstanceNum = 1;
 	$numDefault      = $workloadParamHashRef->{"numAppInstances"};
 	my $appInstanceParamHashRefs =
-	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "appInstances",
-		$nextInstanceNum);
-	$nextInstanceNum += $numDefault;
+	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "appInstances");
 	$instancesListRef = $workloadParamHashRef->{"appInstances"};
 	$instancesParamHashRefs =
-	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "appInstances",
-		$nextInstanceNum);
+	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "appInstances");
 	push @$appInstanceParamHashRefs, @$instancesParamHashRefs;
 
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
@@ -604,16 +548,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# Get the parameters for the driver instances
-	$nextInstanceNum = 1;
 	$numDefault      = $workloadParamHashRef->{"numDrivers"};
 	my $driversParamHashRefs =
-	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault,
-		"drivers", $nextInstanceNum);
-	$nextInstanceNum += $numDefault;
+	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "drivers");
 	$instancesListRef = $workloadParamHashRef->{"drivers"};
 	$instancesParamHashRefs =
-	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef,
-		"drivers", $nextInstanceNum);
+	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "drivers");
 	push @$driversParamHashRefs, @$instancesParamHashRefs;
 
 	if ( $#$driversParamHashRefs < 0 ) {
@@ -624,6 +564,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# The first driver is the primary driver.  The others are secondaries
+	my $driverNum = 1;
 	my $primaryDriverParamHashRef = shift @$driversParamHashRefs;
 	if ( $logger->is_debug() ) {
 		my $tmp = $json->encode($primaryDriverParamHashRef);
@@ -632,13 +573,15 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Create the primary workload driver
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef);
-
-	# Create the computeResource for the primary driver
-	my $retArrayRef = createComputeResource( $paramsHashRef, $primaryDriverParamHashRef, $runProcedure, $workloadDriver, \%clusterNameToClusterHash, \%ipToHostHash );
+	$workloadDriver->setWorkload($workload);
+	$workloadDriver->instanceNum($driverNum);
+	$driverNum++;
+	
+	# Get the computeResource for the primary driver
+	$workloadDriver->host(getComputeResourceForInstance( "driver", $workloadDriver, \%nameToComputeResourceHash));
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
-	$workloadDriver->setWorkload($workload);
 
 	my $numSecondaries = $#{$driversParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
@@ -657,9 +600,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef);
+		$secondary->instanceNum($driverNum);
+		$secondary->setWorkload($workload);
+		$driverNum++;
 
-		# Create the host for the secondary driver
-		my $retArrayRef = createComputeResource( $paramsHashRef, $secondaryDriverParamHashRef, $runProcedure, $secondary, \%clusterNameToClusterHash, \%ipToHostHash );
+		# get the host for the secondary driver
+		$secondary->host(getComputeResourceForInstance( "driver", $secondary, \%nameToComputeResourceHash));
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -675,13 +621,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
 		}
-		$appInstanceParamHashRef->{'instanceNum'}    = $appInstanceNum;
-		$appInstanceParamHashRef->{'appInstanceNum'} = $appInstanceNum;
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
-		if ($appInstanceParamHashRef->{'clusterName'}) {
-			# App instances running on clusters have a cluster object
-			my $retArrayRef = createComputeResource( $paramsHashRef, $appInstanceParamHashRef, $runProcedure, $appInstance, \%clusterNameToClusterHash, \%ipToHostHash);			
-		}
+		$appInstance->instanceNum($appInstanceNum);
+		$appInstance->workload($workload);
 		push @appInstances, $appInstance;
 
 		# Overwrite the appInstance's parameters with those specified by the configuration size.
@@ -703,16 +645,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			my @services;
 
 			# Get the service instance parameters
-			$nextInstanceNum = 1;
 			$numDefault      = $appInstanceParamHashRef->{ "num" . ucfirst($serviceType) . "s" };
 			my $svcInstanceParamHashRefs =
-			  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault,
-				$serviceType . "s", $nextInstanceNum);
-			$nextInstanceNum += $numDefault;
+			  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault, $serviceType . "s");
 			$instancesListRef = $appInstanceParamHashRef->{ $serviceType . "s" };
 			$instancesParamHashRefs =
-			  Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef,
-				$serviceType . "s", $nextInstanceNum );
+			  Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef, $serviceType . "s" );
 			push @$svcInstanceParamHashRefs, @$instancesParamHashRefs;
 
 			my $numScvInstances = $#{$svcInstanceParamHashRefs} + 1;
@@ -731,13 +669,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			# Create the service instances and add them to the appInstance
 			my $svcNum = 1;
 			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {
-				$svcInstanceParamHashRef->{"instanceNum"} = $svcNum;
 				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
 				my $service =
 				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance );
+				$service->instanceNum($svcNum);
+				$service->appInstance($appInstance);
 				push @services, $service;
 				# Create the ComputeResource for the service
-				my $retArrayRef = createComputeResource( $paramsHashRef, $svcInstanceParamHashRef, $runProcedure, $service, \%clusterNameToClusterHash, \%ipToHostHash);
+				$service->host(getComputeResourceForInstance( $serviceType, $service, \%nameToComputeResourceHash));
 				
 				$svcNum++;
 			}
@@ -764,11 +703,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 		my $dataManager = DataManagerFactory->getDataManager( $dataManagerParamHashRef, $appInstance );
 		$appInstance->setDataManager($dataManager);
+		$dataManager->setAppInstance($appInstance);
 		$dataManager->setWorkloadDriver($workloadDriver);
 
 		# Create the ComputeResource for the dataManager
-		my $retArrayRef = createComputeResource( $paramsHashRef, $dataManagerParamHashRef, $runProcedure, $dataManager, \%clusterNameToClusterHash, \%ipToHostHash);
-
+		$dataManager->host(getComputeResourceForInstance( "dataManager", $dataManager, \%nameToComputeResourceHash));
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 
 		# Now that the configuration of the appInstance is complete, ask it to check whether the
@@ -778,9 +717,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				"The configuration of appInstance $appInstanceNum is invalid for workload type $workloadImpl");
 			exit(-1);
 		}
-
 		$appInstanceNum++;
-
 	}
 	$workload->setAppInstances( \@appInstances );
 	$workload->setPortNumbers();
@@ -791,8 +728,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 $runProcedure->setWorkloads( \@workloads );
 
 # Create the Virtual Infrastructure
-my $viParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runProcedureParamHashRef,
-	"virtualInfrastructureInstance", 0 );
+my $viParamHashRef = Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runProcedureParamHashRef, "virtualInfrastructureInstance");
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($viParamHashRef);
 	$logger->debug( "The virtualInfrastructure instance paramHashRef is:\n" . $tmp );
@@ -802,16 +738,12 @@ my $vi = VIFactory->getVI($viParamHashRef);
 $runProcedure->setVirtualInfrastructure($vi);
 
 # Set up the virtualInfrastructure Management Hosts
-$nextInstanceNum = 1;
 $numDefault      = $viParamHashRef->{"numViMgmtHosts"};
 my $viMgmtHostInstanceParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viMgmtHosts",
-	$nextInstanceNum, 0 );
-$nextInstanceNum += $numDefault;
+  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viMgmtHosts");
 $instancesListRef = $viParamHashRef->{"viMgmtHosts"};
 $instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viMgmtHosts",
-	$nextInstanceNum, 0 );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viMgmtHosts");
 push @$viMgmtHostInstanceParamHashRefs, @$instancesParamHashRefs;
 
 if ( $logger->is_debug() ) {
@@ -831,16 +763,12 @@ foreach my $viMgmtHostInstanceParamHashRef (@$viMgmtHostInstanceParamHashRefs) {
 }
 
 # Create all of the virtual infrastructure Hosts
-$nextInstanceNum = 1;
 $numDefault      = $viParamHashRef->{"numViHosts"};
 my $viHostInstanceParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viHosts",
-	$nextInstanceNum, 0 );
-$nextInstanceNum += $numDefault;
+  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viHosts");
 $instancesListRef = $viParamHashRef->{"viHosts"};
 $instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viHosts",
-	$nextInstanceNum, 0 );
+  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viHosts");
 push @$viHostInstanceParamHashRefs, @$instancesParamHashRefs;
 
 if ( $logger->is_debug() ) {

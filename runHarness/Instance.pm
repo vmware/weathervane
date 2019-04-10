@@ -21,6 +21,18 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 use namespace::autoclean;
 
+has 'name' => (
+	is        => 'rw',
+	isa       => 'Str',
+    default => 1,
+);
+
+has 'instanceNum' => (
+	is        => 'rw',
+	isa       => 'Num',
+    default => 1,
+);
+
 has 'paramHashRef' => (
 	is      => 'rw',
 	isa     => 'HashRef',

@@ -35,11 +35,6 @@ use WeathervaneTypes;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'virtualInfrastructure' => (
 	is  => 'rw',
 	isa => 'VirtualInfrastructure',
@@ -939,7 +934,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
@@ -951,7 +946,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
@@ -963,7 +958,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getAppInstanceStatsSummary();
 		my @keys      = keys %$tmpCsvRef;
@@ -975,7 +970,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary($tmpDir);
 		my @keys      = keys %$tmpCsvRef;
@@ -992,7 +987,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 			my $tmpCsvRef = $workload->getHostStatsSummary( $destinationPath, $prefix );
 			my @keys = keys %$tmpCsvRef;
@@ -1008,7 +1003,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 
 			my $usePrefix = 0;
@@ -1057,7 +1052,7 @@ sub getNextRunInfo {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix =
 			    "Workload "
-			  . $workload->getParamValue("workloadNum")
+			  . $workload->instanceNum
 			  . ", Implementation: "
 			  . $workload->getParamValue("workloadImpl");
 		}
@@ -1147,7 +1142,7 @@ sub interactiveMode {
 #				# Get current number of users for each workload
 #				$i = 0;
 #				foreach my $workloadRef (@$workloadsRef) {
-#					my $workloadNum                     = $workloadRef->getParamValue('workloadNum');
+#					my $workloadNum                     = $workloadRef->instanceNum;
 #					my $appInstanceToActiveUsersHashRef = $workloadRef->getNumActiveUsers();
 #
 #					foreach my $appInstance ( keys %$appInstanceToActiveUsersHashRef ) {
@@ -1173,10 +1168,10 @@ sub interactiveMode {
 #			foreach my $workloadRef (@$workloadsRef) {
 #				my $appInstancesRef = $workloadRef->appInstancesRef;
 #
-#				my $workloadNum = $workloadRef->getParamValue('workloadNum');
+#				my $workloadNum = $workloadRef->instanceNum;
 #				foreach my $appInstance (@$appInstancesRef) {
 #					$workloadNumHash{$numAppInstances}    = $workloadNum;
-#					$appInstanceNumHash{$numAppInstances} = $appInstance->getParamValue("appInstanceNum");
+#					$appInstanceNumHash{$numAppInstances} = $appInstance->instanceNum;
 #					$numAppInstances++;
 #				}
 #			}

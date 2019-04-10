@@ -80,7 +80,7 @@ override 'create' => sub {
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
-	my $nodeNum = $self->getParamValue('instanceNum');
+	my $nodeNum = $self->instanceNum;
 	my $users = $self->appInstance->getUsers();
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *

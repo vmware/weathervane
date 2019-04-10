@@ -30,11 +30,6 @@ use Instance;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'version' => (
 	is  => 'ro',
 	isa => 'Str',
@@ -107,9 +102,9 @@ override 'initialize' => sub {
 
 	# Assign a name to this service
 	my $serviceType = $self->getParamValue('serviceType');
-	my $workloadNum = $self->getWorkloadNum();
-	my $appInstanceNum = $self->getAppInstanceNum();
-	my $instanceNum = $self->getParamValue("instanceNum");
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $instanceNum = $self->instanceNum;
 	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}")
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
@@ -216,16 +211,6 @@ sub isEdgeService {
 	}
 }
 
-sub getWorkloadNum {
-	my ($self) = @_;
-	return $self->getParamValue('workloadNum');
-}
-
-sub getAppInstanceNum {
-	my ($self) = @_;
-	return $self->getParamValue('appInstanceNum');
-}
-
 sub getIpAddr {
 	my ($self) = @_;
 	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
@@ -282,13 +267,13 @@ sub start {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"start serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->getParamValue('appInstanceNum');
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
@@ -318,13 +303,13 @@ sub stop {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"stop serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->getParamValue('appInstanceNum');
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
@@ -365,7 +350,7 @@ sub pullDockerImage {
 	}
 
 	my $impl = $self->getImpl();
-	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->getParamValue("instanceNum"));
+	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->instanceNum);
 	$self->host->dockerPull($logfile, $impl);
 }
 

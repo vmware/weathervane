@@ -28,11 +28,6 @@ use namespace::autoclean;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 has 'users' => (
 	is  => 'rw',
 	isa => 'Int',
@@ -96,6 +91,11 @@ has 'alreadyFoundMax' => (
 	default => 0,
 );
 
+has 'workload' => (
+	is  => 'rw',
+	isa => 'Workload',
+);
+
 has 'dataManager' => (
 	is  => 'rw',
 	isa => 'DataManager',
@@ -138,8 +138,8 @@ override 'initialize' => sub {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 
 	# Assign a name to this service
-	my $workloadNum = $self->getWorkloadNum();
-	my $appInstanceNum = $self->getAppInstanceNum();
+	my $workloadNum = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 	$self->name("W${workloadNum}A${appInstanceNum}")
 
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
@@ -163,7 +163,7 @@ override 'initialize' => sub {
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
 	if ( $#$userLoadPath >= 0 ) {
-		$logger->debug( "AppInstance " . $self->getParamValue('instanceNum') . " uses a user load path." );
+		$logger->debug( "AppInstance " . $self->instanceNum . " uses a user load path." );
 		my $parsedPathRef = parseLoadPath($userLoadPath);
 		my $maxUsers         = $parsedPathRef->[0];
 		if ( $maxUsers > $self->users ) {
@@ -290,11 +290,6 @@ sub getEdgeService {
 	return $self->getParamValue('edgeService');
 }
 
-sub getInstanceNum {
-	my ($self) = @_;
-	return $self->getParamValue('instanceNum');
-}
-
 sub getUsers {
 	my ($self) = @_;
 	return $self->users;
@@ -316,8 +311,8 @@ sub getLoadPath {
 sub hasLoadPath {
 	my ($self)         = @_;
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('instanceNum');
+	my $workloadNum    = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 	my $userLoadPath   = $self->getParamValue('userLoadPath');
 	$logger->debug(
 		"AppInstance $appInstanceNum of workload $workloadNum has userLoadPath @$userLoadPath of length $#$userLoadPath"
@@ -333,7 +328,7 @@ sub hasLoadPath {
 sub getEdgeAddrsRef {
 	my ($self) = @_;
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 
 	my $edgeIpAddrsRef = [];
 	my $edgeService  = $self->getEdgeService();
@@ -373,9 +368,9 @@ sub adjustUsersForFindMax {
 	$logger->debug(
 		"adjustUsersForFindMax start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	if ( $self->alreadyFoundMax ) {
@@ -432,9 +427,9 @@ sub adjustUsersForFindMax {
 	$logger->debug(
 		"adjustUsersForFindMax end ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -444,9 +439,9 @@ sub adjustUsersForTargetUt {
 	$logger->debug(
 		"adjustUsersForTargetUt start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	if ( $self->alreadyFoundMax ) {
 		return;
@@ -479,9 +474,9 @@ sub adjustUsersForTargetUt {
 	$logger->debug(
 		"adjustUsersForTargetUt end ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -523,9 +518,9 @@ sub foundMax {
 			# Already failed at one step increase
 			$console_logger->info(
 				"Workload ",
-				$self->getParamValue('workloadNum'),
+				$self->workload->instanceNum,
 				", appInstance ",
-				$self->getParamValue('instanceNum'),
+				$self->instanceNum,
 				": At maximum of $users"
 			);
 			$foundMax = 1;
@@ -551,9 +546,9 @@ sub foundMax {
 		if ( ( $nextUsers <= $maxPass ) || ( $nextUsers < $minUsers ) ) {
 			$console_logger->info(
 				"Workload ",
-				$self->getParamValue('workloadNum'),
+				$self->workload->instanceNum,
 				", appInstance ",
-				$self->getParamValue('instanceNum'),
+				$self->instanceNum,
 				": At maximum of $maxPass"
 			);
 
@@ -567,9 +562,9 @@ sub foundMax {
 	$logger->debug(
 		"foundMax return " . $foundMax,
 		". Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	return $foundMax;
 }
@@ -580,9 +575,9 @@ sub hitTargetUt {
 	$logger->debug(
 		"hitTargetUt start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $console_logger = get_logger("Console");
@@ -601,9 +596,9 @@ sub hitTargetUt {
 	my $cpuUt = $self->lastTargetUtUtilization;
 	$console_logger->info(
 		"For workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", AppInstance ",
-		$self->getParamValue('instanceNum'),
+		$self->instanceNum,
 		", the average CPU Utilization for $targetUtilizationServiceType tier was $cpuUt"
 	);
 
@@ -618,9 +613,9 @@ sub hitTargetUt {
 		if ( !$passed ) {
 			$console_logger->error(
 				"Run Failed.  Workload ",
-				$self->getParamValue('workloadNum'),
+				$self->workload->instanceNum,
 				", AppInstance ",
-				$self->getParamValue('instanceNum'),
+				$self->instanceNum,
 				", cannot reach target CPU utilization. Failed at $cpuUt\%"
 			);
 			exit(-1);
@@ -651,9 +646,9 @@ sub hitTargetUt {
 	$logger->debug(
 		"hitTargetUt return " . $foundMax,
 		" Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	return $foundMax;
 
@@ -665,9 +660,9 @@ sub resetFindMax {
 	$logger->debug(
 		"resetFindMax ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	$self->minFailUsers(99999999);
@@ -687,15 +682,15 @@ sub getFindMaxInfoString {
 	$logger->debug(
 		"getFindMaxInfoString ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	my $returnString =
 	    "Workload "
-	  . $self->getParamValue('workloadNum')
+	  . $self->workload->instanceNum
 	  . ", appInstance "
-	  . $self->getParamValue('appInstanceNum') . ": ";
+	  . $self->instanceNum . ": ";
 	$returnString .= " Users = " . $self->users;
 	$returnString .= " InitialRateStep = " . $self->curRateStep;
 	$returnString .= " MinRateStep = " . $self->minRateStep . "\n";
@@ -707,9 +702,9 @@ sub pretouchData {
 	$logger->debug(
 		"pretouchData start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	$self->dataManager->pretouchData($setupLogDir);
@@ -721,9 +716,9 @@ sub setPortNumbers {
 	$logger->debug(
 		"setPortNumbers start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	my $impl = $self->getParamValue('workloadImpl');
 
@@ -738,9 +733,9 @@ sub setPortNumbers {
 	$logger->debug(
 		"setPortNumbers finish ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -750,9 +745,9 @@ sub setExternalPortNumbers {
 	$logger->debug(
 		"setExternalPortNumbers start ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 	my $impl = $self->getParamValue('workloadImpl');
 
@@ -771,9 +766,9 @@ sub setExternalPortNumbers {
 	$logger->debug(
 		"setExternalPortNumbers finish ",
 		"Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -808,9 +803,9 @@ sub startServices {
 	my $users    = $self->dataManager->getParamValue('maxUsers');
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl", 
 		" users = $users",
 		" setupLogDir = $setupLogDir"
@@ -844,9 +839,9 @@ sub stopServices {
 	my $impl   = $self->getParamValue('workloadImpl');
 	my $appInstanceName = $self->name;
 	$logger->debug("stopServices for serviceTier $serviceTier, workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl"	);
 
 	my $logName         = "$setupLogDir/stop-$serviceTier-$appInstanceName.log";
@@ -894,8 +889,8 @@ sub isRunningAndUpDataServices {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $console_logger = get_logger("Console");
 	
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 		
 	# Make sure that all of the services are running and up (ready for requests)
 	$logger->debug(
@@ -1068,8 +1063,8 @@ sub isUp {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"isUp for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",     $self->getParamValue('appInstanceNum')
+		"isUp for workload ", $self->workload->instanceNum,
+		", appInstance ",     $self->instanceNum
 	);
 	my $impl  = $self->getParamValue('workloadImpl');
 	my $allUp = 1;
@@ -1109,9 +1104,9 @@ sub isUp {
 	}
 	$logger->debug(
 		"isUp finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl returning ", $allUp
 	);
 
@@ -1125,8 +1120,8 @@ sub isUpDataServices {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"isUpDataServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                 $self->getParamValue('appInstanceNum')
+		"isUpDataServices for workload ", $self->workload->instanceNum,
+		", appInstance ",                 $self->instanceNum
 	);
 	my $retries = $self->getParamValue('isUpRetries');
 	my $allUp;
@@ -1167,9 +1162,9 @@ sub isUpDataServices {
 	close $log;
 	$logger->debug(
 		"isUpDataServices finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl returning ", $allUp
 	);
 	return $allUp;
@@ -1181,9 +1176,9 @@ sub clearDataServicesBeforeStart {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
 		"clearDataServicesBeforeStart for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
@@ -1197,9 +1192,9 @@ sub clearDataServicesBeforeStart {
 	}
 	$logger->debug(
 		"clearDataServicesBeforeStart finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -1208,9 +1203,9 @@ sub clearDataServicesAfterStart {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
 		"clearDataServicesAfterStart for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 
 	my $impl             = $self->getParamValue('workloadImpl');
@@ -1224,9 +1219,9 @@ sub clearDataServicesAfterStart {
 	}
 	$logger->debug(
 		"clearDataServicesAfterStart finish for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -1235,9 +1230,9 @@ sub cleanDataServiceStatsFiles {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
 		"cleanDataServiceStatsFiles for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 	my $pid;
 	my @pids;
@@ -1271,9 +1266,9 @@ sub cleanDataServiceStatsFiles {
 	}
 	$logger->debug(
 		"cleanDataServiceStatsFiles finish for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 
 }
@@ -1283,9 +1278,9 @@ sub cleanDataServiceLogFiles {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
 		"cleanDataServiceLogFiles for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 	my $pid;
 	my @pids;
@@ -1317,9 +1312,9 @@ sub cleanDataServiceLogFiles {
 	}
 	$logger->debug(
 		"cleanDataServiceLogFiles finish for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 
 }
@@ -1328,8 +1323,8 @@ sub cleanupDataServices {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"cleanupDataServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                    $self->getParamValue('appInstanceNum')
+		"cleanupDataServices for workload ", $self->workload->instanceNum,
+		", appInstance ",                    $self->instanceNum
 	);
 
 	$self->cleanDataServiceStatsFiles();
@@ -1337,9 +1332,9 @@ sub cleanupDataServices {
 
 	$logger->debug(
 		"cleanupDataServices finish for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 }
 
@@ -1347,8 +1342,8 @@ sub cleanStatsFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"cleanStatsFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                $self->getParamValue('appInstanceNum')
+		"cleanStatsFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",                $self->instanceNum
 	);
 	my $pid;
 	my @pids;
@@ -1389,8 +1384,8 @@ sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"cleanLogFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",              $self->getParamValue('appInstanceNum')
+		"cleanLogFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",              $self->instanceNum
 	);
 	my $pid;
 	my @pids;
@@ -1428,8 +1423,8 @@ sub startStatsCollection {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"startStatsCollection for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                     $self->getParamValue('appInstanceNum')
+		"startStatsCollection for workload ", $self->workload->instanceNum,
+		", appInstance ",                     $self->instanceNum
 	);
 
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
@@ -1454,8 +1449,8 @@ sub stopStatsCollection {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"stopStatsCollection for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                    $self->getParamValue('appInstanceNum')
+		"stopStatsCollection for workload ", $self->workload->instanceNum,
+		", appInstance ",                    $self->instanceNum
 	);
 
 	# Start stops collection on services
@@ -1474,13 +1469,13 @@ sub getStatsFiles {
 	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"getStatsFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",              $self->getParamValue('appInstanceNum')
+		"getStatsFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",              $self->instanceNum
 	);
 
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
+		$newBaseDestinationPath .= "/appInstance" . $self->instanceNum;
 	}
 
 	my $impl         = $self->getParamValue('workloadImpl');
@@ -1503,8 +1498,8 @@ sub getLogFiles {
 	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"getLogFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum')
+		"getLogFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",            $self->instanceNum
 	);
 
 	my $pid;
@@ -1512,7 +1507,7 @@ sub getLogFiles {
 
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
+		$newBaseDestinationPath .= "/appInstance" . $self->instanceNum;
 	}
 
 	#  collection on services
@@ -1562,15 +1557,15 @@ sub getConfigFiles {
 	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"getConfigFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",               $self->getParamValue('appInstanceNum')
+		"getConfigFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",               $self->instanceNum
 	);
 	my $pid;
 	my @pids;
 	
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
+		$newBaseDestinationPath .= "/appInstance" . $self->instanceNum;
 	}
 
 	# If AI is running on Kubernetes, get the layout of the pods
@@ -1619,8 +1614,8 @@ sub sanityCheckServices {
 	my ( $self, $cleanupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"sanityCheckServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                    $self->getParamValue('appInstanceNum')
+		"sanityCheckServices for workload ", $self->workload->instanceNum,
+		", appInstance ",                    $self->instanceNum
 	);
 
 	my $impl         = $self->getParamValue('workloadImpl');
@@ -1635,9 +1630,9 @@ sub sanityCheckServices {
 
 	$logger->debug(
 		"sanityCheckServices finish for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl. Returning ", $passed
 	);
 
@@ -1654,8 +1649,8 @@ sub cleanData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"cleanData for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",          $self->getParamValue('appInstanceNum')
+		"cleanData for workload ", $self->workload->instanceNum,
+		", appInstance ",          $self->instanceNum
 	);
 
 	my $users = $self->users;
@@ -1668,8 +1663,8 @@ sub prepareDataServices {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users = $self->users;
 	$logger->debug(
-		"prepareDataServices for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		"prepareDataServices for workload ", $self->workload->instanceNum,
+		", appInstance ",            $self->instanceNum,
 		", users ",            $users,
 		", logDir ",            $setupLogDir
 	);
@@ -1682,8 +1677,8 @@ sub prepareData {
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users = $self->users;
 	$logger->debug(
-		"prepareData for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum'),
+		"prepareData for workload ", $self->workload->instanceNum,
+		", appInstance ",            $self->instanceNum,
 		", users ",            $users,
 		", logDir ",            $setupLogDir
 	);
@@ -1695,8 +1690,8 @@ sub loadData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"loadData for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",         $self->getParamValue('appInstanceNum')
+		"loadData for workload ", $self->workload->instanceNum,
+		", appInstance ",         $self->instanceNum
 	);
 	my $users = $self->users;
 
@@ -1722,8 +1717,8 @@ sub getHostStatsSummary {
 	my ( $self, $csvRef, $statsLogPath, $filePrefix, $prefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"getHostStatsSummary for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                    $self->getParamValue('appInstanceNum')
+		"getHostStatsSummary for workload ", $self->workload->instanceNum,
+		", appInstance ",                    $self->instanceNum
 	);
 	tie( my %csvRefByHostname, 'Tie::IxHash' );
 }
@@ -1732,8 +1727,8 @@ sub getStatsSummary {
 	my ( $self, $csvRef, $prefix, $statsLogPath ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
-		"getStatsSummary for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",                $self->getParamValue('appInstanceNum')
+		"getStatsSummary for workload ", $self->workload->instanceNum,
+		", appInstance ",                $self->instanceNum
 	);
 
 	my $impl         = $self->getParamValue('workloadImpl');
@@ -1757,9 +1752,9 @@ sub getStatsSummary {
 	}
 	$logger->debug(
 		"getStatsSummary finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum')
+		$self->instanceNum
 	);
 
 }

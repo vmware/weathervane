@@ -69,8 +69,8 @@ override 'getEdgeService' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"getEdgeService for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",               $self->getParamValue('appInstanceNum')
+		"getEdgeService for workload ", $self->workload->instanceNum,
+		", appInstance ",               $self->instanceNum
 	);
 
 	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
@@ -91,9 +91,9 @@ override 'getEdgeService' => sub {
 
 	$logger->debug(
 		"getEdgeService for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", returning ", $edgeServer
 	);
 
@@ -104,8 +104,8 @@ override 'checkConfig' => sub {
 	my ($self)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AuctionAppInstance");
-	my $workloadNum = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
 	my $edgeService              = $self->getParamValue('edgeService');
@@ -162,18 +162,6 @@ override 'checkConfig' => sub {
 
 	if ( $numAppServers < 1 ) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The number of application servers must be 1 or greater");
-		return 0;
-	}
-
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( ( $appServerCacheImpl ne 'ehcache' ) && ( $appServerCacheImpl ne 'ignite' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter appServerCacheImpl must be either ehcache or ignite");
-		return 0;
-	}
-
-	my $igniteAuthTokenCacheMode = $self->getParamValue('igniteAuthTokenCacheMode');
-	if ( ( $igniteAuthTokenCacheMode ne 'LOCAL' ) && ( $igniteAuthTokenCacheMode ne 'REPLICATED' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter igniteAuthTokenCacheMode must be either LOCAL or REPLICATED");
 		return 0;
 	}
 	
@@ -244,8 +232,8 @@ override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"redeploy for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",         $self->getParamValue('appInstanceNum')
+		"redeploy for workload ", $self->workload->instanceNum,
+		", appInstance ",         $self->instanceNum
 	);
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
@@ -290,14 +278,7 @@ sub getSpringProfilesActive {
 	my $db     = $dbsRef->[0]->getImpl();
 
 	$springProfilesActive = "postgresql";
-
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( $appServerCacheImpl eq "ehcache" ) {
-		$springProfilesActive .= ",ehcache";
-	}
-	else {
-		$springProfilesActive .= ",ignite";
-	}
+	$springProfilesActive .= ",ehcache";
 
 	my $imageStore = $self->getParamValue('imageStoreType');
 	if ( $imageStore eq "mongodb" ) {
@@ -342,9 +323,9 @@ sub getSpringProfilesActive {
 
 	$logger->debug(
 		"getSpringProfilesActive finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		". Returning: ",
 		$springProfilesActive
 	);
@@ -392,21 +373,6 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-		if ( $appServerCacheImpl eq 'ignite' ) {
-
-			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
-	
-			my $copyOnRead = "false";
-			if ( $self->getParamValue('igniteCopyOnRead') ) {
-				$copyOnRead = "true";
-			}
-			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-			my $appServersRef = $self->getAllServicesByType('appServer');
-			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
-			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-		}
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getAllServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {

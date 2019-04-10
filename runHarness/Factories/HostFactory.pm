@@ -17,11 +17,9 @@ use Moose;
 use MooseX::Storage;
 use MooseX::ClassAttribute;
 use Moose::Util qw( apply_all_roles );
-use ComputeResources::LinuxGuest;
-use ComputeResources::DockerRole;
-use ComputeResources::VICHost;
-use ComputeResources
-::ESXiHost;
+use ComputeResources::KubernetesCluster;
+use ComputeResources::DockerHost;
+use ComputeResources::ESXiHost;
 use Parameters qw(getParamValue);
 use Log::Log4perl qw(get_logger);
 
@@ -29,28 +27,28 @@ use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-sub getHost {
+sub getDockerHost {
 	my ( $self, $paramsHashRef ) = @_;
 	my $logger = get_logger("Weathervane::Factories::HostFactory");
-	my $host;	
-	my $isVIC = $paramsHashRef->{'vicHost'};	
 	my $hostname = $paramsHashRef->{'name'};
 	
-	if ($isVIC) {
-		$logger->debug("Creating a VIC Host with hostname $hostname");
-		$host = VICHost->new(
-			'paramHashRef' => $paramsHashRef,);
-	} else {
-		$logger->debug("Creating a Linux Host with hostname $hostname");
-		$host = LinuxGuest->new(
-			'paramHashRef' => $paramsHashRef,);
-	}
+	$logger->debug("Creating a DockerHost with hostname $hostname");
+	my $host = DockerHost->new('paramHashRef' => $paramsHashRef);
 	$host->initialize();
-	$host->isCluster(0);
-	
-	apply_all_roles($host, 'DockerRole');		
-
 	return $host;
+}
+
+sub getKubernetesCluster {
+	my ( $self, $paramsHashRef ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger = get_logger("Weathervane::Factories::HostFactory");
+	my $cluster;	
+	my $clusterName = $paramsHashRef->{'name'};
+	
+	$logger->debug("Creating a Kubernetes cluster with name $clusterName");
+	$cluster = KubernetesCluster->new('paramHashRef' => $paramsHashRef);
+	$cluster->initialize();
+	return $cluster;
 }
 
 sub getVIHost{

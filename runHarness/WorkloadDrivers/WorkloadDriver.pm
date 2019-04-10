@@ -26,11 +26,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 use namespace::autoclean;
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'description' => (
 	is  => 'ro',
 	isa => 'Str',
@@ -75,8 +70,8 @@ override 'initialize' => sub {
 	my $paramHashRef = $self->paramHashRef;
 	
 	# Assign a name to this driver
-	my $workloadNum = $self->getWorkloadNum();
-	my $instanceNum = $self->getParamValue("instanceNum");
+	my $workloadNum = $self->workload->instanceNum;
+	my $instanceNum = $self->instanceNum;
 	$self->name("driverW${workloadNum}I${instanceNum}")
 
 	my $weathervaneHome        = $paramHashRef->{ 'weathervaneHome' };
@@ -107,12 +102,6 @@ sub getNextPortMultiplier {
 	$self->nextPortMultiplier($retVal + 1);
 	
 	return $retVal;
-}
-
-sub setHost {
-	my ($self, $host) = @_;
-	
-	$self->host($host);
 }
 
 sub setWorkload {

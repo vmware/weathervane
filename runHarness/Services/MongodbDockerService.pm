@@ -134,7 +134,7 @@ override 'initialize' => sub {
 		$logger->debug("MongoDB .  MongoDB is not sharded or replicated.");
 	}
 	
-	my $instanceNumber = $self->getParamValue('instanceNum');
+	my $instanceNumber = $self->instanceNum;
 	if ( ( $self->numNosqlShards > 0 ) && ( $self->numNosqlReplicas > 0 ) ) {
 		$self->shardNum( ceil( $instanceNumber / ( 1.0 * $self->numNosqlReplicas ) ) );
 		$self->replicaNum( ( $instanceNumber % $self->numNosqlReplicas ) + 1 );
@@ -164,7 +164,7 @@ sub setPortNumbers {
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
 	my $portOffset     = $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier;
 
-	my $instanceNumber = $self->getParamValue('instanceNum');
+	my $instanceNumber = $self->instanceNum;
 	$self->internalPortMap->{'mongod'}  = 27017 + $portOffset;
 	$self->internalPortMap->{'mongos'}  = 27017;
 	$self->internalPortMap->{'mongoc1'} = 27019;
@@ -573,8 +573,8 @@ sub startMongodServers {
 sub startMongocServers {
 	my ( $self, $dblog ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
-	my $workloadNum = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $suffix = "W${workloadNum}I${appInstanceNum}";
 
 	print $dblog "Starting config servers\n";
@@ -691,8 +691,8 @@ sub waitForMongodbReplicaSync {
 	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane::Services::MongodbDockerService");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug( "waitForMongodbReplicaSync for workload $workloadNum, appInstance $appInstanceNum" );
 
 	my $inSync           = 0;
@@ -729,8 +729,8 @@ sub waitForMongodbReplicaSync {
 sub startMongosServers {
 	my ( $self, $configdbString, $dblog ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
-	my $wkldNum     = $self->getWorkloadNum();
-	my $appInstNum  = $self->getAppInstanceNum();
+	my $wkldNum     = $self->appInstance->workload->instanceNum;
+	my $appInstNum  = $self->appInstance->instanceNum;
 
 	print $dblog "Starting mongos servers\n";
 	$logger->debug("Starting mongos servers");
@@ -908,8 +908,8 @@ sub stopMongodServers {
 sub stopMongocServers {
 	my ( $self, $dblog ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
-	my $wkldNum     = $self->getWorkloadNum();
-	my $appInstNum  = $self->getAppInstanceNum();
+	my $wkldNum     = $self->appInstance->workload->instanceNum;
+	my $appInstNum  = $self->appInstance->instanceNum;
 
 	print $dblog "Stopping config servers\n";
 	$logger->debug("Stopping config servers");
@@ -931,8 +931,8 @@ sub stopMongocServers {
 sub stopMongosServers {
 	my ( $self, $dblog ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
-	my $wkldNum     = $self->getWorkloadNum();
-	my $appInstNum  = $self->getAppInstanceNum();
+	my $wkldNum     = $self->appInstance->workload->instanceNum;
+	my $appInstNum  = $self->appInstance->instanceNum;
 
 	print $dblog "Stopping mongos servers\n";
 	$logger->debug("Stopping mongos servers");
@@ -1055,8 +1055,8 @@ sub getLogFiles {
 			$appInstance->numShardsProcessed(1);
 
 			# get the logs from the config servers
-			my $wkldNum          = $self->getWorkloadNum();
-			my $appInstNum       = $self->getAppInstanceNum();
+			my $wkldNum          = $self->appInstance->workload->instanceNum;
+			my $appInstNum       = $self->appInstance->instanceNum;
 			my $configServersRef = $self->configServersRef;
 			my $curCfgSvr        = 1;
 			foreach my $configServer (@$configServersRef) {

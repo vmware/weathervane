@@ -40,7 +40,7 @@ has 'dockerNameHashRef' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	my $hostname   = $self->name;
-	my $dockerPort = $self->getParamValue('dockerHostPort');
+	my $dockerPort = $self->getParamValue('dockerPort');
 	$self->dockerHostString( "DOCKER_HOST=" . $hostname . ":" . $dockerPort );
 		
 	super();

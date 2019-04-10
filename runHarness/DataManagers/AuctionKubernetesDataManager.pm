@@ -56,8 +56,8 @@ sub startDataManagerContainer {
 
 	my $namespace = $self->appInstance->namespace;
 	my $configDir = $self->getParamValue('configDir');
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $maxDuration = $self->getParamValue('maxDuration');
 	my $totalTime =
 	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
@@ -145,8 +145,8 @@ sub prepareDataServices {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {
@@ -173,8 +173,8 @@ sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
@@ -255,8 +255,8 @@ sub pretouchData {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
@@ -522,8 +522,8 @@ sub loadData {
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $cluster = $self->host;
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}.log";
 	my $namespace = $self->appInstance->namespace;
@@ -612,8 +612,8 @@ sub isDataLoaded {
 
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}.log";
@@ -644,7 +644,7 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->getParamValue('appInstanceNum');
 	my $name        = $self->name;
 	my $cluster = $self->host;

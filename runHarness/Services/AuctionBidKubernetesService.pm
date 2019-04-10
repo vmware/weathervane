@@ -62,7 +62,7 @@ sub configure {
 	my $connections        = $self->getParamValue('auctionBidServerJdbcConnections');
 	my $tomcatCatalinaBase = $self->getParamValue('bidServiceCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('auctionBidServerJdbcConnections') / 2);
-	my $nodeNum = $self->getParamValue('instanceNum');
+	my $nodeNum = $self->instanceNum;
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /

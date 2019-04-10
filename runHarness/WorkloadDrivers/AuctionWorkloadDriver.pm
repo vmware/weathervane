@@ -301,7 +301,7 @@ sub createRunConfigHash {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $steadyState      = $self->getParamValue('steadyState');
@@ -490,7 +490,7 @@ override 'configure' => sub {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("configure for workload $workloadNum, suffix = $suffix");
 	$self->suffix($suffix);
 	$self->appInstances($appInstancesRef);
@@ -578,7 +578,7 @@ override 'redeploy' => sub {
 sub killOld {
 	my ($self, $setupLogDir)           = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	my $console_logger = get_logger("Console");
 
 	my $logName = "$setupLogDir/killOld$workloadNum.log";
@@ -711,7 +711,7 @@ sub initializeRun {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$self->suffix($suffix);
 	my $port = $self->portMap->{'http'};
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	my $runName = "runW${workloadNum}";
 
 	my $logName = "$logDir/InitializeRun$suffix.log";
@@ -914,7 +914,7 @@ sub startRun {
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $weathervaneWorkloadHome = $self->getParamValue('workloadDriverDir');
 	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
 	my $steadyState         = $self->getParamValue('steadyState');
@@ -1159,7 +1159,7 @@ sub stopRun {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
@@ -1225,7 +1225,7 @@ sub isUp {
 	my ($self) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my $hostname = $self->host->name;
@@ -1260,7 +1260,7 @@ sub isStarted {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my $hostname = $self->host->name;
@@ -1443,7 +1443,7 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 # ToDo: Add a script to the docker image to do this:
 #	my $hostname = $self->host->name;
 #	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
@@ -1460,7 +1460,7 @@ sub getStatsFiles {
 	my ( $self, $baseDestinationPath ) = @_;
 	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
-	my $workloadNum      = $self->getParamValue('workloadNum');
+	my $workloadNum      = $self->workload->instanceNum;
 	my $name               = $self->name;
 		
 	if ( !( -e $destinationPath ) ) {
@@ -1537,7 +1537,7 @@ sub getWorkloadStatsSummary {
 
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
-		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+		my $appInstanceNum = $appInstanceRef->instanceNum;
 		my $prefix = "-AI${appInstanceNum}";
 
 		my $isPassed = $self->isPassed( $appInstanceRef, $tmpDir );
@@ -1696,7 +1696,7 @@ sub getStatsSummary {
 
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {
-		my $workloadNum = $self->getParamValue('workloadNum');
+		my $workloadNum = $self->workload->instanceNum;
 		open( HOSTCSVFILE,
 ">>$statsLogPath/workload${workloadNum}_workloadDriver_gc_summary.csv"
 		  )
@@ -1792,7 +1792,7 @@ sub getNumActiveUsers {
 	my ($self) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -1866,7 +1866,7 @@ sub setNumActiveUsers {
 	my ( $self, $appInstanceName, $numUsers ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -1951,7 +1951,7 @@ sub parseStats {
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;

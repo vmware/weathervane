@@ -66,8 +66,8 @@ sub setMongosDocker {
 sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
@@ -142,8 +142,8 @@ sub startDataManagerContainer {
 sub stopDataManagerContainer {
 	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 
 	$self->host->dockerStopAndRemove( $applog, $name );
@@ -169,8 +169,8 @@ sub prepareDataServices {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $appInstance    = $self->appInstance;
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
@@ -219,8 +219,8 @@ sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $maxUsers = $self->getParamValue('maxUsers');
@@ -296,8 +296,8 @@ sub pretouchData {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
@@ -636,8 +636,8 @@ sub loadData {
 	my $hostname    = $self->host->name;
 	my $name        = $self->name;
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $appInstance      = $self->appInstance;
 
@@ -702,8 +702,8 @@ sub isDataLoaded {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $hostname = $self->host->name;
@@ -738,8 +738,8 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $name        = $self->name;
 
 	my $appInstance = $self->appInstance;

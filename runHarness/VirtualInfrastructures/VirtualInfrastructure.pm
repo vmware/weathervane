@@ -28,11 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'version' => (
 	is  => 'ro',
 	isa => 'Str',

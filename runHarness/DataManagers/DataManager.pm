@@ -33,11 +33,6 @@ use namespace::autoclean;
 use WeathervaneTypes;
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'appInstance' => (
 	is      => 'rw',
 	isa     => 'AppInstance',
@@ -113,17 +108,6 @@ sub setAppInstance {
 sub setWorkloadDriver {
 	my ($self, $driver) = @_;
 	$self->workloadDriver($driver);
-}
-
-sub getWorkloadNum {
-	my ($self) = @_;
-	return $self->getParamValue('workloadNum');
-}
-
-sub getAppInstanceNum {
-	my ($self) = @_;
-	return 	$self->appInstance();
-
 }
 
 sub getDockerName {

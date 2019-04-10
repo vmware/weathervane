@@ -36,12 +36,6 @@ my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
 
-sub getParamHashAsJson {
-	my ($key, $paramHashRef) = @_;
-	
-	
-}
-
 sub getParamDefault {
 	my ($key) = @_;
 
@@ -65,7 +59,6 @@ sub getParamType {
 }
 
 sub getParamKeys {
-
 	my @keys = keys %Parameters::parameters;
 
 	return \@keys;
@@ -403,7 +396,7 @@ sub getMostSpecificValue {
 }
 
 sub getInstanceParamHashRef {
-	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $instanceNum, $allParamsRef )
+	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $allParamsRef )
 	  = @_;
 
 	my %instanceParamHash;
@@ -411,24 +404,6 @@ sub getInstanceParamHashRef {
 	my $parent = $Parameters::parameters{$instanceKey}->{"parent"};
 	if ( !exists $Parameters::parameters{$instanceKey}->{"isa"} ) {
 		die "Trying to get instance parameters for an $instanceKey, but this is not an instance of any type";
-	}
-	my $isa = $Parameters::parameters{$instanceKey}->{"isa"};
-
-	my $appInstanceSuffix = "A";
-	my $appInstanceNum    = "";
-	if (( exists $parentHashRef->{'appInstanceSuffix'} )
-		&& ( $parentHashRef->{'appInstanceSuffix'} )
-		&& ( exists $parentHashRef->{'appInstanceNum'} )
-		&& ( $parentHashRef->{'appInstanceNum'} ) )
-	{
-		$appInstanceNum    = $parentHashRef->{'appInstanceNum'};
-	}
-	my $wkldSuffix = "W";
-	my $wkldNum    = "";
-	if (( exists $parentHashRef->{'workloadNum'} )
-		&& ( $parentHashRef->{'workloadNum'} ) )
-	{
-		$wkldNum    = $parentHashRef->{'workloadNum'};
 	}
 
 	# Iterate through the parameters, adding the most specific value to the
@@ -438,31 +413,21 @@ sub getInstanceParamHashRef {
 		$instanceParamHash{$param} = $value;
 	}
 
-	# Set the instanceNum in the params
-	$instanceParamHash{"instanceNum"} = $instanceNum;
-
 	return \%instanceParamHash;
 }
 
 # This method is used to get the parameters for the instances of a service
 # using the num${serviceType}s parameter to define the count of instances.
-# The startingInstanceNumber is used to assign instanceNumbers to instance
-# parameters that require a number.
 sub getDefaultInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey, $startingInstanceNum ) = @_;
+	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey ) = @_;
 
 	my @instanceParamHashRefs = ();
 	my $isa                   = $Parameters::parameters{$instanceKey}->{"isa"};
 	my $allParamsRef          = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, {} );
 
-	for (
-		my $instanceNum = $startingInstanceNum ;
-		$instanceNum < ( $numToCreate + $startingInstanceNum ) ;
-		$instanceNum++
-	  )
-	{
+	for (my $i = 0 ; $i < $numToCreate  ; $i++ ) {
 		my $instanceParamHashRef =
-		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $instanceNum, $allParamsRef);
+		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $allParamsRef);
 		push @instanceParamHashRefs, $instanceParamHashRef;
 	}
 
@@ -471,14 +436,11 @@ sub getDefaultInstanceParamHashRefs {
 
 # This method is used to get the parameters for the instances of a service
 # that are partially defined by Instance hashes in the input configuration
-# The startingInstanceNumber is used to assign instanceNumbers to instance
-# parameters that require a number.
 sub getInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey, $startingInstanceNum ) =
+	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey ) =
 	  @_;
 
 	my @instanceParamHashRefs = ();
-	my $instanceNum           = $startingInstanceNum;
 	my $isa                   = $Parameters::parameters{$instanceKey}->{"isa"};
 
 	foreach my $instanceHashRef (@$instancesListRef) {
@@ -486,11 +448,10 @@ sub getInstanceParamHashRefs {
 		my $allParamsRef = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, $instanceHashRef );
 
 		my $instanceParamHashRef =
-		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
+		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey,
 			$allParamsRef );
 		push @instanceParamHashRefs, $instanceParamHashRef;
 
-		$instanceNum++;
 	}
 
 	return \@instanceParamHashRefs;
@@ -498,10 +459,8 @@ sub getInstanceParamHashRefs {
 
 # This gets the parameters for singleton instances, like the
 # dataManager, etc.
-# Instance number for singletons is assumed to be 1
 sub getSingletonInstanceParamHashRef {
 	my ( $paramsHashRef, $parentParamHashRef, $instanceKey ) = @_;
-	my $instanceNum = 1;
 	my $instanceHashRef = {};
 	if ( exists $parentParamHashRef->{$instanceKey} ) {
 		$instanceHashRef = $parentParamHashRef->{$instanceKey};
@@ -513,7 +472,7 @@ sub getSingletonInstanceParamHashRef {
 	# the parameters that are in the parent that may be specified as defaults for lower-level instances
 	my $allParamsRef = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, $instanceHashRef );
 
-	return getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
+	return getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey,
 		$allParamsRef );
 
 }
@@ -528,6 +487,23 @@ $parameters{"version"} = {
 	"parent"    => "",
 	"usageText" => "If present, the Weathervane run harness shows the version information at the start of the runs.",
 	"showUsage" => 1,
+};
+
+# All instances have a name.  Some are set from a parameter, while
+# others are generated.
+$parameters{"name"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"hostname"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 
 $parameters{"runManager"} = {
@@ -578,21 +554,110 @@ $parameters{"dataManager"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"host"} = {
+# Parameters used for defining hosts and clusters
+$parameters{"kubernetesClusters"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "kubernetesCluster",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"kubernetesConfigFile"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the location of the kubectl config file for a kubernetes cluster",
+	"showUsage" => 1,
+};
+$parameters{"dockerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"driverHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "workload",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appInstanceHost"} = {
 	"type"      => "hash",
 	"default"   => {},
-	"parent"    => "runProc",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"dataManagerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"webServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"auctionBidServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"msgServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"coordinationServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"dbServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"nosqlServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"cluster"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
@@ -669,24 +734,6 @@ $parameters{"appInstances"} = {
 	"default"   => [],
 	"parent"    => "workload",
 	"isa"       => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"clusters"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "runProc",
-	"isa"       => "cluster",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"hosts"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "runProc",
-	"isa"       => "host",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -806,14 +853,6 @@ $parameters{"auctionBidServers"} = {
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "auctionBidServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"instanceNum"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1051,30 +1090,6 @@ $parameters{"stopStatsScript"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"clusterType"} = {
-	"type"      => "=s",
-	"default"   => "kubernetes",
-	"parent"    => "appInstance",
-	"usageText" => "This is the type of the cluster. Allowed values: kubernetes",
-	"showUsage" => 1,
-};
-
-$parameters{"clusterName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "This is the name of the cluster for an appInstance",
-	"showUsage" => 1,
-};
-
-$parameters{"kubernetesConfigFile"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "This is the location of the kubectl config file for an appInstance",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
 	"default"   => "1.2.0",
@@ -1086,16 +1101,8 @@ $parameters{"dockerWeathervaneVersion"} = {
 $parameters{"dockerNamespace"} = {
 	"type"      => "=s",
 	"default"   => "",
-	"parent"    => "host",
+	"parent"    => "runProc",
 	"usageText" => "This is the namespace from which to pull the Docker images.  It\nshould be either a username on Docker Hub, or a \nprivate registry hostname:portnumber.",
-	"showUsage" => 1,
-};
-
-$parameters{"useDocker"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
-	"usageText" => "",
 	"showUsage" => 1,
 };
 
@@ -1131,26 +1138,26 @@ $parameters{"dockerMemorySwap"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerNet"} = {
-	"type"      => "=s",
-	"default"   => "bridge",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"vicHost"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 1,
 };
 
-$parameters{"dockerHostPort"} = {
+$parameters{"dockerNet"} = {
+	"type"      => "=s",
+	"default"   => "bridge",
+	"parent"    => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"dockerPort"} = {
 	"type"      => "=i",
 	"default"   => 2376,
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1426,13 +1433,6 @@ $parameters{"appServerImpl"} = {
 	"default"   => "tomcat",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which Application Server to use.\n\t" . "Currently only tomcat is supported.",
-	"showUsage" => 0,
-};
-$parameters{"appServerCacheImpl"} = {
-	"type"      => "=s",
-	"default"   => "ehcache",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which cache provider to use in the Application Server.\n\t" . "Currently ehcache and ignite are supported.",
 	"showUsage" => 0,
 };
 $parameters{"auctionBidServerImpl"} = {
@@ -2038,23 +2038,6 @@ $parameters{"tomcatCatalinaBase"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"igniteAuthTokenCacheMode"} = {
-	"type"      => "=s",
-	"default"   => "REPLICATED",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"igniteCopyOnRead"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-
 $parameters{"nginxServerRoot"} = {
 	"type"      => "=s",
 	"default"   => "/etc/nginx",
@@ -2228,27 +2211,11 @@ $parameters{"postgresqlDataStorageClass"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataVolume"} = {
-	"type"      => "=s",
-	"default"   => "postgresqlData",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlLogStorageClass"} = {
 	"type"      => "=s",
 	"default"   => "fast",
 	"parent"    => "appInstance",
 	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogVolume"} = {
-	"type"      => "=s",
-	"default"   => "postgresqlLogs",
-	"usageText" => "",
-	"parent"    => "appInstance",
 	"showUsage" => 0,
 };
 

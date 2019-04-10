@@ -17,8 +17,6 @@ use Moose;
 use MooseX::Storage;
 use Parameters qw(getParamValue);
 use Instance;
-use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddresses getIpAddress);
 use ComputeResources::ComputeResource;
 
 use namespace::autoclean;

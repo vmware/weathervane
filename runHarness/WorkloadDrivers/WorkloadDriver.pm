@@ -72,7 +72,7 @@ override 'initialize' => sub {
 	# Assign a name to this driver
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
-	$self->name("driverW${workloadNum}I${instanceNum}")
+	$self->name("driverW${workloadNum}I${instanceNum}");
 
 	my $weathervaneHome        = $paramHashRef->{ 'weathervaneHome' };
 	my $workloadDriverDir = $self->getParamValue('workloadDriverDir');

@@ -555,6 +555,13 @@ $parameters{"dataManager"} = {
 };
 
 # Parameters used for defining hosts and clusters
+$parameters{"kubernetesCluster"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
+};
 $parameters{"kubernetesClusters"} = {
 	"type"      => "list",
 	"default"   => [],
@@ -569,6 +576,13 @@ $parameters{"kubernetesConfigFile"} = {
 	"parent"    => "kubernetesCluster",
 	"usageText" => "This is the location of the kubectl config file for a kubernetes cluster",
 	"showUsage" => 1,
+};
+$parameters{"dockerHost"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 $parameters{"dockerHosts"} = {
 	"type"      => "list",

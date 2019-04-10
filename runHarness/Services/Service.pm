@@ -105,7 +105,7 @@ override 'initialize' => sub {
 	my $workloadNum = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $instanceNum = $self->instanceNum;
-	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}")
+	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}");
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $configDir  = $self->getParamValue('configDir');
@@ -133,7 +133,6 @@ override 'initialize' => sub {
 		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
 	}
 	
-	my $serviceType = $self->getParamValue( 'serviceType' );
 	my $cpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $mem = $self->getParamValue( $serviceType . "Mem" );
 	if ($self->getParamValue('dockerNet')) {

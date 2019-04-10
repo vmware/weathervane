@@ -25,8 +25,9 @@ use namespace::autoclean;
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getWorkloadDriver {
-	my ( $self, $workloadDriverHashRef ) = @_;
+	my ( $self, $workloadDriverHashRef, $host ) = @_;
 	
+	my $hostType = ref $host;
 	my $workloadType = $workloadDriverHashRef->{"workloadImpl"};
 	
 	if ( !( $workloadType ~~ @WeathervaneTypes::workloadImpls ) ) {
@@ -35,9 +36,13 @@ sub getWorkloadDriver {
 
 	my $workloadDriver;
 	if ( $workloadType eq "auction" ) {
+		if ($hostType eq "KubernetesCluster") {
+			die "Kubernetes workload drivers are not yet supported";
+		} else {
 			$workloadDriver = AuctionWorkloadDriver->new(
 				paramHashRef => $workloadDriverHashRef
 			);
+		}
 	}
 	else {
 		die "No matching workloadDriver for workload type $workloadType";

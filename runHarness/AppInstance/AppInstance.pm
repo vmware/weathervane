@@ -140,7 +140,7 @@ override 'initialize' => sub {
 	# Assign a name to this service
 	my $workloadNum = $self->workload->instanceNum;
 	my $appInstanceNum = $self->instanceNum;
-	$self->name("W${workloadNum}A${appInstanceNum}")
+	$self->name("W${workloadNum}A${appInstanceNum}");
 
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
 	$self->minRateStep( $self->getParamValue('minRateStep') );

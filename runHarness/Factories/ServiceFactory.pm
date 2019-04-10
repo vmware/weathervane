@@ -47,8 +47,6 @@ sub getServiceByNameAndVersion {
 		die "No matching service name $serviceName and version available to ServiceFactory";
 	}
 
-	$service->initialize($paramsHashRef);
-
 	return $service;
 }
 
@@ -152,8 +150,6 @@ sub getServiceByType {
 	else {
 		die "No matching service name $serviceName available to ServiceFactory";
 	}
-
-	$service->initialize($numSvcInstances);
 
 	return $service;
 }

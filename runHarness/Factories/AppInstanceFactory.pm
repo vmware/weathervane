@@ -48,8 +48,6 @@ sub getAppInstance {
 		die "No matching application for workload type $applicationImpl";
 	}
 
-	$application->initialize();
-
 	return $application;
 }
 

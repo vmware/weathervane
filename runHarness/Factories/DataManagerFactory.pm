@@ -49,8 +49,6 @@ sub getDataManager {
 		die "No matching workloadDriver for workload type $workloadType";
 	}
 
-	$dataManager->initialize($paramHashRef);
-
 	return $dataManager;
 }
 

@@ -33,7 +33,9 @@ BEGIN {
 }
 
 my @nonInstanceHashParameters = ("dockerServiceImages");
-my @nonInstanceListParameters = ('userLoadPath');
+my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
+								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
+								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
 
 sub getParamDefault {
@@ -595,7 +597,7 @@ $parameters{"dockerHosts"} = {
 $parameters{"driverHosts"} = {
 	"type"      => "list",
 	"default"   => [],
-	"parent"    => "workloadDriver",
+	"parent"    => "workload",
 	"isa"       => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -1163,7 +1165,7 @@ $parameters{"vicHost"} = {
 $parameters{"dockerNet"} = {
 	"type"      => "=s",
 	"default"   => "bridge",
-	"parent"    => "dockerHost",
+	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 1,
 };

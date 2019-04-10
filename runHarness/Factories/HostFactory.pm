@@ -34,7 +34,6 @@ sub getDockerHost {
 	
 	$logger->debug("Creating a DockerHost with hostname $hostname");
 	my $host = DockerHost->new('paramHashRef' => $paramsHashRef);
-	$host->initialize();
 	return $host;
 }
 
@@ -47,7 +46,6 @@ sub getKubernetesCluster {
 	
 	$logger->debug("Creating a Kubernetes cluster with name $clusterName");
 	$cluster = KubernetesCluster->new('paramHashRef' => $paramsHashRef);
-	$cluster->initialize();
 	return $cluster;
 }
 

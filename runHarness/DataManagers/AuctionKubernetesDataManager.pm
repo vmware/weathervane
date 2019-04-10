@@ -645,7 +645,7 @@ sub cleanData {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $appInstanceNum = $self->instanceNum;
 	my $name        = $self->name;
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;

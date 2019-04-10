@@ -198,7 +198,7 @@ override 'checkConfig' => sub {
 	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $host = $nosqlServer->host;
-		if ((ref host) ne "DockerHost") {
+		if ((ref $host) ne "DockerHost") {
 			next;
 		}
 		if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
@@ -213,7 +213,7 @@ override 'checkConfig' => sub {
 	my $dbServersRef = $self->getAllServicesByType("dbServer");
 	foreach my $dbServer (@$dbServersRef) {
 		my $host = $dbServer->host;
-		if ((ref host) ne "DockerHost") {
+		if ((ref $host) ne "DockerHost") {
 			next;
 		}
 		if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {

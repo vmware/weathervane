@@ -18,7 +18,7 @@ use MooseX::Storage;
 
 use namespace::autoclean;
 
-use Hosts::VIHost;
+use ComputeResources::VIHost;
 use Factories::HostFactory;
 use WeathervaneTypes;
 use Parameters qw(getParamValue);

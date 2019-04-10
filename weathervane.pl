@@ -58,7 +58,7 @@ sub createDockerHost {
 		exit(-1);
 	}
 	my $hostname = $hostParamHashRef->{'name'};
-	if ( exists $nameToComputeResourceHashRef->{$hostIP} ) {
+	if ( exists $nameToComputeResourceHashRef->{$hostname} ) {
 		$console_logger->error("All DockerHost definitions must have a unique name.  $hostname is used for more than one DockerHost or KubernetesCluster.");
 		exit(-1);
 	}
@@ -83,7 +83,7 @@ sub createKubernetesCluster {
 	} 
 	my $clusterName = $clusterParamHashRef->{'name'};
 	if ( ( !exists $clusterParamHashRef->{'kubernetesConfigFile'} ) || ( !defined $clusterParamHashRef->{'kubernetesConfigFile'} ) ) {
-		$console_logger->error("KubernetesCluster $clustername does not have a kubernetesConfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
+		$console_logger->error("KubernetesCluster $clusterName does not have a kubernetesConfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
 		exit(-1);
 	}	
 	if ( exists $nameToComputeResourceHashRef->{$clusterName} ) {
@@ -100,13 +100,14 @@ sub createKubernetesCluster {
 
 # Get the host to use for an Instance (driver, dataManager, service, etc) 
 sub getComputeResourceForInstance {
-	my ($serviceType, $instance, $nameToComputeResourceHashRef) = @_;
-	
+	my ($instanceParamHashRef, $instanceNum, $serviceType, $nameToComputeResourceHashRef) = @_;
+	my $console_logger = get_logger("Console");
+
 	# If the instance defines a hostname, then we must use that to find the host.
-	if ($instance->getParamValue("hostname")) {
-		my $hostname = $instance->getParamValue("hostname");
+	if ((exists $instanceParamHashRef->{"hostname"}) && (defined $instanceParamHashRef->{"hostname"})) {
+		my $hostname = $instanceParamHashRef->{"hostname"};
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance " . $instance->name . " specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
+		  $console_logger->error("Instance $instanceNum of type $serviceType specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
 		return $nameToComputeResourceHashRef->{$hostname};
@@ -116,14 +117,13 @@ sub getComputeResourceForInstance {
 	# the right host from that list as determined by the instanceNum.
 	# The assignment of host to instance wraps if the instanceNum is greater
 	# than the number of hot names specified.
-	if ($instance->getParamValue("${serviceType}Hosts")) {
-		my $hostListRef = $instance->getParamValue("${serviceType}Hosts");
+	if ((exists $instanceParamHashRef->{"${serviceType}Hosts"}) && (defined $instanceParamHashRef->{"${serviceType}Hosts"})) {
+		my $hostListRef = $instanceParamHashRef->{"${serviceType}Hosts"};
 		my $hostListLength = $#{$hostListRef} + 1;
-		my $instanceNum = $instance->instanceNum;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance " . $instance->name . " was assigned hostname $hostname from ${serviceType)Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
+		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
 		return $nameToComputeResourceHashRef->{$hostname};		
@@ -131,15 +131,15 @@ sub getComputeResourceForInstance {
 	
 	# At this point we should use the value of appInstanceHost.  If it is not defined, then 
 	# there is an error.
-	my $hostname = $instance->getParamValue("appInstanceHost");
+	my $hostname = $instanceParamHashRef->{"appInstanceHost"};
 	if ($hostname) {
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance " . $instance->name . " was assigned hostname $hostname from appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
+		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
 		return $nameToComputeResourceHashRef->{$hostname};		
 	} else {
-		  $console_logger->error("Instance " . $instance->name . " was does not have a hostname defined.\n" . 
+		  $console_logger->error("Instance $instanceNum of type $serviceType does not have a hostname defined.\n" . 
 		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n") .
 		     "If using a custom configurationSize, you can also specify the host name using the hostname parameter for this instance";
 		  exit(-1);	
@@ -516,7 +516,7 @@ if ( $logger->is_debug() ) {
 $console_logger->info("Run Configuration has $numWorkloads workloads.");
 
 # Create the workload instances and all of their sub-parts
-$workloadNum = 1;
+my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
@@ -572,13 +572,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# Create the primary workload driver
-	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef);
+	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash)
+	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
+	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
 	$workloadDriver->instanceNum($driverNum);
 	$driverNum++;
-	
-	# Get the computeResource for the primary driver
-	$workloadDriver->host(getComputeResourceForInstance( "driver", $workloadDriver, \%nameToComputeResourceHash));
 
 	# Add the primary driver to the workload
 	$workload->setPrimaryDriver($workloadDriver);
@@ -599,13 +598,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
-		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef);
+		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash)
+		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
+		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
 		$driverNum++;
-
-		# get the host for the secondary driver
-		$secondary->host(getComputeResourceForInstance( "driver", $secondary, \%nameToComputeResourceHash));
 
 		# Add the secondary driver to the primary
 		$workloadDriver->addSecondary($secondary);
@@ -670,13 +668,13 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			my $svcNum = 1;
 			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {
 				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
-				my $service =
-				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance );
-				$service->instanceNum($svcNum);
-				$service->appInstance($appInstance);
-				push @services, $service;
 				# Create the ComputeResource for the service
-				$service->host(getComputeResourceForInstance( $serviceType, $service, \%nameToComputeResourceHash));
+				$host = getComputeResourceForInstance( $svcInstanceParamHashRef, $svcNum, $serviceType, \%nameToComputeResourceHash);
+				my $service =
+				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance, $host );
+				$service->instanceNum($svcNum);
+				$service->host($host);
+				push @services, $service;
 				
 				$svcNum++;
 			}
@@ -700,14 +698,15 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				"For workload $workloadNum and appInstance $appInstanceNum, the dataManager instance paramHashRef is:\n"
 				  . $tmp );
 		}
-
-		my $dataManager = DataManagerFactory->getDataManager( $dataManagerParamHashRef, $appInstance );
+	
+		
+		$host = getComputeResourceForInstance( $dataManagerParamHashRef, 1, "dataManager", \%nameToComputeResourceHash);
+		my $dataManager = DataManagerFactory->getDataManager( $dataManagerParamHashRef, $appInstance, $host );
 		$appInstance->setDataManager($dataManager);
 		$dataManager->setAppInstance($appInstance);
 		$dataManager->setWorkloadDriver($workloadDriver);
+		$dataManager->host($host);
 
-		# Create the ComputeResource for the dataManager
-		$dataManager->host(getComputeResourceForInstance( "dataManager", $dataManager, \%nameToComputeResourceHash));
 		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
 
 		# Now that the configuration of the appInstance is complete, ask it to check whether the

@@ -13,12 +13,13 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package DockerHost;
 
+use Moose;
 use MooseX::Storage;
 use MIME::Base64;
 use POSIX;
 use Log::Log4perl qw(get_logger);
 use Utils qw(getIpAddress);
-use ComputeResources::Host
+use ComputeResources::Host;
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );

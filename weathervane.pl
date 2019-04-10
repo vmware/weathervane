@@ -65,9 +65,9 @@ sub createDockerHost {
 
 	$weathervane_logger->debug("Creating dockerHost for host $hostname\n");
 	my $host = HostFactory->getDockerHost($hostParamHashRef);
-	$host->name($name);
+	$host->name($hostname);
 	$host->initialize();
-	$runProcedure->addHost($hostname);
+	$runProcedure->addHost($host);
 	$nameToComputeResourceHashRef->{$hostname} = $host;
 
 	return $host;
@@ -106,6 +106,7 @@ sub createKubernetesCluster {
 sub getComputeResourceForInstance {
 	my ($instanceParamHashRef, $instanceNum, $serviceType, $nameToComputeResourceHashRef) = @_;
 	my $console_logger = get_logger("Console");
+	my $logger = get_logger("Weathervane");
 
 	# If the instance defines a hostname, then we must use that to find the host.
 	if ($instanceParamHashRef->{"hostname"}) {

@@ -2219,15 +2219,15 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"postgresqDataVolume"} = {
+$parameters{"postgresqlDataVolume"} = {
 	"type"      => "=s",
-	"default"   => "postgresqData",
+	"default"   => "postgresqlData",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqLogVolume"} = {
+$parameters{"postgresqlLogVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlLogs",
 	"parent"    => "appInstance",

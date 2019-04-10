@@ -1521,12 +1521,7 @@ sub getLogFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $name;
-					if ($service->host->isCluster) {
-						$name = $service->host->clusterName;
-					} else {
-						$name = $service->host->name;
-					}
+					my $name = $service->host->name;
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
@@ -1582,12 +1577,7 @@ sub getConfigFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					my $name;
-					if ($service->host->isCluster) {
-						$name = $service->host->clusterName;
-					} else {
-						$name = $service->host->name;
-					}
+					my $name = $service->host->name;
 					my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;

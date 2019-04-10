@@ -24,7 +24,7 @@ use namespace::autoclean;
 has 'name' => (
 	is        => 'rw',
 	isa       => 'Str',
-    default => 1,
+    default => "",
 );
 
 has 'instanceNum' => (

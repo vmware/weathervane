@@ -65,7 +65,9 @@ sub createDockerHost {
 
 	$weathervane_logger->debug("Creating dockerHost for host $hostname\n");
 	my $host = HostFactory->getDockerHost($hostParamHashRef);
-	$runProcedure->addHost($host);
+	$host->name($name);
+	$host->initialize();
+	$runProcedure->addHost($hostname);
 	$nameToComputeResourceHashRef->{$hostname} = $host;
 
 	return $host;
@@ -93,6 +95,8 @@ sub createKubernetesCluster {
 	$weathervane_logger->debug("Creating cluster for cluster $clusterName\n");
 
 	my $cluster = HostFactory->getKubernetesCluster($clusterParamHashRef);
+	$cluster->name($clusterName);
+	$cluster->initialize();
 	$runProcedure->addCluster($cluster);
 	$nameToComputeResourceHashRef->{$clusterName} = $cluster;
 	return $cluster;
@@ -110,6 +114,7 @@ sub getComputeResourceForInstance {
 		  $console_logger->error("Instance $instanceNum of type $serviceType specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning host using user-specified hostname $hostname");
 		return $nameToComputeResourceHashRef->{$hostname};
 	}
 	
@@ -118,6 +123,7 @@ sub getComputeResourceForInstance {
 	# The assignment of host to instance wraps if the instanceNum is greater
 	# than the number of hot names specified.
 	if ($instanceParamHashRef->{"${serviceType}Hosts"}) {
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selecting host from ${serviceType}Hosts");
 		my $hostListRef = $instanceParamHashRef->{"${serviceType}Hosts"};
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
@@ -126,6 +132,7 @@ sub getComputeResourceForInstance {
 		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selected $hostname from ${serviceType}Hosts");		
 		return $nameToComputeResourceHashRef->{$hostname};		
 	}
 	
@@ -137,6 +144,7 @@ sub getComputeResourceForInstance {
 		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning appInstanceHost $hostname");		
 		return $nameToComputeResourceHashRef->{$hostname};		
 	} else {
 		  $console_logger->error("Instance $instanceNum of type $serviceType does not have a hostname defined.\n" . 

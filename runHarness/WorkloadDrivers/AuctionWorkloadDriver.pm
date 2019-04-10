@@ -1927,7 +1927,7 @@ sub isPassed {
 		return;	
 	}
 
-	my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+	my $appInstanceNum = $appInstanceRef->instanceNum;
 
 	my $usedLoadPath = 0;
 	my $userLoadPath = $appInstanceRef->getLoadPath();

@@ -268,7 +268,7 @@ sub start {
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
@@ -304,7 +304,7 @@ sub stop {
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);

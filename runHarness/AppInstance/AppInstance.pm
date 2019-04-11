@@ -330,15 +330,15 @@ sub getEdgeAddrsRef {
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	my $workloadNum    = $self->workload->instanceNum;
 
-	my $edgeIpAddrsRef = [];
+	my $edgeHostsRef = [];
 	my $edgeService  = $self->getEdgeService();
 	my $edgeServices = $self->getAllServicesByType($edgeService);
 	$logger->debug("configure for workload $workloadNum, edgeService is $edgeService");
 	foreach my $service (@$edgeServices) {
-		push @$edgeIpAddrsRef, [$service->getIpAddr(), $service->portMap->{"http"}, $service->portMap->{"https"}];
+		push @$edgeHostsRef, [$service->host->name, $service->portMap->{"http"}, $service->portMap->{"https"}];
 	}
 	
-	return $edgeIpAddrsRef;
+	return $edgeHostsRef;
 }
 
 sub clearReloadDb {

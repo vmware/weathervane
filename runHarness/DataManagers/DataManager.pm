@@ -132,6 +132,54 @@ sub isDataLoaded {
 	die "Can only check isDataLoaded for a concrete sub-class of DataManager";
 }
 
+# This method returns true if both this and the other service are
+# running dockerized on the same Docker host and network but are not
+# using docker host networking
+sub corunningDockerized {
+	my ($self, $other) = @_;
+	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
+		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
+		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
+		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
+		|| !$self->host->equals($other->host)
+		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
+	{
+		return 0;
+	} else {
+		return 1;
+	}	
+	
+}
+
+# This method checks whether this service and another service are 
+# both running Dockerized on the same host and Docker network.  If so, it
+# returns the docker name of the service (so that this service can connect to 
+# it directly via the Docker provided /etc/hosts), otherwise it returns the
+# hostname of the other service.
+# If this service is using Docker host networking, then this method always
+# returns the hostname of the other host.
+sub getHostnameForUsedService {
+	my ($self, $other) = @_;
+	
+	if ($self->corunningDockerized($other)) 
+	{
+		return $other->host->dockerGetIp($other->name);
+	} else {
+		return $other->name;
+	}	
+}
+
+sub getPortNumberForUsedService {
+	my ($self, $other, $portName) = @_;
+	
+	if ($self->corunningDockerized($other)) 
+	{
+		return $other->internalPortMap->{$portName};
+	} else {
+		return $other->portMap->{$portName};
+	}	
+}
+
 sub toString {
 	  my ($self) = @_;
 

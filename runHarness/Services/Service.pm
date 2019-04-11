@@ -210,14 +210,6 @@ sub isEdgeService {
 	}
 }
 
-sub getIpAddr {
-	my ($self) = @_;
-	if (((ref $self->host) eq 'DockerHost') && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
-	}
-	return $self->host->ipAddr;
-}
-
 sub create {
 	my ($self, $logPath)            = @_;
 	
@@ -435,9 +427,9 @@ sub getHostnameForUsedService {
 	
 	if ($self->corunningDockerized($other)) 
 	{
-		return $other->host->dockerGetIp($other->getDockerName());
+		return $other->host->dockerGetIp($other->name);
 	} else {
-		return $other->getIpAddr();
+		return $other->name;
 	}	
 }
 

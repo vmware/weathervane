@@ -31,8 +31,6 @@ use namespace::autoclean;
 
 extends 'DataManager';
 
-has '+name' => ( default => 'Weathervane', );
-
 # default scale factors
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
@@ -45,6 +43,10 @@ override 'initialize' => sub {
 		$configDir = $weathervaneHome . "/" . $configDir;
 	}
 	$self->setParamValue('configDir', $configDir);
+
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 
 	super();
 

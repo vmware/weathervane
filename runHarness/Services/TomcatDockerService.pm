@@ -202,7 +202,7 @@ override 'remove' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname = $self->getIpAddr();
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{"http"};
 
 	my $response = `curl -s http://$hostname:$port/auction/healthCheck`;

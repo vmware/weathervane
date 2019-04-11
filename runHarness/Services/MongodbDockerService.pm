@@ -745,7 +745,7 @@ sub startMongosServers {
 	my $numMongos = 0;
 	foreach my $appServer (@$serversRef) {
 		my $appHostname = $appServer->host->name;
-		my $appIpAddr   = $appServer->host->ipAddr;
+		my $appIpAddr   = $appServer->host->name;
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $appIpAddr;
 
 		if ( exists $hostsMongosCreated{$appIpAddr} ) {
@@ -941,7 +941,7 @@ sub stopMongosServers {
 	push @$serversRef, @{$self->appInstance->getAllServicesByType('auctionBidServer')};
 	push @$serversRef, $self->appInstance->dataManager;
 	foreach my $server (@$serversRef) {
-		my $ipAddr = $server->host->ipAddr;
+		my $ipAddr = $server->host->name;
 		my $dockerName = "mongos" . "-W${wkldNum}I${appInstNum}-" . $ipAddr;
 		if ( exists $hostsMongosStopped{$ipAddr} ) {
 			next;
@@ -1086,7 +1086,7 @@ sub getLogFiles {
 			my %hostsMongosCreated;
 			my $numMongos = 0;
 			foreach my $appServer (@$appServersRef) {
-				my $appIpAddr = $appServer->host->ipAddr;
+				my $appIpAddr = $appServer->host->name;
 
 				if ( exists $hostsMongosCreated{$appIpAddr} ) {
 					next;
@@ -1104,7 +1104,7 @@ sub getLogFiles {
 
 			}
 			my $dataManagerDriver = $self->appInstance->dataManager;
-			my $dataManagerIpAddr = $dataManagerDriver->host->ipAddr;
+			my $dataManagerIpAddr = $dataManagerDriver->host->name;
 			my $localMongoPort;
 			if ( !exists $hostsMongosCreated{$dataManagerIpAddr} ) {
 				my $logContents = $dataManagerDriver->host->dockerGetLogs( $dblog, "mongos" );

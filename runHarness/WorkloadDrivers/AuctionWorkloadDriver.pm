@@ -160,8 +160,6 @@ has 'suffix' => (
 	default => "",
 );
 
-my @secondaryIpAddresses = ();
-
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
@@ -180,16 +178,6 @@ override 'initialize' => sub {
 override 'addSecondary' => sub {
 	my ( $self, $secondary ) = @_;
 	my $console_logger = get_logger("Console");
-
-	my $myIpAddr = $self->host->ipAddr;
-	my $ipAddr   = $secondary->host->ipAddr;
-	if ( ( $myIpAddr eq $ipAddr ) || ( $ipAddr ~~ @secondaryIpAddresses ) ) {
-		$console_logger->error(
-"Multiple workloadDriver hosts are running on IP address $ipAddr.  This configuration is not supported."
-		);
-		exit(-1);
-	}
-	push @secondaryIpAddresses, $ipAddr;
 
 	push @{ $self->secondaries }, $secondary;
 
@@ -1710,12 +1698,12 @@ sub getStatsSummary {
 		`mkdir -p $logPath`;
 		my $csvHashRef =
 		  ParseGC::parseGCLog( $logPath, "-W${workloadNum}", $gcviewerDir );
-		print HOSTCSVFILE "Hostname, IP Addr";
+		print HOSTCSVFILE "Hostname";
 		foreach my $key ( keys %$csvHashRef ) {
 			print HOSTCSVFILE ", $key";
 		}
 		print HOSTCSVFILE "\n";
-		print HOSTCSVFILE $hostname . ", " . $self->host->ipAddr;
+		print HOSTCSVFILE $hostname;
 		foreach my $key ( keys %$csvHashRef ) {
 			print HOSTCSVFILE ", " . $csvHashRef->{$key};
 			if ( $csvHashRef->{$key} eq "na" ) {
@@ -1738,7 +1726,7 @@ sub getStatsSummary {
 			`mkdir -p $logPath`;
 			$csvHashRef =
 			  ParseGC::parseGCLog( $logPath, "-W${workloadNum}", $gcviewerDir );
-			print HOSTCSVFILE $secHostname . ", " . $secondary->host->ipAddr;
+			print HOSTCSVFILE $secHostname;
 
 			foreach my $key ( keys %$csvHashRef ) {
 				print HOSTCSVFILE ", " . $csvHashRef->{$key};

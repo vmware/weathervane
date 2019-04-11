@@ -145,10 +145,10 @@ sub corunningDockerized {
 		|| !$self->host->equals($other->host)
 		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
-		$logger->("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
 		return 0;
 	} else {
-		$logger->("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
 		return 1;
 	}	
 	

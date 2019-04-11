@@ -21,7 +21,6 @@ use RunManagers::FindMaxSingleAIRunManager;
 use RunManagers::FindMaxMultiRunRunManager;
 use RunManagers::FindMaxSingleAIWithScalingRunManager;
 use RunManagers::FindMaxMultiAIRunManager;
-use RunManagers::TargetUtilizationRunManager;
 use Parameters qw(getParamValue);
 
 use namespace::autoclean;
@@ -56,10 +55,6 @@ sub getRunManager {
 	elsif (( $runStrategy eq 'findMaxMultiRun' ) || ($runStrategy eq 'findMax' )) {
 		$runManager =
 		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
-	}
-	elsif ( $runStrategy eq 'targetUtilization' ) {
-		$runManager = TargetUtilizationRunManager->new(
-			'paramHashRef' => $paramsHashRef );
 	}
 	else {
 		die

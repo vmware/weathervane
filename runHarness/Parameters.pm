@@ -1609,29 +1609,6 @@ $parameters{"repeatsAtMax"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"targetUtilization"} = {
-	"type"      => "=i",
-	"default"   => 70,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"targetUtilizationMarginPct"} = {
-	"type"      => "=f",
-	"default"   => 0.02,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-$parameters{"targetUtilizationServiceType"} = {
-	"type"      => "=s",
-	"default"   => "appServer",
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
 	"default"   => 6,

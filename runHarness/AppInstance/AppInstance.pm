@@ -55,12 +55,6 @@ has 'maxPassUsers' => (
 	default => 0,
 );
 
-has 'lastTargetUtUtilization' => (
-	is      => 'rw',
-	isa     => 'Num',
-	default => 0,
-);
-
 has 'maxLowUT' => (
 	is      => 'rw',
 	isa     => 'Num',
@@ -433,53 +427,6 @@ sub adjustUsersForFindMax {
 	);
 }
 
-sub adjustUsersForTargetUt {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"adjustUsersForTargetUt start ",
-		"Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
-	);
-	if ( $self->alreadyFoundMax ) {
-		return;
-	}
-
-	my $passed                     = $self->passedLast();
-	my $users                      = $self->users;
-	my $targetUtilization          = $self->getParamValue('targetUtilization');
-	my $targetUtilizationMarginPct = $self->getParamValue('targetUtilizationMarginPct');
-
-	my $cpuUt = $self->lastTargetUtUtilization;
-
-	# find the next number of users if trying to hit a target utilization.
-	my $targetUtilizationMargin = $targetUtilizationMarginPct * $targetUtilization;
-	my $usersPerPct             = $users / $cpuUt;
-	if ( $cpuUt < ( $targetUtilization - $targetUtilizationMargin ) ) {
-		$users = ceil( $users + ( $targetUtilization - $cpuUt ) * $usersPerPct );
-		if ( $users > $self->minHighUTUsers ) {
-			$users = ceil( ( $self->maxLowUTUsers + $self->minHighUTUsers ) / 2 );
-		}
-	}
-	elsif ( $cpuUt > ( $targetUtilization + $targetUtilizationMargin ) ) {
-		$users = floor( $users - ( $cpuUt - $targetUtilization ) * $usersPerPct );
-		if ( $users < $self->maxLowUTUsers ) {
-			$users = ceil( ( $self->maxLowUTUsers + $self->minHighUTUsers ) / 2 );
-		}
-	}
-
-	$self->users($users);
-	$logger->debug(
-		"adjustUsersForTargetUt end ",
-		"Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
-	);
-}
-
 sub foundMax {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
@@ -567,91 +514,6 @@ sub foundMax {
 		$self->instanceNum
 	);
 	return $foundMax;
-}
-
-sub hitTargetUt {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"hitTargetUt start ",
-		"Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
-	);
-
-	my $console_logger = get_logger("Console");
-	my $foundMax       = 0;
-	if ( $self->alreadyFoundMax ) {
-		return 1;
-	}
-
-	my $passed                       = $self->passedLast();
-	my $users                        = $self->users;
-	my $targetUtilization            = $self->getParamValue('targetUtilization');
-	my $targetUtilizationServiceType = $self->getParamValue('targetUtilizationServiceType');
-	my $targetUtilizationMarginPct   = $self->getParamValue('targetUtilizationMarginPct');
-
-	# First need to get the average utilization for the
-	my $cpuUt = $self->lastTargetUtUtilization;
-	$console_logger->info(
-		"For workload ",
-		$self->workload->instanceNum,
-		", AppInstance ",
-		$self->instanceNum,
-		", the average CPU Utilization for $targetUtilizationServiceType tier was $cpuUt"
-	);
-
-	# find the next number of users if trying to hit a target utilization.
-	my $targetUtilizationMargin = $targetUtilizationMarginPct * $targetUtilization;
-	if (   ( $cpuUt >= ( $targetUtilization - $targetUtilizationMargin ) )
-		&& ( $cpuUt <= ( $targetUtilization + $targetUtilizationMargin ) ) )
-	{
-		$foundMax = 1;
-	}
-	elsif ( $cpuUt < ( $targetUtilization - $targetUtilizationMargin ) ) {
-		if ( !$passed ) {
-			$console_logger->error(
-				"Run Failed.  Workload ",
-				$self->workload->instanceNum,
-				", AppInstance ",
-				$self->instanceNum,
-				", cannot reach target CPU utilization. Failed at $cpuUt\%"
-			);
-			exit(-1);
-		}
-		my $usersPerPct = $users / $cpuUt;
-		if ( $cpuUt > $self->maxLowUT ) {
-
-			# keep track of low utilization closest to target and
-			# the number of users that gave that utilization
-			$self->maxLowUT($cpuUt);
-			$self->maxLowUTUsers($users);
-		}
-
-	}
-	elsif ( $cpuUt > ( $targetUtilization + $targetUtilizationMargin ) ) {
-		my $usersPerPct = $users / $cpuUt;
-		if ( $cpuUt < $self->minHighUT ) {
-
-			# keep track of high utilization closest to target and
-			# the number of users that gave that utilization
-			$self->minHighUT($cpuUt);
-			$self->minHighUTUsers($users);
-		}
-
-	}
-
-	$self->alreadyFoundMax($foundMax);
-	$logger->debug(
-		"hitTargetUt return " . $foundMax,
-		" Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
-	);
-	return $foundMax;
-
 }
 
 sub resetFindMax {
@@ -783,7 +645,7 @@ sub setLoadPathType {
 	}
 	
 	if (($loadPathType eq 'fixed') && ($self->hasLoadPath())) {
-		$logger->error("When using the fixed, targetUtilization, or findMaxMultiRun run strategy you must not define a userLoadPath for any AppInstances");
+		$logger->error("When using the fixed or findMaxMultiRun run strategy you must not define a userLoadPath for any AppInstances");
 		exit 1;
 	}
 	

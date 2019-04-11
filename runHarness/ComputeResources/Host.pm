@@ -61,7 +61,7 @@ sub equals {
 sub toString {
 	my ($self) = @_;
 
-	return "Host name = " . $self->name . ", IP Address = " . $self->ipAddr;
+	return "Host name = " . $self->name;
 }
 __PACKAGE__->meta->make_immutable;
 

@@ -426,7 +426,7 @@ sub getStatsSummary {
 			$csvHashRef = ParseGC::parseGCLog( $logPath, "", $gcviewerDir );
 
 			if ( !$addedHeaders ) {
-				print HOSTCSVFILE "Hostname,IP Addr";
+				print HOSTCSVFILE "Hostname";
 				foreach my $key ( keys %$csvHashRef ) {
 					print HOSTCSVFILE ",$key";
 				}
@@ -435,7 +435,7 @@ sub getStatsSummary {
 				$addedHeaders = 1;
 			}
 
-			print HOSTCSVFILE $service->host->name . "," . $service->host->ipAddr;
+			print HOSTCSVFILE $service->host->name;
 			foreach my $key ( keys %$csvHashRef ) {
 				print HOSTCSVFILE "," . $csvHashRef->{$key};
 				if ( $csvHashRef->{$key} eq "na" ) {

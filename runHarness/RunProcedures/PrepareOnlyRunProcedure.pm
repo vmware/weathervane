@@ -93,6 +93,7 @@ sub run {
 	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
 
+	my $tmpDirTop = $tmpDir;
 	# Now send all output to new subdir 	
 	$tmpDir = "$tmpDir/$minorSeqNum";
 	if ( !( -e $tmpDir ) ) {
@@ -174,6 +175,14 @@ sub run {
 	my $allUp = $self->isUp($setupLogDir);
 	if ( !$allUp ) {
 		$self->cleanupAfterFailure( "Couldn't start all application services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+	}
+
+	my $runProcedureType = $self->getRunProcedureImpl();
+	if ( $runProcedureType eq 'prepareOnly' ) {
+		my $prepareOnlyMinorSequenceNumberFile = "$tmpDirTop/prepareOnly.num";
+		open SEQFILE, ">$prepareOnlyMinorSequenceNumberFile";
+		print SEQFILE $minorSeqNum;
+		close SEQFILE;
 	}
 
 	# Write users.txt

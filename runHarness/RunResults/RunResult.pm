@@ -22,7 +22,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 has 'runNum' => (
 	is  => 'rw',
-	isa => 'Int',
+	isa => 'Str',
 );
 
 has 'isRunError' => (

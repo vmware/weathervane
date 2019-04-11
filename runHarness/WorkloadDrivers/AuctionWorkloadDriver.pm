@@ -614,7 +614,7 @@ sub clearResults {
 sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $driver->getParamValue('workloadNum');
+	my $workloadNum    = $driver->workload->instanceNum;
 	my $name        = $driver->name;
 		
 	$driver->host->dockerStopAndRemove( $applog, $name );

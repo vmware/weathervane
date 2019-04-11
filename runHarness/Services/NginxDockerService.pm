@@ -170,7 +170,7 @@ override 'remove' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname         = $self->getIpAddr();
+	my $hostname         = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	
 	my $response = `curl -s -w "%{http_code}\n" -o /dev/null http://$hostname:$port`;

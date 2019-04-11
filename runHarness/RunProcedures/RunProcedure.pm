@@ -25,7 +25,6 @@ use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsPa
   callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
   callMethodOnObjectsParamListParallel1 callMethodOnObjects1);
 use Instance;
-use Utils qw(getIpAddresses getIpAddress);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 

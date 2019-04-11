@@ -1318,7 +1318,7 @@ sub stopAppStatsCollection {
 	my $servicesByTypeRef = $self->servicesByTypeRef;
 	my $dbServicesRef     = $servicesByTypeRef->{"dbServer"};
 	my $dbServer          = $dbServicesRef->[0];
-	my $dbHostname        = $dbServer->getIpAddr();
+	my $dbHostname        = $dbServer->host->name;
 
 	my $appStartDate    = "2020-02-02";
 	my $appStartHour    = 12;

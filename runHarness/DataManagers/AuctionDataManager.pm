@@ -31,8 +31,6 @@ use namespace::autoclean;
 
 extends 'DataManager';
 
-has '+name' => ( default => 'Weathervane', );
-
 has 'mongosDocker' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -54,7 +52,9 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 	super();
 };
 
@@ -94,12 +94,12 @@ sub startDataManagerContainer {
 	my $mongodbHostname;
 	my $mongodbPort;
 	if ( $nosqlServerRef->numNosqlShards == 0 ) {
-		$mongodbHostname = $nosqlServerRef->getIpAddr();
-		$mongodbPort   = $nosqlServerRef->portMap->{'mongod'};
+		$mongodbHostname =  $self->getHostnameForUsedService($nosqlServerRef);
+		$mongodbPort   = $self->getPortNumberForUsedService($nosqlServerRef, 'mongod');
 	}
 	else {
 		# The mongos will be running on the dataManager host
-		$mongodbHostname = $self->getIpAddr();
+		$mongodbHostname = $self->host->name;
 		$mongodbPort   = $self->internalPortMap->{'mongos'};
 	}
 
@@ -107,8 +107,8 @@ sub startDataManagerContainer {
 	if ( $nosqlServerRef->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService  = $nosqlServersRef->[$i];
-			my $mongodbHostname = $nosqlService->getIpAddr();
-			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
+			my $mongodbHostname = $self->getHostnameForUsedService($nosqlService);
+			my $mongodbPort   = $self->getPortNumberForUsedService($nosqlService,'mongod');
 			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
 		}
 	}
@@ -118,8 +118,8 @@ sub startDataManagerContainer {
 	
 	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
+	my $dbHostname    = $self->getHostnameForUsedService($dbService);
+	my $dbPort        = $self->getPortNumberForUsedService($dbService, $dbService->getImpl()) ;
 	$envVarMap{"DBHOSTNAME"} = $dbHostname;
 	$envVarMap{"DBPORT"} = $dbPort;
 	
@@ -147,14 +147,6 @@ sub stopDataManagerContainer {
 	my $name        = $self->name;
 
 	$self->host->dockerStopAndRemove( $applog, $name );
-}
-
-sub getIpAddr {
-	my ($self) = @_;
-	if (((ref $self->host) eq 'DockerHost') && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
-	}
-	return $self->host->ipAddr;
 }
 
 sub prepareDataServices {
@@ -314,8 +306,8 @@ sub pretouchData {
 
 		foreach $nosqlService (@$nosqlServersRef) {
 
-			my $hostname = $nosqlService->getIpAddr();
-			my $port     = $nosqlService->portMap->{'mongod'};
+			my $hostname = $self->getHostnameForUsedService($nosqlService);
+			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
 			my $cmdString;
 			my $cmdout;
 			my $pid;
@@ -774,8 +766,8 @@ sub cleanData {
 
 		# Compact all mongodb collections
 		foreach my $nosqlService (@$nosqlServersRef) {
-			my $hostname         = $nosqlService->getIpAddr();
-			my $port             = $nosqlService->portMap->{'mongod'};
+			my $hostname = $self->getHostnameForUsedService($nosqlService);
+			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
 			print $logHandle "Compacting MongoDB collections on $hostname\n";
 			$logger->debug(
 				"cleanData. Compacting MongoDB collections on $hostname for workload ",

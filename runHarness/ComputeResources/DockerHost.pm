@@ -18,7 +18,6 @@ use MooseX::Storage;
 use MIME::Base64;
 use POSIX;
 use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddress);
 use ComputeResources::Host;
 use namespace::autoclean;
 
@@ -50,7 +49,7 @@ override 'initialize' => sub {
 override 'registerService' => sub {
 	my ( $self, $serviceRef ) = @_;
 	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Hosts::LinuxGuest");
+	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
 	my $servicesRef    = $self->servicesRef;
 
 	my $dockerName = $serviceRef->name;
@@ -672,6 +671,19 @@ sub dockerRm {
 		print $logFileHandle "$dockerHostString docker rm -f $name\n";
 		print $logFileHandle "$out\n";
 	}
+}
+
+sub dockerGetNetwork {
+	my ( $self,  $name ) = @_;
+	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
+	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name");
+	my $dockerHostString  = $self->dockerHostString;	
+	my $out = `$dockerHostString docker inspect --format '{{range $key, $element := .NetworkSettings.Networks}}{{$key}} {{end}}' $name 2>&1`;
+	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name got $out");
+	my @networks = split(/\s/,$out);
+	chomp($networks[0]);
+	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name returning " . $networks[0]);
+	return $networks[0];
 }
 
 sub dockerGetIp {

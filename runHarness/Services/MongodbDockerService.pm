@@ -257,7 +257,7 @@ sub configureAfterStart {
 
 		# Add the shards to the database
 		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
+			my $hostname = $nosqlServer->host->name;
 			my $port   = $nosqlServer->portMap->{'mongod'};
 			print $applog "Add $hostname as shard.\n";
 			$cmdString = "mongo --port $localPort --host $mongosHostname --eval 'printjson(sh.addShard(\\\"$hostname:$port\\\"))' 2>&1";
@@ -394,7 +394,7 @@ sub configureAfterStart {
 		
 		# Create the replica set
 		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $hostname = $nosqlServer->getIpAddr();
+			my $hostname = $nosqlServer->host->name;
 			my $port     = $nosqlServer->portMap->{'mongod'};
 			if ( $replicaMasterHostname eq "" ) {
 				$replicaMasterHostname = $hostname;

@@ -83,7 +83,7 @@ override 'run' => sub {
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
-	my $seqnum = $majorSeqNum . "." . $minorSeqNum;
+	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
 
 	# Now send all output to new subdir 	

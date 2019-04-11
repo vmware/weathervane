@@ -817,7 +817,7 @@ sub writeUsersTxt {
 	my $workloadNum = $self->instanceNum;
 	
 	foreach my $appInstance (@$appInstancesRef) {
-		my $instanceNum = $appInstance->getInstanceNum();
+		my $instanceNum = $appInstance->instanceNum;
 		my $users = $appInstance->getUsers();
 		my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
 		$console_logger->info($outString);
@@ -847,7 +847,7 @@ sub checkUsersTxt {
 		return 0;		
 	}
 	my $appInstance = $appInstancesRef->[$2 - 1];
-	my $instanceNum = $appInstance->getInstanceNum();
+	my $instanceNum = $appInstance->instanceNum;
 	
 	if ($instanceNum != $2)	{
 		$console_logger->info("checkUsersTxt: Workload number $workloadNum. Instance number $instanceNum doesn't match input $2");

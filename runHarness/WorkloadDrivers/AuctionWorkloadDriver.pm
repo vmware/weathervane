@@ -329,7 +329,7 @@ sub createRunConfigHash {
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	foreach my $appInstance (@$appInstancesRef) {
-		my $instanceNum = $appInstance->getInstanceNum();
+		my $instanceNum = $appInstance->instanceNum;
 		my $users       = $appInstance->getUsers();
 
 		my $workload = {};

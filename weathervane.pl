@@ -108,9 +108,28 @@ sub getComputeResourceForInstance {
 	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane");
 
+	# Get the value of appInstanceHostName.  If it is defined and is a KubernetesCluster, then
+	# it is an error if the user specified either a hostname or xxxServerHosts
+	my $appInstanceHostname = $instanceParamHashRef->{"appInstanceHost"};
+	my $appInstanceHost = 0;
+	my $appInstanceK8s = 0;
+	if ($appInstanceHostname) {
+		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		$appInstanceHost = $nameToComputeResourceHashRef->{$appInstanceHostname};
+		$appInstanceK8s = (ref $appInstanceHost) eq "KubernetesCluster";
+	}
+
 	# If the instance defines a hostname, then we must use that to find the host.
 	if ($instanceParamHashRef->{"hostname"}) {
 		my $hostname = $instanceParamHashRef->{"hostname"};
+		if ($appInstanceK8s) {
+		  $console_logger->error("Cannot specify a hostname for instance $instanceNum of type $serviceType when a KubernetesCluster is defined in appInstanceHost.\n" .
+		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
+		  exit(-1);			
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
 		  $console_logger->error("Instance $instanceNum of type $serviceType specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
@@ -129,6 +148,11 @@ sub getComputeResourceForInstance {
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
+		if ($appInstanceK8s) {
+		  $console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when a KubernetesCluster is defined in appInstanceHost.\n" .
+		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
+		  exit(-1);			
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
 		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
 		  exit(-1);
@@ -137,16 +161,10 @@ sub getComputeResourceForInstance {
 		return $nameToComputeResourceHashRef->{$hostname};		
 	}
 	
-	# At this point we should use the value of appInstanceHost.  If it is not defined, then 
-	# there is an error.
-	my $hostname = $instanceParamHashRef->{"appInstanceHost"};
-	if ($hostname) {
-		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
-		  exit(-1);
-		}
-		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning appInstanceHost $hostname");		
-		return $nameToComputeResourceHashRef->{$hostname};		
+	# At this point we should use the value of appInstanceHost.  If it is not defined, then there is an error.
+	if ($appInstanceHost) {
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning appInstanceHost $appInstanceHostname");		
+		return $appInstanceHost;		
 	} else {
 		  $console_logger->error("Instance $instanceNum of type $serviceType does not have a hostname defined.\n" . 
 		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n" .

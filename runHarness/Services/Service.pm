@@ -401,6 +401,7 @@ sub getImpl {
 # using docker host networking
 sub corunningDockerized {
 	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
@@ -408,8 +409,10 @@ sub corunningDockerized {
 		|| !$self->host->equals($other->host)
 		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
+		$logger->("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
 		return 0;
 	} else {
+		$logger->("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
 		return 1;
 	}	
 	
@@ -424,22 +427,28 @@ sub corunningDockerized {
 # returns the hostname of the other host.
 sub getHostnameForUsedService {
 	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $other->host->dockerGetIp($other->name));
 		return $other->host->dockerGetIp($other->name);
 	} else {
-		return $other->name;
+		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
+		return $other->host->name;
 	}	
 }
 
 sub getPortNumberForUsedService {
 	my ($self, $other, $portName) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->internalPortMap->{$portName});
 		return $other->internalPortMap->{$portName};
 	} else {
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->portMap->{$portName});
 		return $other->portMap->{$portName};
 	}	
 }

@@ -573,7 +573,7 @@ sub loadData {
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
-		if ($line =~ /\s+Loading/) {
+		if ($line =~ /Loading/) {
 			$console_logger->info("$line\n");
 		} 
 		$logger->debug("Got line: $line");

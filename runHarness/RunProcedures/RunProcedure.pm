@@ -70,7 +70,7 @@ has 'description' => (
 
 has 'seqnum' => (
 	is  => 'rw',
-	isa => 'Int',
+	isa => 'Str',
 );
 
 has 'tmpDir' => (

@@ -506,12 +506,20 @@ foreach my $paramHashRef (@$clustersParamHashRefs) {
 
 # Get the parameters for the workload instances
 my $numDefault      = $runProcedureParamHashRef->{"numWorkloads"};
-my $workloadsParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $numDefault, "workloads" );
 $instancesListRef = $runProcedureParamHashRef->{"workloads"};
-my $instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "workloads" );
-push @$workloadsParamHashRefs, @$instancesParamHashRefs;
+my $workloadsParamHashRefs;
+if ($numDefault > 0) {
+	if ($#{$instancesListRef} >= 0) {
+		$console_logger->info("Specifying both numWorkloads > 1 and the workloads parameter is not supported.\n"
+				. "In order to specify workload instances with the workloads parameter, you must explicitly set numWorkloads to 0.");
+		exit -1;
+	}
+  	$workloadsParamHashRefs =
+  		Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $numDefault, "workloads" );
+} else {
+  	$workloadsParamHashRefs =
+    	Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "workloads" );
+}
 
 my $numWorkloads = $#{$workloadsParamHashRefs} + 1;
 if ( $logger->is_debug() ) {
@@ -540,13 +548,20 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Get the paramHashRefs for the appInstances
 	$numDefault      = $workloadParamHashRef->{"numAppInstances"};
-	my $appInstanceParamHashRefs =
-	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "appInstances");
 	$instancesListRef = $workloadParamHashRef->{"appInstances"};
-	$instancesParamHashRefs =
-	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "appInstances");
-	push @$appInstanceParamHashRefs, @$instancesParamHashRefs;
-
+	my $appInstanceParamHashRefs;
+	if ($numDefault > 0) {
+		if ($#{$instancesListRef} >= 0) {
+			$console_logger->info("Specifying both numAppInstances > 1 and the appInstances parameter is not supported.");
+			exit -1;
+		}
+		$appInstanceParamHashRefs = 
+	  		Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "appInstances");
+	} else {
+		$appInstanceParamHashRefs =
+		  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "appInstances");
+	}
+	
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
 		$logger->debug("For workload $workloadNum, have $numAppInstances appInstances");
@@ -559,13 +574,20 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Get the parameters for the driver instances
 	$numDefault      = $workloadParamHashRef->{"numDrivers"};
-	my $driversParamHashRefs =
-	  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "drivers");
 	$instancesListRef = $workloadParamHashRef->{"drivers"};
-	$instancesParamHashRefs =
-	  Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "drivers");
-	push @$driversParamHashRefs, @$instancesParamHashRefs;
-
+	my $driversParamHashRefs;
+	if ($numDefault > 0) {
+		if ($#{$instancesListRef} >= 0) {
+			$console_logger->info("Specifying both numDrivers > 1 and the drivers parameter is not supported.");
+			exit -1;
+		}
+		$driversParamHashRefs =
+		  	Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $numDefault, "drivers");
+	} else {
+		$driversParamHashRefs =
+	 		Parameters::getInstanceParamHashRefs( $paramsHashRef, $workloadParamHashRef, $instancesListRef, "drivers");
+	}
+	
 	if ( $#$driversParamHashRefs < 0 ) {
 		$console_logger->error(
 "Workload $workloadNum does not have any drivers.  Specify at least one workload driver using either the numDrivers or drivers parameters."
@@ -657,13 +679,20 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 			# Get the service instance parameters
 			$numDefault      = $appInstanceParamHashRef->{ "num" . ucfirst($serviceType) . "s" };
-			my $svcInstanceParamHashRefs =
-			  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault, $serviceType . "s");
 			$instancesListRef = $appInstanceParamHashRef->{ $serviceType . "s" };
-			$instancesParamHashRefs =
-			  Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef, $serviceType . "s" );
-			push @$svcInstanceParamHashRefs, @$instancesParamHashRefs;
-
+			my $svcInstanceParamHashRefs;
+			if ($numDefault > 0) {
+				if ($#{$instancesListRef} >= 0) {
+					$console_logger->info("Specifying both num" . ucfirst($serviceType) 
+						. "s > 1 and the ${serviceType}s parameter is not supported.");
+					exit -1;
+				}
+				$svcInstanceParamHashRefs =
+			 		Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $numDefault, $serviceType . "s");
+			} else { 
+				$svcInstanceParamHashRefs =
+				  	Parameters::getInstanceParamHashRefs( $paramsHashRef, $appInstanceParamHashRef, $instancesListRef, $serviceType . "s" );
+			}
 			my $numScvInstances = $#{$svcInstanceParamHashRefs} + 1;
 			if ( $logger->is_debug() ) {
 				$logger->debug(
@@ -753,12 +782,19 @@ $runProcedure->setVirtualInfrastructure($vi);
 
 # Set up the virtualInfrastructure Management Hosts
 $numDefault      = $viParamHashRef->{"numViMgmtHosts"};
-my $viMgmtHostInstanceParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viMgmtHosts");
 $instancesListRef = $viParamHashRef->{"viMgmtHosts"};
-$instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viMgmtHosts");
-push @$viMgmtHostInstanceParamHashRefs, @$instancesParamHashRefs;
+my $viMgmtHostInstanceParamHashRefs;
+if ($numDefault > 0) {
+	if ($#{$instancesListRef} >= 0) {
+		$console_logger->info("Specifying both numViMgmtHosts > 1 and the viMgmtHosts parameter is not supported.");
+		exit -1;
+	}
+	$viMgmtHostInstanceParamHashRefs =
+  		Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viMgmtHosts");
+} else {
+	$viMgmtHostInstanceParamHashRefs =
+  		Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viMgmtHosts");
+}
 
 if ( $logger->is_debug() ) {
 	my $numViMgmtHosts = $#{$viMgmtHostInstanceParamHashRefs} + 1;
@@ -778,12 +814,19 @@ foreach my $viMgmtHostInstanceParamHashRef (@$viMgmtHostInstanceParamHashRefs) {
 
 # Create all of the virtual infrastructure Hosts
 $numDefault      = $viParamHashRef->{"numViHosts"};
-my $viHostInstanceParamHashRefs =
-  Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viHosts");
 $instancesListRef = $viParamHashRef->{"viHosts"};
-$instancesParamHashRefs =
-  Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viHosts");
-push @$viHostInstanceParamHashRefs, @$instancesParamHashRefs;
+my $viHostInstanceParamHashRefs;
+if ($numDefault > 0) {
+	if ($#{$instancesListRef} >= 0) {
+		$console_logger->info("Specifying both numViHosts > 1 and the viHosts parameter is not supported.");
+		exit -1;
+	}
+	$viHostInstanceParamHashRefs =
+  		Parameters::getDefaultInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $numDefault, "viHosts");
+} else {
+	$viHostInstanceParamHashRefs =
+  		Parameters::getInstanceParamHashRefs( $paramsHashRef, $viParamHashRef, $instancesListRef, "viHosts");
+}
 
 if ( $logger->is_debug() ) {
 	my $numViHosts = $#{$viHostInstanceParamHashRefs} + 1;

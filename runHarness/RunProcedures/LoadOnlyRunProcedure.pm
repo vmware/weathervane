@@ -32,7 +32,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunProcedure';
 
-has '+name' => ( default => 'Prepare-Only', );
+has '+name' => ( default => 'Load-Only', );
 
 has 'reloadDb' => (
 	is  => 'rw',
@@ -52,6 +52,7 @@ override 'initialize' => sub {
 
 sub run {
 	my ( $self ) = @_;
+	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $tmpDir             = $self->getParamValue('tmpDir');
 	my $console_logger     = get_logger("Console");
 	my $debug_logger       = get_logger("Weathervane::RunProcedures::PrepareOnlyRunProcedure");
@@ -59,29 +60,41 @@ sub run {
 	my @pids;
 	my $pid;
 
-	# Get the minor sequence number of the next run
-	my $sequenceNumberFile = "$tmpDir/minorsequence.num";
-	my $seqnum;
-	if ( -e "$sequenceNumberFile" ) {
-		open SEQFILE, "<$sequenceNumberFile";
-		$seqnum = <SEQFILE>;
+	# Get the major sequence number
+	my $majorSeqNum;
+	if ( -e "$majorSequenceNumberFile" ) {
+		open SEQFILE, "<$majorSequenceNumberFile";
+		$majorSeqNum = <SEQFILE>;
 		close SEQFILE;
-		open SEQFILE, ">$sequenceNumberFile";
-		my $nextSeqNum = $seqnum + 1;
+		$majorSeqNum--; #already incremented in weathervane.pl
+	} else {
+		print "Major sequence number file is missing.\n";
+		exit -1;
+	}
+	# Get the minor sequence number of the next run
+	my $minorSequenceNumberFile = "$tmpDir/minorsequence.num";
+	my $minorSeqNum;
+	if ( -e "$minorSequenceNumberFile" ) {
+		open SEQFILE, "<$minorSequenceNumberFile";
+		$minorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		open SEQFILE, ">$minorSequenceNumberFile";
+		my $nextSeqNum = $minorSeqNum + 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
 	else {
-		$seqnum = 0;
-		open SEQFILE, ">$sequenceNumberFile";
+		$minorSeqNum = 0;
+		open SEQFILE, ">$minorSequenceNumberFile";
 		my $nextSeqNum = 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
+	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
 
 	# Now send all output to new subdir 	
-	$tmpDir = "$tmpDir/$seqnum";
+	$tmpDir = "$tmpDir/$minorSeqNum";
 	if ( !( -e $tmpDir ) ) {
 		`mkdir $tmpDir`;
 	}

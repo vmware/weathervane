@@ -142,31 +142,11 @@ sub foundMax {
 	return $foundMax;
 }
 
-sub hitTargetUt {
-	my ($self)   = @_;
-	my $foundMax = 1;
-
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$foundMax &= $appInstance->hitTargetUt();
-	}
-
-	return $foundMax;
-}
-
 sub adjustUsersForFindMax {
 	my ($self)         = @_;
 	my $appInstanceRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstanceRef) {
 		$appInstance->adjustUsersForFindMax();
-	}
-}
-
-sub adjustUsersForTargetUt {
-	my ($self)         = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->adjustUsersForTargetUt();
 	}
 }
 

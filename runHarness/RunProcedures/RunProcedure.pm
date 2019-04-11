@@ -86,10 +86,6 @@ override 'initialize' => sub {
 		die "The logLevel must be between 0 and 4";
 	}
 
-	if ( ( $self->getParamValue('runStrategy') eq "targetUtilization" ) && ( $self->getParamValue('logLevel') < 3 ) ) {
-		die "The logLevel must be >= 3 in order to run the targetUtilization run strategy";
-	}
-
 	super();
 
 };
@@ -255,43 +251,11 @@ sub foundMax {
 	return $foundMax;
 }
 
-sub hitTargetUt {
-	my ($self)   = @_;
-	my $passAll  = $self->getParamValue('targetUtilizationPassAll');
-	my $foundMax = 0;
-	if ($passAll) {
-		$foundMax = 1;
-	}
-
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		my $wFoundMax = $workload->hitTargetUt();
-		if ($passAll) {
-			$foundMax &= $wFoundMax;
-		}
-		else {
-			if ($wFoundMax) {
-				$foundMax = 1;
-			}
-		}
-	}
-
-	return $foundMax;
-}
-
 sub adjustUsersForFindMax {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
 		$workload->adjustUsersForFindMax();
-	}
-}
-
-sub adjustUsersForTargetUt {
-	my ($self) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->adjustUsersForTargetUt();
 	}
 }
 

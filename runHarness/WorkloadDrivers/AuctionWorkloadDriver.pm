@@ -1969,10 +1969,7 @@ sub parseStats {
 	}	
 	
 	my $numAppInstances = $#$appInstancesRef + 1;
-	my $suffix          = "";
-	if ( $self->workload->useSuffix ) {
-		$suffix = $self->workload->suffix;
-	}
+	my $suffix          = $self->workload->suffix;
 	
 	# Get the final stats summary from the workload driver
 	my $json = JSON->new;

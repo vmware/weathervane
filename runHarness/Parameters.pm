@@ -1248,7 +1248,7 @@ $parameters{"numDrivers"} = {
 
 $parameters{"numWorkloads"} = {
 	"type"      => "=i",
-	"default"   => 0,
+	"default"   => 1,
 	"parent"    => "runProc",
 	"isa"       => "workload",
 	"usageText" => "",

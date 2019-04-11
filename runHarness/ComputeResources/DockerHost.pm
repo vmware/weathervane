@@ -678,7 +678,7 @@ sub dockerGetNetwork {
 	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
 	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name");
 	my $dockerHostString  = $self->dockerHostString;	
-	my $out = `$dockerHostString docker inspect --format '{{range $key, $element := .NetworkSettings.Networks}}{{$key}} {{end}}' $name 2>&1`;
+	my $out = `$dockerHostString docker inspect --format '{{range \$key, \$element := .NetworkSettings.Networks}}{{\$key}} {{end}}' $name 2>&1`;
 	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name got $out");
 	my @networks = split(/\s/,$out);
 	chomp($networks[0]);

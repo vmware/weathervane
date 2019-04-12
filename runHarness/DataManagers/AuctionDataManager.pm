@@ -182,7 +182,7 @@ sub prepareDataServices {
 	# This will stop and restart the data manager so that it has the right port numbers
 	$self->startDataManagerContainer ($users, $logHandle);
 
-	if ( !reloadDb && !$self->isDataLoaded( $users, $logPath ) ) {
+	if ( !$reloadDb && !$self->isDataLoaded( $users, $logPath ) ) {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
 		$appInstance->clearDataServicesBeforeStart($logPath);

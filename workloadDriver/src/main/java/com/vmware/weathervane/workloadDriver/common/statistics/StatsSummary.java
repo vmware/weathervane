@@ -283,7 +283,7 @@ public class StatsSummary {
 	public String getStatsIntervalHeader(boolean includeWorkload) {
 		String outputFormat = "|%10s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
-			outputFormat = "|%10s" + outputFormat;
+			outputFormat = "|%10s|%14s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		}
 		StringBuilder retVal = new StringBuilder();
 		if (includeWorkload) {
@@ -309,7 +309,7 @@ public class StatsSummary {
 
 		String outputFormat = "|%10s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		if (includeWorkload) {
-			outputFormat = "|%10s" + outputFormat;
+			outputFormat = "|%10s|%14s|%10s|%8s|%8s|%8s|%8s|%8s|%25s| %s";
 		}
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("MMM d,yyyy HH:mm:ss z");
 		String timestamp = dateFormatter.format(new Date());

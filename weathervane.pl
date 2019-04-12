@@ -681,7 +681,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHost);
 		$appInstance->instanceNum($appInstanceNum);
 		$appInstance->workload($workload);
-		$appInstance->host($appInstanceHostname);
+		$appInstance->host($appInstanceHost);
 		$appInstance->initialize();
 		push @appInstances, $appInstance;
 

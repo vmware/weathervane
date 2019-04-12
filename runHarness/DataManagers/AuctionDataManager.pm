@@ -175,13 +175,14 @@ sub prepareDataServices {
 	}
 	
 	$appInstance->startServices("data", $logPath);
+	
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();	
 	
 	# This will stop and restart the data manager so that it has the right port numbers
 	$self->startDataManagerContainer ($users, $logHandle);
 
-	if ( !$self->isDataLoaded( $users, $logPath ) ) {
+	if ( !reloadDb && !$self->isDataLoaded( $users, $logPath ) ) {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
 		$appInstance->clearDataServicesBeforeStart($logPath);
@@ -655,7 +656,10 @@ sub loadData {
 		} 
    	}
    	close $pipe;	
-	close $applog;
+	
+	# Get the logs from the auctionDataManager and store the info in the logs
+	my $logOut = $self->host->dockerGetLogs($applog, $self->name);
+	$logger->debug($logOut);
 	
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	my $nosqlServerRef = $nosqlServersRef->[0];

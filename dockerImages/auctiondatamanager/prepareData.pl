@@ -5,7 +5,11 @@ use POSIX;
 
 print "Preparing data for run\n";
 my $maxUsers = $ENV{'MAXUSERS'};
+my $users = $ENV{'USERS'};
 
+if ( $users > $maxUsers ) {
+	$maxUsers = $users;
+}
 my $auctions = ceil($maxUsers / $ENV{'USERSPERAUCTIONSCALEFACTOR'}); 
 if ( $auctions < 4 ) {
 	$auctions = 4;

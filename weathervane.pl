@@ -676,7 +676,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstanceHostname = $appInstanceParamHashRef->{'appInstanceHost'};
 		my $appInstanceHost;
 		if ($appInstanceHostname) {
-			$appInstanceHost = $nameToComputeResourceHash->{$appInstanceHostname};
+			$appInstanceHost = $nameToComputeResourceHash{$appInstanceHostname};
 		}
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHost);
 		$appInstance->instanceNum($appInstanceNum);

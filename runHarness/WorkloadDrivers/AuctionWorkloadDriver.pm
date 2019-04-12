@@ -1015,12 +1015,18 @@ sub startRun {
 		my $startedRampDown = 0;
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-			if ( $inline =~ /^\|/ ) {
+			if (( $inline =~ /^\|/ ) && !$startedRampDown) {
 				if ( $self->getParamValue('showPeriodicOutput') ) {
+				    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
+						$inline = $1 . "\n";
+				    }
+				    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
+						$inline = $1 . "\n";
+				    }
 					print $periodicOutputId . $inline;
 				}
 			}
-
+		
 			# The next line after ----- should be first header
 			if ( $inline =~ /^-------------------/ ) {
 				$nextIsHeader = 1;

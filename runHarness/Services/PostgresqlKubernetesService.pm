@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'PostgreSQL 9.3', );
-
-has '+version' => ( default => '9.3.5', );
-
-has '+description' => ( default => '', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 

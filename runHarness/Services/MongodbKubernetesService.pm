@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'MongoDB', );
-
-has '+version' => ( default => '3.0.x', );
-
-has '+description' => ( default => '', );
-
 has 'numNosqlShards' => (
 	is      => 'rw',
 	isa     => 'Int',

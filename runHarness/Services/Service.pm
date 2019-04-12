@@ -30,16 +30,6 @@ use Instance;
 
 extends 'Instance';
 
-has 'version' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'description' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'appInstance' => (
 	is      => 'rw',
 	isa     => 'AppInstance',

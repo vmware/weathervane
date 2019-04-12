@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'RabbitMQ', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 # Names of stats collected for RabbitMQ and the text to match in the list queues output
 my @rabbitmqStatNames = (
 	"memory",       "messages",       "messages_ready", "messages_unacked", "ack_rate", "deliver_rate",

@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'MongoDB', );
-
-has '+version' => ( default => '3.4.x', );
-
-has '+description' => ( default => '', );
-
 # This is the number of the shard that this service instance
 # is a part of, from 1 to numShards
 has 'shardNum' => (

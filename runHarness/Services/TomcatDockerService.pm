@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'Tomcat', );
-
-has '+version' => ( default => '8', );
-
-has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
-
 has 'mongosDocker' => (
 	is      => 'rw',
 	isa     => 'Str',

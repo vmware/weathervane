@@ -27,11 +27,11 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'PostgreSQL 9.3', );
-
-has '+version' => ( default => '9.3.5', );
-
-has '+description' => ( default => '', );
+has 'clearBeforeStart' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
 
 override 'initialize' => sub {
 	my ($self) = @_;
@@ -148,9 +148,10 @@ sub startInstance {
 		# For bridged networking, ports get assigned at start time
 		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
 	}
+	if (!$self->clearBeforeStart) {
+		$self->doVacuum($applog);
+	}
 	
-	$self->doVacuum($applog);
-
 	close $applog;
 }
 
@@ -177,6 +178,7 @@ sub clearDataBeforeStart {
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $name        = $self->name;
 	$logger->debug("clearDataBeforeStart for $name");
+	$self->clearBeforeStart(1);
 }
 
 sub clearDataAfterStart {
@@ -203,13 +205,19 @@ sub clearDataAfterStart {
 
 sub doVacuum {
 	my ( $self, $fileout ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $name        = $self->name;
-	
-	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
+
+	$logger->debug("psql -U auction  -t -q --command=\"vacuum analyze;\"\n");	
 	print $fileout "psql -U auction  -t -q --command=\"vacuum analyze;\"\n";
+	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
+	$logger->debug($cmdout);
 	print $fileout $cmdout;
-	$cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"checkpoint;\"");
+
+	$logger->debug("psql -U auction  -t -q --command=\"checkpoint;\"\n");
 	print $fileout "psql -U auction  -t -q --command=\"checkpoint;\"\n";
+	$cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"checkpoint;\"");
+	$logger->debug($cmdout);
 	print $fileout $cmdout;
 
 }

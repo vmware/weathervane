@@ -30,12 +30,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'ZookeeperServer', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 override 'initialize' => sub {
 	my ( $self, $numMsgServers ) = @_;
 

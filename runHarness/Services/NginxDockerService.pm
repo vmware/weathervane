@@ -27,13 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'Nginx', );
-
-has '+version' => ( default => '1.7.xx', );
-
-has '+description' => ( default => 'Nginx Web Server', );
-
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	super();

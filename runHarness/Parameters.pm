@@ -603,7 +603,7 @@ $parameters{"driverHosts"} = {
 	"showUsage" => 0,
 };
 $parameters{"appInstanceHost"} = {
-	"type"      => "hash",
+	"type"      => "=s",
 	"default"   => {},
 	"parent"    => "appInstance",
 	"usageText" => "",

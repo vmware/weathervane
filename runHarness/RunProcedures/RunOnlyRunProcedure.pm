@@ -43,6 +43,7 @@ override 'run' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunOnlyRunProcedure");
 	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
+	my $outputDir = $self->getParamValue('outputDir');
 	my $tmpDir    = $self->getParamValue('tmpDir');
 
 	# Add appender to the console log to put a copy in the tmpLog directory
@@ -74,7 +75,10 @@ override 'run' => sub {
 		open SEQFILE, "<$minorSequenceNumberFile";
 		$minorSeqNum = <SEQFILE>;
 		close SEQFILE;
-		$minorSeqNum--;
+		open SEQFILE, ">$minorSequenceNumberFile";
+		my $nextSeqNum = $minorSeqNum + 1;
+		print SEQFILE $nextSeqNum;
+		close SEQFILE;
 	}
 	else {
 		$minorSeqNum = 0;
@@ -85,6 +89,24 @@ override 'run' => sub {
 	}
 	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
+
+	my $prevRunMajorSeqNum = $majorSeqNum - 1;
+	my $prevRunDir = "$outputDir/$prevRunMajorSeqNum";
+	my $prevRunPrepareOnlyNumFile = "$prevRunDir/prepareOnly.num";
+	my $checkDir;
+	if ( -e "$prevRunPrepareOnlyNumFile" ) {
+		open SEQFILE, "<$prevRunPrepareOnlyNumFile";
+		my $prepareOnlyMinorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		$checkDir = "$prevRunDir/$prepareOnlyMinorSeqNum";
+		if ( !(-e "$checkDir") ) {
+			print "Could not find prepareOnly dir to check users at $checkDir.\n";
+			exit -1;
+		}
+	} else {
+		print "Previous run at $prevRunDir does not have a prepareOnly.num file.\n";
+		exit -1;
+	}
 
 	# Now send all output to new subdir 	
 	$tmpDir = "$tmpDir/$minorSeqNum";
@@ -115,7 +137,7 @@ override 'run' => sub {
 	}
 	
 	# Check that the users are the same as the number from the prepareOnly phase
-	if (!$self->checkUsersTxt($tmpDir)) {
+	if (!$self->checkUsersTxt($checkDir)) {
 		exit;	
 	}
 	

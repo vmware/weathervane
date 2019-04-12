@@ -127,7 +127,6 @@ has 'passedLast' => (
 
 has 'host' => (
 	is  => 'rw',
-	isa => 'ComputeResource',
 );
 
 override 'initialize' => sub {
@@ -1426,6 +1425,9 @@ sub getConfigFiles {
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
 		$newBaseDestinationPath .= "/appInstance" . $self->instanceNum;
+	}
+	if ( !( -e $newBaseDestinationPath ) ) {
+		`mkdir -p $newBaseDestinationPath`;
 	}
 
 	# If AI is running on Kubernetes, get the layout of the pods

@@ -118,7 +118,7 @@ sub run {
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
 	
-	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
+	$console_logger->info("Stopping services from previous runs.\n");
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");

@@ -35,11 +35,6 @@ has 'namespace' => (
 	isa => 'Str',
 );
 
-has 'host' => (
-	is  => 'rw',
-	isa => 'Cluster',
-);
-
 has 'imagePullPolicy' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -58,15 +53,6 @@ override 'initialize' => sub {
 	super();
 
 };
-
-sub setHost {
-	
-	my ($self, $host) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	
-	$self->host($host);
-		
-}
 
 override 'getDeployedConfiguration' => sub {
 	my ( $self, $destinationPath) = @_;

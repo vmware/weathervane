@@ -125,6 +125,11 @@ has 'passedLast' => (
 	default => 0,
 );
 
+has 'host' => (
+	is  => 'rw',
+	isa => 'ComputeResource',
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();

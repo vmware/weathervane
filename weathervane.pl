@@ -519,7 +519,7 @@ foreach my $paramHashRef (@$clustersParamHashRefs) {
 	$logger->debug( "For kubernetesCluster ", $paramHashRef->{'name'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
-	my $cluster = createCluster( $paramHashRef, $runProcedure, 0, \%nameToComputeResourceHash );
+	my $cluster = createKubernetesCluster( $paramHashRef, $runProcedure, \%nameToComputeResourceHash );
 }
 
 # Get the parameters for the workload instances
@@ -671,7 +671,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
 		}
-		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef);
+		# Determine whether an appInstanceHost was defined.  If so, use it to get the host
+		# so that we can pass it to the factory method
+		my $appInstanceHostname = $appInstanceParamHashRef->{'appInstanceHost'};
+		my $appInstanceHost;
+		if ($appInstanceHostname) {
+			$appInstanceHost = $nameToComputeResourceHash->{$appInstanceHostname};
+		}
+		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHost);
 		$appInstance->instanceNum($appInstanceNum);
 		$appInstance->workload($workload);
 		$appInstance->initialize();

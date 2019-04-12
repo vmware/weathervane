@@ -26,7 +26,7 @@ use namespace::autoclean;
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getAppInstance {
-	my ( $self, $applicationParamHashRef ) = @_;
+	my ( $self, $applicationParamHashRef, $host ) = @_;
 
 	my $applicationImpl = $applicationParamHashRef->{'workloadImpl'};
 
@@ -36,10 +36,8 @@ sub getAppInstance {
 
 	my $application;
 	if ( $applicationImpl eq "auction" ) {
-		if ($applicationParamHashRef->{'clusterName'}) {
-			if ($applicationParamHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($host && ((ref $host) eq "KubernetesCluster")) {
 			$application = AuctionKubernetesAppInstance->new( paramHashRef => $applicationParamHashRef );
-			} 
 		} else {
 			$application = AuctionAppInstance->new( paramHashRef => $applicationParamHashRef );			
 		}

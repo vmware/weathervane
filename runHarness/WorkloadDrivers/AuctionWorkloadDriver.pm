@@ -1015,7 +1015,9 @@ sub startRun {
 		my $startedRampDown = 0;
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-			if (( $inline =~ /^\|/ ) && !$startedRampDown) {
+			if (( $inline =~ /^\|\s+\d+\|/ ) 
+				|| ( $inline =~ /^\|\s+Time\|/ ) 
+				|| ( $inline =~ /^\|\s+\(sec\)\|/ )) {
 				if ( $self->getParamValue('showPeriodicOutput') ) {
 				    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
 						$inline = $1 . "\n";

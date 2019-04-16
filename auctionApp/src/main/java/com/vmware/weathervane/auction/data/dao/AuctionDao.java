@@ -70,5 +70,7 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 
 	Item getNextUnsoldItem(Auction theAuction);
 
+	void resetItemsToFuture(Auction auction);
+
 	
 }

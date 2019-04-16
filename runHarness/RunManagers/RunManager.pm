@@ -75,21 +75,6 @@ has 'resultsFileDir' => (
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
-	my $paramHashRef = $self->paramHashRef;	
-
-	# if the resultsFileDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $resultsFileDir = $paramHashRef->{'resultsFileDir' };
-	if ( !( $resultsFileDir =~ /^\// ) ) {
-		my $weathervaneHome =  $paramHashRef->{'weathervaneHome' };
-		if ( $resultsFileDir eq "" ) {
-			$resultsFileDir = $weathervaneHome;
-		}
-		else {
-			$resultsFileDir = $weathervaneHome . "/" . $resultsFileDir;
-		}
-	}
-	$paramHashRef->{'resultsFileDir' } = $resultsFileDir;
 
 	super();
 

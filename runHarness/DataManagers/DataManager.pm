@@ -68,29 +68,6 @@ has 'portMap' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	
-	# if the dbScriptDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $dbScriptDir    = $self->getParamValue('dbScriptDir');
-	if ( !( $dbScriptDir =~ /^\// ) ) {
-		$dbScriptDir = $weathervaneHome . "/" . $dbScriptDir;
-	}
-	$self->setParamValue('dbScriptDir', $dbScriptDir);
-
-	# make sure the directories exist
-	if ( !( -e $dbScriptDir ) ) {
-		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
-	}
-
-	# if the dbLoaderDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $dbLoaderDir    = $self->getParamValue('dbLoaderDir' );
-	if ( !( $dbLoaderDir =~ /^\// ) ) {
-		$dbLoaderDir = $weathervaneHome . "/" . $dbLoaderDir;
-	}
-	$self->setParamValue('dbLoaderDir', $dbLoaderDir);
-
 	super();
 
 };

@@ -175,27 +175,23 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 		// Get the next item for the auction.
 		Item nextItem = null;
-		try {
-			nextItem = auctionDao.getNextUnsoldItem(currentAuction);
-			logger.info("startNextItem: found nextItem " + nextItem.getId() + " for auction "
-					+ currentAuction.getId());
-		} catch (EmptyResultDataAccessException ex) {
-			/*
-			 * There are no more items. The auction is complete.
-			 */
-			logger.info("startNextItem:  auction " + currentAuction.getId() + " is complete");
-			// Pull the auction into the persistence context
-			currentAuction = auctionDao.get(currentAuction.getId());
-			currentAuction.setState(AuctionState.COMPLETE);
-			currentAuction.setEndTime(now);
-			
-			return null;
-		} catch (NonUniqueResultException ex) {
-			throw new RuntimeException(
-					"In startNextItem: Got multiple next items for auction "
-							+ currentAuction.getId());
-		}
-
+		do {
+			try {
+				nextItem = auctionDao.getNextUnsoldItem(currentAuction);
+				logger.info(
+						"startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
+			} catch (EmptyResultDataAccessException ex) {
+				/*
+				 * There are no more items. reset the item for the auction and then try again.
+				 */
+				logger.info("startNextItem:  auction " + currentAuction.getId() + " is complete.  Restarting");
+				auctionDao.resetItemsToFuture(currentAuction);
+			} catch (NonUniqueResultException ex) {
+				throw new RuntimeException(
+						"In startNextItem: Got multiple next items for auction " + currentAuction.getId());
+			}
+		} while (nextItem == null);
+		
 		logger.debug("startNextItem: Making item " + nextItem.getId()
 				+ " the current item for Auction " + currentAuction.getId());
 

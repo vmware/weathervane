@@ -392,6 +392,39 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	}
 
+	@Override
+	public void resetItemsToFuture(Auction auction) {
+		logger.info("resetItemsToFuture. auctionId = " + auction.getId());
+
+		// Bring the auction back into the context
+		Auction theAuction = this.get(auction.getId());
+
+		/*
+		 * Now reset all items in the auction
+		 */
+		logger.info("resetItemsToFuture. auctionId = " + auction.getId() + ". Reset the items.");
+		for (Item anItem : theAuction.getItems()) {
+			anItem.setState(ItemState.INAUCTION);
+
+			// Delete all bids for the item
+			logger.info("resetItemsToFuture. auctionId = " + auction.getId()
+					+ ". Delete the bids for item " + anItem.getId());
+			bidRepository.deleteByItemId(anItem.getId());
+
+			/*
+			 * Because cascadeType=All on this association, setting the highbid
+			 * to null should delete the associated highbid
+			 */
+			HighBid highBid = anItem.getHighbid();
+			if (highBid != null) {
+				anItem.setHighbid(null);
+				logger.info("resetItemsToFuture. auctionId = " + auction.getId()
+						+ ". Explicitly removing the highBid for item " + anItem.getId()
+						+ ", highBid = " + highBid.getId());
+			}
+		}
+	}
+
 	@Transactional
 	public Set<Keyword> getKeywordsForAuction(Auction anAuction) {
 

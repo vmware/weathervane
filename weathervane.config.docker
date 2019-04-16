@@ -1,0 +1,60 @@
+{
+  # This is a temporary version of a docker config file.
+  # We can't use the fixed config sizes because the auctionBidServer does
+  # run in Docker-only yet.
+  "dockerNamespace" : "hrosenbe",
+  "dockerHosts" : [
+    { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
+    { "name" : "AuctionDriver3" }, { "name" : "AuctionDriver4" }, 
+    { "name" : "AuctionDriver5" }, { "name" : "AuctionDriver6" }, 
+    { "name" : "AuctionDriver7" }, { "name" : "AuctionDriver8" }, 
+    { "name" : "AuctionApp1", }, { "name" : "AuctionApp2", }, { "name" : "AuctionApp3", }, 
+    { "name" : "AuctionBid1", }, 
+    { "name" : "AuctionWeb1", }, 
+    { "name" : "AuctionCs1", }, { "name" : "AuctionCs2", }, { "name" : "AuctionCs3", }, 
+    { "name" : "AuctionMsg1", }, 
+    { "name" : "AuctionDb1", }, 
+    { "name" : "AuctionNosql1", }, 
+  ],
+  
+  "numDrivers": 8,
+  "driverHosts" : [
+    "AuctionDriver1", "AuctionDriver2", 
+    "AuctionDriver3", "AuctionDriver4", 
+    "AuctionDriver5", "AuctionDriver6", 
+    "AuctionDriver7", "AuctionDriver8",
+  ],
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+
+  "numAppInstances" : 1,
+  "configurationSize": "custom",
+  "dataManagerHosts" : [ "AuctionDb1", ],
+  "numWebServers" : 1,
+  "webServerHosts" : [ "AuctionWeb1", ],
+  "webServerCpus" : "1",
+  "numAuctionBidServers" : 0,
+  "auctionBidServerHosts" : [ "AuctionBid1", ],
+  "auctionBidServerCpus" : "1",
+  "numAppServers" : 3,
+  "appServerHosts" : [ "AuctionApp1", "AuctionApp2", "AuctionApp3", ],
+  "appServerCpus" : "1",
+  "numMsgServers" : 1,
+  "msgServerHosts" : [ "AuctionMsg1", ],
+  "msgServerCpus" : "1",
+  "numCoordinationServers" : 3,
+  "coordinationServerHosts" : [ "AuctionCs1", "AuctionCs3", "AuctionCs3", ],
+  "numNosqlServers" : 1,
+  "nosqlServerHosts" : [ "AuctionNosql1", ],
+  "nosqlServerCpus" : "1",
+  "numDbServers" : 1,
+  "dbServerHosts" : [ "AuctionDb1", ],
+
+  # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and mongoData
+  "postgresqlUseNamedVolumes" : true,
+  "mongodbUseNamedVolumes" : true,
+
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer",
+  "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer -XX:+UseG1GC",
+  "numAuctioneerThreads" : 4,
+
+}

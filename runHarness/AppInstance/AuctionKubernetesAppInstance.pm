@@ -367,7 +367,7 @@ override 'getLogFiles' => sub {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
 			my $service = $servicesRef->[0];
-			my $name = $service->host->clusterName;
+			my $name = $service->host->name;
 			my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 			if ( !( -e $destinationPath ) ) {
 				`mkdir -p $destinationPath`;

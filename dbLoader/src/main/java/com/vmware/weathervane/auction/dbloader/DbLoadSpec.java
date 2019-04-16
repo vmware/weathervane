@@ -42,7 +42,6 @@ public class DbLoadSpec {
 	private int maxImagesPerFutureItem;
 	private int numImageSizesPerFutureItem;
 
-	private int itemsPerCurrentAuction;
 	private int maxImagesPerCurrentItem;
 	private int numImageSizesPerCurrentItem;
 	
@@ -81,7 +80,6 @@ public class DbLoadSpec {
 		this.maxImagesPerFutureItem = that.maxImagesPerFutureItem;
 		this.numImageSizesPerFutureItem = that.numImageSizesPerFutureItem;
 		
-		this.itemsPerCurrentAuction = that.itemsPerCurrentAuction;
 		this.maxImagesPerCurrentItem = that.maxImagesPerCurrentItem;
 		this.numImageSizesPerCurrentItem = that.numImageSizesPerCurrentItem;
 		
@@ -209,14 +207,6 @@ public class DbLoadSpec {
 
 	public void setLoadItemImages(boolean loadItemImages) {
 		this.loadItemImages = loadItemImages;
-	}
-
-	public int getItemsPerCurrentAuction() {
-		return itemsPerCurrentAuction;
-	}
-
-	public void setItemsPerCurrentAuction(int itemsPerCurrentAuction) {
-		this.itemsPerCurrentAuction = itemsPerCurrentAuction;
 	}
 
 	public int getMaxImagesPerCurrentItem() {

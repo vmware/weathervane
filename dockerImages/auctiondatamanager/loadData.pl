@@ -6,7 +6,6 @@ use POSIX;
 # the usersPerAuctionScaleFactor
 my $maxUsers = $ENV{'MAXUSERS'};
 my $users = $ENV{'USERS'};
-my $maxDuration = $ENV{'MAXDURATION'};
 my $numNosqlShards = $ENV{'NUMNOSQLSHARDS'};
 my $numNosqlReplicas = $ENV{'NUMNOSQLREPLICAS'};
 my $mongoHostPortPairsString = $ENV{'MONGODBSERVERS'};
@@ -42,7 +41,6 @@ my $dbLoaderOptions = "-d /items.json -t $threads ";
 $dbLoaderOptions .= " -u $maxUsers ";
 $dbLoaderOptions .= " -m $numNosqlShards ";
 $dbLoaderOptions .= " -p $numNosqlReplicas ";
-$dbLoaderOptions .= " -f $maxDuration ";
 $dbLoaderOptions .= " -a 'Workload $workloadNum, appInstance $appInstanceNum.' ";
 $dbLoaderOptions .= " -r \"/images\"";
 

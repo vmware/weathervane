@@ -47,15 +47,10 @@ import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
 import com.vmware.weathervane.auction.data.repository.NosqlBenchmarkInfoRepository;
 
-/**
- * Hello world!
- *
- */
 public class DBPrep {
 
 	private static String numThreadsDefault = "30";
 	private static String maxUsersDefault = "120";
-	private static String maxDurationDefault = "0";
 	private static String numNosqlShardsDefault = "0";
 	private static String numNosqlReplicasDefault = "0";
 	private static List<Thread> threadList = new ArrayList<Thread>();
@@ -91,8 +86,6 @@ public class DBPrep {
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);
 		Option t = new Option("t", "threads", true, "Number of threads for dbprep");
-		Option f = new Option("f", "maxduration", true,
-				"Max duration in seconds to be supported by the data.");
 
 		Options cliOptions = new Options();
 		cliOptions.addOption(u);
@@ -101,7 +94,6 @@ public class DBPrep {
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
 		cliOptions.addOption(t);
-		cliOptions.addOption(f);
 
 		CommandLine cliCmd = null;
 		CommandLineParser cliParser = new PosixParser();
@@ -118,9 +110,6 @@ public class DBPrep {
 
 		String usersString = cliCmd.getOptionValue('u', maxUsersDefault);
 		int users = Integer.valueOf(usersString);
-
-		String maxDurationString = cliCmd.getOptionValue('f', maxDurationDefault);
-		long maxDuration = Long.valueOf(maxDurationString);
 
 		String numNosqlShardsString = cliCmd.getOptionValue('m', numNosqlShardsDefault);
 		int numNosqlShards = Integer.valueOf(numNosqlShardsString);
@@ -181,12 +170,6 @@ public class DBPrep {
 				throw new RuntimeException(
 						"MaxUsers supported by database does not match desired number of users   Users =  "
 								+ users + ", Found " + infoMaxUsers
-								+ ". Make sure that correct data is loaded.");
-			}
-			if ((maxDuration > 0) && (dbBenchmarkInfo.getMaxduration() < maxDuration)) {
-				throw new RuntimeException(
-						"MaxDuration supported by database is not long enough for desired duration. Need maxDuration =  "
-								+ maxDuration + ", Found " + dbBenchmarkInfo.getMaxduration()
 								+ ". Make sure that correct data is loaded.");
 			}
 			if (!dbBenchmarkInfo.getImagestoretype().equals(imageStoreType)) {

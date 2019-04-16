@@ -143,21 +143,6 @@ override 'initialize' => sub {
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
 	$self->minRateStep( $self->getParamValue('minRateStep') );
 
-	# if the distDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $distDir         = $self->getParamValue('distDir');
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue( 'distDir', $distDir );
-
-	my $configDir  = $self->getParamValue('configDir');
-	if ( !( $configDir =~ /^\// ) ) {
-		$configDir = $weathervaneHome . "/" . $configDir;
-	}
-	$self->setParamValue('configDir', $configDir);
-
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
 	if ( $#$userLoadPath >= 0 ) {

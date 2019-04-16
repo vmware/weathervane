@@ -38,6 +38,8 @@ my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHo
 								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
 
+my @filterConstants = ( 'tmpDir' );
+
 sub getParamDefault {
 	my ($key) = @_;
 
@@ -62,8 +64,16 @@ sub getParamType {
 
 sub getParamKeys {
 	my @keys = keys %Parameters::parameters;
+	my @filteredKeys;
 
-	return \@keys;
+	foreach my $key (@keys) {
+		if ( !($key ~~ @filterConstants) ) {
+			push @filteredKeys, $key;
+		}
+	}
+
+	return \@filteredKeys;
+
 }
 
 sub getParentList {
@@ -174,7 +184,7 @@ sub setParamValue {
 }
 
 sub usage {
-	my @keys = keys %Parameters::parameters;
+	my @keys = @{getParamKeys()};
 	print "Usage:  ./weathervane.pl [options]\n";
 	foreach my $key (@keys) {
 		if ( $Parameters::parameters{$key}->{"showUsage"} ) {
@@ -187,8 +197,7 @@ sub usage {
 }
 
 sub fullUsage {
-
-	my @keys = keys %Parameters::parameters;
+	my @keys = @{getParamKeys()};
 	print "Usage:  ./weathervane.pl [options]\n";
 	my $i = 0;
 	foreach my $key (@keys) {
@@ -1075,7 +1084,7 @@ $parameters{"stopServices"} = {
 
 $parameters{"configFile"} = {
 	"type"    => "=s",
-	"default" => "/root/weathervane/weathervane.config",
+	"default" => "weathervane.config",
 	"parent"  => "",
 	"usageText" =>
 "This is the name of the Weathervane configuration file.\n\tIt must either include the full path to the file\n\tor be relative to the directory from which the script is run",
@@ -2420,23 +2429,13 @@ $parameters{"msgServerSuffix"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"weathervaneHome"} = {
-	"type"    => "=s",
-	"default" => "/root/weathervane",
-	"parent"  => "",
-	"usageText" =>
-"This is the base directory under which the Weathervane harness expects to find its files.\n\tIf other directory related parameters are not diven with a full\n\tpath, they will be realative to this directory.",
-	"showUsage" => 1,
-};
-
-# If not absolute (starting with /) these directories are relative
-# to weathervaneHome
+# These directories are relative to the current working directory
 $parameters{"tmpDir"} = {
 	"type"    => "=s",
 	"default" => "tmpLog",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory in which Weathervane stores temporary files during a run.\n\tDo not use /tmp or any directory whose contents you wish to keep.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores temporary files during a run relative to the current working directory.\n\tDo not use any directory whose contents you wish to keep.",
 	"showUsage" => 0,
 };
 $parameters{"outputDir"} = {
@@ -2444,15 +2443,15 @@ $parameters{"outputDir"} = {
 	"default" => "output",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory in which Weathervane stores the output from runs.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores the output from runs relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"sequenceNumberFile"} = {
 	"type"    => "=s",
-	"default" => "output/sequence.num",
+	"default" => "sequence.num",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the file that Weathervane uses to store the sequence number of the next run.\n\tIt must either include the full path to the file\n\tor be relative to weathervaneHome.",
+"This is the file that Weathervane uses to store the sequence number of the next run.",
 	"showUsage" => 0,
 };
 $parameters{"distDir"} = {
@@ -2460,7 +2459,7 @@ $parameters{"distDir"} = {
 	"default" => "dist",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory for the executables and other artifacts needed to run Weathervane.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory for the executables and other artifacts needed to run Weathervane relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"dbScriptDir"} = {
@@ -2468,7 +2467,7 @@ $parameters{"dbScriptDir"} = {
 	"default" => "dist",
 	"parent"  => "appInstance",
 	"usageText" =>
-"This is the directory that contains the scripts used to configure the database tables.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the scripts used to configure the database tables relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"dbLoaderDir"} = {
@@ -2476,7 +2475,7 @@ $parameters{"dbLoaderDir"} = {
 	"default" => "dist",
 	"parent"  => "dataManager",
 	"usageText" =>
-"This is the directory that contains the jar file for the DBLoader executable.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the jar file for the DBLoader executable relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"workloadDriverDir"} = {
@@ -2484,7 +2483,7 @@ $parameters{"workloadDriverDir"} = {
 	"default" => "dist",
 	"parent"  => "workloadDriver",
 	"usageText" =>
-"This is the directory that contains the jar file for the workload-driver executable.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the jar file for the workload-driver executable relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"workloadProfileDir"} = {
@@ -2492,7 +2491,7 @@ $parameters{"workloadProfileDir"} = {
 	"default" => "workloadConfiguration",
 	"parent"  => "workloadDriver",
 	"usageText" =>
-"This is the directory that contains the templates for the workload profiles.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the templates for the workload profiles relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"gcviewerDir"} = {
@@ -2500,7 +2499,7 @@ $parameters{"gcviewerDir"} = {
 	"default" => "",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the path to the gcViewer executable.  GcViewer is used to\n\tanalyze the Java Garbage-Collection logs.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the path to the gcViewer executable relative to the current working directory.\n\tGcViewer is used to analyze the Java Garbage-Collection logs.",
 	"showUsage" => 0,
 };
 $parameters{"resultsFileDir"} = {
@@ -2508,7 +2507,7 @@ $parameters{"resultsFileDir"} = {
 	"default" => "",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the directory in which Weathervane stores the csv summary file.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores the csv summary file relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"resultsFileName"} = {
@@ -2516,7 +2515,7 @@ $parameters{"resultsFileName"} = {
 	"default" => "weathervaneResults.csv",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the name of the file in which Weathervane stores a summary of the run results in csv format.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the name of the file in which Weathervane stores a summary of the run results in csv format.",
 	"showUsage" => 1,
 };
 $parameters{"configDir"} = {
@@ -2524,7 +2523,7 @@ $parameters{"configDir"} = {
 	"default" => "configFiles",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the directory under which Weathervane stores\n\t configuration files for the various services.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory under which Weathervane stores configuration files for the various services relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"dbLoaderImageDir"} = {
@@ -2532,7 +2531,7 @@ $parameters{"dbLoaderImageDir"} = {
 	"default" => "images",
 	"parent"  => "dataManager",
 	"usageText" =>
-"This is the directory in which the images used by the dbLoader are stored.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which the images used by the dbLoader are stored relative to the current working directory.",
 	"showUsage" => 0,
 };
 

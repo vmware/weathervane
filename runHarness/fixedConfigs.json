@@ -2,7 +2,6 @@
  
 "micro" : {
   "maxUsers" : 1000,
-  "maxDuration" : 7200, 
   
   "driverCpus" : "1",
   "driverMem" :  "2g",
@@ -60,7 +59,6 @@
 
 "small" : {
   "maxUsers" : 20000,
-  "maxDuration" : 21600, 
 
   "numWebServers" : 1,
   "webServerCpus" : "2",

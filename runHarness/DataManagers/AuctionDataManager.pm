@@ -78,11 +78,6 @@ sub startDataManagerContainer {
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
 
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
-	$envVarMap{"MAXDURATION"} = max( $maxDuration, $totalTime );
-
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	my $nosqlServerRef = $nosqlServersRef->[0];
 	my $numNosqlShards = $nosqlServerRef->numNosqlShards;

@@ -816,8 +816,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$dataManager->host($host);
 		$dataManager->initialize();
 
-		$console_logger->info( "\tmaxDuration = " . $dataManager->getParamValue('maxDuration') );
-
 		# Now that the configuration of the appInstance is complete, ask it to check whether the
 		# configuration is valid for its workload type
 		if ( !$appInstance->checkConfig() ) {

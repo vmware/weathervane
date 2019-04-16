@@ -869,6 +869,7 @@ foreach my $viHostInstanceParamHashRef (@$viHostInstanceParamHashRefs) {
 	my $viHost = HostFactory->getVIHost($viHostInstanceParamHashRef);
 	$vi->addHost($viHost);
 	$viHost->setVirtualInfrastructure($vi);
+	$viHost->name($viHostInstanceParamHashRef->{'name'});
 }
 
 # Tell the virtualInfrastructure to initialize its knowledge of the VMs it contains

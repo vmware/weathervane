@@ -396,11 +396,7 @@ sub getStatsSummary {
 	my ( $self, $statsLogPath, $users ) = @_;
 	tie( my %csv, 'Tie::IxHash' );
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $gcviewerDir     = $self->getParamValue('gcviewerDir');
-	if ( !( $gcviewerDir =~ /^\// ) ) {
-		$gcviewerDir = $weathervaneHome . "/" . $gcviewerDir;
-	}
 
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {

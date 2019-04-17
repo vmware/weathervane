@@ -37,12 +37,6 @@ my $defaultUsersPerAuctionScaleFactor = 15.0;
 
 override 'initialize' => sub {
 	my ($self) = @_;
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $configDir  = $self->getParamValue('configDir');
-	if ( !( $configDir =~ /^\// ) ) {
-		$configDir = $weathervaneHome . "/" . $configDir;
-	}
-	$self->setParamValue('configDir', $configDir);
 
 	my $workloadNum = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;

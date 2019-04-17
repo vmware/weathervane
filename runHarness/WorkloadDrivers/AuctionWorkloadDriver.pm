@@ -164,15 +164,6 @@ override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
 
-	# if the workloadProfileDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $weathervaneHome    = $self->getParamValue('weathervaneHome');
-	my $workloadProfileDir = $self->getParamValue('workloadProfileDir');
-	if ( !( $workloadProfileDir =~ /^\// ) ) {
-		$workloadProfileDir = $weathervaneHome . "/" . $workloadProfileDir;
-	}
-	$self->setParamValue( 'workloadProfileDir', $workloadProfileDir );
-
 };
 
 override 'addSecondary' => sub {
@@ -1684,11 +1675,7 @@ sub getStatsSummary {
 		return;	
 	}
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $gcviewerDir     = $self->getParamValue('gcviewerDir');
-	if ( !( $gcviewerDir =~ /^\// ) ) {
-		$gcviewerDir = $weathervaneHome . "/" . $gcviewerDir;
-	}
 
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {

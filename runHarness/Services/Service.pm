@@ -97,32 +97,6 @@ override 'initialize' => sub {
 	my $instanceNum = $self->instanceNum;
 	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}");
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $configDir  = $self->getParamValue('configDir');
-	if ( !( $configDir =~ /^\// ) ) {
-		$configDir = $weathervaneHome . "/" . $configDir;
-	}
-	$self->setParamValue('configDir', $configDir);
-	
-	my $distDir  = $self->getParamValue( 'distDir' );
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue('distDir', $distDir);
-	
-	# if the dbScriptDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $dbScriptDir    = $self->getParamValue('dbScriptDir' );
-	if ( !( $dbScriptDir =~ /^\// ) ) {
-		$dbScriptDir = $weathervaneHome . "/" . $dbScriptDir;
-	}
-	$self->setParamValue('dbScriptDir', $dbScriptDir);
-
-	# make sure the directories exist
-	if ( !( -e $dbScriptDir ) ) {
-		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
-	}
-	
 	my $cpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $mem = $self->getParamValue( $serviceType . "Mem" );
 	if ($self->getParamValue('dockerNet')) {

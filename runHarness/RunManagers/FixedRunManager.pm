@@ -67,6 +67,7 @@ override 'start' => sub {
 
 	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
 	if ( $runProcedureType eq 'prepareOnly' ) {
+		$console_logger->info($runResult->toString());
 		$console_logger->info("Application configured and running.");
 	}
 	elsif ( $runProcedureType eq 'stop' ) {

@@ -345,10 +345,6 @@ my $configDir = getParamValue( $paramsHashRef, 'configDir');
 $configDir = $weathervaneHome . "/" . $configDir;
 setParamValue( $paramsHashRef, 'configDir', $configDir);
 
-my $dbScriptDir = getParamValue( $paramsHashRef, 'dbScriptDir' );
-$dbScriptDir = $weathervaneHome . "/" . $dbScriptDir;
-setParamValue( $paramsHashRef, 'dbScriptDir', $dbScriptDir);
-
 my $dbLoaderDir = getParamValue( $paramsHashRef, 'dbLoaderDir' );
 $dbLoaderDir = $weathervaneHome . "/" . $dbLoaderDir;
 setParamValue( $paramsHashRef, 'dbLoaderDir', $dbLoaderDir);
@@ -380,9 +376,6 @@ setParamValue( $paramsHashRef,  'gcviewerDir', $gcviewerDir );
 # Make sure required directories exist
 if ( !( -e $outputDir ) ) {
 	`mkdir -p $outputDir`;
-}
-if ( !( -e $dbScriptDir ) ) {
-	die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
 }
 
 # Get the sequence number of the next run

@@ -28,10 +28,12 @@ use FileHandle;
 use Statistics::Descriptive;
 use Switch;
 use Log::Log4perl qw(get_logger :levels);
+use Cwd qw();
 
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
-use lib '/root/weathervane/runHarness';
+use File::Basename;
+use lib dirname (__FILE__) . '/runHarness';
 
 use Factories::ServiceFactory;
 use Factories::HostFactory;
@@ -173,155 +175,21 @@ sub getComputeResourceForInstance {
 	}
 }
 
-# read in the command-line options
-my %paramCommandLine = ();
-my @paramStrings     = ();
-my @validParams      = ();
-my $keysRef          = getParamKeys();
-foreach my $key (@$keysRef) {
-	my $type = getParamType($key);
-	push @validParams, $key;
-	if ( ( $type eq "hash" ) || ( $type eq "list" ) ) {
-		next;
-	}
-	push @paramStrings, $key . $type;
-}
-GetOptions( \%paramCommandLine, @paramStrings );
-
-# If there is a "users" parameter on the command-line, turn it
-# into list of values for the different appInstances.  The values are
-# assigned to the appInstances in order.  If there are too few, then
-# the remaining appInstances get the values from the configFile or the default.
-# If there are too many then the extras are ignored.
-my @usersList;
-if ( exists $paramCommandLine{'users'} ) {
-	@usersList = split( ',', $paramCommandLine{'users'} );
+# Set weathervaneHome to the current working directory
+my $weathervaneHome = Cwd::cwd();
+if ( !( -e "$weathervaneHome/weathervane.pl" ) ) {
+	die "weathervane.pl does not exist in the current working directory.\n"
 }
 
-# Figure out where to read the config file
-my $configFileName;
-if ( exists( $paramCommandLine{'configFile'} ) ) {
-	$configFileName = $paramCommandLine{'configFile'};
-}
-else {
-	$configFileName = getParamDefault('configFile');
-}
-
-# Read in the config file
-open( CONFIGFILE, "<$configFileName" ) or die "Couldn't Open $configFileName: $!\n";
-my $json = JSON->new;
-$json = $json->relaxed(1);
-$json = $json->pretty(1);
-$json = $json->max_depth(4096);
-
-my $paramJson = "";
-while (<CONFIGFILE>) {
-	$paramJson .= $_;
-}
-close CONFIGFILE;
-
-my $paramConfig = $json->decode($paramJson);
-
-# Make sure that all of the parameters read from the config file are valid
-foreach my $key ( keys %$paramConfig ) {
-	if ( !( $key ~~ @validParams ) ) {
-		die "Parameter $key in configuration file $configFileName is not a valid parameter";
-	}
-}
-
-my $paramsHashRef = mergeParameters( \%paramCommandLine, $paramConfig );
-
-# Read in the fixed configuration
-open( FIXEDCONFIGFILE, "<./runHarness/fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
-$paramJson = "";
-while (<FIXEDCONFIGFILE>) {
-	$paramJson .= $_;
-}
-close FIXEDCONFIGFILE;
-my $fixedConfigs = $json->decode($paramJson);
-
-my $weathervaneHome = getParamValue( $paramsHashRef, 'weathervaneHome' );
-
-# if the tmpDir doesn't start with a / then it
-# is relative to weathervaneHome
-my $tmpDir = getParamValue( $paramsHashRef, 'tmpDir');
-if ( !( $tmpDir =~ /^\// ) ) {
-	$tmpDir = $weathervaneHome . "/" . $tmpDir;
-}
-setParamValue( $paramsHashRef, 'tmpDir', $tmpDir );
-
-# if the outputDir doesn't start with a / then it
-# is relative to weathervaneHome
-my $outputDir = getParamValue( $paramsHashRef, 'outputDir' );
-if ( !( $outputDir =~ /^\// ) ) {
-	$outputDir = $weathervaneHome . "/" . $outputDir;
-}
-setParamValue( $paramsHashRef, 'outputDir', $outputDir );
-
-# if the distDir doesn't start with a / then it
-# is relative to weathervaneHome
-my $distDir         = getParamValue( $paramsHashRef, 'distDir' );
-if ( !( $distDir =~ /^\// ) ) {
-	$distDir = $weathervaneHome . "/" . $distDir;
-}
-setParamValue( $paramsHashRef, 'distDir', $distDir );
-
-# if the sequenceNumberFile doesn't start with a / then it
-# is relative to weathervaneHome
-my $sequenceNumberFile = getParamValue( $paramsHashRef, 'sequenceNumberFile' );
-if ( !( $sequenceNumberFile =~ /^\// ) ) {
-	$sequenceNumberFile = $weathervaneHome . "/" . $sequenceNumberFile;
-}
-setParamValue( $paramsHashRef, 'sequenceNumberFile', $sequenceNumberFile );
-
-# make sure the directories exist
+# For $tmpDir, use Parameters.pm default relative to weathervaneHome,
+# make sure its exists, and clean it out.
+my $tmpDir = getParamDefault('tmpDir');
+$tmpDir = $weathervaneHome . "/" . $tmpDir;
 if ( !( -e $tmpDir ) ) {
 	`mkdir $tmpDir`;
+} else {
+	`rm -r $tmpDir/* 2>&1`;
 }
-
-if ( !( -e $outputDir ) ) {
-	`mkdir -p $outputDir`;
-}
-
-# Get the sequence number of the next run
-my $seqnum;
-if ( -e "$sequenceNumberFile" ) {
-	open SEQFILE, "<$sequenceNumberFile";
-	$seqnum = <SEQFILE>;
-	close SEQFILE;
-	if ( -e "$outputDir/$seqnum" ) {
-		print "Next run number is $seqnum, but directory for run $seqnum already exists in $outputDir\n";
-		exit -1;
-	}
-	open SEQFILE, ">$sequenceNumberFile";
-	my $nextSeqNum = $seqnum + 1;
-	print SEQFILE $nextSeqNum;
-	close SEQFILE;
-}
-else {
-	if ( -e "$outputDir/0" ) {
-		print "Sequence number file is missing, but run 0 already exists in $outputDir\n";
-		exit -1;
-	}
-	$seqnum = 0;
-	open SEQFILE, ">$sequenceNumberFile";
-	my $nextSeqNum = 1;
-	print SEQFILE $nextSeqNum;
-	close SEQFILE;
-}
-
-#clean out the tmp directory
-`rm -r $tmpDir/* 2>&1`;
-
-# Copy the version file into the output directory
-`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-
-# Save the original config file and processed command line parameters 
-`cp $configFileName $tmpDir/$configFileName.save`;
-
-open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
-print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
-close PARAMCOMMANDLINEFILE;
 
 # Set up the loggers
 my $console_logger = get_logger("Console");
@@ -364,18 +232,188 @@ $appender->threshold($WARN); #don't spam screen with DEBUG/INFO levels if they a
 $weathervane_logger->add_appender($appender);
 $appender->layout($layout);
 
+tie *STDERR, "StderrToLogerror", category => "Console";
+my $logger = get_logger("Weathervane");
+
+# read in the command-line options
+my %paramCommandLine = ();
+my @paramStrings     = ();
+my @validParams      = ();
+my $keysRef          = getParamKeys();
+foreach my $key (@$keysRef) {
+	my $type = getParamType($key);
+	push @validParams, $key;
+	if ( ( $type eq "hash" ) || ( $type eq "list" ) ) {
+		next;
+	}
+	push @paramStrings, $key . $type;
+}
+GetOptions( \%paramCommandLine, @paramStrings );
+
+# Check for a request for the help text
+if ( exists $paramCommandLine{'help'} ) {
+	usage();
+	exit;
+}
+
+# Check for a request for the help text
+if ( exists $paramCommandLine{'fullHelp'} ) {
+	fullUsage();
+	exit;
+}
+
+# If there is a "users" parameter on the command-line, turn it
+# into list of values for the different appInstances.  The values are
+# assigned to the appInstances in order.  If there are too few, then
+# the remaining appInstances get the values from the configFile or the default.
+# If there are too many then the extras are ignored.
+my @usersList;
+if ( exists $paramCommandLine{'users'} ) {
+	@usersList = split( ',', $paramCommandLine{'users'} );
+}
+
+# Figure out where to read the config file
+my $configFileName;
+if ( exists( $paramCommandLine{'configFile'} ) ) {
+	$configFileName = $paramCommandLine{'configFile'};
+}
+else {
+	$configFileName = getParamDefault('configFile');
+	$configFileName = $weathervaneHome . "/" . $configFileName;
+}
+
+# Read in the config file
+open( CONFIGFILE, "<$configFileName" ) or die "Couldn't Open $configFileName: $!\n";
+my $json = JSON->new;
+$json = $json->relaxed(1);
+$json = $json->pretty(1);
+$json = $json->max_depth(4096);
+
+my $paramJson = "";
+while (<CONFIGFILE>) {
+	$paramJson .= $_;
+}
+close CONFIGFILE;
+
+my $paramConfig = $json->decode($paramJson);
+
+# Make sure that all of the parameters read from the config file are valid
+foreach my $key ( keys %$paramConfig ) {
+	if ( !( $key ~~ @validParams ) ) {
+		die "Parameter $key in configuration file $configFileName is not a valid parameter";
+	}
+}
+
+my $paramsHashRef = mergeParameters( \%paramCommandLine, $paramConfig );
+
+# $tmpdir was set above, add to $paramsHashRef
+setParamValue( $paramsHashRef, 'tmpDir', $tmpDir );
+
+# Read in the fixed configuration
+open( FIXEDCONFIGFILE, "<$weathervaneHome/runHarness/fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
+$paramJson = "";
+while (<FIXEDCONFIGFILE>) {
+	$paramJson .= $_;
+}
+close FIXEDCONFIGFILE;
+my $fixedConfigs = $json->decode($paramJson);
+
+# Update logger levels based on config
 if ( getParamValue( $paramsHashRef, "loggers" ) ) {
 	my $loggersHashRef = getParamValue( $paramsHashRef, "loggers" );
 	my @keys = keys %$loggersHashRef;
 	foreach my $loggerName ( keys %$loggersHashRef ) {
-		my $logger = get_logger($loggerName);
-		$logger->level( $loggersHashRef->{$loggerName} );
+		my $loggerInst = get_logger($loggerName);
+		$loggerInst->level( $loggersHashRef->{$loggerName} );
 	}
 }
 
-tie *STDERR, "StderrToLogerror", category => "Console";
+# Set dirs relative to weathervaneHome
+my $outputDir = getParamValue( $paramsHashRef, 'outputDir' );
+$outputDir = $weathervaneHome . "/" . $outputDir;
+setParamValue( $paramsHashRef, 'outputDir', $outputDir );
 
-my $logger = get_logger("Weathervane");
+my $distDir         = getParamValue( $paramsHashRef, 'distDir' );
+$distDir = $weathervaneHome . "/" . $distDir;
+setParamValue( $paramsHashRef, 'distDir', $distDir );
+
+my $sequenceNumberFile = getParamValue( $paramsHashRef, 'sequenceNumberFile' );
+$sequenceNumberFile = $outputDir . "/" . $sequenceNumberFile;
+setParamValue( $paramsHashRef, 'sequenceNumberFile', $sequenceNumberFile );
+
+my $configDir = getParamValue( $paramsHashRef, 'configDir');
+$configDir = $weathervaneHome . "/" . $configDir;
+setParamValue( $paramsHashRef, 'configDir', $configDir);
+
+my $dbLoaderDir = getParamValue( $paramsHashRef, 'dbLoaderDir' );
+$dbLoaderDir = $weathervaneHome . "/" . $dbLoaderDir;
+setParamValue( $paramsHashRef, 'dbLoaderDir', $dbLoaderDir);
+
+my $resultsFileDir = getParamValue( $paramsHashRef, 'resultsFileDir' );
+if ( $resultsFileDir eq "" ) {
+	$resultsFileDir = $weathervaneHome;
+}
+else {
+	$resultsFileDir = $weathervaneHome . "/" . $resultsFileDir;
+	if ( !( -e $resultsFileDir ) ) {
+		`mkdir -p $resultsFileDir`;
+	}
+}
+setParamValue( $paramsHashRef,  'resultsFileDir', $resultsFileDir );
+
+my $workloadDriverDir = getParamValue( $paramsHashRef, 'workloadDriverDir');
+$workloadDriverDir = $weathervaneHome . "/" . $workloadDriverDir;
+setParamValue( $paramsHashRef,  'workloadDriverDir', $workloadDriverDir );
+
+my $workloadProfileDir = getParamValue( $paramsHashRef, 'workloadProfileDir');
+$workloadProfileDir = $weathervaneHome . "/" . $workloadProfileDir;
+setParamValue( $paramsHashRef,  'workloadProfileDir', $workloadProfileDir );
+
+my $gcviewerDir = getParamValue( $paramsHashRef, 'gcviewerDir');
+$gcviewerDir = $weathervaneHome . "/" . $gcviewerDir;
+setParamValue( $paramsHashRef,  'gcviewerDir', $gcviewerDir );
+
+# Make sure required directories exist
+if ( !( -e $outputDir ) ) {
+	`mkdir -p $outputDir`;
+}
+
+# Get the sequence number of the next run
+my $seqnum;
+if ( -e "$sequenceNumberFile" ) {
+	open SEQFILE, "<$sequenceNumberFile";
+	$seqnum = <SEQFILE>;
+	close SEQFILE;
+	if ( -e "$outputDir/$seqnum" ) {
+		print "Next run number is $seqnum, but directory for run $seqnum already exists in $outputDir\n";
+		exit -1;
+	}
+	open SEQFILE, ">$sequenceNumberFile";
+	my $nextSeqNum = $seqnum + 1;
+	print SEQFILE $nextSeqNum;
+	close SEQFILE;
+}
+else {
+	if ( -e "$outputDir/0" ) {
+		print "Sequence number file is missing, but run 0 already exists in $outputDir\n";
+		exit -1;
+	}
+	$seqnum = 0;
+	open SEQFILE, ">$sequenceNumberFile";
+	my $nextSeqNum = 1;
+	print SEQFILE $nextSeqNum;
+	close SEQFILE;
+}
+
+# Copy the version file into the output directory
+`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
+
+# Save the original config file and processed command line parameters
+my $saveConfigFile = $tmpDir . "/" . basename($configFileName) . ".save";
+`cp $configFileName $saveConfigFile`;
+open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
+print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
+close PARAMCOMMANDLINEFILE;
 
 # set the run length parameters properly
 my $runLength   = getParamValue( $paramsHashRef, "runLength" );

@@ -242,9 +242,6 @@ override 'redeploy' => sub {
 		", appInstance ",         $self->instanceNum
 	);
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $distDir         = $self->getParamValue('distDir');
-
 	# Refresh the docker images on all of the servers
 	$logger->debug("Redeploy by docker pull for services that are running on docker.");
 	my $workloadImpl    = $self->getParamValue('workloadImpl');

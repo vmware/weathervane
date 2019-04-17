@@ -54,7 +54,6 @@ sub run {
 	my ( $self ) = @_;
 	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $tmpDir             = $self->getParamValue('tmpDir');
-	my $weathervaneHome    = $self->getParamValue('weathervaneHome');
 	my $console_logger     = get_logger("Console");
 	my $debug_logger       = get_logger("Weathervane::RunProcedures::PrepareOnlyRunProcedure");
 	my @pids;

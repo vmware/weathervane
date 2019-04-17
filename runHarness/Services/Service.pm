@@ -30,21 +30,6 @@ use Instance;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'version' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'description' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'appInstance' => (
 	is      => 'rw',
 	isa     => 'AppInstance',
@@ -105,6 +90,12 @@ has 'removeUrl' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 
+	# Assign a name to this service
+	my $serviceType = $self->getParamValue('serviceType');
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $instanceNum = $self->instanceNum;
+	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}");
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $configDir  = $self->getParamValue('configDir');
@@ -132,7 +123,6 @@ override 'initialize' => sub {
 		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
 	}
 	
-	my $serviceType = $self->getParamValue( 'serviceType' );
 	my $cpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $mem = $self->getParamValue( $serviceType . "Mem" );
 	if ($self->getParamValue('dockerNet')) {
@@ -157,6 +147,7 @@ override 'initialize' => sub {
 		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
 	}
 		
+	
 	super();
 
 };
@@ -209,33 +200,11 @@ sub isEdgeService {
 	}
 }
 
-sub getWorkloadNum {
-	my ($self) = @_;
-	return $self->getParamValue('workloadNum');
-}
-
-sub getAppInstanceNum {
-	my ($self) = @_;
-	return $self->getParamValue('appInstanceNum');
-}
-
-sub getIpAddr {
-	my ($self) = @_;
-	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
-	}
-	return $self->host->ipAddr;
-}
-
 sub create {
 	my ($self, $logPath)            = @_;
 	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
-	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
@@ -261,7 +230,7 @@ sub create {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -275,13 +244,13 @@ sub start {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"start serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
@@ -311,13 +280,13 @@ sub stop {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"stop serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
@@ -352,13 +321,8 @@ sub pullDockerImage {
 	my ($self, $logfile)            = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
 	
-	if (!$self->getParamValue('useDocker')) {
-		$logger->debug("$self->meta->name is not using docker.  Not pulling.");
-		return;
-	}
-
 	my $impl = $self->getImpl();
-	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->getParamValue("instanceNum"));
+	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->instanceNum);
 	$self->host->dockerPull($logfile, $impl);
 }
 
@@ -375,7 +339,7 @@ sub sanityCheck {
 
 sub isReachable {
 	my ($self, $fileout) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	
 	my $pingResult = `ping -c 1 $hostname`;
 	
@@ -404,16 +368,10 @@ sub isStopped {
 	return 1;
 }
 
-sub useDocker {
-	my ($self) = @_;
-	
-	return $self->getParamValue("useDocker");
-}
-
 sub getDockerName {
 	my ($self) = @_;
 	
-	return $self->getParamValue("dockerName");
+	return $self->name;
 }
 
 sub getPort {
@@ -433,15 +391,18 @@ sub getImpl {
 # using docker host networking
 sub corunningDockerized {
 	my ($self, $other) = @_;
-	if (!$self->useDocker() || !$other->useDocker()
+	my $logger = get_logger("Weathervane::Services::Service");
+	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
 		|| !$self->host->equals($other->host)
 		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
 		return 0;
 	} else {
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
 		return 1;
 	}	
 	
@@ -456,22 +417,28 @@ sub corunningDockerized {
 # returns the hostname of the other host.
 sub getHostnameForUsedService {
 	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
-		return $other->host->dockerGetIp($other->getDockerName());
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $other->host->dockerGetIp($other->name));
+		return $other->host->dockerGetIp($other->name);
 	} else {
-		return $other->getIpAddr();
+		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
+		return $other->host->name;
 	}	
 }
 
 sub getPortNumberForUsedService {
 	my ($self, $other, $portName) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->internalPortMap->{$portName});
 		return $other->internalPortMap->{$portName};
 	} else {
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->portMap->{$portName});
 		return $other->portMap->{$portName};
 	}	
 }

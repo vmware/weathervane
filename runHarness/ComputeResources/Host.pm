@@ -18,7 +18,6 @@ use MooseX::Storage;
 use Parameters qw(getParamValue);
 use Instance;
 use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddresses getIpAddress);
 use ComputeResources::ComputeResource;
 
 use namespace::autoclean;
@@ -27,50 +26,14 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'ComputeResource';
 
-has 'hostName' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'ipAddr' => (
-	is      => 'rw',
-	isa     => 'Str',
-	builder => '_get_ipAddr',
-	lazy    => 1,
-);
-
-has 'isGuest' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
-has 'paramHashRef' => (
-	is      => 'rw',
-	isa     => 'HashRef',
-	default => sub { {} },
-);
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	my $console_logger = get_logger("Console");
 	
-	my $hostname = $self->getParamValue('hostName');
-	if (!$hostname) {
-		$console_logger->error("Must specify a hostname for all host instances.");
-		exit(-1);
-	}
-	$self->hostName($hostname);
 
 	super();
 
 };
-
-sub _get_ipAddr {
-	my ($self) = @_;
-
-	return getIpAddress($self->hostName);
-}
 
 sub registerService {
 	my ($self, $serviceRef) = @_;
@@ -87,18 +50,18 @@ sub getDockerServiceImages {
 
 
 #-------------------------------
-# Two hosts are equal if they have the same IP address
+# Two hosts are equal if they have the same name
 #-------------------------------
 sub equals {
 	my ( $this, $that ) = @_;
 
-	return $this->ipAddr() eq $that->ipAddr;
+	return $this->name eq $that->name;
 }
 
 sub toString {
 	my ($self) = @_;
 
-	return "Host name = " . $self->hostName . ", IP Address = " . $self->ipAddr;
+	return "Host name = " . $self->name;
 }
 __PACKAGE__->meta->make_immutable;
 

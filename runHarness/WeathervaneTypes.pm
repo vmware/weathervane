@@ -67,8 +67,8 @@ our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
-our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleAI', 'findMaxSingleAIWithScaling',
-							'findMaxMultiAI', 'findMaxMultiRun', 'targetUtilization', 'single', 'findMax' );
+our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunWithScaling',
+							'findMaxMultiAI', 'findMaxMultiRun', 'single', 'findMax' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 our @configurationSizes = ( 'micro', 'small', 'medium', 'large');

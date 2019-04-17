@@ -27,13 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'Nginx', );
-
-has '+version' => ( default => '1.7.xx', );
-
-has '+description' => ( default => 'Nginx Web Server', );
-
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	super();
@@ -41,13 +34,9 @@ override 'initialize' => sub {
 
 override 'create' => sub {
 	my ($self, $logPath)            = @_;
-	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
-	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+		
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $host = $self->host;
 	my $impl = $self->getImpl();
 
@@ -104,7 +93,7 @@ override 'create' => sub {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -118,8 +107,8 @@ sub stopInstance {
 	my $logger = get_logger("Weathervane::Services::NginxDockerService");
 	$logger->debug("stop NginxDockerService");
 
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StopNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -133,8 +122,8 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StartNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -159,8 +148,8 @@ sub startInstance {
 override 'remove' => sub {
 	my ($self, $logPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $logName          = "$logPath/RemoveNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -174,7 +163,7 @@ override 'remove' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname         = $self->getIpAddr();
+	my $hostname         = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	
 	my $response = `curl -s -w "%{http_code}\n" -o /dev/null http://$hostname:$port`;
@@ -190,7 +179,7 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning($fileout, $name);
 
@@ -211,7 +200,7 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ( $self ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
@@ -233,7 +222,7 @@ sub configure {
 sub stopStatsCollection {
 	my ($self) = @_;
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	my $out      = `wget --no-check-certificate -O /tmp/nginx-$hostname-stopStats.html https://$hostname:$port/nginx-status 2>&1`;
 	$out = `lynx -dump /tmp/nginx-$hostname-stopStats.html > /tmp/nginx-$hostname-stopStats.txt 2>&1`;
@@ -243,7 +232,7 @@ sub stopStatsCollection {
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	my $out      = `wget --no-check-certificate -O /tmp/nginx-$hostname-startStats.html https://$hostname:$port/nginx-status 2>&1`;
 	$out = `lynx -dump /tmp/nginx-$hostname-startStats.html > /tmp/nginx-$hostname-startStats.txt 2>&1`;
@@ -252,7 +241,7 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	my $out = `mv /tmp/nginx-$hostname-* $destinationPath/. 2>&1`;
 }
@@ -264,8 +253,8 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -303,8 +292,8 @@ sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 
 	my $nginxServerRoot  = $self->getParamValue('nginxServerRoot');
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 
 
 	my $logpath = "$destinationPath/$name";

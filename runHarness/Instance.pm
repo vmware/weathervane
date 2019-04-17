@@ -21,6 +21,18 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 use namespace::autoclean;
 
+has 'name' => (
+	is        => 'rw',
+	isa       => 'Str',
+    default => "",
+);
+
+has 'instanceNum' => (
+	is        => 'rw',
+	isa       => 'Num',
+    default => 1,
+);
+
 has 'paramHashRef' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -29,7 +41,6 @@ has 'paramHashRef' => (
 
 sub initialize {
 	my ( $self ) = @_;
-
 }
 
 sub getParamValue {

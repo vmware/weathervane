@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'RabbitMQ', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 # Names of stats collected for RabbitMQ and the text to match in the list queues output
 my @rabbitmqStatNames = (
 	"memory",       "messages",       "messages_ready", "messages_unacked", "ack_rate", "deliver_rate",
@@ -131,7 +125,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

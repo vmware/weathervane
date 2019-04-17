@@ -69,8 +69,8 @@ override 'getEdgeService' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"getEdgeService for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",               $self->getParamValue('appInstanceNum')
+		"getEdgeService for workload ", $self->workload->instanceNum,
+		", appInstance ",               $self->instanceNum
 	);
 
 	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
@@ -91,9 +91,9 @@ override 'getEdgeService' => sub {
 
 	$logger->debug(
 		"getEdgeService for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", returning ", $edgeServer
 	);
 
@@ -104,8 +104,8 @@ override 'checkConfig' => sub {
 	my ($self)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AuctionAppInstance");
-	my $workloadNum = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
 	my $edgeService              = $self->getParamValue('edgeService');
@@ -164,18 +164,6 @@ override 'checkConfig' => sub {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The number of application servers must be 1 or greater");
 		return 0;
 	}
-
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( ( $appServerCacheImpl ne 'ehcache' ) && ( $appServerCacheImpl ne 'ignite' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter appServerCacheImpl must be either ehcache or ignite");
-		return 0;
-	}
-
-	my $igniteAuthTokenCacheMode = $self->getParamValue('igniteAuthTokenCacheMode');
-	if ( ( $igniteAuthTokenCacheMode ne 'LOCAL' ) && ( $igniteAuthTokenCacheMode ne 'REPLICATED' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter igniteAuthTokenCacheMode must be either LOCAL or REPLICATED");
-		return 0;
-	}
 	
 	# Validate the the CPU and Mem sizings are in valid Kubernetes format
 	my $workloadImpl    = $self->getParamValue('workloadImpl');
@@ -206,37 +194,43 @@ override 'checkConfig' => sub {
 	}
 
 	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
-	if ($self->getParamValue("useDocker")) {
-		my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
-		foreach my $nosqlServer (@$nosqlServersRef) {
-			my $host = $nosqlServer->host;
-			if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
-				# use named volumes.  Error if does not exist
-				my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
-				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
-					return 0;
-				}
-			}
+	# This is only for services running on DockerHosts
+	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+	foreach my $nosqlServer (@$nosqlServersRef) {
+		my $host = $nosqlServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
 		}
-		my $dbServersRef = $self->getAllServicesByType("dbServer");
-		foreach my $dbServer (@$dbServersRef) {
-			my $host = $dbServer->host;
-			if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
-				# use named volumes.  Error if does not exist
-				my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
-				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
-					return 0;
-				}
-				$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
-				if (!$host->dockerVolumeExists($volumeName)) {
-					$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->hostName);
-					return 0;
-				}
+		if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+			# use named volumes.  Error if does not exist
+			my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
 			}
 		}
 	}
+	my $dbServersRef = $self->getAllServicesByType("dbServer");
+	foreach my $dbServer (@$dbServersRef) {
+		my $host = $dbServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
+			# use named volumes.  Error if does not exist
+			my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+			$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+		}
+	}
+	
 	return 1;
 };
 
@@ -244,8 +238,8 @@ override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"redeploy for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",         $self->getParamValue('appInstanceNum')
+		"redeploy for workload ", $self->workload->instanceNum,
+		", appInstance ",         $self->instanceNum
 	);
 
 	my $weathervaneHome = $self->getParamValue('weathervaneHome');
@@ -290,14 +284,7 @@ sub getSpringProfilesActive {
 	my $db     = $dbsRef->[0]->getImpl();
 
 	$springProfilesActive = "postgresql";
-
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( $appServerCacheImpl eq "ehcache" ) {
-		$springProfilesActive .= ",ehcache";
-	}
-	else {
-		$springProfilesActive .= ",ignite";
-	}
+	$springProfilesActive .= ",ehcache";
 
 	my $imageStore = $self->getParamValue('imageStoreType');
 	if ( $imageStore eq "mongodb" ) {
@@ -342,9 +329,9 @@ sub getSpringProfilesActive {
 
 	$logger->debug(
 		"getSpringProfilesActive finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		". Returning: ",
 		$springProfilesActive
 	);
@@ -392,21 +379,6 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-		if ( $appServerCacheImpl eq 'ignite' ) {
-
-			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
-	
-			my $copyOnRead = "false";
-			if ( $self->getParamValue('igniteCopyOnRead') ) {
-				$copyOnRead = "true";
-			}
-			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-			my $appServersRef = $self->getAllServicesByType('appServer');
-			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
-			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-		}
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getAllServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
@@ -536,7 +508,7 @@ sub getServiceConfigParameters {
 		else {
 
 			# The mongos will be running on this app server
-			$nosqlHostname = $service->host->hostName;
+			$nosqlHostname = $service->host->name;
 			if ( $service->mongosDocker ) {
 				$nosqlHostname = $service->mongosDocker;
 			}

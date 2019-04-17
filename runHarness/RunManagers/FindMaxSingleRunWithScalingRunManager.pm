@@ -11,44 +11,73 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package ClusterFactory;
+package FindMaxSingleRunWithScalingRunManager;
 
 use Moose;
 use MooseX::Storage;
-use MooseX::ClassAttribute;
-use Moose::Util qw( apply_all_roles );
-use Clusters::KubernetesCluster;
+use RunManagers::RunManager;
+use WeathervaneTypes;
+use RunResults::RunResult;
 use Parameters qw(getParamValue);
 use Log::Log4perl qw(get_logger);
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
+
+use strict;
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-sub getCluster {
-	my ( $self, $paramsHashRef ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger = get_logger("Weathervane::Factories::HostFactory");
-	my $cluster;	
-	my $clusterName = $paramsHashRef->{'clusterName'};
-	my $clusterType = $paramsHashRef->{'clusterType'};
-	
-	if ( $clusterType eq "kubernetes" ) {
-		$logger->debug("Creating a Kubernetes cluster with name $clusterName");
-		if ( ( !exists $paramsHashRef->{'kubernetesConfigFile'} ) || ( !defined $paramsHashRef->{'kubernetesConfigFile'} ) ) {
-			$console_logger->error("Kubernetes clusters must have a kubernetesConfigFile parameter pointing to the kubectl config file for the desired context.");
-			exit(-1);
-		}
-		$cluster = KubernetesCluster->new(
-				'paramHashRef' => $paramsHashRef,);
-	} else {
-		die "No matching cluster type $clusterType available to ClusterFactory";
+extends 'RunManager';
+
+has '+name' => ( default => 'Find Max/Single-Run With Scaling Run Strategy', );
+
+has '+description' => ( default => '', );
+
+override 'initialize' => sub {
+	my ( $self ) = @_;
+
+	super();
+};
+
+override 'setRunProcedure' => sub {
+	my ( $self, $runProcedureRef ) = @_;
+
+	my $runProcedureType = $runProcedureRef->getRunProcedureImpl();
+
+	my @runProcedures = @WeathervaneTypes::runProcedures;
+	if ( !( $runProcedureType ~~ @runProcedures ) ) {
+		die "SingleFixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
 	}
 
-	$cluster->isCluster(1);
-	$cluster->initialize();
-	return $cluster;
-}
+
+	super();
+};
+
+override 'start' => sub {
+	my ($self) = @_;
+	my $console_logger = get_logger("Console");
+	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
+	$self->runProcedure->setLoadPathType("findmax");
+
+	$console_logger->info($self->name . " starting run.");
+
+	my $runResult = $self->runProcedure->run();
+
+	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
+	if ( $runProcedureType eq 'prepareOnly' ) {
+		$console_logger->info("Application configured and running.");
+	}
+	elsif ( $runProcedureType eq 'stop' ) {
+		$console_logger->info("Run stopped");
+	}
+	else {
+		$self->printCsv( $runResult->resultsSummaryHashRef, 1 );
+		$console_logger->info($runResult->toString());
+	}
+	Log::Log4perl->eradicate_appender("tmpdirConsoleFile");
+
+};
 
 __PACKAGE__->meta->make_immutable;
 

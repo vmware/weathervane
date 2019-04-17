@@ -160,8 +160,6 @@ has 'suffix' => (
 	default => "",
 );
 
-my @secondaryIpAddresses = ();
-
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
@@ -180,16 +178,6 @@ override 'initialize' => sub {
 override 'addSecondary' => sub {
 	my ( $self, $secondary ) = @_;
 	my $console_logger = get_logger("Console");
-
-	my $myIpAddr = $self->host->ipAddr;
-	my $ipAddr   = $secondary->host->ipAddr;
-	if ( ( $myIpAddr eq $ipAddr ) || ( $ipAddr ~~ @secondaryIpAddresses ) ) {
-		$console_logger->error(
-"Multiple workloadDriver hosts are running on IP address $ipAddr.  This configuration is not supported."
-		);
-		exit(-1);
-	}
-	push @secondaryIpAddresses, $ipAddr;
 
 	push @{ $self->secondaries }, $secondary;
 
@@ -301,7 +289,7 @@ sub createRunConfigHash {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $steadyState      = $self->getParamValue('steadyState');
@@ -326,22 +314,22 @@ sub createRunConfigHash {
 
 	$runRef->{"name"} = "runW${workloadNum}";
 
-	$runRef->{"statsHost"}          = $self->host->hostName;
+	$runRef->{"statsHost"}          = $self->host->name;
 	$runRef->{"portNumber"}         = $port;
 	$runRef->{"statsOutputDirName"} = "/tmp";
 
 	$runRef->{"hosts"} = [];
-	push @{ $runRef->{"hosts"} }, $self->host->hostName;
+	push @{ $runRef->{"hosts"} }, $self->host->name;
 	foreach my $secondary (@$secondariesRef) {
-		$logger->debug("createRunConfigHash adding host " . $secondary->host->hostName);
-		push @{ $runRef->{"hosts"} }, $secondary->host->hostName;
+		$logger->debug("createRunConfigHash adding host " . $secondary->host->name);
+		push @{ $runRef->{"hosts"} }, $secondary->host->name;
 	}
 
 	$runRef->{"workloads"} = [];
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	foreach my $appInstance (@$appInstancesRef) {
-		my $instanceNum = $appInstance->getInstanceNum();
+		my $instanceNum = $appInstance->instanceNum;
 		my $users       = $appInstance->getUsers();
 
 		my $workload = {};
@@ -490,7 +478,7 @@ override 'configure' => sub {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("configure for workload $workloadNum, suffix = $suffix");
 	$self->suffix($suffix);
 	$self->appInstances($appInstancesRef);
@@ -578,7 +566,7 @@ override 'redeploy' => sub {
 sub killOld {
 	my ($self, $setupLogDir)           = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	my $console_logger = get_logger("Console");
 
 	my $logName = "$setupLogDir/killOld$workloadNum.log";
@@ -626,8 +614,8 @@ sub clearResults {
 sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $driver->getParamValue('workloadNum');
-	my $name        = $driver->getParamValue('dockerName');
+	my $workloadNum    = $driver->workload->instanceNum;
+	my $name        = $driver->name;
 		
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -699,7 +687,7 @@ sub startAuctionWorkloadDriverContainer {
 sub stopAuctionWorkloadDriverContainer {
 	my ( $self, $applog, $driver ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $name        = $driver->getParamValue('dockerName');
+	my $name        = $driver->name;
 
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -711,7 +699,7 @@ sub initializeRun {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$self->suffix($suffix);
 	my $port = $self->portMap->{'http'};
-	my $workloadNum    = $self->getParamValue('workloadNum');
+	my $workloadNum    = $self->workload->instanceNum;
 	my $runName = "runW${workloadNum}";
 
 	my $logName = "$logDir/InitializeRun$suffix.log";
@@ -734,10 +722,10 @@ sub initializeRun {
 	foreach my $secondary (@$secondariesRef) {
 		my $pid              = fork();
 		if ( $pid == 0 ) {
-			my $hostname = $secondary->host->hostName;
+			my $hostname = $secondary->host->name;
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
 			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName        = $secondary->getParamValue('dockerName');
+			my $secondaryName        = $secondary->name;
 			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
 			exit;
 		}
@@ -748,7 +736,7 @@ sub initializeRun {
 	if ( $pid == 0 ) {
 		$logger->debug("Starting primary driver for workload $workloadNum");
 		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
-		my $name        = $self->getParamValue('dockerName');
+		my $name        = $self->name;
 		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
 		exit;
 	}
@@ -764,7 +752,7 @@ sub initializeRun {
 		foreach my $driver (@$driversRef) {
 			my $isUp = $driver->isUp();
 			$logger->debug( "For driver "
-				  . $driver->host->hostName
+				  . $driver->host->name
 				  . " isUp returned $isUp" );
 			if ( !$isUp ) {
 				$allUp = 0;
@@ -809,7 +797,7 @@ sub initializeRun {
 
 	my $req;
 	my $res;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $url      = "http://$hostname:$port/run/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -850,7 +838,7 @@ sub initializeRun {
 		close FILE;
 
 		foreach my $driver (@$driversRef) {
-			my $hostname = $driver->host->hostName;
+			my $hostname = $driver->host->name;
 			my $url      = "http://$hostname:$port/behaviorSpec";
 			$logger->debug("Sending POST to $url with contents:\n$contents");
 			$req = HTTP::Request->new( POST => $url );
@@ -877,7 +865,7 @@ sub initializeRun {
 	}
 
 	# Now send the initialize message to the runService
-	$hostname = $self->host->hostName;
+	$hostname = $self->host->name;
 	$url      = "http://$hostname:$port/run/$runName/initialize";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -914,7 +902,7 @@ sub startRun {
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $weathervaneWorkloadHome = $self->getParamValue('workloadDriverDir');
 	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
 	my $steadyState         = $self->getParamValue('steadyState');
@@ -951,7 +939,7 @@ sub startRun {
 	my $runContent = "{}";
 	my $pid1       = fork();
 	if ( $pid1 == 0 ) {
-		my $hostname = $self->host->hostName;
+		my $hostname = $self->host->name;
 		my $url      = "http://$hostname:$port/run/$runName/start";
 		$logger->debug("Sending POST to $url");
 		$req = HTTP::Request->new( POST => $url );
@@ -983,7 +971,7 @@ sub startRun {
 	$statsStartedMsg->{'timestamp'} = time;
 	my $statsStartedContent = $json->encode($statsStartedMsg);
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $url      = "http://$hostname:$port/stats/started/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -1027,12 +1015,20 @@ sub startRun {
 		my $startedRampDown = 0;
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-			if ( $inline =~ /^\|/ ) {
+			if (( $inline =~ /^\|\s+\d+\|/ ) 
+				|| ( $inline =~ /^\|\s+Time\|/ ) 
+				|| ( $inline =~ /^\|\s+\(sec\)\|/ )) {
 				if ( $self->getParamValue('showPeriodicOutput') ) {
+				    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
+						$inline = $1 . "\n";
+				    }
+				    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
+						$inline = $1 . "\n";
+				    }
 					print $periodicOutputId . $inline;
 				}
 			}
-
+		
 			# The next line after ----- should be first header
 			if ( $inline =~ /^-------------------/ ) {
 				$nextIsHeader = 1;
@@ -1159,10 +1155,10 @@ sub stopRun {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	my $logName = "$logDir/StopRun$suffix.log";
 	my $logHandle;
@@ -1225,10 +1221,10 @@ sub isUp {
 	my ($self) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
@@ -1260,10 +1256,10 @@ sub isStarted {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
@@ -1292,7 +1288,7 @@ sub isStarted {
 
 sub stopAppStatsCollection {
 	my ($self) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	# Collection of app stats is currently disabled
 	return;
@@ -1318,7 +1314,7 @@ sub stopAppStatsCollection {
 	my $servicesByTypeRef = $self->servicesByTypeRef;
 	my $dbServicesRef     = $servicesByTypeRef->{"dbServer"};
 	my $dbServer          = $dbServicesRef->[0];
-	my $dbHostname        = $dbServer->getIpAddr();
+	my $dbHostname        = $dbServer->host->name;
 
 	my $appStartDate    = "2020-02-02";
 	my $appStartHour    = 12;
@@ -1443,14 +1439,14 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 # ToDo: Add a script to the docker image to do this:
-#	my $hostname = $self->host->hostName;
+#	my $hostname = $self->host->name;
 #	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
 #
 #	my $secondariesRef = $self->secondaries;
 #	foreach my $secondary (@$secondariesRef) {
-#		my $secHostname = $secondary->host->hostName;
+#		my $secHostname = $secondary->host->name;
 #`ssh  -o 'StrictHostKeyChecking no'  root\@$secHostname cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
 #	}
 
@@ -1458,10 +1454,10 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $baseDestinationPath ) = @_;
-	my $hostname           = $self->host->hostName;
+	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
-	my $workloadNum      = $self->getParamValue('workloadNum');
-	my $name               = $self->getParamValue('dockerName');
+	my $workloadNum      = $self->workload->instanceNum;
+	my $name               = $self->name;
 		
 	if ( !( -e $destinationPath ) ) {
 		`mkdir -p $destinationPath`;
@@ -1481,10 +1477,10 @@ sub getStatsFiles {
 
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
-		my $secHostname     = $secondary->host->hostName;
+		my $secHostname     = $secondary->host->name;
 		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
-		$name     = $secondary->getParamValue('dockerName');
+		$name     = $secondary->name;
 		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
 	}
 
@@ -1496,7 +1492,7 @@ sub cleanStatsFiles {
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 }
 
@@ -1537,7 +1533,7 @@ sub getWorkloadStatsSummary {
 
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
-		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+		my $appInstanceNum = $appInstanceRef->instanceNum;
 		my $prefix = "-AI${appInstanceNum}";
 
 		my $isPassed = $self->isPassed( $appInstanceRef, $tmpDir );
@@ -1696,7 +1692,7 @@ sub getStatsSummary {
 
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {
-		my $workloadNum = $self->getParamValue('workloadNum');
+		my $workloadNum = $self->workload->instanceNum;
 		open( HOSTCSVFILE,
 ">>$statsLogPath/workload${workloadNum}_workloadDriver_gc_summary.csv"
 		  )
@@ -1705,17 +1701,17 @@ sub getStatsSummary {
 
 		tie( my %accumulatedCsv, 'Tie::IxHash' );
 
-		my $hostname = $self->host->hostName;
+		my $hostname = $self->host->name;
 		my $logPath  = $statsLogPath . "/" . $hostname;
 		`mkdir -p $logPath`;
 		my $csvHashRef =
 		  ParseGC::parseGCLog( $logPath, "-W${workloadNum}", $gcviewerDir );
-		print HOSTCSVFILE "Hostname, IP Addr";
+		print HOSTCSVFILE "Hostname";
 		foreach my $key ( keys %$csvHashRef ) {
 			print HOSTCSVFILE ", $key";
 		}
 		print HOSTCSVFILE "\n";
-		print HOSTCSVFILE $hostname . ", " . $self->host->ipAddr;
+		print HOSTCSVFILE $hostname;
 		foreach my $key ( keys %$csvHashRef ) {
 			print HOSTCSVFILE ", " . $csvHashRef->{$key};
 			if ( $csvHashRef->{$key} eq "na" ) {
@@ -1733,12 +1729,12 @@ sub getStatsSummary {
 		my $secondariesRef = $self->secondaries;
 		my $numServices    = $#{$secondariesRef} + 2;
 		foreach my $secondary (@$secondariesRef) {
-			my $secHostname = $secondary->host->hostName;
+			my $secHostname = $secondary->host->name;
 			my $logPath     = $statsLogPath . "/" . $secHostname;
 			`mkdir -p $logPath`;
 			$csvHashRef =
 			  ParseGC::parseGCLog( $logPath, "-W${workloadNum}", $gcviewerDir );
-			print HOSTCSVFILE $secHostname . ", " . $secondary->host->ipAddr;
+			print HOSTCSVFILE $secHostname;
 
 			foreach my $key ( keys %$csvHashRef ) {
 				print HOSTCSVFILE ", " . $csvHashRef->{$key};
@@ -1792,7 +1788,7 @@ sub getNumActiveUsers {
 	my ($self) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -1807,7 +1803,7 @@ sub getNumActiveUsers {
 	$json = $json->pretty(1);
 
 	# Get the number of users on the primary driver
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 
 	my $url = "http://$hostname:$port/run/$runName/users";
@@ -1833,7 +1829,7 @@ sub getNumActiveUsers {
 	# get the number of users on each secondary driver
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
-		$hostname = $secondary->host->hostName;
+		$hostname = $secondary->host->name;
 		$port     = $secondary->portMap->{'http'};
 
 		$url = "http://$hostname:$port/run/$runName/users";
@@ -1866,7 +1862,7 @@ sub setNumActiveUsers {
 	my ( $self, $appInstanceName, $numUsers ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -1892,7 +1888,7 @@ sub setNumActiveUsers {
 		my $users =
 		  $self->adjustUsersForLoadInterval( $numUsers, $driverNum,
 			$#workloadDrivers + 1 );
-		my $hostname = $driver->host->hostName;
+		my $hostname = $driver->host->name;
 		my $port     = $driver->portMap->{'http'};
 		my $url =
 		  "http://$hostname:$port/run/$runName/workload/$appInstanceName/users";
@@ -1927,7 +1923,7 @@ sub isPassed {
 		return;	
 	}
 
-	my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+	my $appInstanceNum = $appInstanceRef->instanceNum;
 
 	my $usedLoadPath = 0;
 	my $userLoadPath = $appInstanceRef->getLoadPath();
@@ -1951,10 +1947,10 @@ sub parseStats {
 	my $console_logger = get_logger("Console");
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum             = $self->getParamValue('workloadNum');
+	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	if ($self->resultsValid) {
 		return 1;
@@ -1981,10 +1977,7 @@ sub parseStats {
 	}	
 	
 	my $numAppInstances = $#$appInstancesRef + 1;
-	my $suffix          = "";
-	if ( $self->workload->useSuffix ) {
-		$suffix = $self->workload->suffix;
-	}
+	my $suffix          = $self->workload->suffix;
 	
 	# Get the final stats summary from the workload driver
 	my $json = JSON->new;

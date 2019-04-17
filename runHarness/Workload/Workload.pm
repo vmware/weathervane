@@ -43,12 +43,6 @@ has 'appInstancesRef' => (
 	isa     => 'ArrayRef',
 );
 
-has 'useSuffix' => (
-	is      => 'rw',
-	isa     => 'Bool',
-	default => 0,
-);
-
 has 'suffix' => (
 	is  => 'rw',
 	isa => 'Str',
@@ -57,7 +51,7 @@ has 'suffix' => (
 override 'initialize' => sub {
 	my ($self) = @_;
 
-	$self->suffix( "-W" . $self->getParamValue('workloadNum') );
+	$self->suffix( "-W" . $self->instanceNum );
 
 	super();
 	
@@ -117,33 +111,21 @@ sub initializeRun {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");
 	$logger->debug("initialize: seqnum = $seqnum, tmpDir = $tmpDir");
-	my $suffix = "";
-	if ( $self->useSuffix ) {
-		$suffix = $self->suffix;
-	}
-	return $self->primaryDriver->initializeRun( $seqnum, $tmpDir, $suffix, $tmpDir );
+	return $self->primaryDriver->initializeRun( $seqnum, $tmpDir, $self->suffix, $tmpDir );
 }
 
 sub startRun {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");
 	$logger->debug("run: seqnum = $seqnum, tmpDir = $tmpDir");
-	my $suffix = "";
-	if ( $self->useSuffix ) {
-		$suffix = $self->suffix;
-	}
-	return $self->primaryDriver->startRun( $seqnum, $tmpDir, $suffix, $tmpDir );
+	return $self->primaryDriver->startRun( $seqnum, $tmpDir, $self->suffix, $tmpDir );
 }
 
 sub stopRun {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");
 	$logger->debug("stop: seqnum = $seqnum, tmpDir = $tmpDir");
-	my $suffix = "";
-	if ( $self->useSuffix ) {
-		$suffix = $self->suffix;
-	}
-	return $self->primaryDriver->stopRun( $seqnum, $tmpDir, $suffix );
+	return $self->primaryDriver->stopRun( $seqnum, $tmpDir, $self->suffix );
 }
 
 # We have found the maximum if all appInstances have hit a maximum
@@ -160,31 +142,11 @@ sub foundMax {
 	return $foundMax;
 }
 
-sub hitTargetUt {
-	my ($self)   = @_;
-	my $foundMax = 1;
-
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$foundMax &= $appInstance->hitTargetUt();
-	}
-
-	return $foundMax;
-}
-
 sub adjustUsersForFindMax {
 	my ($self)         = @_;
 	my $appInstanceRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstanceRef) {
 		$appInstance->adjustUsersForFindMax();
-	}
-}
-
-sub adjustUsersForTargetUt {
-	my ($self)         = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->adjustUsersForTargetUt();
 	}
 }
 
@@ -266,19 +228,19 @@ sub isPassed {
 	my $console_logger    = get_logger("Console");
 	my $logger = get_logger("Weathervane::Workload::Workload");
 
-	my $workloadNum = $self->getParamValue("workloadNum");
+	my $workloadNum = $self->instanceNum;
 	
 	my $passed = 1;
 	my $appInstancesRef = $self->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
-		$logger->debug("Calling isPassed with appInstanceRef for appInstanceNum " . $appInstanceRef->getParamValue("appInstanceNum"));
+		$logger->debug("Calling isPassed with appInstanceRef for appInstanceNum " . $appInstanceRef->instanceNum);
 		
 		my $aiPassed = $self->primaryDriver->isPassed($appInstanceRef, $tmpDir); 
 		$passed &= $aiPassed;
 		
 		$appInstanceRef->passedLast($passed);
 		
-		my $appInstanceNum = $appInstanceRef->getParamValue('appInstanceNum');
+		my $appInstanceNum = $appInstanceRef->instanceNum;
 		my $resultString = "failed";
 		if ($aiPassed) {
 			$resultString = "passed";
@@ -349,12 +311,7 @@ sub configureWorkloadDriver {
 	my ($self, $tmpDir) = @_;
 	my $workloadDriver = $self->primaryDriver;
 
-	my $suffix = "";
-	if ( $self->useSuffix ) {
-		$suffix = $self->suffix;
-	}
-
-	$workloadDriver->configure( $self->appInstancesRef, $suffix, $tmpDir );
+	$workloadDriver->configure( $self->appInstancesRef, $self->suffix, $tmpDir );
 }
 
 sub cleanStatsFiles {
@@ -459,7 +416,7 @@ sub startStatsCollection {
 sub stopStatsCollection {
 	my ($self)         = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");
-	$logger->debug("stopStatsCollection for workload " .  $self->getParamValue('workloadNum')  );
+	$logger->debug("stopStatsCollection for workload " .  $self->instanceNum  );
 	my $workloadDriver = $self->primaryDriver;
 
 	# stop application-level stats from workload driver
@@ -482,7 +439,7 @@ sub getStatsFiles {
 	my $workloadDriver         = $self->primaryDriver;
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/workload" . $self->getParamValue("workloadNum");
+		$newBaseDestinationPath .= "/workload" . $self->instanceNum;
 	}
 
 	my $destinationPath = $newBaseDestinationPath . "/application";
@@ -521,7 +478,7 @@ sub getLogFiles {
 	my $workloadDriver         = $self->primaryDriver;
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/workload" . $self->getParamValue("workloadNum");
+		$newBaseDestinationPath .= "/workload" . $self->instanceNum;
 	}
 
 	#  collection on services
@@ -550,7 +507,7 @@ sub getLogFiles {
 		exit(-1);
 	}
 	elsif ( $pid == 0 ) {
-		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->hostName;
+		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -577,7 +534,7 @@ sub getConfigFiles {
 	my $workloadDriver         = $self->primaryDriver;
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/workload" . $self->getParamValue("workloadNum");
+		$newBaseDestinationPath .= "/workload" . $self->instanceNum;
 	}
 
 	#  collection on services
@@ -607,7 +564,7 @@ sub getConfigFiles {
 		exit(-1);
 	}
 	elsif ( $pid == 0 ) {
-		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->hostName;
+		my $destinationPath = $newBaseDestinationPath . "/workloadDriver/" . $workloadDriver->host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -626,14 +583,8 @@ sub getConfigFiles {
 
 sub redeploy {
 	my ( $self, $setupLogDir, $hostsRef ) = @_;
-	my $workloadNum = $self->getParamValue('workloadNum');
-
-	my $suffix = "";
-	if ( $self->useSuffix ) {
-		$suffix = $self->suffix;
-	}
-
-	my $logName = "$setupLogDir/Redeploy" . $suffix . ".log";
+	my $workloadNum = $self->instanceNum;
+	my $logName = "$setupLogDir/Redeploy" . $self->suffix . ".log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
@@ -671,7 +622,7 @@ sub getWorkloadSummary {
 	foreach my $appInstance (@$appInstancesRef) {
 		my $prefix = "";
 		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
+			$prefix = "appInstance" . $appInstance->instanceNum . "-";
 		}
 
 		$csv{"maxUsers"} = $appInstance->getUsers();
@@ -689,7 +640,7 @@ sub getAppInstanceStatsSummary {
 	foreach my $appInstance (@$appInstancesRef) {
 		my $prefix = "";
 		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
+			$prefix = "appInstance" . $appInstance->instanceNum . "-";
 		}
 
 		my $impl         = $self->getParamValue('workloadImpl');
@@ -748,7 +699,7 @@ sub getHostStatsSummary {
 	my $appInstancesRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = $basePrefix . "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
+			$prefix = $basePrefix . "appInstance" . $appInstance->instanceNum . "-";
 		}
 
 		$appInstance->getHostStatsSummary( \%csv, $statsLogPath, $basePrefix, $prefix );
@@ -764,7 +715,7 @@ sub getStatsSummary {
 	tie( my %csv, 'Tie::IxHash' );
 	my $newBaseDestinationPath = $statsLogPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/workload" . $self->getParamValue("workloadNum");
+		$newBaseDestinationPath .= "/workload" . $self->instanceNum;
 	}
 
 	# First get the stats for the workload driver
@@ -776,8 +727,8 @@ sub getStatsSummary {
 		my $prefix = "";
 		my $subDir = "";
 		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = "appInstance" . $appInstance->getParamValue("instanceNum") . "-";
-			$subDir = "/appInstance" . $appInstance->getParamValue("instanceNum");
+			$prefix = "appInstance" . $appInstance->instanceNum . "-";
+			$subDir = "/appInstance" . $appInstance->instanceNum;
 		}
 
 		$appInstance->getStatsSummary( \%csv, $prefix, $newBaseDestinationPath . $subDir );
@@ -799,7 +750,7 @@ sub getNextRunInfo {
 	foreach my $appInstance (@$appInstancesRef) {
 		my $prefix = "";
 		if ( $#{$appInstancesRef} > 0 ) {
-			$prefix = "\tAppInstance " . $appInstance->getParamValue("instanceNum");
+			$prefix = "\tAppInstance " . $appInstance->instanceNum;
 		}
 		$returnString .= $prefix . ", users = " . $appInstance->users . "\n";
 	}
@@ -843,10 +794,10 @@ sub writeUsersTxt {
 	my $console_logger = get_logger("Console");
 	my $appInstancesRef = $self->appInstancesRef;
 
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->instanceNum;
 	
 	foreach my $appInstance (@$appInstancesRef) {
-		my $instanceNum = $appInstance->getInstanceNum();
+		my $instanceNum = $appInstance->instanceNum;
 		my $users = $appInstance->getUsers();
 		my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
 		$console_logger->info($outString);
@@ -865,7 +816,7 @@ sub checkUsersTxt {
 
 	$inline =~ /Workload\s(\d+),\sApp\sInstance\s(\d+):\s(\d+)\sUsers/;
 	
-	my $workloadNum = $self->getParamValue('workloadNum');
+	my $workloadNum = $self->instanceNum;
 	if ($workloadNum != $1)	{
 		$console_logger->info("Workload number $1 from the prepareOnly phase doesn't match workload number $workloadNum");
 		return 0;
@@ -876,7 +827,7 @@ sub checkUsersTxt {
 		return 0;		
 	}
 	my $appInstance = $appInstancesRef->[$2 - 1];
-	my $instanceNum = $appInstance->getInstanceNum();
+	my $instanceNum = $appInstance->instanceNum;
 	
 	if ($instanceNum != $2)	{
 		$console_logger->info("checkUsersTxt: Workload number $workloadNum. Instance number $instanceNum doesn't match input $2");

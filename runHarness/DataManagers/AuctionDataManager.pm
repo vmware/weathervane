@@ -31,8 +31,6 @@ use namespace::autoclean;
 
 extends 'DataManager';
 
-has '+name' => ( default => 'Weathervane', );
-
 has 'mongosDocker' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -54,7 +52,9 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 	super();
 };
 
@@ -66,9 +66,9 @@ sub setMongosDocker {
 sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
 	my %envVarMap;
@@ -94,12 +94,12 @@ sub startDataManagerContainer {
 	my $mongodbHostname;
 	my $mongodbPort;
 	if ( $nosqlServerRef->numNosqlShards == 0 ) {
-		$mongodbHostname = $nosqlServerRef->getIpAddr();
-		$mongodbPort   = $nosqlServerRef->portMap->{'mongod'};
+		$mongodbHostname =  $self->getHostnameForUsedService($nosqlServerRef);
+		$mongodbPort   = $self->getPortNumberForUsedService($nosqlServerRef, 'mongod');
 	}
 	else {
 		# The mongos will be running on the dataManager host
-		$mongodbHostname = $self->getIpAddr();
+		$mongodbHostname = $self->host->name;
 		$mongodbPort   = $self->internalPortMap->{'mongos'};
 	}
 
@@ -107,8 +107,8 @@ sub startDataManagerContainer {
 	if ( $nosqlServerRef->numNosqlReplicas > 0 ) {
 		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
 			my $nosqlService  = $nosqlServersRef->[$i];
-			my $mongodbHostname = $nosqlService->getIpAddr();
-			my $mongodbPort   = $nosqlService->portMap->{'mongod'};
+			my $mongodbHostname = $self->getHostnameForUsedService($nosqlService);
+			my $mongodbPort   = $self->getPortNumberForUsedService($nosqlService,'mongod');
 			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
 		}
 	}
@@ -118,8 +118,8 @@ sub startDataManagerContainer {
 	
 	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
-	my $dbHostname    = $dbService->getIpAddr();
-	my $dbPort        = $dbService->portMap->{ $dbService->getImpl() };
+	my $dbHostname    = $self->getHostnameForUsedService($dbService);
+	my $dbPort        = $self->getPortNumberForUsedService($dbService, $dbService->getImpl()) ;
 	$envVarMap{"DBHOSTNAME"} = $dbHostname;
 	$envVarMap{"DBPORT"} = $dbPort;
 	
@@ -142,26 +142,11 @@ sub startDataManagerContainer {
 sub stopDataManagerContainer {
 	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 
 	$self->host->dockerStopAndRemove( $applog, $name );
-}
-
-# Auction data manager always uses docker
-sub useDocker {
-	my ($self) = @_;
-	
-	return 1;
-}
-
-sub getIpAddr {
-	my ($self) = @_;
-	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
-	}
-	return $self->host->ipAddr;
 }
 
 sub prepareDataServices {
@@ -169,8 +154,8 @@ sub prepareDataServices {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $appInstance    = $self->appInstance;
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
@@ -190,13 +175,14 @@ sub prepareDataServices {
 	}
 	
 	$appInstance->startServices("data", $logPath);
+	
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();	
 	
 	# This will stop and restart the data manager so that it has the right port numbers
 	$self->startDataManagerContainer ($users, $logHandle);
 
-	if ( !$self->isDataLoaded( $users, $logPath ) ) {
+	if ( !$reloadDb && !$self->isDataLoaded( $users, $logPath ) ) {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
 		$appInstance->clearDataServicesBeforeStart($logPath);
@@ -219,9 +205,9 @@ sub prepareData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $maxUsers = $self->getParamValue('maxUsers');
 	my $appInstance    = $self->appInstance;
@@ -296,9 +282,9 @@ sub pretouchData {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 
@@ -321,8 +307,8 @@ sub pretouchData {
 
 		foreach $nosqlService (@$nosqlServersRef) {
 
-			my $hostname = $nosqlService->getIpAddr();
-			my $port     = $nosqlService->portMap->{'mongod'};
+			my $hostname = $self->getHostnameForUsedService($nosqlService);
+			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
 			my $cmdString;
 			my $cmdout;
 			my $pid;
@@ -633,11 +619,11 @@ sub loadData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $hostname    = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname    = $self->host->name;
+	my $name        = $self->name;
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $appInstance      = $self->appInstance;
 
@@ -670,7 +656,10 @@ sub loadData {
 		} 
    	}
    	close $pipe;	
-	close $applog;
+	
+	# Get the logs from the auctionDataManager and store the info in the logs
+	my $logOut = $self->host->dockerGetLogs($applog, $self->name);
+	$logger->debug($logOut);
 	
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	my $nosqlServerRef = $nosqlServersRef->[0];
@@ -702,12 +691,12 @@ sub isDataLoaded {
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
-	my $hostname = $self->host->hostName;
-	my $name        = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name        = $self->name;
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$hostname.log";
 	my $applog;
@@ -738,9 +727,9 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 
 	my $appInstance = $self->appInstance;
 	my $retVal      = 0;
@@ -781,8 +770,8 @@ sub cleanData {
 
 		# Compact all mongodb collections
 		foreach my $nosqlService (@$nosqlServersRef) {
-			my $hostname         = $nosqlService->getIpAddr();
-			my $port             = $nosqlService->portMap->{'mongod'};
+			my $hostname = $self->getHostnameForUsedService($nosqlService);
+			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
 			print $logHandle "Compacting MongoDB collections on $hostname\n";
 			$logger->debug(
 				"cleanData. Compacting MongoDB collections on $hostname for workload ",

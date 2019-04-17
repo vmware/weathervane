@@ -2462,14 +2462,6 @@ $parameters{"distDir"} = {
 "This is the directory for the executables and other artifacts needed to run Weathervane relative to the current working directory.",
 	"showUsage" => 0,
 };
-$parameters{"dbScriptDir"} = {
-	"type"    => "=s",
-	"default" => "dist",
-	"parent"  => "appInstance",
-	"usageText" =>
-"This is the directory that contains the scripts used to configure the database tables relative to the current working directory.",
-	"showUsage" => 0,
-};
 $parameters{"dbLoaderDir"} = {
 	"type"    => "=s",
 	"default" => "dist",
@@ -2524,14 +2516,6 @@ $parameters{"configDir"} = {
 	"parent"  => "runManager",
 	"usageText" =>
 "This is the directory under which Weathervane stores configuration files for the various services relative to the current working directory.",
-	"showUsage" => 0,
-};
-$parameters{"dbLoaderImageDir"} = {
-	"type"    => "=s",
-	"default" => "images",
-	"parent"  => "dataManager",
-	"usageText" =>
-"This is the directory in which the images used by the dbLoader are stored relative to the current working directory.",
 	"showUsage" => 0,
 };
 

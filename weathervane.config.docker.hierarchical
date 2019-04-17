@@ -2,7 +2,7 @@
   # This is a temporary version of a docker config file.
   # All app services run on a single host
   # We can't use the fixed config sizes because the auctionBidServer does
-  # run in Docker-only yet.
+  # not run in Docker-only yet.
   "dockerNamespace" : "hrosenbe",
   "dockerHosts" : [
     { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
@@ -33,7 +33,7 @@
       "auctionBidServerCpus" : "1",
   	  "msgServers" : [ {} ],
       "msgServerCpus" : "1",
-      "coordinationServers" : [ {} ],
+      "coordinationServers" : [ {}, {}, {} ],
       "fileServers" : [],
       "nosqlServers" : [ {} ],
       "nosqlServerCpus" : "1",

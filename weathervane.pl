@@ -141,7 +141,7 @@ sub getComputeResourceForInstance {
 	# If the xxxServerHosts was defined for this serviceType, then use 
 	# the right host from that list as determined by the instanceNum.
 	# The assignment of host to instance wraps if the instanceNum is greater
-	# than the number of hot names specified.
+	# than the number of host names specified.
 	if ($instanceParamHashRef->{"${serviceType}Hosts"} && ($#{$instanceParamHashRef->{"${serviceType}Hosts"}} >= 0)) {
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selecting host from ${serviceType}Hosts");
 		my $hostListRef = $instanceParamHashRef->{"${serviceType}Hosts"};

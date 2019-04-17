@@ -1,7 +1,7 @@
 {
   # This is a temporary version of a docker config file.
   # We can't use the fixed config sizes because the auctionBidServer does
-  # run in Docker-only yet.
+  # not run in Docker-only yet.
   "dockerNamespace" : "hrosenbe",
   "dockerHosts" : [
     { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 

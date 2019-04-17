@@ -27,13 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'Nginx', );
-
-has '+version' => ( default => '1.7.xx', );
-
-has '+description' => ( default => 'Nginx Web Server', );
-
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	super();
@@ -135,7 +128,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

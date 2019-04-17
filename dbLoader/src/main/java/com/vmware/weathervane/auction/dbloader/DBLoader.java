@@ -238,13 +238,15 @@ public class DBLoader {
 		 */
 		long maxActiveUsers = (long) Math.ceil(theLoadSpec.getTotalUsers()
 				/ (1.0 * theLoadParams.getUsersScaleFactor()));
+		logger.debug("maxActiveUsers = {}", maxActiveUsers);
 		long numAuctions = (long) Math.ceil(maxActiveUsers
 				/ (1.0 * theLoadParams.getUsersPerCurrentAuction()));
 		// The number of active auctions needs to be a multiple of 2
 		if ((numAuctions % 2) != 0) {
 			numAuctions++;
 		}
-
+		logger.debug("numAuctions = {}", numAuctions);
+		
 		/*
 		 * Read in the items file and convert it into a JSON array
 		 */

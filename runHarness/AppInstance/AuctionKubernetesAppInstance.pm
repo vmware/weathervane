@@ -35,11 +35,6 @@ has 'namespace' => (
 	isa => 'Str',
 );
 
-has 'host' => (
-	is  => 'rw',
-	isa => 'Cluster',
-);
-
 has 'imagePullPolicy' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -49,7 +44,7 @@ has 'imagePullPolicy' => (
 override 'initialize' => sub {
 	my ($self) = @_;
 	
-	$self->namespace("auctionw" . $self->getParamValue('workloadNum') . "i" . $self->getParamValue('appInstanceNum'));
+	$self->namespace("auctionw" . $self->workload->instanceNum . "i" . $self->instanceNum);
 
 	if ($self->getParamValue('redeploy')) {
 	    $self->imagePullPolicy('Always');
@@ -58,15 +53,6 @@ override 'initialize' => sub {
 	super();
 
 };
-
-sub setHost {
-	
-	my ($self, $host) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	
-	$self->host($host);
-		
-}
 
 override 'getDeployedConfiguration' => sub {
 	my ( $self, $destinationPath) = @_;
@@ -92,7 +78,7 @@ override 'startServices' => sub {
 	my $users  = $self->dataManager->getParamValue('maxUsers');
 	my $impl         = $self->getParamValue('workloadImpl');
 
-	my $appInstanceName = $self->getParamValue('appInstanceName');
+	my $appInstanceName = $self->name;
 	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
@@ -118,9 +104,9 @@ override 'startServices' => sub {
 	
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", impl = $impl", 
 		" users = $users",
 		" setupLogDir = $setupLogDir"
@@ -174,7 +160,6 @@ override 'getEdgeAddrsRef' => sub {
 		exit 1;
 	}
 	
-	# Get the nodePort numbers for the ingress-controller-nginx service
 	my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
 	my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
 	
@@ -224,21 +209,6 @@ override 'getServiceConfigParameters' => sub {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-		if ( $appServerCacheImpl eq 'ignite' ) {
-
-			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
-	
-			my $copyOnRead = "false";
-			if ( $self->getParamValue('igniteCopyOnRead') ) {
-				$copyOnRead = "true";
-			}
-			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-			my $appServersRef = $self->getAllServicesByType('appServer');
-			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
-			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-		}
 		my $zookeeperConnectionString = "zookeeper-0.zookeeper:2181,zookeeper-1.zookeeper:2181,zookeeper-2.zookeeper:2181";
 		$jvmOpts .= " -DZOOKEEPERCONNECTIONSTRING=$zookeeperConnectionString ";
 
@@ -331,8 +301,8 @@ override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
 	$logger->debug(
-		"redeploy for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",         $self->getParamValue('appInstanceNum')
+		"redeploy for workload ", $self->workload->instanceNum,
+		", appInstance ",         $self->instanceNum
 	);
 
 	$self->imagePullPolicy("Always");
@@ -378,8 +348,8 @@ override 'getLogFiles' => sub {
 	my ( $self, $baseDestinationPath, $usePrefix ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
 	$logger->debug(
-		"getLogFiles for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",            $self->getParamValue('appInstanceNum')
+		"getLogFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",            $self->instanceNum
 	);
 
 	my $pid;
@@ -387,7 +357,7 @@ override 'getLogFiles' => sub {
 
 	my $newBaseDestinationPath = $baseDestinationPath;
 	if ($usePrefix) {
-		$newBaseDestinationPath .= "/appInstance" . $self->getParamValue("instanceNum");
+		$newBaseDestinationPath .= "/appInstance" . $self->instanceNum;
 	}
 
 	#  collection on services
@@ -397,7 +367,7 @@ override 'getLogFiles' => sub {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		if ($#{$servicesRef} >= 0) {
 			my $service = $servicesRef->[0];
-			my $name = $service->host->clusterName;
+			my $name = $service->host->name;
 			my $destinationPath = $newBaseDestinationPath . "/" . $serviceType . "/" . $name;
 			if ( !( -e $destinationPath ) ) {
 				`mkdir -p $destinationPath`;

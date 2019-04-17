@@ -11,7 +11,7 @@
 # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package FindMaxSingleAIWithScalingRunManager;
+package FindMaxSingleRunRunManager;
 
 use Moose;
 use MooseX::Storage;
@@ -30,7 +30,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Find Max/Single-AI With Scaling Run Strategy', );
+has '+name' => ( default => 'Find Max/Single-Run Run Strategy', );
 
 has '+description' => ( default => '', );
 
@@ -58,7 +58,6 @@ override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
-	# TargetUtilization run strategy used fixed load-paths only
 	$self->runProcedure->setLoadPathType("findmax");
 
 	$console_logger->info($self->name . " starting run.");
@@ -67,7 +66,7 @@ override 'start' => sub {
 
 	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
 	if ( $runProcedureType eq 'prepareOnly' ) {
-		$console_logger->info("Application configured and running.");
+		$console_logger->info("Application configured and running. ");
 	}
 	elsif ( $runProcedureType eq 'stop' ) {
 		$console_logger->info("Run stopped");

@@ -29,8 +29,6 @@ sub getWorkload {
 
 	my $workload = Workload->new( paramHashRef => $workloadHashRef );
 
-	$workload->initialize();
-
 	return $workload;
 }
 

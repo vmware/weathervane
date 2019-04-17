@@ -34,11 +34,6 @@ use WeathervaneTypes;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'description' => (
 	is  => 'ro',
 	isa => 'Str',

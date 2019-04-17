@@ -18,7 +18,7 @@ use MooseX::Storage;
 
 use namespace::autoclean;
 
-use Hosts::VIHost;
+use ComputeResources::VIHost;
 use Factories::HostFactory;
 use WeathervaneTypes;
 use Parameters qw(getParamValue);
@@ -27,11 +27,6 @@ use Instance;
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
-
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
 
 has 'version' => (
 	is  => 'ro',

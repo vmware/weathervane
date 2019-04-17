@@ -33,11 +33,6 @@ use namespace::autoclean;
 use WeathervaneTypes;
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'appInstance' => (
 	is      => 'rw',
 	isa     => 'AppInstance',
@@ -115,21 +110,10 @@ sub setWorkloadDriver {
 	$self->workloadDriver($driver);
 }
 
-sub getWorkloadNum {
-	my ($self) = @_;
-	return $self->getParamValue('workloadNum');
-}
-
-sub getAppInstanceNum {
-	my ($self) = @_;
-	return 	$self->appInstance();
-
-}
-
 sub getDockerName {
 	my ($self) = @_;
 	
-	return $self->getParamValue("dockerName");
+	return $self->name;
 }
 
 sub loadData {
@@ -146,6 +130,63 @@ sub prepareData {
 
 sub isDataLoaded {
 	die "Can only check isDataLoaded for a concrete sub-class of DataManager";
+}
+
+# This method returns true if both this and the other service are
+# running dockerized on the same Docker host and network but are not
+# using docker host networking
+sub corunningDockerized {
+	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::DataManagers::Datamanager");
+	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
+		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
+		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
+		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
+		|| !$self->host->equals($other->host)
+		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
+	{
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
+		return 0;
+	} else {
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
+		return 1;
+	}	
+	
+}
+
+# This method checks whether this service and another service are 
+# both running Dockerized on the same host and Docker network.  If so, it
+# returns the docker name of the service (so that this service can connect to 
+# it directly via the Docker provided /etc/hosts), otherwise it returns the
+# hostname of the other service.
+# If this service is using Docker host networking, then this method always
+# returns the hostname of the other host.
+sub getHostnameForUsedService {
+	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::DataManagers::Datamanager");
+	
+	if ($self->corunningDockerized($other)) 
+	{
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $other->host->dockerGetIp($other->name));
+		return $other->host->dockerGetIp($other->name);
+	} else {
+		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
+		return $other->host->name;
+	}	
+}
+
+sub getPortNumberForUsedService {
+	my ($self, $other, $portName) = @_;
+	my $logger = get_logger("Weathervane::DataManagers::Datamanager");
+	
+	if ($self->corunningDockerized($other)) 
+	{
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->internalPortMap->{$portName});
+		return $other->internalPortMap->{$portName};
+	} else {
+		$logger->debug("getPortNumberForUsedService: Not corunning dockerized, returning " . $other->portMap->{$portName});
+		return $other->portMap->{$portName};
+	}	
 }
 
 sub toString {

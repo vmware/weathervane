@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'MongoDB', );
-
-has '+version' => ( default => '3.0.x', );
-
-has '+description' => ( default => '', );
-
 has 'numNosqlShards' => (
 	is      => 'rw',
 	isa     => 'Int',
@@ -53,8 +47,9 @@ has 'clearBeforeStart' => (
 );
 
 override 'initialize' => sub {
-	my ( $self, $numNosqlServers ) = @_;
+	my ( $self ) = @_;
 	my $logger = get_logger("Weathervane::Services::MongodbService");
+	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 	$logger->debug("initialize called with numNosqlServers = $numNosqlServers");
 	my $console_logger = get_logger("Console");
 	my $appInstance    = $self->appInstance;
@@ -192,7 +187,7 @@ sub clearDataAfterStart {
 
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	my $logger = get_logger("Weathervane::Services::MongodbKubernetesService");
 	$logger->debug("clearDataBeforeStart for $name");
 	
@@ -208,7 +203,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::MongodbKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

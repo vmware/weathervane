@@ -30,12 +30,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'ZookeeperServer', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 override 'initialize' => sub {
 	my ( $self, $numMsgServers ) = @_;
 
@@ -46,14 +40,10 @@ sub startInstance {
 	my ($self, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 
-	if ( !$self->getParamValue('useDocker') ) {
-		return;
-	}
-
 	my $impl     = $self->getImpl();		
-	my $instanceNum = $self->getParamValue("instanceNum");
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $instanceNum = $self->instanceNum;
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 
 	$logger->debug("CreateZookeeperDocker-${name}");
 	my $logName = "$logPath/CreateZookeeperDocker-${name}.log";
@@ -68,8 +58,8 @@ sub startInstance {
 	my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
-		my $id =  $zookeeperServer->getParamValue("instanceNum");
-		my $hostname = $zookeeperServer->host->hostName;
+		my $id =  $zookeeperServer->instanceNum;
+		my $hostname = $zookeeperServer->host->name;
 		if ($id == $instanceNum) {
 			$hostname = "0.0.0.0";
 		}
@@ -103,7 +93,7 @@ sub startInstance {
 	my $cmd        = "";
 	my $entryPoint = "";
 	$self->host->dockerRun(
-		$applog, $self->getParamValue('dockerName'),
+		$applog, $self->name,
 		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
 		$entryPoint, $cmd, $self->needsTty
 	);
@@ -116,8 +106,8 @@ sub stopInstance {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 	
-	my $hostname         = $self->host->hostName;
-	my $name             = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name             = $self->name;
 	my $time     = `date +%H:%M`;
 	chomp($time);
 	my $logName          = "$logPath/StopZookeeperDocker-$hostname-$name-$time.log";
@@ -140,9 +130,9 @@ override 'create' => sub {
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerService");
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
-	$logger->debug("remove. logPath = $logPath, hostname = $hostname, dockerName = $name");
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
+	$logger->debug("remove. logPath = $logPath, hostname = $hostname, name = $name");
 	my $logName  = "$logPath/RemoveZookeeperDocker-$hostname-$name.log";
 
 	my $applog;
@@ -163,7 +153,7 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning( $fileout, $name );
 }
@@ -185,7 +175,7 @@ sub setPortNumbers {
 sub setExternalPortNumbers {
 	my ($self) = @_;
 	# For bridged networking, ports get assigned at start time
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
 	$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
 	$self->portMap->{"election"} = $self->internalPortMap->{"election"};
@@ -216,21 +206,21 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 }
 
 sub cleanStatsFiles {
 	my ($self) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 }
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 	
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -265,8 +255,8 @@ sub parseLogFiles {
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 	
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 	my $zookeeperRoot    = $self->getParamValue('zookeeperRoot');
 
 	my $logpath = "$destinationPath/$name";

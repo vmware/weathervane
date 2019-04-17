@@ -1,0 +1,32 @@
+{
+  "runStrategy" : "findMaxSingleRun",
+
+  "dockerNamespace" : "hrosenbe",
+  "dockerHosts" : [
+    { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
+    { "name" : "AuctionDriver3" }, { "name" : "AuctionDriver4" }, 
+    { "name" : "AuctionDriver5" }, { "name" : "AuctionDriver6" }, 
+  ],
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "appHost", 
+      "kubernetesConfigFile" : "/root/.kube/config",
+    },
+  ],
+
+  "numDrivers": 8,
+  "driverHosts" : [
+    "AuctionDriver1", "AuctionDriver2", 
+    "AuctionDriver3", "AuctionDriver4", 
+    "AuctionDriver5", "AuctionDriver6",
+    "AuctionDriver7", "AuctionDriver8",
+  ],
+
+  "numAppInstances" : 1,
+  "configurationSize": "small",
+  "appInstanceHost" : "appHost",
+  "mongodbDataStorageClass" : "fast",
+  "postgresqlDataStorageClass" : "fast",
+  "postgresqlLogStorageClass" : "fast",
+
+}

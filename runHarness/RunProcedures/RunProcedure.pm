@@ -25,7 +25,6 @@ use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsPa
   callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
   callMethodOnObjectsParamListParallel1 callMethodOnObjects1);
 use Instance;
-use Utils qw(getIpAddresses getIpAddress);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -34,11 +33,6 @@ use namespace::autoclean;
 use WeathervaneTypes;
 
 extends 'Instance';
-
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
 
 has 'virtualInfrastructure' => (
 	is  => 'rw',
@@ -90,10 +84,6 @@ override 'initialize' => sub {
 	my $logLevel = $self->getParamValue('logLevel');
 	if ( ( $logLevel < 0 ) || ( $logLevel > 4 ) ) {
 		die "The logLevel must be between 0 and 4";
-	}
-
-	if ( ( $self->getParamValue('runStrategy') eq "targetUtilization" ) && ( $self->getParamValue('logLevel') < 3 ) ) {
-		die "The logLevel must be >= 3 in order to run the targetUtilization run strategy";
 	}
 
 	super();
@@ -261,43 +251,11 @@ sub foundMax {
 	return $foundMax;
 }
 
-sub hitTargetUt {
-	my ($self)   = @_;
-	my $passAll  = $self->getParamValue('targetUtilizationPassAll');
-	my $foundMax = 0;
-	if ($passAll) {
-		$foundMax = 1;
-	}
-
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		my $wFoundMax = $workload->hitTargetUt();
-		if ($passAll) {
-			$foundMax &= $wFoundMax;
-		}
-		else {
-			if ($wFoundMax) {
-				$foundMax = 1;
-			}
-		}
-	}
-
-	return $foundMax;
-}
-
 sub adjustUsersForFindMax {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
 		$workload->adjustUsersForFindMax();
-	}
-}
-
-sub adjustUsersForTargetUt {
-	my ($self) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->adjustUsersForTargetUt();
 	}
 }
 
@@ -560,7 +518,7 @@ sub getStatsFiles {
 		# get stats files from hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
-			$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+			$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 			if ( !( -e $destinationPath ) ) {
 				`mkdir -p $destinationPath`;
 			}
@@ -748,7 +706,7 @@ sub getLogFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -826,7 +784,7 @@ sub getConfigFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -939,7 +897,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
@@ -951,7 +909,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
@@ -963,7 +921,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getAppInstanceStatsSummary();
 		my @keys      = keys %$tmpCsvRef;
@@ -975,7 +933,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary($tmpDir);
 		my @keys      = keys %$tmpCsvRef;
@@ -992,7 +950,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 			my $tmpCsvRef = $workload->getHostStatsSummary( $destinationPath, $prefix );
 			my @keys = keys %$tmpCsvRef;
@@ -1008,7 +966,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 
 			my $usePrefix = 0;
@@ -1057,7 +1015,7 @@ sub getNextRunInfo {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix =
 			    "Workload "
-			  . $workload->getParamValue("workloadNum")
+			  . $workload->instanceNum
 			  . ", Implementation: "
 			  . $workload->getParamValue("workloadImpl");
 		}
@@ -1147,7 +1105,7 @@ sub interactiveMode {
 #				# Get current number of users for each workload
 #				$i = 0;
 #				foreach my $workloadRef (@$workloadsRef) {
-#					my $workloadNum                     = $workloadRef->getParamValue('workloadNum');
+#					my $workloadNum                     = $workloadRef->instanceNum;
 #					my $appInstanceToActiveUsersHashRef = $workloadRef->getNumActiveUsers();
 #
 #					foreach my $appInstance ( keys %$appInstanceToActiveUsersHashRef ) {
@@ -1173,10 +1131,10 @@ sub interactiveMode {
 #			foreach my $workloadRef (@$workloadsRef) {
 #				my $appInstancesRef = $workloadRef->appInstancesRef;
 #
-#				my $workloadNum = $workloadRef->getParamValue('workloadNum');
+#				my $workloadNum = $workloadRef->instanceNum;
 #				foreach my $appInstance (@$appInstancesRef) {
 #					$workloadNumHash{$numAppInstances}    = $workloadNum;
-#					$appInstanceNumHash{$numAppInstances} = $appInstance->getParamValue("appInstanceNum");
+#					$appInstanceNumHash{$numAppInstances} = $appInstance->instanceNum;
 #					$numAppInstances++;
 #				}
 #			}

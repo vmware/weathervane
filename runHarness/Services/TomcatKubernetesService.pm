@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'Tomcat', );
-
-has '+version' => ( default => '8', );
-
-has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
-
 has 'mongosDocker' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -63,7 +57,7 @@ sub configure {
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
-	my $nodeNum = $self->getParamValue('instanceNum');
+	my $nodeNum = $self->instanceNum;
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
@@ -169,7 +163,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::TomcatKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

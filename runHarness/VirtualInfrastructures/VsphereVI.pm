@@ -42,7 +42,7 @@ override 'initializeVmInfo' => sub {
 		my $vmsInfoHashRef = $self->vmsInfoHashRef;
 		my $hostsRef       = $self->hosts;
 		foreach my $host (@$hostsRef) {
-			my $viHostname = $host->hostName;
+			my $viHostname = $host->name;
 			$logger->debug("Getting VM info for virtual-infrastructure host $viHostname");
 			my @vmInfo = `ssh  -o 'StrictHostKeyChecking no' root\@$viHostname vim-cmd /vmsvc/getallvms 2>&1`;
 			foreach my $vmInfo (@vmInfo) {
@@ -101,7 +101,7 @@ sub startStatsCollection {
 	# start stats collection on all VI hosts
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("startStatsCollection on " . $host->hostName);
+		$logger->debug("startStatsCollection on " . $host->name);
 		$host->startStatsCollection( $intervalLengthSec, $numIntervals );
 	}
 }
@@ -120,7 +120,7 @@ sub stopStatsCollection {
 	# stop stats collection on all VI hosts
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("stopStatsCollection on " . $host->hostName);
+		$logger->debug("stopStatsCollection on " . $host->name);
 		$host->stopStatsCollection();
 	}
 
@@ -133,7 +133,7 @@ sub getStatsFiles {
 
 	my $hostsRef = $self->managementHosts;
 	foreach my $host (@$hostsRef) {
-		my $destinationPath = $baseDestinationPath . "/" . $host->hostName;
+		my $destinationPath = $baseDestinationPath . "/" . $host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -142,8 +142,8 @@ sub getStatsFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("getStatsFiles on " . $host->hostName);
-		my $destinationPath = $baseDestinationPath . "/" . $host->hostName;
+		$logger->debug("getStatsFiles on " . $host->name);
+		my $destinationPath = $baseDestinationPath . "/" . $host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -163,7 +163,7 @@ sub cleanStatsFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("cleanStatsFiles on " . $host->hostName);
+		$logger->debug("cleanStatsFiles on " . $host->name);
 		$host->cleanStatsFiles();
 	}
 
@@ -175,7 +175,7 @@ sub getLogFiles {
 
 	my $hostsRef = $self->managementHosts;
 	foreach my $host (@$hostsRef) {
-		my $destinationPath = $baseDestinationPath . "/" . $host->hostName;
+		my $destinationPath = $baseDestinationPath . "/" . $host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -184,8 +184,8 @@ sub getLogFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("getLogFiles on " . $host->hostName);
-		my $destinationPath = $baseDestinationPath . "/" . $host->hostName;
+		$logger->debug("getLogFiles on " . $host->name);
+		my $destinationPath = $baseDestinationPath . "/" . $host->name;
 		if ( !( -e $destinationPath ) ) {
 			`mkdir -p $destinationPath`;
 		}
@@ -205,7 +205,7 @@ sub cleanLogFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("cleanLogFiles on " . $host->hostName);
+		$logger->debug("cleanLogFiles on " . $host->name);
 		$host->cleanLogFiles();
 	}
 
@@ -222,7 +222,7 @@ sub parseLogFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("parseLogFiles on " . $host->hostName);
+		$logger->debug("parseLogFiles on " . $host->name);
 		$host->parseLogFiles();
 	}
 
@@ -239,7 +239,7 @@ sub getConfigFiles {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("getConfigFiles on " . $host->hostName);
+		$logger->debug("getConfigFiles on " . $host->name);
 		$host->getConfigFiles($destinationPath);
 	}
 
@@ -254,7 +254,7 @@ sub getStatsSummary {
 
 	my $hostsRef = $self->managementHosts;
 	foreach my $host (@$hostsRef) {
-		my $destinationPath = $statsFilePath . "/" . $host->hostName;
+		my $destinationPath = $statsFilePath . "/" . $host->name;
     	my $tmpCsvRef;
 		$tmpCsvRef = $host->getStatsSummary( $destinationPath, $users );
 		@csv{ keys %$tmpCsvRef } = values %$tmpCsvRef;
@@ -262,7 +262,7 @@ sub getStatsSummary {
 	
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {
-		$logger->debug("getStatsSummary on " . $host->hostName);
+		$logger->debug("getStatsSummary on " . $host->name);
 		my $destinationPath         = $statsFilePath;
 		my $tmpCsvRef               = $host->getStatsSummary( $destinationPath, $users );
 		@csv{ keys %$tmpCsvRef } = values %$tmpCsvRef;

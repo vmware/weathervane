@@ -64,9 +64,10 @@ sub configure {
 		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
 			print FILEOUT "            memory: " . $self->getParamValue('coordinationServerMem') . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";

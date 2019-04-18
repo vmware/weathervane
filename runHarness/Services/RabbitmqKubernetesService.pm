@@ -78,9 +78,10 @@ sub configure {
 		if ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /RABBITMQ_MEMORY:/ ) {
 			print FILEOUT "  RABBITMQ_MEMORY: \"$totalMemory$totalMemoryUnit\"\n";

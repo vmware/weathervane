@@ -395,8 +395,9 @@ sub getHostnameForUsedService {
 	
 	if ($self->corunningDockerized($other)) 
 	{
-		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $other->host->dockerGetIp($other->name));
-		return $other->host->dockerGetIp($other->name);
+		my $ip = $other->host->dockerGetIp($other->name);
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $ip);
+		return $ip;
 	} else {
 		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
 		return $other->host->name;

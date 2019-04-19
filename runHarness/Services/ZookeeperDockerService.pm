@@ -59,12 +59,16 @@ sub startInstance {
 	my $zookeeperServers = "";
 	foreach my $zookeeperServer (@$zookeeperServersRef) {
 		my $id =  $zookeeperServer->instanceNum;
-		my $hostname = $zookeeperServer->host->name;
+		my $hostname;
+		my $peerPort;
+		my $electionPort;			
 		if ($id == $instanceNum) {
 			$hostname = "0.0.0.0";
+		} else {
+			$hostname = $zookeeperServer->host->name;
 		}
-		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
-		my $electionPort = $zookeeperServer->internalPortMap->{"election"};			
+		$peerPort = $zookeeperServer->internalPortMap->{"peer"};
+		$electionPort = $zookeeperServer->internalPortMap->{"election"};			
 		$zookeeperServers .= "server." . $id . "=" . $hostname. ":" .
 							$peerPort . ":" . $electionPort . "," ;
 	}
@@ -74,8 +78,6 @@ sub startInstance {
 	
 	my %envVarMap;
 	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
-	$envVarMap{"ZK_PEER_PORT"} = $self->internalPortMap->{"peer"};
-	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
 	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
 	$envVarMap{"ZK_ID"} = $instanceNum;
 

@@ -4,8 +4,6 @@ use strict;
 use POSIX;
 
 my $clientPort   = $ENV{'ZK_CLIENT_PORT'};
-my $peerPort     = $ENV{'ZK_PEER_PORT'};
-my $electionPort = $ENV{'ZK_ELECTION_PORT'};
 my $id           = $ENV{'ZK_ID'};
 my $servers      = $ENV{'ZK_SERVERS'};
 my @servers      = split /,/, $servers;

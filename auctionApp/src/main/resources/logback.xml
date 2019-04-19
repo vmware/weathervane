@@ -28,8 +28,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 	<logger name="com.vmware" level="WARN" />
 	<logger name="org.springframework" level="WARN" />
-	<logger name="org.apache.ignite" level="INFO" />
-
 
 	<root level="WARN">
 		<appender-ref ref="LOGFILE" />

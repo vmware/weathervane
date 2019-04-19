@@ -1552,7 +1552,7 @@ $parameters{"numAuctioneerThreads"} = {
 
 $parameters{"highBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq highBid message callbacks in the Auction application. ",
@@ -1561,7 +1561,7 @@ $parameters{"highBidQueueConcurrency"} = {
 
 $parameters{"newBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq newBid message callbacks in the Auction application. ",

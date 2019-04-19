@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
@@ -87,6 +88,21 @@ public class HighBidDaoJpa extends GenericDaoJpa<HighBid, Long> implements HighB
 		Query theQuery = entityManager
 				.createQuery("DELETE from HighBid b where b.preloaded = :preloaded");
 		theQuery.setParameter("preloaded", preloaded);
+
+		int numDeleted = theQuery.executeUpdate();
+		
+		return numDeleted;
+	
+	}
+
+	@Override
+	@Transactional
+	public int deleteByAuction(Auction auction) {
+		logger.info("deleteByPreloaded");
+		
+		Query theQuery = entityManager
+				.createQuery("DELETE from HighBid b where b.auction = :auction");
+		theQuery.setParameter("auction", auction);
 
 		int numDeleted = theQuery.executeUpdate();
 		

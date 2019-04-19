@@ -982,6 +982,13 @@ sub isRunning {
 
 }
 
+sub isStopped {
+	my ( $self, $fileout ) = @_;
+	my $name = $self->name;
+
+	return !$self->host->dockerExists( $fileout, $name );
+}
+
 sub stopStatsCollection {
 	my ($self) = @_;
 

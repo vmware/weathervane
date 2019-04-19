@@ -688,11 +688,13 @@ sub dockerGetNetwork {
 
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
+	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;	
 	my $out;
 	if ($self->getParamValue('vicHost')) {
 		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
 	} else {
+		$logger->debug("dockerGetIp: Getting ip address for container $name on host " . $self->name);
 		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
 	}
 	chomp($out);

@@ -302,8 +302,7 @@ sub pretouchData {
 
 		foreach $nosqlService (@$nosqlServersRef) {
 
-			my $hostname = $self->getHostnameForUsedService($nosqlService);
-			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
+			my $name = $nosqlService->name;
 			my $cmdString;
 			my $cmdout;
 			my $pid;
@@ -315,16 +314,12 @@ sub pretouchData {
 				}
 				elsif ( $pid == 0 ) {
 					print $logHandle "Touching imageFull collection to preload data and indexes\n";
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
+					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+						"mongo --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages");
 					print $logHandle $cmdout;
 
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
+					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+						"mongo --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages");
 					print $logHandle $cmdout;
 					exit;
 				}
@@ -341,10 +336,8 @@ sub pretouchData {
 				}
 				elsif ( $pid == 0 ) {
 					print $logHandle "Touching imagePreview collection to preload data and indexes\n";
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
+					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+						"mongo --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages");
 					print $logHandle $cmdout;
 					exit;
 				}
@@ -358,10 +351,8 @@ sub pretouchData {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
-					$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages";
-					$cmdout = `$cmdString`;
-					print $logHandle "$cmdString\n";
+					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+						"mongo --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages");
 					print $logHandle $cmdout;
 					exit;
 				}
@@ -376,10 +367,8 @@ sub pretouchData {
 			}
 			elsif ( $pid == 0 ) {
 				print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages");
 				print $logHandle $cmdout;
 
 				exit;
@@ -394,10 +383,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -412,10 +399,8 @@ sub pretouchData {
 			}
 			elsif ( $pid == 0 ) {
 				print $logHandle "Touching imageInfo collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo");
 				print $logHandle $cmdout;
 
 				exit;
@@ -430,10 +415,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -448,10 +431,8 @@ sub pretouchData {
 			}
 			elsif ( $pid == 0 ) {
 				print $logHandle "Touching attendanceRecord collection to preload data and indexes\n";
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -465,10 +446,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord");
 				print $logHandle $cmdout;
 
 				exit;
@@ -483,10 +462,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -500,10 +477,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -517,10 +492,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -535,10 +508,8 @@ sub pretouchData {
 			}
 			elsif ( $pid == 0 ) {
 				print $logHandle "Touching bid collection to preload data and indexes\n";
-				$cmdString =
-				  "mongo --port $port --host $hostname --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -552,10 +523,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -569,10 +538,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-"mongo --port $port --host $hostname --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -586,10 +553,8 @@ sub pretouchData {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$cmdString =
-				  "mongo --port $port --host $hostname --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid";
-				$cmdout = `$cmdString`;
-				print $logHandle "$cmdString\n";
+				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
+					"mongo --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid");
 				print $logHandle $cmdout;
 				exit;
 			}
@@ -765,24 +730,21 @@ sub cleanData {
 
 		# Compact all mongodb collections
 		foreach my $nosqlService (@$nosqlServersRef) {
-			my $hostname = $self->getHostnameForUsedService($nosqlService);
-			my $port     = $self->getPortNumberForUsedService($nosqlService, 'mongod');
+			my $hostname = $nosqlService->host->name;
 			print $logHandle "Compacting MongoDB collections on $hostname\n";
 			$logger->debug(
 				"cleanData. Compacting MongoDB collections on $hostname for workload ",
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
+			my $name = $nosqlService->name;
 
 			$logger->debug(
 				"cleanData. Compacting attendanceRecord collection on $hostname for workload ",
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			my $cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord";
-			print $logHandle "$cmdString\n";
-			my $cmdout = `$cmdString`;
+			my $cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord");
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -790,10 +752,7 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
-			  "mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid");
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -801,10 +760,7 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo");
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -812,10 +768,7 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages");
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -823,10 +776,7 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages");
 			print $logHandle $cmdout;
 
 			$logger->debug(
@@ -834,10 +784,7 @@ sub cleanData {
 				$workloadNum, " appInstance ",
 				$appInstanceNum
 			);
-			$cmdString =
-"mongo --port $port --host $hostname --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages";
-			print $logHandle "$cmdString\n";
-			$cmdout = `$cmdString`;
+			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages");
 			print $logHandle $cmdout;
 
 			$logger->debug(

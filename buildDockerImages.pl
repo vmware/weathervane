@@ -20,6 +20,7 @@
 package BuildDocker;
 use strict;
 use Getopt::Long;
+use Term::ReadKey;
 
 sub usage {
 	print "Usage: ./buildDockerImages.pl [options] [imageNames]\n";
@@ -29,8 +30,8 @@ sub usage {
     print "     --help :         Print this help and exit.\n";
     print "     --username:      The username for the Docker Hub account.\n";
     print "                      This must be provided if --private is not used.\n";
-    print "     --password:      The password for the Docker Hub account.\n";
-    print "                      This must be provided if --private is not used.\n";
+    print "     --password:      (optional) The password for the Docker Hub account.\n";
+    print "                      If not provided, will be prompted.\n";
     print "     --private :      Use a private Docker registry \n";
     print "     --host :         This is the hostname or IP address for the private registry.\n";
     print "                      This must be provided if --private is used.\n";
@@ -46,13 +47,16 @@ my $username = "";
 my $password = "";
 my $private = '';
 
-GetOptions('help' => \$help,
+my $optionsSuccess = GetOptions('help' => \$help,
 			'host=s' => \$host,
 			'port=i' => \$port,
 			'username=s' => \$username,
 			'password=s' => \$password,
 			'private!' => \$private
 			);
+if (!$optionsSuccess) {
+  die "Error for command line options.\n";
+}
 
 my @imageNames = qw(centos7 auctiondatamanager auctionworkloaddriver auctionappserverwarmer mongodb nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
 if ($#ARGV >= 0) {
@@ -136,8 +140,8 @@ if ($private) {
 	}
 	$namespace = "$host:$port";
 } else {
-	if (($username eq "") || ($password eq "")) {
-			print "When using Docker Hub, you must specify both the username and password parameters.\n";
+	if ($username eq "") {
+			print "When using Docker Hub, you must specify the username parameter.\n";
 			usage();
 			exit;
 	}
@@ -229,6 +233,19 @@ chomp($version);
 BEGIN { $| = 1 }
 
 if (!$private) {
+	if (!(length $password > 0)) {
+		Term::ReadKey::ReadMode('noecho');
+		print "Enter Docker Hub password for $username:";
+		$password = Term::ReadKey::ReadLine(0);
+		Term::ReadKey::ReadMode('restore');
+		print "\n";
+		$password =~ s/\R\z//; #get rid of new line
+	}
+
+	if (!(length $password > 0)) {
+		die "Error, no password input.\n";
+	}
+
 	print "Logging into Docker Hub.\n";
 	print $fileout "Logging into Docker Hub.\n";
 	my $cmd = "docker login -u $username -p $password";

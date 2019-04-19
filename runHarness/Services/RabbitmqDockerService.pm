@@ -246,6 +246,13 @@ sub isRunning {
 
 }
 
+sub isStopped {
+	my ( $self, $fileout ) = @_;
+	my $name = $self->name;
+
+	return !$self->host->dockerExists( $fileout, $name );
+}
+
 override 'remove' => sub {
 	my ($self, $logPath ) = @_;
 

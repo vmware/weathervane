@@ -104,20 +104,20 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long initialRampIntervalSec = 60;
 
 	@JsonIgnore
-	private final long findFirstMaxRampIntervalSec = 180;
+	private final long findFirstMaxRampIntervalSec = 120;
 	@JsonIgnore
-	private final long findFirstMaxWarmupIntervalSec = 300;
+	private final long findFirstMaxWarmupIntervalSec = 180;
 	@JsonIgnore
 	private final long findFirstMaxIntervalSec = 300;
 
 	@JsonIgnore
-	private final long verifyMaxRampIntervalSec = 180;
+	private final long verifyMaxRampIntervalSec = 120;
 	@JsonIgnore
-	private final long verifyMaxWarmupIntervalSec = 300;
+	private final long verifyMaxWarmupIntervalSec = 180;
 	@JsonIgnore
 	private final long verifyMaxIntervalSec = 300;
 	@JsonIgnore
-	private final int numRequiredVerifyMaxRepeats = 5;
+	private final int numRequiredVerifyMaxRepeats = 2;
 	
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined

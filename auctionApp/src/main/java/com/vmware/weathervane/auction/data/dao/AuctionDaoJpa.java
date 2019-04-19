@@ -396,7 +396,7 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 	public void resetItemsToFuture(Auction auction) {
 		logger.info("resetItemsToFuture. auctionId = " + auction.getId());
 
-		// Bring the auction back into the context
+		// Bring the auction into the context
 		Auction theAuction = this.get(auction.getId());
 
 		/*
@@ -405,24 +405,18 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 		logger.info("resetItemsToFuture. auctionId = " + auction.getId() + ". Reset the items.");
 		for (Item anItem : theAuction.getItems()) {
 			anItem.setState(ItemState.INAUCTION);
+			/*
+			 * Because cascadeType=All on this association, setting the highbid
+			 * to null should delete the associated highbid
+			 */
+			anItem.setHighbid(null);
 
 			// Delete all bids for the item
 			logger.info("resetItemsToFuture. auctionId = " + auction.getId()
 					+ ". Delete the bids for item " + anItem.getId());
 			bidRepository.deleteByItemId(anItem.getId());
-
-			/*
-			 * Because cascadeType=All on this association, setting the highbid
-			 * to null should delete the associated highbid
-			 */
-			HighBid highBid = anItem.getHighbid();
-			if (highBid != null) {
-				anItem.setHighbid(null);
-				logger.info("resetItemsToFuture. auctionId = " + auction.getId()
-						+ ". Explicitly removing the highBid for item " + anItem.getId()
-						+ ", highBid = " + highBid.getId());
-			}
 		}
+
 	}
 
 	@Transactional

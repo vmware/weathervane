@@ -166,6 +166,21 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 	@Override
 	@Transactional
+	public void resetItems(Long auctionId) {
+		Auction currentAuction = auctionDao.get(auctionId);
+		auctionDao.resetItemsToFuture(currentAuction);
+	}
+
+	@Override
+	@Transactional
+	public void deleteHighbids(Long auctionId) {
+		Auction currentAuction = auctionDao.get(auctionId);
+		highBidDao.deleteByAuction(currentAuction);
+	}
+	
+
+	@Override
+	@Transactional
 	public HighBid startNextItem(HighBid curHighBid) {
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 
@@ -175,22 +190,19 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 		// Get the next item for the auction.
 		Item nextItem = null;
-		do {
-			try {
-				nextItem = auctionDao.getNextUnsoldItem(currentAuction);
-				logger.info(
-						"startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
-			} catch (EmptyResultDataAccessException ex) {
-				/*
-				 * There are no more items. reset the item for the auction and then try again.
-				 */
-				logger.info("startNextItem:  auction " + currentAuction.getId() + " is complete.  Restarting");
-				auctionDao.resetItemsToFuture(currentAuction);
-			} catch (NonUniqueResultException ex) {
-				throw new RuntimeException(
-						"In startNextItem: Got multiple next items for auction " + currentAuction.getId());
-			}
-		} while (nextItem == null);
+		try {
+			nextItem = auctionDao.getNextUnsoldItem(currentAuction);
+			System.out.println("startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
+		} catch (EmptyResultDataAccessException ex) {
+			/*
+			 * There are no more items. Return null.
+			 */
+			System.out.println("startNextItem:  auction " + currentAuction.getId() + " is complete.  Return null so that can restart");
+			return null;
+		} catch (NonUniqueResultException ex) {
+			throw new RuntimeException(
+					"In startNextItem: Got multiple next items for auction " + currentAuction.getId());
+		}
 		
 		logger.debug("startNextItem: Making item " + nextItem.getId()
 				+ " the current item for Auction " + currentAuction.getId());

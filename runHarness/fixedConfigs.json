@@ -14,8 +14,6 @@
   "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 20,
   "auctionBidServerJdbcConnections" : 21,
-  "highBidQueueConcurrency" : 2,
-  "newBidQueueConcurrency" : 2,
   "numClientUpdateThreads" : 2,
   "auctionBidServerImpl" : "auctionbidservice",
   
@@ -67,8 +65,6 @@
   "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 100,
   "auctionBidServerJdbcConnections" : 101,
-  "highBidQueueConcurrency" : 2,
-  "newBidQueueConcurrency" : 2,
   "numClientUpdateThreads" : 2,
   "auctionBidServerImpl" : "auctionbidservice",
   

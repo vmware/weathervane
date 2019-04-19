@@ -96,7 +96,7 @@ sub cleanupDockerfile {
 }
 
 sub buildImage {
-	my ($imageName, $buildArgsListRef, $fileout, $namespace, $version) = @_;
+	my ($imageName, $buildArgsListRef, $fileout, $namespace, $version, $logFile) = @_;
 	if ($imageName ne "centos7") {		
 		rewriteDockerfile("./dockerImages/$imageName", $namespace, $version);
 	}
@@ -107,7 +107,19 @@ sub buildImage {
 	}
 
 	runAndLog($fileout, "docker build $buildArgs -t $namespace/weathervane-$imageName:$version ./dockerImages/$imageName");
+	my $exitValue;
+	$exitValue=$? >> 8;
+	if ($exitValue) {
+		print "Error: docker build failed with exitValue $exitValue, check $logFile.\n";
+		exit;
+	}
+
 	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
+	$exitValue=$? >> 8;
+	if ($exitValue) {
+		print "Error: docker push failed with exitValue $exitValue, check $logFile.\n";
+		exit;
+	}
 
 	if ($imageName ne "centos7") {		
 		cleanupDockerfile("./dockerImages/$imageName");
@@ -115,19 +127,46 @@ sub buildImage {
 	
 }
 
+my $namespace;
+if ($private) {
+	if (($host eq "") || ($port==0)) {
+		print "When using a private repository, you must specify both the host and port parameters.\n";
+		usage();
+		exit;
+	}
+	$namespace = "$host:$port";
+} else {
+	if (($username eq "") || ($password eq "")) {
+			print "When using Docker Hub, you must specify both the username and password parameters.\n";
+			usage();
+			exit;
+	}
+	$namespace = $username;
+}
 
-# Make sure that executables have been built
-if (!(-e "./dist/auction.war")) {
-	print "You must build the Weathervane executables before building the Docker images.\n";
-	print "See the Weathervane User's Guide for instructions on building the executables.\n";
+if (!(-e "./buildDockerImages.pl")) {
+	print "You must run in the weathervane directory with buildDockerImages.pl\n";
 	exit;
 }
 
 my $cmdout;
 my $fileout;
-open( $fileout, ">buildDockerImages.log" ) or die "Can't open file buildDockerImages.log for writing: $!\n";
+my $logFile = "buildDockerImages.log";
+open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n";
+
+# Build the executables
+print "Building the executables.\n";
+print $fileout "Building the executables.\n";
+runAndLog($fileout, "./gradlew release");
+my $exitValue=$? >> 8;
+if ($exitValue) {
+	print "Error: Building failed with exitValue $exitValue, check $logFile.\n";
+	exit;
+}
 
 # Get the latest executables into the appropriate directories for the Docker images
+print "Setting up the Docker images.\n";
+print $fileout "Setting up the Docker images.\n";
 #nginx
 runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
@@ -186,23 +225,6 @@ runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/wor
 my $version = `cat version.txt`;
 chomp($version);
 
-my $namespace;
-if ($private) {
-	if (($host eq "") || ($port==0)) {
-		print "When using a private repository, you must specify both the host and port parameters.\n";
-		usage();
-		exit;
-	}
-	$namespace = "$host:$port";
-} else {
-	if (($username eq "") || ($password eq "")) {
-			print "When using Docker Hub, you must specify both the username and password parameters.\n";
-			usage();
-			exit;			
-	}
-	$namespace = $username;
-}
-
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 
@@ -236,10 +258,11 @@ foreach my $imageName (@imageNames) {
 		push @buildArgs, "TOMCAT_VERSION=$tomcat8vers";		
 	}
 	
-	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version);	
+	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version, $logFile);
 }
 
 # Clean up
+print $fileout "Cleaning up.\n";
 runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
@@ -254,5 +277,8 @@ runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
 runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
 runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+
+print "Done.\n";
+print $fileout "Done.\n";
 
 1;

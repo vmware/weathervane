@@ -209,7 +209,13 @@ override 'getServiceConfigParameters' => sub {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		my $zookeeperConnectionString = "zookeeper-0.zookeeper:2181,zookeeper-1.zookeeper:2181,zookeeper-2.zookeeper:2181";
+
+		my $zookeeperConnectionString = "";
+		my $numCoordinationServers   = $self->getTotalNumOfServiceType('coordinationServer');
+		for (my $i = 0; $i < $numCoordinationServers; $i++) {
+			$zookeeperConnectionString .= "zookeeper-${i}.zookeeper:2181,";
+		}
+		chop $zookeeperConnectionString;
 		$jvmOpts .= " -DZOOKEEPERCONNECTIONSTRING=$zookeeperConnectionString ";
 
 		if ( $numWebServers > 1 ) {

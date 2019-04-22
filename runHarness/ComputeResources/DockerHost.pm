@@ -732,7 +732,7 @@ sub dockerExec {
 }
 
 sub dockerCopyTo {
-	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
+	my ( $self, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -740,9 +740,7 @@ sub dockerCopyTo {
 	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile 2>&1";
 	my $out = `$cmdString`;
 	$logger->debug("$cmdString");
-	print $logFileHandle "$cmdString\n";
 	$logger->debug("docker cp output: $out");
-	print $logFileHandle "$out\n";
 	
 	return $out;
 }

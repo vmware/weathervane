@@ -577,7 +577,7 @@ sub setPortNumbers {
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "setPortNumbers " . $service->getDockerName() . "\n" );
+			$logger->debug( "setPortNumbers " . $service->name . "\n" );
 			$service->setPortNumbers();
 		}
 	}
@@ -607,7 +607,7 @@ sub setExternalPortNumbers {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		open( my $fileout, ">/dev/null" ) || die "Error opening /dev/null:$!";
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "setExternalPortNumbers " . $service->getDockerName() . "\n" );
+			$logger->debug( "setExternalPortNumbers " . $service->name . "\n" );
 			if ( $service->isRunning($fileout) ) {
 				$service->setExternalPortNumbers();
 			}
@@ -709,7 +709,7 @@ sub stopServices {
 				# service instances
 				my $serviceRef = $servicesRef->[0];
 				if ( $serviceRef->isReachable() ) {
-					$logger->debug( "stop " . $serviceRef->getDockerName() . "\n" );
+					$logger->debug( "stop " . $serviceRef->name . "\n" );
 					$serviceRef->stop($serviceType, $setupLogDir);
 				}
 			} else {

@@ -17,9 +17,7 @@ package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Date;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -43,7 +41,6 @@ import com.vmware.weathervane.auction.data.model.Bid.BidState;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.data.repository.BidRepository;
-import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuctionNoItemsException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
@@ -459,7 +456,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 				if (nextHighBid != null) {
 					nextSuceeded = true;
 					_highBid = nextHighBid;
-					System.out.println("startNextItem propagating item start bid " + _highBid);
+					logger.debug("startNextItem propagating item start bid " + _highBid);
 					propagateNewHighBid(_highBid);
 
 				} else {
@@ -467,7 +464,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					 * The auction has ended, but we want to keep it going.  Reset
 					 * all of the items so that they can be reused.
 					 */
-					System.out.println("startNextItem resetting items for auction " + curHighBid.getAuctionId());
+					logger.debug("startNextItem resetting items for auction " + curHighBid.getAuctionId());
 					_auctioneerTx.resetItems(curHighBid.getAuctionId());
 					_auctioneerTx.deleteHighbids(curHighBid.getAuctionId());
 				}

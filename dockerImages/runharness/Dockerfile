@@ -1,6 +1,8 @@
 FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
+COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+COPY weathervane.pl /root/weathervane/weathervane.pl
 COPY runHarness /root/weathervane/runHarness
 COPY workloadConfiguration /root/weathervane/workloadConfiguration
 COPY configFiles /root/weathervane/configFiles
@@ -18,13 +20,9 @@ RUN yum install -y perl-App-cpanminus && \
 	yum install -y openssh-clients && \
 	yum install -y docker-client && \
 	yum install -y gettext && \
-	curl -s http://sebastien.godard.pagesperso-orange.fr/sysstat-11.1.4.tar.gz -o /tmp/sysstat-11.1.4.tar.gz && \
-	tar zxf /tmp/sysstat-11.1.4.tar.gz -C /tmp && \
-	cd /tmp/sysstat-11.1.4;./configure 2>&1;make 2>&1;make install && \
-	rm -rf /tmp/sysstat-11.1.4 && \
+	yum install -y kubectl && \
 	chmod -R 600 /root/.ssh && \
-	curl -o /usr/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
-	chmod +x /usr/bin/kubectl && \	
+	chmod +x /root/weathervane/weathervane.pl && \
 	cpanm YAML && \
 	cpanm Config::Simple && \
 	cpanm String::Util && \

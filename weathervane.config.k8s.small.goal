@@ -1,0 +1,28 @@
+{
+  "runStrategy" : "findMaxSingleRun",
+
+  "dockerNamespace" : "hrosenbe",
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "appCluster", 
+      "kubernetesConfigFile" : "/root/.kube/config",
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubernetesConfigFile" : "/root/.kube/config-driver",
+    },
+  ],
+
+  "numDrivers": 8,
+  "driverCluster" : "driverClusters",
+
+  "numAppInstances" : 1,
+  "configurationSize": "small",
+
+  "appInstanceCluster" : "appCluster",
+
+  "mongodbDataStorageClass" : "fast",
+  "postgresqlDataStorageClass" : "fast",
+  "postgresqlLogStorageClass" : "fast",
+
+}

@@ -20,6 +20,7 @@
 package Weathervane;
 use strict;
 use Getopt::Long;
+use JSON;
 
 my $accept = '';
 my $configFile = 'weathervane.config';
@@ -37,6 +38,51 @@ GetOptions(	'accept=s' => \$accept,
 			'dotKubeDir=s' => \$dotKubeDir,
 			'dockerNamespace=s' => \$dockerNamespace,
 		);
+		
+my $wvCommandLineArgs = join(" ", @ARGV);
+
+# Read in the config file and extract the path to any Kubernetes config
+# files used for kubernetesClusters.  These files need to be mapped into
+# the run harness container	
+sub getK8sConfigFiles {
+	my ($configFileName) = @_;
+	
+	# Read in the config file
+	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
+	my $json = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+	$json = $json->max_depth(4096);
+
+	my $paramJson = "";
+	while (<CONFIGFILE>) {
+		$paramJson .= $_;
+	}
+	close CONFIGFILE;
+	my $paramConfig = $json->decode($paramJson);
+	
+	# clusters will be a reference to a list of kubernetesCluster hashes
+	my @k8sConfigFiles;
+	my $clusters = $paramConfig->{"kubernetesClusters"};
+	if ($clusters) {
+		foreach my $clusterHashRef (@$clusters) {
+			my $clusterName = $clusterHashRef->{'name'};
+			my $clusterConfigName = $clusterHashRef->{'kubernetesConfigFile'};
+			if (!$clusterConfigName) {
+				if ($clusterName) {
+					die "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName."										
+				} else {
+					die "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName."										
+				}
+			} elsif ((! -e $clusterConfigName) || (! -f $clusterConfigName)) {
+				die "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.";
+			}
+			push(@k8sConfigFiles, $clusterConfigName);
+		}
+	}
+	
+	return \@k8sConfigFiles;
+}
 		
 sub dockerExists {
 	my ( $name ) = @_;
@@ -105,6 +151,7 @@ if (!($configFile =~ /\//)) {
 	$configFile = "$pwd/$configFile";	
 }
 
+
 if (!(-e $outputDir)) {
 	`mkdir -p $outputDir`;
 }
@@ -117,20 +164,6 @@ if (!($outputDir =~ /\//)) {
 	$outputDir = "$pwd/$outputDir";	
 }
 
-if (!(-e $tmpDir)) {
-	`mkdir -p $tmpDir`;
-}
-if (!(-d $tmpDir)) {
-	die "The Weathervane output directory $tmpDir must be a directory.";
-}
-# If the tmpDir does not reference a directory with an absolute path, 
-# then make it an absolute path relative to the local dir
-if (!($tmpDir =~ /\//)) {
-	$tmpDir = "$pwd/$tmpDir";	
-}
-
-my $resultsFile = "$pwd/weathervaneResults.csv";
-
 if (!$dockerNamespace) {
 	die "You must provide a namespace for the Docker images using the --dockerNamespace parameter."
 }
@@ -139,7 +172,28 @@ if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
-my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane  -v $configFile:/root/weathervane/weathervane.config  -v $resultsFile:/root/weathervane/weathervaneResults.csv  -v $dotKubeDir:/root/.kube -v $tmpDir:/root/weathervane/tmpLog -v $outputDir:/root/weathervane/output $dockerNamespace/weathervane-runharness:$version";
+my $resultsFile = "$pwd/weathervaneResults.csv";
+
+my $k8sConfigFilesRef = getK8sConfigFiles($configFile);
+my $k8sConfigMountString = "";
+foreach my $k8sConfig (@$k8sConfigFilesRef) {
+	# If the config file doesn't have an absolute path, 
+	# then mount it in /root/weathervane
+	if ($k8sConfig =~ /^\//) {
+		$k8sConfigMountString .= "-v $k8sConfig:$k8sConfig ";				
+	} else {
+		$k8sConfigMountString .= "-v $k8sConfig:/root/weathervane/$k8sConfig ";		
+	}
+}
+
+my $configMountString = "-v $configFile:/root/weathervane/weathervane.config";
+my $resultsMountString = "-v $resultsFile:/root/weathervane/weathervaneResults.csv";
+my $outputMountString = "-v $outputDir:/root/weathervane/output";
+
+# make sure the docker image is up-to-date
+`docker pull $dockerNamespace/weathervane-runharness:$version`;
+
+my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane $configMountString $resultsMountString $k8sConfigMountString $outputMountString $dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
 my $dockerId = `$cmdString`;
 
 my $pipeString = "docker logs --follow weathervane |";

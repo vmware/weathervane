@@ -33,7 +33,7 @@ use Cwd qw();
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 use File::Basename;
-use lib dirname (__FILE__) . '/runHarness';
+use lib dirname (__FILE__);
 
 use Factories::ServiceFactory;
 use Factories::HostFactory;

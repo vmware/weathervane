@@ -36,14 +36,41 @@ override 'initialize' => sub {
 	super();
 };
 
+# Need to override start so that we can write ZK_SERVERS file after
+# all containers are up
+override 'start' => sub {
+	my ($self, $serviceType, $users, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
+	$logger->debug(
+		"start serviceType $serviceType, Workload ",
+		$self->appInstance->workload->instanceNum,
+		", appInstance ",
+		$self->instanceNum
+	);
+
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
+
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Start " . $service->name . "\n" );
+		$service->startInstance($logPath);
+	}
+	
+	sleep 10;
+		
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "SetZkServers " . $service->name . "\n" );
+		$service->setZkServers( );
+	}
+};
+
 sub startInstance {
 	my ($self, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
 
 	my $impl     = $self->getImpl();		
-	my $instanceNum = $self->instanceNum;
 	my $hostname = $self->host->name;
 	my $name     = $self->name;
+	my $instanceNum = $self->instanceNum;
 
 	$logger->debug("CreateZookeeperDocker-${name}");
 	my $logName = "$logPath/CreateZookeeperDocker-${name}.log";
@@ -55,30 +82,10 @@ sub startInstance {
 	my %volumeMap;
 
 	# Set environment variables for startup configuration
-	my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
-	my $zookeeperServers = "";
-	foreach my $zookeeperServer (@$zookeeperServersRef) {
-		my $id =  $zookeeperServer->instanceNum;
-		my $hostname = $zookeeperServer->host->name;
-		if ($id == $instanceNum) {
-			$hostname = "0.0.0.0";
-		}
-		my $peerPort = $zookeeperServer->internalPortMap->{"peer"};
-		my $electionPort = $zookeeperServer->internalPortMap->{"election"};			
-		$zookeeperServers .= "server." . $id . "=" . $hostname. ":" .
-							$peerPort . ":" . $electionPort . "," ;
-	}
-	chop($zookeeperServers);
-	
-	$logger->debug("CreateZookeeperDocker-${name} zookeeperServers = $zookeeperServers");
 	
 	my %envVarMap;
 	$envVarMap{"ZK_CLIENT_PORT"} = $self->internalPortMap->{"client"};
-	$envVarMap{"ZK_PEER_PORT"} = $self->internalPortMap->{"peer"};
-	$envVarMap{"ZK_ELECTION_PORT"} = $self->internalPortMap->{"election"};
-	$envVarMap{"ZK_SERVERS"} = $zookeeperServers;
 	$envVarMap{"ZK_ID"} = $instanceNum;
-
 	$logger->debug("CreateZookeeperDocker-${name} envVarMap{\"ZK_CLIENT_PORT\"} = " 
 				. $envVarMap{"ZK_CLIENT_PORT"} .  ", envVarMap = " . (values %envVarMap));
 		
@@ -100,7 +107,46 @@ sub startInstance {
 
 	$self->setExternalPortNumbers();
 	close $applog;
-};
+}
+
+sub setZkServers {
+	my ( $self ) = @_;
+	my $logger = get_logger("Weathervane::Services::ZookeeperDockerServer");
+	my $name = $self->name;
+	my $instanceNum = $self->instanceNum;
+
+	my $zookeeperServersRef = $self->appInstance->getAllServicesByType("coordinationServer");
+	my $zookeeperServers = "";
+	foreach my $zookeeperServer (@$zookeeperServersRef) {
+		my $id =  $zookeeperServer->instanceNum;
+		my $hostname;
+		my $peerPort;
+		my $electionPort;			
+		if ($id == $instanceNum) {
+			$hostname = "0.0.0.0";
+			$peerPort = $zookeeperServer->internalPortMap->{"peer"};
+			$electionPort = $zookeeperServer->internalPortMap->{"election"};			
+		} else {
+			$hostname = $self->getHostnameForUsedService($zookeeperServer);
+			$peerPort = $self->getPortNumberForUsedService( $zookeeperServer, "peer" );
+			$electionPort = $self->getPortNumberForUsedService( $zookeeperServer, "election" );
+		}
+		$zookeeperServers .= "server." . $id . "=" . $hostname. ":" .
+							$peerPort . ":" . $electionPort . "," ;
+	}
+	chop($zookeeperServers);
+	
+	$logger->debug("setZkServers-${name} zookeeperServers = $zookeeperServers");
+	
+	# Now write zookeeperServers to a file and copy the file to the container
+	open( FILEOUT, ">/tmp/zookeeperServers-${instanceNum}.txt" )
+	  or die "Can't open file /tmp/zookeeperServers-${instanceNum}.txt: $!";
+	print FILEOUT "$zookeeperServers\n";
+	close FILEOUT;
+	
+	$self->host->dockerCopyTo($name, "/tmp/zookeeperServers-${instanceNum}.txt", "/zookeeperServers.txt");
+	
+}
 
 sub stopInstance {
 	my ( $self, $logPath ) = @_;
@@ -122,10 +168,6 @@ sub stopInstance {
 	close $applog;
 	
 }
-
-override 'create' => sub {
-	my ( $self, $logPath ) = @_;
-};
 
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
@@ -186,11 +228,6 @@ sub setExternalPortNumbers {
 	$self->portMap->{"client"}   = $self->internalPortMap->{"client"};
 	$self->portMap->{"peer"}     = $self->internalPortMap->{"peer"};
 	$self->portMap->{"election"} = $self->internalPortMap->{"election"};
-}
-
-sub configure {
-	my ( $self, $logPath, $users, $suffix ) = @_;
-
 }
 
 sub clearDataBeforeStart {

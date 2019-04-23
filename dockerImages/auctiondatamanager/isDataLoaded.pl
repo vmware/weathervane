@@ -11,7 +11,6 @@ my $auctions = ceil($ENV{'USERS'} / $ENV{'USERSPERAUCTIONSCALEFACTOR'});
 my $dbPrepOptions = " -a $auctions -c ";
 $dbPrepOptions .= " -m $ENV{'NUMNOSQLSHARDS'} ";
 $dbPrepOptions .= " -p $ENV{'NUMNOSQLREPLICAS'} ";
-$dbPrepOptions .= " -f $ENV{'MAXDURATION'} ";
 
 my $users = $ENV{'USERS'};
 my $maxUsers = $ENV{'MAXUSERS'};

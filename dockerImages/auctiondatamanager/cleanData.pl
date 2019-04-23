@@ -11,7 +11,6 @@ my $auctions = 0;
 my $dbPrepOptions = " -a $auctions -c ";
 $dbPrepOptions .= " -m $ENV{'NUMNOSQLSHARDS'} ";
 $dbPrepOptions .= " -p $ENV{'NUMNOSQLREPLICAS'} ";
-$dbPrepOptions .= " -f $ENV{'MAXDURATION'} ";
 
 my $users = $ENV{'USERS'};
 $dbPrepOptions .= " -u $users ";

@@ -4,10 +4,20 @@ use strict;
 use POSIX;
 
 my $clientPort   = $ENV{'ZK_CLIENT_PORT'};
-my $peerPort     = $ENV{'ZK_PEER_PORT'};
-my $electionPort = $ENV{'ZK_ELECTION_PORT'};
 my $id           = $ENV{'ZK_ID'};
-my $servers      = $ENV{'ZK_SERVERS'};
+my $servers ;
+
+print "configure zookeeper. \n";
+if ((exists $ENV{'ZK_SERVERS'}) && (defined $ENV{'ZK_SERVERS'})) {
+	$servers = $ENV{'ZK_SERVERS'};
+} else {
+	# Get the zookeeper servers info from the zookeeperServers.txt file
+	open( FILEIN, "/zookeeperServers.txt" )
+	  or die "Can't open file /zookeeperServers.txt: $!";
+	$servers = <FILEIN>;
+	close FILEIN;
+}
+print "servers = $servers\n";
 my @servers      = split /,/, $servers;
 
 if (!$id) {
@@ -16,7 +26,6 @@ if (!$id) {
 	$id = $parts[1] + 1; 
 }
 
-print "configure zookeeper. \n";
 open( FILEIN, "/root/zookeeper/conf/zoo.cfg" )
   or die "Can't open file /root/zookeeper/conf/zoo.cfg: $!";
 open( FILEOUT, ">/opt/zookeeper/conf/zoo.cfg" )

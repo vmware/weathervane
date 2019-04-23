@@ -5,15 +5,15 @@ sigterm()
    echo "signal TERM received."
    rm -f /fifo
    /opt/apache-tomcat/bin/shutdown.sh -force
-   cat /opt/apache-tomcat-auction1/logs/*
-   rm -f /opt/apache-tomcat-auction1/logs/*
+   cat /opt/apache-tomcat-bid/logs/*
+   rm -f /opt/apache-tomcat-bid/logs/*
    exit 0
 }
 
 sigusr1()
 {
     echo "signal USR1 received. start stats collection"
-    cp /opt/apache-tomcat-auction1/logs/gc.log /opt/apache-tomcat-auction1/logs/gc_rampup.log
+    cp /opt/apache-tomcat-bid/logs/gc.log /opt/apache-tomcat-bid/logs/gc_rampup.log
 }
 
 trap 'sigterm' TERM
@@ -21,7 +21,7 @@ trap 'sigusr1' USR1
 
 perl /updateResolveConf.pl
 
-rm -f /opt/apache-tomcat-auction1/logs/* 
+rm -f /opt/apache-tomcat-bid/logs/* 
 perl /configure.pl
 
 if [ $# -gt 0 ]; then
@@ -36,8 +36,8 @@ fi
 chmod 400 /fifo
 
 sleep 30;
-tail -f /opt/apache-tomcat-auction1/logs/gc.log &
-tail -f /opt/apache-tomcat-auction1/logs/auction.log &
+tail -f /opt/apache-tomcat-bid/logs/gc.log &
+tail -f /opt/apache-tomcat-bid/logs/auction.log &
 
 # wait indefinitely
 while true;

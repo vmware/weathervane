@@ -983,15 +983,6 @@ $parameters{"repeatUserLoadPath"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"maxDuration"} = {
-	"type"      => "=i",
-	"default"   => 7200,
-	"parent"    => "runProc",
-	"usageText" => "This maximum run duration, in seconds, that needs to be supported "
-	  . "by the preloaded data.  If the current load won't support this duration then "
-	  . "the data will be reloaded.\n" . "The default is 7200, equal to 2 hours.",
-	"showUsage" => 1,
-};
 
 # Parameters for selecting the runManager
 $parameters{"runStrategy"} = {
@@ -1561,7 +1552,7 @@ $parameters{"numAuctioneerThreads"} = {
 
 $parameters{"highBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq highBid message callbacks in the Auction application. ",
@@ -1570,7 +1561,7 @@ $parameters{"highBidQueueConcurrency"} = {
 
 $parameters{"newBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq newBid message callbacks in the Auction application. ",

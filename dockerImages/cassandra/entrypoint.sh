@@ -14,13 +14,6 @@ trap 'sigterm' TERM
 echo "Update resolv.conf"
 perl /updateResolveConf.pl
 
-if [ $CLEARBEFORESTART -eq 1 ]; then
-  echo "Clearing old Cassandra data"
-  find /data/data/* -delete
-  find /data/commitlog/* -delete
-  cqlsh -f /auction_cassandra.cql
-fi
-
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
@@ -29,6 +22,8 @@ else
 fi
 
 pid="$!"
+
+sleep 15
 
 tail -f /var/log/cassandra/* &
 

@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'Cassandra', );
-
-has '+version' => ( default => '3.11', );
-
-has '+description' => ( default => '', );
-
 has 'clearBeforeStart' => (
 	is      => 'rw',
 	isa     => 'Bool',

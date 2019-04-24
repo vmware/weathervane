@@ -121,13 +121,11 @@ sub getServiceByType {
 		}
 	}
 	elsif ( $serviceName eq "cassandra" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = CassandraKubernetesService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
+		if ($hostType eq "KubernetesCluster") {
+			$service = CassandraKubernetesService->new(
+			paramHashRef => $paramHashRef,
+			appInstance => $appInstance,
+			);
 		} 
 	}
 	elsif ( $serviceName eq "rabbitmq" ) {

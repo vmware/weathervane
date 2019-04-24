@@ -42,7 +42,7 @@ override 'initialize' => sub {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	$logger->debug("clearDataBeforeStart for $name");
 	$self->clearBeforeStart(1);
 }

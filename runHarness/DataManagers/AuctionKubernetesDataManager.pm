@@ -458,7 +458,6 @@ sub cleanData {
 			print $logHandle $cmdout;
 
 	}
->>>>>>> 2.0-dev
 }
 
 __PACKAGE__->meta->make_immutable;

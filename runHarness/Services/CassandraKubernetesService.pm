@@ -47,6 +47,27 @@ sub clearDataBeforeStart {
 	$self->clearBeforeStart(1);
 }
 
+sub clearDataAfterStart {
+	my ( $self, $logPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
+	my $cluster    = $self->host;
+	my $name        = $self->name;
+
+	$logger->debug("clearDataAfterStart for $name");
+
+	my $time     = `date +%H:%M`;
+	chomp($time);
+	my $logName = "$logPath/ClearDataCassandra-$name-$time.log";
+
+	my $applog;
+	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
+	print $applog "Clearing Data From Cassandra\n";
+
+	$cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
+	close $applog;
+
+}
+
 sub configure {
 	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");

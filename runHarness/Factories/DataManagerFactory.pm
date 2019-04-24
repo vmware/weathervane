@@ -26,8 +26,9 @@ use namespace::autoclean;
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getDataManager {
-	my ( $self, $paramHashRef, $appInstance ) = @_;
+	my ( $self, $paramHashRef, $appInstance, $host ) = @_;
 	my $workloadType = $paramHashRef->{"workloadImpl"};
+	my $hostType = ref $host;
 
 	if ( !( $workloadType ~~ @WeathervaneTypes::workloadImpls ) ) {
 		die "No matching dataManager for workload type $workloadType";
@@ -36,11 +37,9 @@ sub getDataManager {
 
 	my $dataManager;
 	if ( $workloadType eq "auction" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$dataManager = AuctionKubernetesDataManager->new( 'paramHashRef' => $paramHashRef,
-				'appInstance' => $appInstance );
-			} 
+		if ($hostType eq "KubernetesCluster") {
+			$dataManager = AuctionKubernetesDataManager->new( 'paramHashRef' => $paramHashRef,
+			'appInstance' => $appInstance );
 		} else {
 			$dataManager = AuctionDataManager->new( 'paramHashRef' => $paramHashRef,
 			'appInstance' => $appInstance );
@@ -49,8 +48,6 @@ sub getDataManager {
 	else {
 		die "No matching workloadDriver for workload type $workloadType";
 	}
-
-	$dataManager->initialize($paramHashRef);
 
 	return $dataManager;
 }

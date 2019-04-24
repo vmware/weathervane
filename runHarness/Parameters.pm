@@ -32,40 +32,13 @@ BEGIN {
 	  qw(getParamDefault getParamType getParamKeys getParamValue setParamValue usage fullUsage mergeParameters);
 }
 
-my @constructedNameParameters = ( "hostName", "vmName" );
-my @instancesWithConstructedNames = (
-	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",    "configurationManagers",    "elasticityServices",
-	"coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
-	"appServers",        "viHosts",      "viMgmtHostInstance",
-	"auctionBidServers", "dataManagerInstance"
-);
-
-my @dockerNameParameters = ( "dockerName" );
-my @instancesWithDockerName = (
-	"drivers", "nosqlServers", "dbServers",
-	"ipManagers",    "configurationManagers",    "elasticityServices",
-	"coordinationServers",
-	 "lbServers",        "webServers",   "msgServers",
-	"appServers",    "auctionBidServers",	"dataManagerInstance"
-);
-
-my @constructedAppInstanceNameParameters     = ("appInstanceName");
-my @instancesWithConstructedAppInstanceNames = ( "appInstances", );
-
-my @constructedWwwHostnameParameters     = ("wwwHostname");
-my @instancesWithConstructedWwwHostnames = ( "appInstances", );
-
 my @nonInstanceHashParameters = ("dockerServiceImages");
-my @nonInstanceListParameters = ('userLoadPath', 'configPath');
+my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
+								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
+								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
 my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
 
-sub getParamHashAsJson {
-	my ($key, $paramHashRef) = @_;
-	
-	
-}
+my @filterConstants = ( 'tmpDir' );
 
 sub getParamDefault {
 	my ($key) = @_;
@@ -90,10 +63,17 @@ sub getParamType {
 }
 
 sub getParamKeys {
-
 	my @keys = keys %Parameters::parameters;
+	my @filteredKeys;
 
-	return \@keys;
+	foreach my $key (@keys) {
+		if ( !($key ~~ @filterConstants) ) {
+			push @filteredKeys, $key;
+		}
+	}
+
+	return \@filteredKeys;
+
 }
 
 sub getParentList {
@@ -204,7 +184,7 @@ sub setParamValue {
 }
 
 sub usage {
-	my @keys = keys %Parameters::parameters;
+	my @keys = @{getParamKeys()};
 	print "Usage:  ./weathervane.pl [options]\n";
 	foreach my $key (@keys) {
 		if ( $Parameters::parameters{$key}->{"showUsage"} ) {
@@ -217,8 +197,7 @@ sub usage {
 }
 
 sub fullUsage {
-
-	my @keys = keys %Parameters::parameters;
+	my @keys = @{getParamKeys()};
 	print "Usage:  ./weathervane.pl [options]\n";
 	my $i = 0;
 	foreach my $key (@keys) {
@@ -428,7 +407,7 @@ sub getMostSpecificValue {
 }
 
 sub getInstanceParamHashRef {
-	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $instanceNum, $allParamsRef, $useAllSuffixes )
+	my ( $paramsHashRef, $parentHashRef, $instanceHashRef, $instanceKey, $allParamsRef )
 	  = @_;
 
 	my %instanceParamHash;
@@ -437,160 +416,29 @@ sub getInstanceParamHashRef {
 	if ( !exists $Parameters::parameters{$instanceKey}->{"isa"} ) {
 		die "Trying to get instance parameters for an $instanceKey, but this is not an instance of any type";
 	}
-	my $isa = $Parameters::parameters{$instanceKey}->{"isa"};
-
-	my $appInstanceSuffix = "";
-	my $appInstanceNum    = "";
-	if (   $useAllSuffixes
-		&& ( exists $parentHashRef->{'appInstanceSuffix'} )
-		&& ( $parentHashRef->{'appInstanceSuffix'} )
-		&& ( exists $parentHashRef->{'appInstanceNum'} )
-		&& ( $parentHashRef->{'appInstanceNum'} ) )
-	{
-		$appInstanceSuffix = $parentHashRef->{'appInstanceSuffix'};
-		$appInstanceNum    = $parentHashRef->{'appInstanceNum'};
-	}
-	my $wkldSuffix = "";
-	my $wkldNum    = "";
-	if (   $useAllSuffixes
-		&& ( exists $parentHashRef->{'workloadSuffix'} )
-		&& ( $parentHashRef->{'workloadSuffix'} )
-		&& ( exists $parentHashRef->{'workloadNum'} )
-		&& ( $parentHashRef->{'workloadNum'} ) )
-	{
-		$wkldSuffix = $parentHashRef->{'workloadSuffix'};
-		$wkldNum    = $parentHashRef->{'workloadNum'};
-	}
 
 	# Iterate through the parameters, adding the most specific value to the
 	# paramHash.  Construct the parameters that must be built for specific instance types
 	foreach my $param (@$allParamsRef) {
-
 		my $value = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $param );
-
-		# Construct the parameters that are not set and so should be constructed for certain instance types
-		if ( !$value ) {
-
-			# Add the parameters that must be constructed based on the default rules
-			if ( ( $param ~~ @constructedNameParameters ) && ( $instanceKey ~~ @instancesWithConstructedNames ) ) {
-
-				# No name was explicitly specified, so we need to construct one.
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				my $suffix = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $isa . "Suffix" );
-				$value =
-				    $hostnamePrefix
-				  . $wkldSuffix
-				  . $wkldNum
-				  . $appInstanceSuffix
-				  . $appInstanceNum
-				  . $suffix
-				  . $instanceNum;
-			}
-
-			if ( ( $param ~~ @dockerNameParameters ) && ( $instanceKey ~~ @instancesWithDockerName ) ) {
-
-				# No name was explicitly specified, so we need to construct one.
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				my $suffix = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, $isa . "Suffix" );
-				$value =
-				    $hostnamePrefix
-				  . $wkldSuffix
-				  . $wkldNum
-				  . $appInstanceSuffix
-				  . $appInstanceNum
-				  . $suffix
-				  . $instanceNum
-				  . "D";
-			}
-
-			if (   ( $param ~~ @constructedAppInstanceNameParameters )
-				&& ( $instanceKey ~~ @instancesWithConstructedAppInstanceNames ) )
-			{
-				my $hostnamePrefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "hostnamePrefix" );
-				if ($useAllSuffixes) {
-					$wkldSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadSuffix" );
-					$wkldNum = getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadNum" );
-					if ($wkldSuffix) {
-						$wkldSuffix .= $wkldNum;
-					}
-					else {
-						$wkldSuffix = "W" . $wkldNum;
-					}
-
-					$appInstanceSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "appInstanceSuffix" );
-					if ($appInstanceSuffix) {
-						$appInstanceSuffix .= $instanceNum;
-					}
-					else {
-						$appInstanceSuffix = "I" . $instanceNum;
-					}
-				}
-				$value = $hostnamePrefix . $wkldSuffix . $appInstanceSuffix;
-
-			}
-
-			if (   ( $param ~~ @constructedWwwHostnameParameters )
-				&& ( $instanceKey ~~ @instancesWithConstructedWwwHostnames ) )
-			{
-				if ($useAllSuffixes) {
-					$wkldSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadSuffix" );
-					if ($wkldSuffix) {
-						$wkldNum =
-						  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "workloadNum" );
-						$wkldSuffix .= $wkldNum;
-					}
-					$appInstanceSuffix =
-					  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "appInstanceSuffix" );
-					if ($appInstanceSuffix) {
-						$appInstanceSuffix .= $instanceNum;
-					}
-				}
-				my $prefix =
-				  getMostSpecificValue( $paramsHashRef, $parentHashRef, $instanceHashRef, "wwwHostnamePrefix" );
-				$value = $prefix . $wkldSuffix . $appInstanceSuffix;
-
-			}
-
-		}
 		$instanceParamHash{$param} = $value;
-
 	}
-
-	# Set the instanceNum in the params
-	$instanceParamHash{"instanceNum"} = $instanceNum;
 
 	return \%instanceParamHash;
 }
 
 # This method is used to get the parameters for the instances of a service
 # using the num${serviceType}s parameter to define the count of instances.
-# The startingInstanceNumber is used to assign instanceNumbers to instance
-# parameters that require a number.
 sub getDefaultInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey, $startingInstanceNum, $useAllSuffixes ) = @_;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
+	my ( $paramsHashRef, $parentParamHashRef, $numToCreate, $instanceKey ) = @_;
 
 	my @instanceParamHashRefs = ();
 	my $isa                   = $Parameters::parameters{$instanceKey}->{"isa"};
 	my $allParamsRef          = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, {} );
 
-	for (
-		my $instanceNum = $startingInstanceNum ;
-		$instanceNum < ( $numToCreate + $startingInstanceNum ) ;
-		$instanceNum++
-	  )
-	{
+	for (my $i = 0 ; $i < $numToCreate  ; $i++ ) {
 		my $instanceParamHashRef =
-		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $instanceNum, $allParamsRef,
-			$useAllSuffixes );
+		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, {}, $instanceKey, $allParamsRef);
 		push @instanceParamHashRefs, $instanceParamHashRef;
 	}
 
@@ -599,17 +447,11 @@ sub getDefaultInstanceParamHashRefs {
 
 # This method is used to get the parameters for the instances of a service
 # that are partially defined by Instance hashes in the input configuration
-# The startingInstanceNumber is used to assign instanceNumbers to instance
-# parameters that require a number.
 sub getInstanceParamHashRefs {
-	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey, $startingInstanceNum, $useAllSuffixes ) =
+	my ( $paramsHashRef, $parentParamHashRef, $instancesListRef, $instanceKey ) =
 	  @_;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
 
 	my @instanceParamHashRefs = ();
-	my $instanceNum           = $startingInstanceNum;
 	my $isa                   = $Parameters::parameters{$instanceKey}->{"isa"};
 
 	foreach my $instanceHashRef (@$instancesListRef) {
@@ -617,11 +459,10 @@ sub getInstanceParamHashRefs {
 		my $allParamsRef = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, $instanceHashRef );
 
 		my $instanceParamHashRef =
-		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
-			$allParamsRef, $useAllSuffixes );
+		  getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey,
+			$allParamsRef );
 		push @instanceParamHashRefs, $instanceParamHashRef;
 
-		$instanceNum++;
 	}
 
 	return \@instanceParamHashRefs;
@@ -629,13 +470,8 @@ sub getInstanceParamHashRefs {
 
 # This gets the parameters for singleton instances, like the
 # dataManager, etc.
-# Instance number for singletons is assumed to be 1
 sub getSingletonInstanceParamHashRef {
-	my ( $paramsHashRef, $parentParamHashRef, $instanceKey, $useAllSuffixes ) = @_;
-	my $instanceNum = 1;
-	if ( !defined $useAllSuffixes ) {
-		$useAllSuffixes = 0;
-	}
+	my ( $paramsHashRef, $parentParamHashRef, $instanceKey ) = @_;
 	my $instanceHashRef = {};
 	if ( exists $parentParamHashRef->{$instanceKey} ) {
 		$instanceHashRef = $parentParamHashRef->{$instanceKey};
@@ -647,12 +483,12 @@ sub getSingletonInstanceParamHashRef {
 	# the parameters that are in the parent that may be specified as defaults for lower-level instances
 	my $allParamsRef = getHierarchyParamList( $paramsHashRef, $isa, $parentParamHashRef, $instanceHashRef );
 
-	return getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey, $instanceNum,
-		$allParamsRef, $useAllSuffixes );
+	return getInstanceParamHashRef( $paramsHashRef, $parentParamHashRef, $instanceHashRef, $instanceKey,
+		$allParamsRef );
 
 }
 
-our $version = "1.2.0";
+our $version = "2.0.0";
 
 # These variables contain the key names for the parameter hashes
 tie( our %parameters, 'Tie::IxHash' );
@@ -662,6 +498,23 @@ $parameters{"version"} = {
 	"parent"    => "",
 	"usageText" => "If present, the Weathervane run harness shows the version information at the start of the runs.",
 	"showUsage" => 1,
+};
+
+# All instances have a name.  Some are set from a parameter, while
+# others are generated.
+$parameters{"name"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"hostname"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "",
+	"usageText" => "",
+	"showUsage" => 0,
 };
 
 $parameters{"runManager"} = {
@@ -712,21 +565,124 @@ $parameters{"dataManager"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"host"} = {
+# Parameters used for defining hosts and clusters
+$parameters{"kubernetesCluster"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"kubernetesClusters"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "kubernetesCluster",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"kubernetesConfigFile"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the location of the kubectl config file for a kubernetes cluster",
+	"showUsage" => 1,
+};
+$parameters{"dockerHost"} = {
+	"type"      => "hash",
+	"default"   => {},
+	"parent"    => "runProc",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"dockerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "runProc",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"driverHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "workload",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appInstanceHost"} = {
+	"type"      => "=s",
+	"default"   => {},
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"dataManagerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"webServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"auctionBidServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"msgServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"coordinationServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"dbServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"nosqlServerHosts"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "appInstance",
+	"isa"       => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"cluster"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "runProc",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
@@ -807,70 +763,10 @@ $parameters{"appInstances"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"clusters"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "runProc",
-	"isa"       => "cluster",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"hosts"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "runProc",
-	"isa"       => "host",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"ipManager"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"ipManagers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"configurationManager"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServer"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"elasticityService"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"configurationManagers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "configurationManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -880,32 +776,6 @@ $parameters{"coordinationServers"} = {
 	"default"   => [],
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"elasticityServices"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "elasticityService",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServer"} = {
-	"type"      => "hash",
-	"default"   => {},
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServers"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1012,46 +882,6 @@ $parameters{"auctionBidServers"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"hostName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"vmName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"dockerName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"appInstanceName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"instanceNum"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"help"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -1154,37 +984,10 @@ $parameters{"repeatUserLoadPath"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"configPath"} = {
-	"type"      => "list",
-	"default"   => [],
-	"parent"    => "appInstance",
-	"usageText" => "This is the configuration path for the number of web and app servers.\n" . 
-	"It is a list of intervals, with each interval having a duration and a number of web and app servers. ",
-	"showUsage" => 1,
-};
-
-$parameters{"repeatConfigPath"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"maxDuration"} = {
-	"type"      => "=i",
-	"default"   => 7200,
-	"parent"    => "runProc",
-	"usageText" => "This maximum run duration, in seconds, that needs to be supported "
-	  . "by the preloaded data.  If the current load won't support this duration then "
-	  . "the data will be reloaded.\n" . "The default is 7200, equal to 2 hours.",
-	"showUsage" => 1,
-};
-
 # Parameters for selecting the runManager
 $parameters{"runStrategy"} = {
 	"type"      => "=s",
-	"default"   => "findMaxSingleAI",
+	"default"   => "findMaxSingleRun",
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1272,7 +1075,7 @@ $parameters{"stopServices"} = {
 
 $parameters{"configFile"} = {
 	"type"    => "=s",
-	"default" => "/root/weathervane/weathervane.config",
+	"default" => "weathervane.config",
 	"parent"  => "",
 	"usageText" =>
 "This is the name of the Weathervane configuration file.\n\tIt must either include the full path to the file\n\tor be relative to the directory from which the script is run",
@@ -1284,53 +1087,6 @@ $parameters{"responseTimePassingPercentile"} = {
 	"default"   => 0,
 	"parent"    => "workload",
 	"usageText" => "",
-	"showUsage" => 0,
-};
-
-
-# parameters related to loading the DB
-$parameters{"loadDb"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"powerOnVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOnVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs for the run are powered on.  For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOnVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-$parameters{"powerOffVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs whose names start with the hostnamePrefix that are on the viHosts and \n\t"
-	  . "that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
-	"showUsage" => 1,
-};
-
-
-$parameters{"powerOffAllVms"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runProc",
-	"usageText" => "If powerOffAllVms is set to true, the script will make sure that all of\n\t"
-	  . "the VMs on the viHosts that are not needed for the run are powered off. \n\t"
-	  . "For this to work, the VMs must be on the defined\n\t"
-	  . "viHosts, and passwordless-ssh must be set up for all virtual-infrastructure hosts.\n\t"
-	  . "powerOffVms currently works only with vSphere.",
 	"showUsage" => 0,
 };
 
@@ -1350,33 +1106,9 @@ $parameters{"stopStatsScript"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"clusterType"} = {
-	"type"      => "=s",
-	"default"   => "kubernetes",
-	"parent"    => "appInstance",
-	"usageText" => "This is the type of the cluster. Allowed values: kubernetes",
-	"showUsage" => 1,
-};
-
-$parameters{"clusterName"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "This is the name of the cluster for an appInstance",
-	"showUsage" => 1,
-};
-
-$parameters{"kubernetesConfigFile"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "This is the location of the kubectl config file for an appInstance",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
-	"default"   => "1.2.0",
+	"default"   => "2.0.0",
 	"parent"    => "",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -1385,24 +1117,8 @@ $parameters{"dockerWeathervaneVersion"} = {
 $parameters{"dockerNamespace"} = {
 	"type"      => "=s",
 	"default"   => "",
-	"parent"    => "host",
+	"parent"    => "runProc",
 	"usageText" => "This is the namespace from which to pull the Docker images.  It\nshould be either a username on Docker Hub, or a \nprivate registry hostname:portnumber.",
-	"showUsage" => 1,
-};
-
-$parameters{"useDocker"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"dockerCpus"} = {
-	"type"      => "=f",
-	"default"   => 0,
-	"parent"    => "workload",
-	"usageText" => "",
 	"showUsage" => 1,
 };
 
@@ -1430,14 +1146,6 @@ $parameters{"dockerCpuSetMems"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerMemory"} = {
-	"type"      => "=s",
-	"default"   => 0,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dockerMemorySwap"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1446,26 +1154,26 @@ $parameters{"dockerMemorySwap"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dockerNet"} = {
-	"type"      => "=s",
-	"default"   => "bridge",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"vicHost"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 1,
 };
 
-$parameters{"dockerHostPort"} = {
+$parameters{"dockerNet"} = {
+	"type"      => "=s",
+	"default"   => "bridge",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"dockerPort"} = {
 	"type"      => "=i",
 	"default"   => 2376,
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1476,16 +1184,14 @@ $parameters{"dockerServiceImages"} = {
 		"nginx"      => "weathervane-nginx",
 		"tomcat"     => "weathervane-tomcat",
 		"auctionbidservice"     => "weathervane-auctionbidservice",
-		"haproxy"    => "weathervane-haproxy",
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
 		"cassandra"  => "weathervane-cassandra",
 		"zookeeper"  => "weathervane-zookeeper",
-		"webConfig"  => "weathervane-configurationmanager",
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
 		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
 	},
-	"parent"    => "host",
+	"parent"    => "dockerHost",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1542,35 +1248,9 @@ $parameters{"numDrivers"} = {
 
 $parameters{"numWorkloads"} = {
 	"type"      => "=i",
-	"default"   => 0,
+	"default"   => 1,
 	"parent"    => "runProc",
 	"isa"       => "workload",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numIpManagers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"useVirtualIp"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"numConfigurationManagers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "configurationManager",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1580,24 +1260,6 @@ $parameters{"numCoordinationServers"} = {
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numElasticityServices"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "elasticityService",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"numLbServers"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "appInstance",
-	"isa"       => "lbServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1746,34 +1408,11 @@ $parameters{"appInstanceImpl"} = {
 $parameters{"edgeService"} = {
 	"type"      => "=s",
 	"parent"    => "appInstance",
-	"default"   => "lbServer",
+	"default"   => "webServer",
 	"showUsage" => 0,
 };
 
 # parameters for selecting service implementations
-$parameters{"ipManagerImpl"} = {
-	"type"      => "=s",
-	"default"   => "keepalived",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
-$parameters{"configurationManagerImpl"} = {
-	"type"      => "=s",
-	"default"   => "webConfig",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which configuration manager to use.  Currently must be webConfig.",
-	"showUsage" => 0,
-};
-
-$parameters{"elasticityServiceImpl"} = {
-	"type"      => "=s",
-	"default"   => "scheduledES",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which elasticity service to use.  Currently must be localElasticity.",
-	"showUsage" => 0,
-};
-
 $parameters{"coordinationServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "zookeeper",
@@ -1781,26 +1420,11 @@ $parameters{"coordinationServerImpl"} = {
 	"usageText" => "Controls which coordination server to use.  Currently must be zookeeper.",
 	"showUsage" => 0,
 };
-
-$parameters{"lbServerImpl"} = {
-	"type"      => "=s",
-	"default"   => "haproxy",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which load-balancer to use.  Currently must be haproxy.",
-	"showUsage" => 0,
-};
 $parameters{"appServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "tomcat",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which Application Server to use.\n\t" . "Currently only tomcat is supported.",
-	"showUsage" => 0,
-};
-$parameters{"appServerCacheImpl"} = {
-	"type"      => "=s",
-	"default"   => "ehcache",
-	"parent"    => "appInstance",
-	"usageText" => "Controls which cache provider to use in the Application Server.\n\t" . "Currently ehcache and ignite are supported.",
 	"showUsage" => 0,
 };
 $parameters{"auctionBidServerImpl"} = {
@@ -1821,14 +1445,14 @@ $parameters{"webServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "nginx",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which Web Server to use.\n\tMust be one of: httpd or nginx",
+	"usageText" => "Controls which Web Server to use.\n\tMust be nginx",
 	"showUsage" => 1,
 };
 $parameters{"dbServerImpl"} = {
 	"type"      => "=s",
 	"default"   => "postgresql",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which database to use.\n\tMust be one of: mysql, postgresql",
+	"usageText" => "Controls which database to use.\n\tMust be postgresql",
 	"showUsage" => 1,
 };
 $parameters{"nosqlServerImpl"} = {
@@ -1904,7 +1528,7 @@ $parameters{"numAuctioneerThreads"} = {
 
 $parameters{"highBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq highBid message callbacks in the Auction application. ",
@@ -1913,7 +1537,7 @@ $parameters{"highBidQueueConcurrency"} = {
 
 $parameters{"newBidQueueConcurrency"} = {
 	"type"    => "=i",
-	"default" => 0,
+	"default" => 1,
 	"parent"  => "appInstance",
 	"usageText" =>
 	  "Controls how many threads to use for handling rabbitmq newBid message callbacks in the Auction application. ",
@@ -1925,8 +1549,7 @@ $parameters{"prewarmAppServers"} = {
 	"default"   => JSON::true,
 	"parent"  => "appInstance",
 	"usageText" =>
-	  "Controls whether the run harness using the configuration manager to pre-warm the app servers.\n" .
-	  "Must have a configuration manager in the configuration when setting this option to true.",
+	  "Controls whether the run harness pre-warms the app servers.\n" .
 	"showUsage" => 1,
 };
 
@@ -1962,29 +1585,6 @@ $parameters{"repeatsAtMax"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"targetUtilization"} = {
-	"type"      => "=i",
-	"default"   => 70,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"targetUtilizationMarginPct"} = {
-	"type"      => "=f",
-	"default"   => 0.02,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-$parameters{"targetUtilizationServiceType"} = {
-	"type"      => "=s",
-	"default"   => "appServer",
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
 	"default"   => 6,
@@ -2011,7 +1611,7 @@ $parameters{"useThinkTime"} = {
 
 $parameters{"driverJvmOpts"} = {
 	"type"      => "=s",
-	"default"   => "-Xmx2g -Xms2g -XX:+AlwaysPreTouch",
+	"default"   => "-Xmx6g -Xms6g -XX:+AlwaysPreTouch",
 	"parent"    => "workloadDriver",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -2049,14 +1649,6 @@ $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"driverJvmDnsTtl"} = {
-	"type"      => "=i",
-	"default"   => 5,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"maxLogLines"} = {
 	"type"      => "=i",
 	"default"   => 4000,
@@ -2077,6 +1669,22 @@ $parameters{"webServerMem"} = {
 	"type"      => "=s",
 	"default"   => "10Gi",
 	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverCpus"} = {
+	"type"      => "=s",
+	"default"   => "2",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverMem"} = {
+	"type"      => "=s",
+	"default"   => "7Gi",
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2177,17 +1785,7 @@ $parameters{"nosqlServerMem"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to the configuration service
-$parameters{"configurationManagerJvmOpts"} = {
-	"type"      => "=s",
-	"default"   => "-Xmx500m -Xms500m -XX:+AlwaysPreTouch",
-	"parent"    => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # Parameters specific to App Servers
-
 $parameters{"appServerThumbnailImageCacheSizeMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 25,
@@ -2260,62 +1858,6 @@ $parameters{"auctionBidServerJvmOpts"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"httpdKeepalive"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdKeepaliveTimeout"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxKeepaliveRequests"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxClients"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdThreadsPerChild"} = {
-	"type"      => "=i",
-	"default"   => 100,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMinSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 25,
-	"usageText" => "",
-	"parent"    => "webServer",
-	"showUsage" => 1,
-};
-
-$parameters{"httpdMaxSpareThreads"} = {
-	"type"      => "=i",
-	"default"   => 2000,
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 # parameters specific to Nginx
 $parameters{"nginxKeepaliveTimeout"} = {
 	"type"      => "=i",
@@ -2341,102 +1883,12 @@ $parameters{"nginxWorkerConnections"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"nginxUseNamedVolumes"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nginxCacheVolume"} = {
-	"type"      => "=s",
-	"default"   => "nginxCache",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"nginxCacheVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "12GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-# Parameters specific to haproxy
-$parameters{"haproxyProcPerCpu"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyTerminateTLS"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyAppServerMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 10000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"haproxyMaxConn"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
 $parameters{"frontendConnectionMultiplier"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-# Parameters specific to MySQL
-$parameters{"mysqlStatsInterval"} = {
-	"type"      => "=i",
-	"default"   => 120,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlInnodbBufferPoolSize"} = {
-	"type"      => "=s",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlInnodbBufferPoolSizePct"} = {
-	"type"      => "=f",
-	"default"   => 0.75,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"mysqlMaxConnections"} = {
-	"type"      => "=i",
-	"default"   => 0,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 # Parameters specific to PostgreSQL
@@ -2480,14 +1932,6 @@ $parameters{"postgresqlMaxConnections"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"appServerEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 # parameters specific to the bid service
 $parameters{"bidServiceCatalinaHome"} = {
 	"type"      => "=s",
@@ -2500,14 +1944,6 @@ $parameters{"bidServiceCatalinaHome"} = {
 $parameters{"bidServiceCatalinaBase"} = {
 	"type"      => "=s",
 	"default"   => "/opt/apache-tomcat-bid",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"auctionBidServiceEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2530,31 +1966,6 @@ $parameters{"tomcatCatalinaBase"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"igniteAuthTokenCacheMode"} = {
-	"type"      => "=s",
-	"default"   => "REPLICATED",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"igniteCopyOnRead"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-
-# parameters specific to Apache httpd
-$parameters{"httpdServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/httpd",
-	"parent"    => "webServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"nginxServerRoot"} = {
 	"type"      => "=s",
 	"default"   => "/etc/nginx",
@@ -2571,21 +1982,6 @@ $parameters{"nginxDocumentRoot"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"httpdDocumentRoot"} = {
-	"type"      => "=s",
-	"default"   => "/var/www/vhosts/auction/html",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"haproxyServerRoot"} = {
-	"type"      => "=s",
-	"parent"    => "lbServer",
-	"default"   => "/etc/haproxy",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"workloadDriverPort"} = {
 	"type"      => "=i",
 	"default"   => 7500,
@@ -2597,22 +1993,6 @@ $parameters{"workloadDriverPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
 	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-
-$parameters{"configurationManagerPort"} = {
-	"type"      => "=i",
-	"default"   => 8888,
-	"parent"    => "configurationManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"configurationManagerPortStep"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "configurationManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2656,21 +2036,6 @@ $parameters{"coordinationServerPortStep"} = {
 	"type"      => "=i",
 	"default"   => 1,
 	"parent"    => "coordinationServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"lbServerPortOffset"} = {
-	"type"      => "=i",
-	"default"   => 7000,
-	"parent"    => "lbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerPortStep"} = {
-	"type"      => "=i",
-	"default"   => 1,
-	"parent"    => "lbServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2743,14 +2108,6 @@ $parameters{"nosqlServerPortStep"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-
-$parameters{"mysqlPort"} = {
-	"type"      => "=i",
-	"default"   => 3306,
-	"parent"    => "dbServer",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"postgresqlPort"} = {
 	"type"      => "=i",
 	"default"   => 5432,
@@ -2773,53 +2130,12 @@ $parameters{"rabbitmqPort"} = {
 	"showUsage" => 0,
 };
 
-# Parameters specific to keepalived
-$parameters{"keepalivedServerRoot"} = {
-	"type"      => "=s",
-	"default"   => "/etc/keepalived",
-	"parent"    => "ipManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mysqlLogDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/mysql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlDataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/dbData/postgresql",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"postgresqlUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 1,
-};
-
-$parameters{"postgresqlDataStorageClass"} = {
-	"type"      => "=s",
-	"default"   => "fast",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
 };
 
 $parameters{"postgresqlDataVolume"} = {
@@ -2830,19 +2146,19 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataVolumeSize"} = {
+$parameters{"postgresqlLogVolume"} = {
 	"type"      => "=s",
-	"default"   => "20Gi",
+	"default"   => "postgresqlLogs",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlLogDir"} = {
+$parameters{"postgresqlDataStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "/mnt/dbLogs/postgresql",
-	"usageText" => "",
+	"default"   => "fast",
 	"parent"    => "appInstance",
+	"usageText" => "",
 	"showUsage" => 0,
 };
 
@@ -2851,22 +2167,6 @@ $parameters{"postgresqlLogStorageClass"} = {
 	"default"   => "fast",
 	"parent"    => "appInstance",
 	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogVolume"} = {
-	"type"      => "=s",
-	"default"   => "postgresqlLogs",
-	"usageText" => "",
-	"parent"    => "appInstance",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "20Gi",
-	"usageText" => "",
-	"parent"    => "appInstance",
 	"showUsage" => 0,
 };
 
@@ -2912,7 +2212,7 @@ $parameters{"cassandraDataStorageClass"} = {
 
 $parameters{"cassandraDataVolume"} = {
 	"type"      => "=s",
-	"default"   => "cassandraData",
+	"default"   => "mongoData",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2933,56 +2233,6 @@ $parameters{"rampupInterval"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"wwwHostnamePrefix"} = {
-	"type"    => "=s",
-	"default" => "www",
-	"parent"  => "appInstance",
-	"usageText" =>
-	  "This is the suffix for the hostname that is used as the main entry-point for a Auction application.",
-	"showUsage" => 0,
-};
-
-$parameters{"wwwHostname"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"hostnamePrefix"} = {
-	"type"      => "=s",
-	"default"   => "Auction",
-	"parent"    => "",
-	"usageText" => "This is the prefix used for hostnames and VM names.",
-	"showUsage" => 1,
-};
-
-$parameters{"appInstanceSuffix"} = {
-	"type"      => "=s",
-	"default"   => "I",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"useAllSuffixes"} = {
-	"type"    => "!",
-	"default" => JSON::false,
-	"parent"  => "",
-	"usageText" =>
-	  "Controls whether to use workload and appInstance suffixes in hostnames when only one workload or appInstance.",
-	"showUsage" => 0,
-};
-
-$parameters{"workloadSuffix"} = {
-	"type"      => "=s",
-	"default"   => "W",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"dataManagerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Dm",
@@ -2997,38 +2247,9 @@ $parameters{"workloadDriverSuffix"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"ipManagerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-
-};
-$parameters{"configurationManagerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Cm",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"coordinationServerSuffix"} = {
 	"type"      => "=s",
 	"default"   => "Cs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"elasticityServiceSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Es",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"lbServerSuffix"} = {
-	"type"      => "=s",
-	"default"   => "Lb",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -3076,23 +2297,13 @@ $parameters{"msgServerSuffix"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"weathervaneHome"} = {
-	"type"    => "=s",
-	"default" => "/root/weathervane",
-	"parent"  => "",
-	"usageText" =>
-"This is the base directory under which the Weathervane harness expects to find its files.\n\tIf other directory related parameters are not diven with a full\n\tpath, they will be realative to this directory.",
-	"showUsage" => 1,
-};
-
-# If not absolute (starting with /) these directories are relative
-# to weathervaneHome
+# These directories are relative to the current working directory
 $parameters{"tmpDir"} = {
 	"type"    => "=s",
 	"default" => "tmpLog",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory in which Weathervane stores temporary files during a run.\n\tDo not use /tmp or any directory whose contents you wish to keep.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores temporary files during a run relative to the current working directory.\n\tDo not use any directory whose contents you wish to keep.",
 	"showUsage" => 0,
 };
 $parameters{"outputDir"} = {
@@ -3100,15 +2311,15 @@ $parameters{"outputDir"} = {
 	"default" => "output",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory in which Weathervane stores the output from runs.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores the output from runs relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"sequenceNumberFile"} = {
 	"type"    => "=s",
-	"default" => "output/sequence.num",
+	"default" => "sequence.num",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the file that Weathervane uses to store the sequence number of the next run.\n\tIt must either include the full path to the file\n\tor be relative to weathervaneHome.",
+"This is the file that Weathervane uses to store the sequence number of the next run.",
 	"showUsage" => 0,
 };
 $parameters{"distDir"} = {
@@ -3116,15 +2327,7 @@ $parameters{"distDir"} = {
 	"default" => "dist",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the directory for the executables and other artifacts needed to run Weathervane.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
-	"showUsage" => 0,
-};
-$parameters{"dbScriptDir"} = {
-	"type"    => "=s",
-	"default" => "dist",
-	"parent"  => "appInstance",
-	"usageText" =>
-"This is the directory that contains the scripts used to configure the database tables.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory for the executables and other artifacts needed to run Weathervane relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"dbLoaderDir"} = {
@@ -3132,7 +2335,7 @@ $parameters{"dbLoaderDir"} = {
 	"default" => "dist",
 	"parent"  => "dataManager",
 	"usageText" =>
-"This is the directory that contains the jar file for the DBLoader executable.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the jar file for the DBLoader executable relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"workloadDriverDir"} = {
@@ -3140,7 +2343,7 @@ $parameters{"workloadDriverDir"} = {
 	"default" => "dist",
 	"parent"  => "workloadDriver",
 	"usageText" =>
-"This is the directory that contains the jar file for the workload-driver executable.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the jar file for the workload-driver executable relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"workloadProfileDir"} = {
@@ -3148,7 +2351,7 @@ $parameters{"workloadProfileDir"} = {
 	"default" => "workloadConfiguration",
 	"parent"  => "workloadDriver",
 	"usageText" =>
-"This is the directory that contains the templates for the workload profiles.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory that contains the templates for the workload profiles relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"gcviewerDir"} = {
@@ -3156,7 +2359,7 @@ $parameters{"gcviewerDir"} = {
 	"default" => "",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the path to the gcViewer executable.  GcViewer is used to\n\tanalyze the Java Garbage-Collection logs.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the path to the gcViewer executable relative to the current working directory.\n\tGcViewer is used to analyze the Java Garbage-Collection logs.",
 	"showUsage" => 0,
 };
 $parameters{"resultsFileDir"} = {
@@ -3164,7 +2367,7 @@ $parameters{"resultsFileDir"} = {
 	"default" => "",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the directory in which Weathervane stores the csv summary file.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory in which Weathervane stores the csv summary file relative to the current working directory.",
 	"showUsage" => 0,
 };
 $parameters{"resultsFileName"} = {
@@ -3172,7 +2375,7 @@ $parameters{"resultsFileName"} = {
 	"default" => "weathervaneResults.csv",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the name of the file in which Weathervane stores a summary of the run results in csv format.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the name of the file in which Weathervane stores a summary of the run results in csv format.",
 	"showUsage" => 1,
 };
 $parameters{"configDir"} = {
@@ -3180,15 +2383,7 @@ $parameters{"configDir"} = {
 	"default" => "configFiles",
 	"parent"  => "runManager",
 	"usageText" =>
-"This is the directory under which Weathervane stores\n\t configuration files for the various services.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
-	"showUsage" => 0,
-};
-$parameters{"dbLoaderImageDir"} = {
-	"type"    => "=s",
-	"default" => "images",
-	"parent"  => "dataManager",
-	"usageText" =>
-"This is the directory in which the images used by the dbLoader are stored.\n\tIt must either include the full path to the directory\n\tor be relative to weathervaneHome.",
+"This is the directory under which Weathervane stores configuration files for the various services relative to the current working directory.",
 	"showUsage" => 0,
 };
 
@@ -3268,20 +2463,6 @@ $parameters{"statsInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,
 	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"driverEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workloadDriver",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-$parameters{"dbLoaderEnableJprofiler"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };

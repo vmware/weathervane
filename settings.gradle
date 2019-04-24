@@ -1,3 +1,2 @@
 rootProject.name = 'weathervane'
-
-include 'auctionConfigManager', 'auctionAppServerWarmer', 'auctionApp', 'auctionBidService', 'auctioneerService', 'auctionCrudService', 'auctionWeb', 'dbLoader', 'workloadDriver'
+include 'auctionAppServerWarmer', 'auctionApp', 'auctionBidService', 'auctionWeb', 'dbLoader', 'workloadDriver'

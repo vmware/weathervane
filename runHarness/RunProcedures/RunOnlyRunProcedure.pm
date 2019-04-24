@@ -20,7 +20,7 @@ use Parameters qw(getParamValue);
 use POSIX;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callMethodsOnObjectParallel);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callMethodsOnObjectParallel);
 
 use strict;
 
@@ -42,7 +42,7 @@ override 'run' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunOnlyRunProcedure");
-
+	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $outputDir = $self->getParamValue('outputDir');
 	my $tmpDir    = $self->getParamValue('tmpDir');
 
@@ -57,45 +57,77 @@ override 'run' => sub {
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
 
-	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
-	my $seqnum;
-	if ( -e "$sequenceNumberFile" ) {
-		open SEQFILE, "<$sequenceNumberFile";
-		$seqnum = <SEQFILE>;
+	# Get the major sequence number
+	my $majorSeqNum;
+	if ( -e "$majorSequenceNumberFile" ) {
+		open SEQFILE, "<$majorSequenceNumberFile";
+		$majorSeqNum = <SEQFILE>;
 		close SEQFILE;
-		$seqnum--;
+		$majorSeqNum--; #already incremented in weathervane.pl
+	} else {
+		print "Major sequence number file is missing.\n";
+		exit -1;
+	}
+	# Get the minor sequence number of the next run
+	my $minorSequenceNumberFile = "$tmpDir/minorsequence.num";
+	my $minorSeqNum;
+	if ( -e "$minorSequenceNumberFile" ) {
+		open SEQFILE, "<$minorSequenceNumberFile";
+		$minorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		open SEQFILE, ">$minorSequenceNumberFile";
+		my $nextSeqNum = $minorSeqNum + 1;
+		print SEQFILE $nextSeqNum;
+		close SEQFILE;
 	}
 	else {
-		if ( -e "$outputDir/0" ) {
-			print
-"Sequence number file is missing, but run 0 already exists in $outputDir\n";
-			exit -1;
-		}
-		$seqnum = 0;
-		open SEQFILE, ">$sequenceNumberFile";
+		$minorSeqNum = 0;
+		open SEQFILE, ">$minorSequenceNumberFile";
 		my $nextSeqNum = 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
+	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
+
+	my $prevRunMajorSeqNum = $majorSeqNum - 1;
+	my $prevRunDir = "$outputDir/$prevRunMajorSeqNum";
+	my $prevRunPrepareOnlyNumFile = "$prevRunDir/prepareOnly.num";
+	my $checkDir;
+	if ( -e "$prevRunPrepareOnlyNumFile" ) {
+		open SEQFILE, "<$prevRunPrepareOnlyNumFile";
+		my $prepareOnlyMinorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		$checkDir = "$prevRunDir/$prepareOnlyMinorSeqNum";
+		if ( !(-e "$checkDir") ) {
+			print "Could not find prepareOnly dir to check users at $checkDir.\n";
+			exit -1;
+		}
+	} else {
+		print "Previous run at $prevRunDir does not have a prepareOnly.num file.\n";
+		exit -1;
+	}
+
+	# Now send all output to new subdir 	
+	$tmpDir = "$tmpDir/$minorSeqNum";
+	if ( !( -e $tmpDir ) ) {
+		`mkdir $tmpDir`;
+	}
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
 	$self->killOldWorkloadDrivers("/tmp");
 
-	# Now get the cpu and memory config of all hosts
-	$self->getCpuMemConfig();
-
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	# configure the workload driver
-	my $ok = callBooleanMethodOnObjectsParallel( 'configureWorkloadDriver',
-		$self->workloadsRef );
+	my $ok = callBooleanMethodOnObjectsParallel1( 'configureWorkloadDriver',
+		$self->workloadsRef, $tmpDir );
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Couldn't configure the workload driver properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -105,7 +137,7 @@ override 'run' => sub {
 	}
 	
 	# Check that the users are the same as the number from the prepareOnly phase
-	if (!$self->checkUsersTxt()) {
+	if (!$self->checkUsersTxt($checkDir)) {
 		exit;	
 	}
 	
@@ -116,7 +148,7 @@ override 'run' => sub {
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Workload driver did not initialze properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -130,7 +162,7 @@ override 'run' => sub {
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
 			"Workload driver did not start properly.  Exiting.",
-			$seqnum, $tmpDir, $outputDir );
+			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,
 			'isPassable' => 0,
@@ -153,31 +185,22 @@ override 'run' => sub {
 	);
 
 	## get the config files
-	$self->getConfigFiles();
+	$self->getConfigFiles($tmpDir);
 
 	## get the stats logs
-	$self->getStatsFiles();
+	$self->getStatsFiles($tmpDir);
 
 	## get the logs
-	$self->getLogFiles();
+	$self->getLogFiles($tmpDir);
 
 	my $sanityPassed = 1;
 	if ( $self->getParamValue('stopServices') ) {
 
 		## stop the services
+		$self->stopDataManager($cleanupLogDir);
+		
 		my @tiers = qw(frontend backend data infrastructure);
 		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
-
-		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
-		if ($sanityPassed) {
-			$console_logger->info("All Sanity Checks Passed");
-		}
-		else {
-			$console_logger->info("Sanity Checks Failed");
-		}
-
-		$debug_logger->debug("Unregister port numbers");
-		$self->unRegisterPortNumbers();
 
 		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
@@ -211,11 +234,7 @@ override 'run' => sub {
 
 	## for each service and the workload driver, parse stats
 	# and gather up the headers and values for the results csv
-	my $csvHashRef = $self->getStatsSummary($seqnum);
-
-	my $resultsDir = "$outputDir/$seqnum";
-	`mkdir -p $resultsDir`;
-	`mv $tmpDir/* $resultsDir/.`;
+	my $csvHashRef = $self->getStatsSummary($seqnum, $tmpDir);
 
 	# Todo: Add parsing of logs for errors
 	# my $isRunError = $self->parseLogs()
@@ -231,7 +250,6 @@ override 'run' => sub {
 		'isPassable'            => 1,
 		'isPassed'              => $isPassed,
 		'runNum'                => $seqnum,
-		'resultsDir'            => $resultsDir,
 		'resultsSummaryHashRef' => $csvHashRef,
 
 		#		'metricsHashRef'        => $self->workloadDriver->getResultMetrics(),

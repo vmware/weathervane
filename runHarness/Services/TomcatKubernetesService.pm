@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'Tomcat', );
-
-has '+version' => ( default => '8', );
-
-has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -41,7 +35,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatKubernetesService");
 	$logger->debug("Configure Tomcat kubernetes");
 	print $dblog "Configure Tomcat Kubernetes\n";
@@ -52,16 +46,16 @@ sub configure {
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
-	my $numCpus            = 2;
+	my $numCpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
-	my $nodeNum = $self->getParamValue('instanceNum');
+	my $nodeNum = $self->instanceNum;
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('appServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('appServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
@@ -73,17 +67,13 @@ sub configure {
 
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
-	if ( $self->getParamValue('appServerEnableJprofiler') ) {
-		$completeJVMOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";
 	}
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
-	my $numAppServers = $self->appInstance->getNumActiveOfServiceType('appServer');
+	my $numAppServers = $self->appInstance->getTotalNumOfServiceType('appServer');
 
 	open( FILEIN,  "$configDir/kubernetes/tomcat.yaml" ) or die "$configDir/kubernetes/tomcat.yaml: $!\n";
 	open( FILEOUT, ">/tmp/tomcat-$namespace.yaml" )             or die "Can't open file /tmp/tomcat-$namespace.yaml: $!\n";
@@ -116,9 +106,13 @@ sub configure {
 				elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
 					print FILEOUT "            memory: " . $self->getParamValue('appServerMem') . "\n";
 				}
-				elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+				elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
+					print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
+				}
+				elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 					my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-					print FILEOUT "${1}$version\n";
+					my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+					print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 				} else {
 					print FILEOUT $inline;						
 				}
@@ -132,9 +126,10 @@ sub configure {
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		else {
 			print FILEOUT $inline;
@@ -150,14 +145,12 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace );
-	if ( $response =~ /alive/ ) {
-		$response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace );
-		if ( $response =~ /ready/ ) {
-			return 1;
-		}
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if (   $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace, 'alive', $numServers ) 
+	    && $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace, 'ready', $numServers )
+	   ) { 
+		return 1;
 	}
-
 	return 0;
 };
 
@@ -169,7 +162,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::TomcatKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 

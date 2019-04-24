@@ -40,20 +40,6 @@ override 'initialize' => sub {
 
 };
 
-override 'registerPortsWithHost' => sub {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-
-};
-
-override 'unRegisterPortsWithHost' => sub {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-
-};
-
-
 # Stop all of the services needed for the Nginx service
 override 'stop' => sub {
 	my ($self, $serviceType, $logPath)            = @_;
@@ -115,7 +101,8 @@ override 'isRunning' => sub {
 	my ($self, $fileout) = @_;
 	my $serviceType = $self->getParamValue('serviceType');
 	my $namespace = $self->namespace;
-	return $self->host->kubernetesAreAllPodRunning("type=$serviceType", $namespace );
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	return $self->host->kubernetesAreAllPodRunningWithNum("type=$serviceType", $namespace, $numServers );
 };
 
 

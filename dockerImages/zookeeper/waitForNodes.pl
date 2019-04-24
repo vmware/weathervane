@@ -3,9 +3,19 @@
 use strict;
 use POSIX;
 
-my $servers      = $ENV{'ZK_SERVERS'};
-my @servers      = split /,/, $servers;
+my $clientPort   = $ENV{'ZK_CLIENT_PORT'};
+my $servers;
+if ((exists $ENV{'ZK_SERVERS'}) && (defined $ENV{'ZK_SERVERS'})) {
+	$servers = $ENV{'ZK_SERVERS'};
+} else {
+	# Get the zookeeper servers info from the zookeeperServers.txt file
+	open( FILEIN, "/zookeeperServers.txt" )
+	  or die "Can't open file /zookeeperServers.txt: $!";
+	$servers = <FILEIN>;
+	close FILEIN;
+}
 
+my @servers      = split /,/, $servers;
 if ( $#servers > 0 ) {
 
 	print "Waiting for all zookeeper nodes to be reachable. \n";

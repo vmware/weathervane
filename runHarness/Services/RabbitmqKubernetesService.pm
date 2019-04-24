@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'RabbitMQ', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 # Names of stats collected for RabbitMQ and the text to match in the list queues output
 my @rabbitmqStatNames = (
 	"memory",       "messages",       "messages_ready", "messages_unacked", "ack_rate", "deliver_rate",
@@ -53,7 +47,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("Configure Rabbitmq kubernetes");
 	print $dblog "Configure Rabbitmq Kubernetes\n";
@@ -74,6 +68,8 @@ sub configure {
 		$totalMemoryUnit = "kB";
 	}
 
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+
 	open( FILEIN,  "$configDir/kubernetes/rabbitmq.yaml" ) or die "$configDir/kubernetes/rabbitmq.yaml: $!\n";
 	open( FILEOUT, ">/tmp/rabbitmq-$namespace.yaml" )             or die "Can't open file /tmp/rabbitmq-$namespace.yaml: $!\n";
 	
@@ -82,9 +78,10 @@ sub configure {
 		if ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /RABBITMQ_MEMORY:/ ) {
 			print FILEOUT "  RABBITMQ_MEMORY: \"$totalMemory$totalMemoryUnit\"\n";
@@ -94,6 +91,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /^(\s+)memory:/ ) {
 			print FILEOUT "${1}memory: " . $self->getParamValue('msgServerMem') . "\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
 		}
 		else {
 			print FILEOUT $inline;
@@ -111,13 +111,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace );
-	if ( $response =~ /auction/ ) {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "rabbitmqctl list_vhosts", $self->namespace, 'auction', $numServers)) { 
 		return 1;
 	}
-	else {
-		return 0;
-	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {
@@ -128,7 +126,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 
@@ -157,7 +155,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

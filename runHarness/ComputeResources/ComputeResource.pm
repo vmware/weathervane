@@ -19,7 +19,6 @@ use StatsParsers::ParseSar qw(parseSar);
 use Parameters qw(getParamValue);
 use Instance;
 use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddresses getIpAddress);
 
 use namespace::autoclean;
 
@@ -27,11 +26,10 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Instance';
 
-
-has 'isCluster' => (
-	is  => 'rw',
-	isa => 'Bool',
-	default => 0,
+has 'servicesRef' => (
+	is      => 'rw',
+	default => sub { [] },
+	isa     => 'ArrayRef[Service]',
 );
 
 override 'initialize' => sub {
@@ -73,7 +71,7 @@ sub getConfigFiles {
 sub cleanLogFiles {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::ComputeResources::ComputeResource");
-	$logger->debug("cleanLogFiles host = ", $self->hostName);
+	$logger->debug("cleanLogFiles host = ", $self->name);
 
 }
 

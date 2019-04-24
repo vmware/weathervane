@@ -58,4 +58,10 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 		attendanceRecordMongoTemplate.updateMulti(query, theUpdate, AttendanceRecord.class);		
 	}
 
+	@Override
+	public void deleteByAuctionId(Long auctionId) {
+		Query query = new Query(where("auctionId").is(auctionId));
+		attendanceRecordMongoTemplate.remove(query, AttendanceRecord.class);		
+	}
+
 }

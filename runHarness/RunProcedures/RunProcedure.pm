@@ -23,9 +23,8 @@ use Log::Log4perl qw(get_logger :levels);
 use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsParallel1 callMethodsOnObjectParallel
   callMethodsOnObjectParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
   callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
-  callMethodOnObjectsParamListParallel1);
+  callMethodOnObjectsParamListParallel1 callMethodOnObjects1);
 use Instance;
-use Utils qw(getIpAddresses getIpAddress);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -34,11 +33,6 @@ use namespace::autoclean;
 use WeathervaneTypes;
 
 extends 'Instance';
-
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
 
 has 'virtualInfrastructure' => (
 	is  => 'rw',
@@ -76,63 +70,20 @@ has 'description' => (
 
 has 'seqnum' => (
 	is  => 'rw',
-	isa => 'Int',
+	isa => 'Str',
 );
 
-has 'runLog' => ( is => 'rw', );
+has 'tmpDir' => (
+	is  => 'rw',
+	isa => 'Str',
+);
 
 override 'initialize' => sub {
 	my ($self) = @_;
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-
-	# if the tmpDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $tmpDir = $self->getParamValue('tmpDir');
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue( 'tmpDir', $tmpDir );
-
-	# if the outputDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $outputDir = $self->getParamValue('outputDir');
-	if ( !( $outputDir =~ /^\// ) ) {
-		$outputDir = $weathervaneHome . "/" . $outputDir;
-	}
-	$self->setParamValue( 'outputDir', $outputDir );
-
-	# if the distDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $distDir         = $self->getParamValue('distDir');
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue( 'distDir', $distDir );
-
-	# if the sequenceNumberFile doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
-	if ( !( $sequenceNumberFile =~ /^\// ) ) {
-		$sequenceNumberFile = $weathervaneHome . "/" . $sequenceNumberFile;
-	}
-	$self->setParamValue( 'sequenceNumberFile', $sequenceNumberFile );
-
-	# make sure the directories exist
-	if ( !( -e $tmpDir ) ) {
-		`mkdir $tmpDir`;
-	}
-
-	if ( !( -e $outputDir ) ) {
-		`mkdir -p $outputDir`;
-	}
 
 	my $logLevel = $self->getParamValue('logLevel');
 	if ( ( $logLevel < 0 ) || ( $logLevel > 4 ) ) {
 		die "The logLevel must be between 0 and 4";
-	}
-
-	if ( ( $self->getParamValue('runStrategy') eq "targetUtilization" ) && ( $self->getParamValue('logLevel') < 3 ) ) {
-		die "The logLevel must be >= 3 in order to run the targetUtilization run strategy";
 	}
 
 	super();
@@ -185,18 +136,6 @@ sub getRunProcedureImpl {
 	my $paramHashRef = $self->paramHashRef;
 
 	return $paramHashRef->{'runProcedure'};
-}
-
-# Tell the hosts to go get their CPU and memory configuration
-sub getCpuMemConfig {
-	my ($self)       = @_;
-	my $hostsRef     = $self->hostsRef;
-	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-
-	foreach my $host (@$hostsRef) {
-		$host->getCpuMemConfig();
-	}
-
 }
 
 sub killOldWorkloadDrivers {
@@ -312,43 +251,11 @@ sub foundMax {
 	return $foundMax;
 }
 
-sub hitTargetUt {
-	my ($self)   = @_;
-	my $passAll  = $self->getParamValue('targetUtilizationPassAll');
-	my $foundMax = 0;
-	if ($passAll) {
-		$foundMax = 1;
-	}
-
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		my $wFoundMax = $workload->hitTargetUt();
-		if ($passAll) {
-			$foundMax &= $wFoundMax;
-		}
-		else {
-			if ($wFoundMax) {
-				$foundMax = 1;
-			}
-		}
-	}
-
-	return $foundMax;
-}
-
 sub adjustUsersForFindMax {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
 		$workload->adjustUsersForFindMax();
-	}
-}
-
-sub adjustUsersForTargetUt {
-	my ($self) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->adjustUsersForTargetUt();
 	}
 }
 
@@ -383,6 +290,13 @@ sub cleanData {
 	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
 }
 
+sub prepareDataServices {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("prepareDataServices with logDir $setupLogDir");
+	callMethodOnObjects1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );
+}
+
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -414,14 +328,6 @@ sub setExternalPortNumbers {
 	my $workloadsRef = $self->workloadsRef;
 	foreach my $workload (@$workloadsRef) {
 		$workload->setExternalPortNumbers();
-	}
-}
-
-sub unRegisterPortNumbers {
-	my ($self) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->unRegisterPortNumbers();
 	}
 }
 
@@ -471,6 +377,14 @@ sub stopServices {
 	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
 }
 
+sub stopDataManager {
+	my ( $self, $setupLogDir ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("stopDataManager with logDir $setupLogDir");
+	
+	callMethodOnObjectsParallel1( 'stopDataManager', $self->workloadsRef, $setupLogDir );
+}
+
 sub removeServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -482,7 +396,7 @@ sub removeServices {
 }
 
 sub cleanupAfterFailure {
-	my ( $self, $errorMessage, $seqnum, $tmpDir, $outputDir ) = @_;
+	my ( $self, $errorMessage, $seqnum, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
 
 	if ( !$self->getParamValue('stopOnFailure') ) {
@@ -496,21 +410,19 @@ sub cleanupAfterFailure {
 	}
 
 	## get the logs
-	$self->getLogFiles();
+	$self->getLogFiles($tmpDir);
 
 	## get the config files
-	$self->getConfigFiles();
+	$self->getConfigFiles($tmpDir);
 
 	## stop the services
+	$self->stopDataManager($tmpDir);
+		
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 
 	# clean up old logs and stats
 	$self->cleanup($cleanupLogDir);
-
-	my $resultsDir = "$outputDir/$seqnum";
-	`mkdir -p $resultsDir`;
-	`mv $tmpDir/* $resultsDir/.`;
 
 	$console_logger->error("$errorMessage\n");
 	exit(-1);
@@ -593,11 +505,11 @@ sub stopStatsCollection {
 }
 
 sub getStatsFiles {
-	my ($self)       = @_;
+	my ($self, $tmpDir)       = @_;
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/statistics";
+	my $baseDestinationPath = $tmpDir . "/statistics";
 	my $destinationPath;
 	
 	my $logLevel = $self->getParamValue('logLevel');
@@ -606,7 +518,7 @@ sub getStatsFiles {
 		# get stats files from hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
-			$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+			$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 			if ( !( -e $destinationPath ) ) {
 				`mkdir -p $destinationPath`;
 			}
@@ -770,13 +682,12 @@ sub cleanLogFiles {
 }
 
 sub getLogFiles {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $pid;
 	my @pids;
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 
-	my $tmpDir = $self->getParamValue('tmpDir');
 	my $baseDestinationPath =  "$tmpDir/logs";
 	my $destinationPath;
 
@@ -795,7 +706,7 @@ sub getLogFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -853,13 +764,13 @@ sub getLogFiles {
 }
 
 sub getConfigFiles {
-	my ($self)       = @_;
+	my ($self, $tmpDir)       = @_;
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $fullFilePath = $self->getParamValue('fullFilePath');
 	my $pid;
 	my @pids;
 
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/configuration";
+	my $baseDestinationPath = $tmpDir . "/configuration";
 	my $destinationPath;
 
 	if ( $self->getParamValue('logLevel') >= 1 ) {
@@ -873,7 +784,7 @@ sub getConfigFiles {
 				exit(-1);
 			}
 			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->hostName;
+				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
 				if ( !( -e $destinationPath ) ) {
 					`mkdir -p $destinationPath`;
 				}
@@ -962,12 +873,12 @@ sub printCsv {
 }
 
 sub getStatsSummary {
-	my ( $self, $seqnum ) = @_;
+	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger              = get_logger("Weathervane::RunProcedures::RunProcedure");
 	my $workloadsRef        = $self->workloadsRef;
 	my $logLevel            = $self->getParamValue('logLevel');
 	my $fullFilePath        = $self->getParamValue('fullFilePath');
-	my $baseDestinationPath = $self->getParamValue('tmpDir') . "/statistics";
+	my $baseDestinationPath = $tmpDir . "/statistics";
 	my $destinationPath;
 	tie( my %csv, 'Tie::IxHash' );
 
@@ -986,9 +897,9 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $self->getParamValue('tmpDir') );
+		my $tmpCsvRef = $workload->getWorkloadStatsSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -998,9 +909,9 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadSummary( $self->getParamValue('tmpDir') );
+		my $tmpCsvRef = $workload->getWorkloadSummary( $tmpDir );
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1010,7 +921,7 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
 		my $tmpCsvRef = $workload->getAppInstanceStatsSummary();
 		my @keys      = keys %$tmpCsvRef;
@@ -1022,9 +933,9 @@ sub getStatsSummary {
 	foreach my $workload (@$workloadsRef) {
 		my $prefix = "";
 		if ( $#{$workloadsRef} > 0 ) {
-			$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+			$prefix = "W" . $workload->instanceNum . "-";
 		}
-		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary();
+		my $tmpCsvRef = $workload->getWorkloadAppStatsSummary($tmpDir);
 		my @keys      = keys %$tmpCsvRef;
 		foreach my $key (@keys) {
 			$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1039,7 +950,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 			my $tmpCsvRef = $workload->getHostStatsSummary( $destinationPath, $prefix );
 			my @keys = keys %$tmpCsvRef;
@@ -1055,7 +966,7 @@ sub getStatsSummary {
 		foreach my $workload (@$workloadsRef) {
 			my $prefix = "";
 			if ( $#{$workloadsRef} > 0 ) {
-				$prefix = "W" . $workload->getParamValue("workloadNum") . "-";
+				$prefix = "W" . $workload->instanceNum . "-";
 			}
 
 			my $usePrefix = 0;
@@ -1063,7 +974,7 @@ sub getStatsSummary {
 				$usePrefix = 1;
 			}
 
-			my $tmpCsvRef = $workload->getStatsSummary( $baseDestinationPath, $usePrefix );
+			my $tmpCsvRef = $workload->getStatsSummary( $baseDestinationPath, $usePrefix, $tmpDir );
 			my @keys = keys %$tmpCsvRef;
 			foreach my $key (@keys) {
 				$csv{ $prefix . $key } = $tmpCsvRef->{$key};
@@ -1085,119 +996,6 @@ sub getStatsSummary {
 	return \%csv;
 }
 
-sub doPowerControl {
-	my ($self)         = @_;
-	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $console_logger = get_logger("Console");
-
-	my $hostnamePrefix = $self->getParamValue('hostnamePrefix');
-	$console_logger->info("Checking the power state of the virtual machines\n");
-
-	my $powerOnVms     = $self->getParamValue('powerOnVms');
-	my $powerOffVms    = $self->getParamValue('powerOffVms');
-	my $powerOffAllVms = $self->getParamValue('powerOffAllVms');
-
-	#
-	my $virtualInfrastructure     = $self->virtualInfrastructure;
-	my $vmNameToPowerstateHashRef = $virtualInfrastructure->getVMPowerState();
-	my @vmNames                   = keys %$vmNameToPowerstateHashRef;
-
-	# First get the right number of VMs powered on
-	# This variable is set to 1 if any VMs are powered on or off
-	# Use this to control a 5 minute wait.
-	my $tookPoweronAction  = 0;
-	my $tookPoweroffAction = 0;
-
-	# Power on hosts.  All other VMs on the VI hosts will be powered off.
-	my @onVmNames;
-	my $hostsRef = $self->hostsRef;
-	foreach my $host (@$hostsRef) {
-		if ( !$host->supportsPowerControl ) {
-			$logger->debug( "Host " . $host->hostName . " does not support power control." );
-			next;
-		}
-
-		$logger->debug( "Making sure that host " . $host->hostName . " is powered on" );
-
-		# Figure out the actual vmName for the host from all of the possible
-		# vmNames that might exist if there were multiple services assigned to
-		# This host.
-		my $vmName;
-		if ( !$host->has_vmName() ) {
-			my $possibleVmNamesRef = $host->possibleVmNamesRef;
-			$logger->debug( "The possible VM names for  " . $host->hostName . " are @$possibleVmNamesRef" );
-			foreach my $possibleVmName (@$possibleVmNamesRef) {
-				if (   ( exists $vmNameToPowerstateHashRef->{$possibleVmName} )
-					&& ( defined $vmNameToPowerstateHashRef->{$possibleVmName} ) )
-				{
-
-					# This is the vmName that the vi knows about
-					$vmName = $possibleVmName;
-					$logger->debug( "The actual VM name for  " . $host->hostName . " is $vmName." );
-					$host->setVmName($vmName);
-					last;
-				}
-			}
-
-			if ( !$vmName ) {
-
-				# None of the VMs was known to the vi.
-				# Log the error and give up
-				$console_logger->error(
-					"The run harness determined that the list of possible VM names for host ",
-					$host->hostName,
-					" is @$possibleVmNamesRef,\n",
-					" but none of those VM names are known to the virtual infrastructure."
-				);
-				exit(-1);
-			}
-		}
-		else {
-			$logger->debug( "The preknown VM name for  " . $host->hostName . " is $vmName." );
-			$vmName = $host->vmName;
-		}
-		push( @onVmNames, $vmName );
-	}
-
-	if ( $powerOffVms || $powerOffAllVms ) {
-		foreach my $vmName (@vmNames) {
-
-			# If this should be on, skip it, otherwise turn it off
-			if ( grep { $_ eq $vmName } @onVmNames ) {
-				next;
-			}
-			elsif ( $powerOffAllVms || ( $vmName =~ /^$hostnamePrefix/ ) ) {
-				my $powerState = $vmNameToPowerstateHashRef->{$vmName};
-				if ( $powerState == 1 ) {
-					$console_logger->info("Powering off $vmName\n");
-					$virtualInfrastructure->powerOffVM($vmName);
-					$tookPoweroffAction++;
-
-				}
-			}
-
-		}
-	}
-
-	sleep 15;
-
-	if ($powerOnVms) {
-		for my $vmName (@onVmNames) {
-			my $powerState = $vmNameToPowerstateHashRef->{$vmName};
-			if ( $powerState == 0 ) {
-				$console_logger->info("Powering on $vmName\n");
-				$virtualInfrastructure->powerOnVM($vmName);
-				$tookPoweronAction++;
-			}
-		}
-	}
-
-	if ($tookPoweronAction) {
-		$console_logger->info(": Sleeping for 3 minutes to allow all VMs to start\n");
-		sleep 180;
-	}
-}
-
 sub run {
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	die "Only concrete classes of RunProcedure implement run()";
@@ -1217,7 +1015,7 @@ sub getNextRunInfo {
 		if ( $#{$workloadsRef} > 0 ) {
 			$prefix =
 			    "Workload "
-			  . $workload->getParamValue("workloadNum")
+			  . $workload->instanceNum
 			  . ", Implementation: "
 			  . $workload->getParamValue("workloadImpl");
 		}
@@ -1227,53 +1025,9 @@ sub getNextRunInfo {
 	return $returnString;
 }
 
-sub checkVersions {
-	my ($self)          = @_;
-	my $logger          = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $console_logger  = get_logger("Console");
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-
-	# Get this host's version number
-	my $localVersion = `cat $weathervaneHome/version.txt 2>&1`;
-	$logger->debug("For checkVersions.  localVersion is $localVersion");
-
-	my $allSame = 1;
-	foreach my $host ( @{ $self->hostsRef } ) {
-
-		if ($host->meta->name eq "KubernetesCluster") {
-			next;
-		}
-
-		if (!$host->isNonDocker() || $host->getParamValue('vicHost')) {
-			next;
-		}
-
-		# Get the host's version number
-		my $hostname         = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		my $version          = `$sshConnectString \"cat $weathervaneHome/version.txt\" 2>&1`;
-		if ( $version =~ /No route/ ) {
-			next;
-		}
-		$logger->debug("For checkVersions.  Version on $hostname is $version");
-
-		# If different, update the weathervane directory on that host
-		if ( $localVersion ne $version ) {
-			$allSame = 0;
-			$console_logger->info(
-				"Warning: Version of Weathervane on host $hostname does not match that on local host.");
-			$console_logger->info("Remote version is $version.  Local version is $localVersion.");
-		}
-
-	}
-
-	return $allSame;
-}
-
 sub writeUsersTxt {
-	my ($self) = @_;
+	my ($self, $tmpDir) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	my $tmpDir = $self->getParamValue('tmpDir');
 	open( my $fileOut, ">$tmpDir/users.txt" ) or die "Error opening $tmpDir/users.txt:$!";
 
 	my $workloadsRef = $self->workloadsRef;
@@ -1284,11 +1038,10 @@ sub writeUsersTxt {
 }
 
 sub checkUsersTxt {
-	my ($self)         = @_;
+	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
 
-	my $tmpDir = $self->getParamValue('tmpDir');
 	open( my $filein, "$tmpDir/users.txt" ) or do {
 		$console_logger->info("The runOnly runProcedure must be run after a prepareOnly runProcedure.");
 		return 0;
@@ -1352,7 +1105,7 @@ sub interactiveMode {
 #				# Get current number of users for each workload
 #				$i = 0;
 #				foreach my $workloadRef (@$workloadsRef) {
-#					my $workloadNum                     = $workloadRef->getParamValue('workloadNum');
+#					my $workloadNum                     = $workloadRef->instanceNum;
 #					my $appInstanceToActiveUsersHashRef = $workloadRef->getNumActiveUsers();
 #
 #					foreach my $appInstance ( keys %$appInstanceToActiveUsersHashRef ) {
@@ -1378,10 +1131,10 @@ sub interactiveMode {
 #			foreach my $workloadRef (@$workloadsRef) {
 #				my $appInstancesRef = $workloadRef->appInstancesRef;
 #
-#				my $workloadNum = $workloadRef->getParamValue('workloadNum');
+#				my $workloadNum = $workloadRef->instanceNum;
 #				foreach my $appInstance (@$appInstancesRef) {
 #					$workloadNumHash{$numAppInstances}    = $workloadNum;
-#					$appInstanceNumHash{$numAppInstances} = $appInstance->getParamValue("appInstanceNum");
+#					$appInstanceNumHash{$numAppInstances} = $appInstance->instanceNum;
 #					$numAppInstances++;
 #				}
 #			}

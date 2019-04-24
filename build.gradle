@@ -28,8 +28,7 @@ allprojects {
 
 }
 
-configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBidService'|| 
-                               it.name == 'auctioneerService'|| it.name == 'auctionCrudService' || it.name == 'dbLoader' })  {
+configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBidService' || it.name == 'dbLoader' })  {
 	apply plugin: "eclipse"
 	apply plugin: "eclipse-wtp"
 	apply plugin: 'maven'
@@ -50,7 +49,6 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		commonsFileuploadVersion = "1.3.1"
 		junitVersion = "4.12"
 		mockitoVersion = "1.10.19"
-		mysqlConnectorVersion = "5.1.41"
 		postgreSQLJdbcVersion = "9.4.1212.jre7"
 		dbcpVersion = "1.4"
 		springDataMongoVersion = "1.10.9.RELEASE"
@@ -172,7 +170,6 @@ project(':auctionApp') {
 		compile "org.apache.curator:curator-recipes:$curatorVersion"
 		
 		providedCompile "org.apache.tomcat:tomcat-servlet-api:8.5.31"
-		providedCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"
 		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
 		
 		testCompile "org.hamcrest:hamcrest-library:1.3"
@@ -200,7 +197,6 @@ project(':auctionBidService') {
 		compile "org.apache.curator:curator-recipes:$curatorVersion"
 		
 		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
-		providedCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"
 		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
 		
 		testCompile "org.hamcrest:hamcrest-library:1.3"
@@ -216,105 +212,6 @@ project(':auctionBidService') {
 		}
 	    }
 	}			
-}
-
-
-project(':auctioneerService') {
-	apply plugin: 'war'
-	
-	description "Main project for Auctioneer Service.  Creates war file."
-	
-	dependencies {
-				
-		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
-		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
-		providedCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"
-		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
-		testCompile "org.hamcrest:hamcrest-library:1.3"
-	}
-	
-	task release(dependsOn: build) {
-	     doLast {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from war.archivePath
-			into file("$rootDir/dist/")
-			rename ('auctioneerService-.*war', 'auctioneerService.war')
-		}
-	    }
-	}			
-}
-
-project(':auctionCrudService') {
-	apply plugin: 'war'
-	
-	description "Main project for Auction Crud Service.  Creates war file."
-	
-	dependencies {
-				
-		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
-		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
-		providedCompile "mysql:mysql-connector-java:$mysqlConnectorVersion"
-		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
-		testCompile "org.hamcrest:hamcrest-library:1.3"
-	}
-	
-	task release(dependsOn: build) {
-	     doLast {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from war.archivePath
-			into file("$rootDir/dist/")
-			rename ('auctionCrudService-.*war', 'auctionCrudService.war')
-		}
-	    }
-	}			
-}
-
-project(':auctionConfigManager') {
-	description "Configuration Manager for Auction"	
-	apply plugin: 'org.springframework.boot' 
-	apply plugin: "eclipse"
-	apply plugin: 'maven'
-	
-	jar {
-		baseName = 'auctionConfigManager'
-		version = '1.0'
-	}
-	
-	dependencies {
-		compile "org.springframework.boot:spring-boot-starter-web"
-		compile "org.springframework.boot:spring-boot-starter-actuator"
-		compile "org.springframework.boot:spring-boot-starter-hateoas"
-		compile "org.springframework.boot:spring-boot-starter-data-jpa"
-		compile "com.jcabi:jcabi-ssh:1.5.2"
-		testCompile "org.springframework.boot:spring-boot-starter-test" 
-		runtime "com.h2database:h2"
-    	testCompile "com.jayway.jsonpath:json-path"
-	}
-
-	eclipse {
-		classpath {
-			 containers.remove('org.eclipse.jdt.launching.JRE_CONTAINER')
-			 containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
-		}
-	}
-	
-	task release(dependsOn: build) {
-	     doLast {
-		copy {
-			description "Copy artifacts to $rootDir/dist"
-			from jar.archivePath
-			into file("$rootDir/dist/")
-    		rename ('auctionConfigManager-.*jar', 'auctionConfigManager.jar')			 		
-		}
-	    }
-	}
-	
 }
 
 project(':auctionAppServerWarmer') {
@@ -370,12 +267,11 @@ project(':dbLoader') {
 		compile "commons-io:commons-io:2.4"
 		compile "org.json:json:20090211"
 		compile "commons-dbcp:commons-dbcp:$dbcpVersion"
-		compile "mysql:mysql-connector-java:$mysqlConnectorVersion"
 		compile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
 	}
 	
 	task release(dependsOn: build) {
-	     doLast {
+	   doLast {
 		copy {
 			into file("$rootDir/dist/dbLoaderLibs")
     		from configurations.runtime
@@ -385,24 +281,7 @@ project(':dbLoader') {
     		from jar.archivePath
     		rename ('dbLoader-.*jar', 'dbLoader.jar')			 		
 		}
-		copy {
-			into file("$rootDir/dist/")
-    		from "$rootDir/dbLoader/src/main/resources/auction_mysql_constraints.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_mysql_database.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_mysql_indices.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_mysql_tables.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_mysql_user.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_postgresql_database.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_postgresql_tables.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_postgresql_constraints.sql"
-    		from "$rootDir/dbLoader/src/main/resources/auction_postgresql_indices.sql"
-    		from "$rootDir/dbLoader/src/main/resources/items.json"
-		}
-		copy {
-			into file("$rootDir/dist/images")
-    		from "$rootDir/dbLoader/src/main/resources/images/"
-		}
-	    }
+	   }
 	}
 		
 }

@@ -21,7 +21,7 @@ BEGIN {
 	use vars qw (@ISA @EXPORT_OK);
 	@ISA = qw( Exporter);
 	@EXPORT_OK =
-	  qw( createDebugLogger getIpAddresses getIpAddress callMethodOnObjectsParallel callMethodsOnObjectParallel
+	  qw( createDebugLogger callMethodOnObjectsParallel callMethodsOnObjectParallel
 	  callMethodsOnObjectParallel1 callMethodsOnObject1 callMethodOnObjects1
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3
@@ -43,47 +43,6 @@ sub createDebugLogger {
 	);
 	$appender->layout($layout);
 	$logger->add_appender($appender);
-}
-
-sub getIpAddresses {
-	my ($hostName) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Util");
-
-	my $hostResult = `getent ahostsv4 $hostName`;
-	$logger->debug("getIpAddresses: hostResult for host $hostName is $hostResult");
-	if ( !( $hostResult =~ /^(\d+\.\d+\.\d+\.\d+)\s+STREAM/ ) ) {
-		$console_logger->error("getIpAddresses: IP Address cannot be found for $hostName");
-		exit(-1);
-	}
-
-	my @ipAddresses = ();
-	my @hostResults = split /\n/, $hostResult;
-	foreach my $host (@hostResults) {
-		$logger->debug("getIpAddresses: host line = " . $host);
-		if ( $host =~ /^(\d+\.\d+\.\d+\.\d+)\s+STREAM/ ) {
-			$logger->debug("getIpAddresses: found ip address " . $1);
-			push @ipAddresses, $1;
-		}
-	}
-	return \@ipAddresses;
-}
-
-sub getIpAddress {
-	my ($hostName)     = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Util");
-
-	$logger->debug("getIpAddress: Getting IP address for host $hostName");
-
-	my $hostResult = `getent ahostsv4 $hostName`;
-	$logger->debug("getIpAddress: hostResult for host $hostName is $hostResult");
-	if ( !( $hostResult =~ /^(\d+\.\d+\.\d+\.\d+)\s+STREAM/ ) ) {
-		$console_logger->error("IP Address cannot be found for $hostName");
-		exit(-1);
-	}
-
-	return $1;
 }
 
 sub callMethodOnObjectsParamListParallel1 {

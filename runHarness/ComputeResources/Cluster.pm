@@ -17,8 +17,6 @@ use Moose;
 use MooseX::Storage;
 use Parameters qw(getParamValue);
 use Instance;
-use Log::Log4perl qw(get_logger);
-use Utils qw(getIpAddresses getIpAddress);
 use ComputeResources::ComputeResource;
 
 use namespace::autoclean;
@@ -27,38 +25,11 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'ComputeResource';
 
-has 'clusterName' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
-has 'servicesRef' => (
-	is      => 'rw',
-	default => sub { [] },
-	isa     => 'ArrayRef[Service]',
-);
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
-	my $console_logger = get_logger("Console");
-	
-	my $clusterName = $self->getParamValue('clusterName');
-	if (!$clusterName) {
-		$console_logger->error("Must specify a clusterName for all cluster instances.");
-		exit(-1);
-	}
-
-	$self->clusterName($clusterName);
-
 	super();
-
 };
 
-sub toString {
-	my ($self) = @_;
-
-	return "Cluster name = " . $self->clusterName;
-}
 __PACKAGE__->meta->make_immutable;
 
 1;

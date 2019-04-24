@@ -31,36 +31,29 @@ use namespace::autoclean;
 
 extends 'DataManager';
 
-has '+name' => ( default => 'Weathervane', );
-
 # default scale factors
 my $defaultUsersScaleFactor           = 5;
 my $defaultUsersPerAuctionScaleFactor = 15.0;
 
 override 'initialize' => sub {
 	my ($self) = @_;
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $configDir  = $self->getParamValue('configDir');
-	if ( !( $configDir =~ /^\// ) ) {
-		$configDir = $weathervaneHome . "/" . $configDir;
-	}
-	$self->setParamValue('configDir', $configDir);
+
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 
 	super();
 
 };
 
-sub startAuctionKubernetesDataManagerContainer {
+sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 
 	my $namespace = $self->appInstance->namespace;
 	my $configDir = $self->getParamValue('configDir');
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
@@ -87,11 +80,13 @@ sub startAuctionKubernetesDataManagerContainer {
 		elsif ( $inline =~ /SPRINGPROFILESACTIVE:/ ) {
 			print FILEOUT "  SPRINGPROFILESACTIVE: \"$springProfilesActive\"\n";
 		}
-		elsif ( $inline =~ /MAXDURATION:/ ) {
-			print FILEOUT "  MAXDURATION: \"" . max( $maxDuration, $totalTime ) . "\"\n";
-		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
+		}
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
+			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		else {
 			print FILEOUT $inline;
@@ -108,7 +103,7 @@ sub startAuctionKubernetesDataManagerContainer {
 	sleep 15;
 	my $retries = 3;
 	while ($retries >= 0) {
-		my $isRunning = $cluster->kubernetesAreAllPodRunning("tier=dataManager", $namespace );
+		my $isRunning = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
 		
 		if ($isRunning) {
 			return 1;
@@ -117,12 +112,9 @@ sub startAuctionKubernetesDataManagerContainer {
 		$retries--;
 	}
 	return 0;
-	
-	
-	
 }
 
-sub stopAuctionKubernetesDataManagerContainer {
+sub stopDataManagerContainer {
 	my ( $self, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $cluster = $self->host;
@@ -132,17 +124,14 @@ sub stopAuctionKubernetesDataManagerContainer {
 
 }
 
-sub prepareData {
+sub prepareDataServices {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
-	my $retVal         = 0;
-
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {
@@ -152,11 +141,6 @@ sub prepareData {
 
 	$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
-	$logger->debug("prepareData users = $users, logPath = $logPath");
-	print $logHandle "prepareData users = $users, logPath = $logPath\n";
-
-	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
 
 	# Start the data services
 	if ($reloadDb) {
@@ -165,46 +149,55 @@ sub prepareData {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	$appInstance->startServices("data", $logPath);
-	
-	$self->startAuctionKubernetesDataManagerContainer ($users, $logHandle);
+
+	close $logHandle;
+}
+
+
+sub prepareData {
+	my ( $self, $users, $logPath ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
+	my $reloadDb       = $self->getParamValue('reloadDb');
+	my $appInstance    = $self->appInstance;
+	my $retVal         = 0;
+
+	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $logHandle;
+	open( $logHandle, ">>$logName" ) or do {
+		$console_logger->error("Error opening $logName:$!");
+		return 0;
+	};
+
+	$logger->debug("prepareData users = $users, logPath = $logPath");
+	print $logHandle "prepareData users = $users, logPath = $logPath\n";
+
+	$self->startDataManagerContainer ($users, $logHandle);
 		
-	my $loadedData = 0;
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
 		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
-		$loadedData = 1;
-
-		# Clear reloadDb so we don't reload on each run of a series
-		$self->setParamValue( 'reloadDb', 0 );
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {
-			if ( $self->getParamValue('loadDb') ) {
-				$console_logger->info(
-					    "Data is not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. Loading data." );
+			$console_logger->info(
+				    "Data is not loaded for $users users for appInstance "
+				  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
-				# Load the data
-				$appInstance->stopServices("data", $logPath);
-				$appInstance->clearDataServicesBeforeStart($logPath);
-				$appInstance->startServices("data", $logPath);
-				$appInstance->clearDataServicesAfterStart($logPath);
+			# Load the data
+			$appInstance->stopServices("data", $logPath);
+			$appInstance->clearDataServicesBeforeStart($logPath);
+			$appInstance->startServices("data", $logPath);
+			$appInstance->clearDataServicesAfterStart($logPath);
 
-				$retVal = $self->loadData( $users, $logPath );
-				if ( !$retVal ) { return 0; }
-				$loadedData = 1;
-
-			}
-			else {
-				$console_logger->error( "Data not loaded for $users users for appInstance "
-					  . "$appInstanceNum of workload $workloadNum. To load data, run again with loadDb=true.  Exiting.\n"
-				);
-				return 0;
-
-			}
+			$retVal = $self->loadData( $users, $logPath );
+			if ( !$retVal ) { return 0; }
 		}
 		else {
 			$console_logger->info( "Data is already loaded for appInstance "
@@ -224,11 +217,12 @@ sub prepareData {
 	$logger->debug("Output: $cmd");
 	if ($?) {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
 
 	# stop the auctiondatamanager container
-	$self->stopAuctionKubernetesDataManagerContainer ($logHandle);
+	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
 }
@@ -237,9 +231,9 @@ sub pretouchData {
 	my ( $self, $logPath ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $name        = $self->name;
 	my $retVal         = 0;
 	$logger->debug( "pretouchData for workload ", $workloadNum );
 	
@@ -265,8 +259,8 @@ sub loadData {
 	my $console_logger   = get_logger("Console");
 	my $logger           = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $cluster = $self->host;
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}.log";
 	my $namespace = $self->appInstance->namespace;
@@ -314,8 +308,8 @@ sub loadData {
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
-		if ($line =~ /\s+Loading/) {
-  			print "$line\n";			
+		if ($line =~ /Loading/) {
+			$console_logger->info("$line\n");
 		} 
 		$logger->debug("Got line: $line");
 		print $applog "Got line: $line\n";
@@ -346,8 +340,8 @@ sub isDataLoaded {
 
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}.log";
@@ -378,9 +372,9 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
-	my $name        = $self->getParamValue('dockerName');
+	my $workloadNum    = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
+	my $name        = $self->name;
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;
 
@@ -407,7 +401,64 @@ sub cleanData {
 		return 0;
 	}
 	
-	# ToDo: compact cassandra here or in data manager container
+	if ( $self->getParamValue('mongodbCompact') ) {
+
+		# Compact all mongodb collections
+			print $logHandle "Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum.\n";
+			$logger->debug(
+				"cleanData. Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum. "	);
+
+			$logger->debug(
+				"cleanData. Compacting attendanceRecord collection for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+
+			my $cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord", $namespace);
+			print $logHandle $cmdout;
+
+			$logger->debug(
+				"cleanData. Compacting bid collection  for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid", $namespace);
+			print $logHandle $cmdout;
+
+			$logger->debug(
+				"cleanData. Compacting imageInfo collection  for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo", $namespace);
+			print $logHandle $cmdout;
+
+			$logger->debug(
+				"cleanData. Compacting imageFull collection  for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages", $namespace);
+			print $logHandle $cmdout;
+
+			$logger->debug(
+				"cleanData. Compacting imagePreview collection  for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages", $namespace);
+			print $logHandle $cmdout;
+
+			$logger->debug(
+				"cleanData. Compacting imageThumbnail collection  for workload ",
+				$workloadNum, " appInstance ",
+				$appInstanceNum
+			);
+			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages", $namespace);
+			print $logHandle $cmdout;
+
+	}
+>>>>>>> 2.0-dev
 }
 
 __PACKAGE__->meta->make_immutable;

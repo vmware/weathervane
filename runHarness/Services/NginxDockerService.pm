@@ -27,13 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'Nginx', );
-
-has '+version' => ( default => '1.7.xx', );
-
-has '+description' => ( default => 'Nginx Web Server', );
-
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	super();
@@ -41,14 +34,9 @@ override 'initialize' => sub {
 
 override 'create' => sub {
 	my ($self, $logPath)            = @_;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
-	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+		
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $host = $self->host;
 	my $impl = $self->getImpl();
 
@@ -57,26 +45,10 @@ override 'create' => sub {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	my %volumeMap;
-	my $instanceNumber = $self->getParamValue('instanceNum');
-	my $dataDir = "/mnt/cache/nginx$instanceNumber";
-	if ($host->getParamValue('nginxUseNamedVolumes') || $host->getParamValue('vicHost')) {
-		$dataDir = $self->getParamValue('nginxCacheVolume') . $instanceNumber;
-		# use named volumes.  Create volume if it doesn't exist
-		if (!$host->dockerVolumeExists($applog, $dataDir)) {
-			# Create the volume
-			my $volumeSize = 0;
-			if ($host->getParamValue('vicHost')) {
-				$volumeSize = $self->getParamValue('nginxCacheVolumeSize');
-			}
-			$host->dockerVolumeCreate($applog, $dataDir, $volumeSize);
-		}
-	}	
-#	$volumeMap{"/var/cache/nginx"} = $dataDir;
-		
+	my %volumeMap;		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $workerConnections < 100 ) {
 		$workerConnections = 100;
 	}
@@ -85,7 +57,7 @@ override 'create' => sub {
 	}
 	$envVarMap{'WORKERCONNECTIONS'} = $workerConnections;
 	
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
 	$envVarMap{'PERSERVERCONNECTIONS'} = $perServerConnections;
 	
 	$envVarMap{'KEEPALIVETIMEOUT'} = $self->getParamValue('nginxKeepaliveTimeout');
@@ -96,7 +68,7 @@ override 'create' => sub {
 	$envVarMap{'HTTPSPORT'} = $self->internalPortMap->{"https"};
 	
 	# Add the appserver names for the balancer
-	my $appServersRef  =$self->appInstance->getActiveServicesByType('appServer');
+	my $appServersRef  =$self->appInstance->getAllServicesByType('appServer');
 	my $appServersString = "";
 	my $cnt = 1;
 	foreach my $appServer (@$appServersRef) {
@@ -113,10 +85,6 @@ override 'create' => sub {
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
-	if ($self->isEdgeService() && $useVirtualIp)  {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
-	}
 	foreach my $key (keys %{$self->internalPortMap}) {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
@@ -125,7 +93,7 @@ override 'create' => sub {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -139,8 +107,8 @@ sub stopInstance {
 	my $logger = get_logger("Weathervane::Services::NginxDockerService");
 	$logger->debug("stop NginxDockerService");
 
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StopNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -154,9 +122,8 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StartNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -174,9 +141,6 @@ sub startInstance {
 		$self->portMap->{"http"} = $portMapRef->{$self->internalPortMap->{"http"}};
 		$self->portMap->{"https"} = $portMapRef->{$self->internalPortMap->{"https"}};
 	}
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 
 	close $applog;
 }
@@ -184,8 +148,8 @@ sub startInstance {
 override 'remove' => sub {
 	my ($self, $logPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $logName          = "$logPath/RemoveNginxDocker-$hostname-$name.log";
 
 	my $applog;
@@ -199,7 +163,7 @@ override 'remove' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname         = $self->getIpAddr();
+	my $hostname         = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	
 	my $response = `curl -s -w "%{http_code}\n" -o /dev/null http://$hostname:$port`;
@@ -215,31 +179,35 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning($fileout, $name);
 
+}
+
+sub isStopped {
+	my ( $self, $fileout ) = @_;
+	my $name = $self->name;
+
+	return !$self->host->dockerExists( $fileout, $name );
 }
 
 sub setPortNumbers {
 	my ( $self ) = @_;
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 
 	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if (!$useVirtualIp) {
-		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
-		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-	} 
+	$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+	  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
 }
 
 sub setExternalPortNumbers {
 	my ( $self ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
@@ -261,7 +229,7 @@ sub configure {
 sub stopStatsCollection {
 	my ($self) = @_;
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	my $out      = `wget --no-check-certificate -O /tmp/nginx-$hostname-stopStats.html https://$hostname:$port/nginx-status 2>&1`;
 	$out = `lynx -dump /tmp/nginx-$hostname-stopStats.html > /tmp/nginx-$hostname-stopStats.txt 2>&1`;
@@ -271,7 +239,7 @@ sub stopStatsCollection {
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	my $port = $self->portMap->{"http"};
 	my $out      = `wget --no-check-certificate -O /tmp/nginx-$hostname-startStats.html https://$hostname:$port/nginx-status 2>&1`;
 	$out = `lynx -dump /tmp/nginx-$hostname-startStats.html > /tmp/nginx-$hostname-startStats.txt 2>&1`;
@@ -280,7 +248,7 @@ sub startStatsCollection {
 
 sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 
 	my $out = `mv /tmp/nginx-$hostname-* $destinationPath/. 2>&1`;
 }
@@ -292,8 +260,8 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -323,7 +291,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -331,8 +299,8 @@ sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 
 	my $nginxServerRoot  = $self->getParamValue('nginxServerRoot');
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 
 
 	my $logpath = "$destinationPath/$name";
@@ -346,8 +314,8 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom($applog, $name, "$nginxServerRoot/*.conf", "$logpath/.");
-	$self->host->dockerScpFileFrom($applog, $name, "$nginxServerRoot/conf.d/*.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/*.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/conf.d/*.conf", "$logpath/.");
 	close $applog;
 
 }

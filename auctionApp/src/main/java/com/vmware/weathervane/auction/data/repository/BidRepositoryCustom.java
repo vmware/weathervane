@@ -16,5 +16,5 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.repository;
 
 public interface BidRepositoryCustom {	
-
+	void deleteByItemId(Long itemId);
 }

@@ -28,12 +28,12 @@ our @workloadImpls = ('auction');
 
 # valid service types 
 our %serviceTypes = ( 
-	'auction' => ['configurationManager', 'elasticityService', 'coordinationServer', 'ipManager', 'lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer'], 
+	'auction' => ['coordinationServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer'], 
 );
 
 # services that can be run on docker
 our %dockerServiceTypes = ( 
-	'auction' => ['lbServer', 'webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer', 'coordinationServer', 'configurationManager'], 
+	'auction' => ['webServer', 'dbServer', 'nosqlServer', 'msgServer', 'appServer', 'auctionBidServer', 'coordinationServer'], 
 );
 
 
@@ -42,25 +42,21 @@ our %dockerServiceTypes = (
 
 # Map workload to serviceTier to serviceType in each tier
 our %workloadToServiceTypes = ('auction' => {
-	'infrastructure' => ['configurationManager', 'elasticityService'],
 	'data' => ['dbServer', 'nosqlServer', 'msgServer', 'coordinationServer'],
 	'backend' => ['appServer', 'auctionBidServer'],
-	'frontend' => ['webServer', 'lbServer', 'ipManager'],
+	'frontend' => ['webServer'],
+	'infrastucture' => [],
 	}
 );
 
 # Valid service implementations for each service type
 our %serviceImpls = (
-	'ipManager'   => ['keepalived'],
-	'configurationManager'    => ['webConfig'],
-	'elasticityService'    => ['scheduledES', 'simpleES'],
 	'coordinationServer'    => ['zookeeper'],
-	'lbServer'    => ['haproxy'],
-	'webServer'   => [ 'httpd', 'nginx' ],
+	'webServer'   => [ 'nginx' ],
 	'appServer'   => [ 'tomcat' ],
 	'auctionBidServer'   => [ 'auctionbidservice' ],
-	'dbServer'    => [ 'mysql', 'postgresql' ],
 	'nosqlServer' => ['cassandra'],
+	'dbServer'    => [ 'postgresql' ],
 	'msgServer'   => ['rabbitmq'],
 );
 
@@ -71,8 +67,8 @@ our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
-our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleAI', 'findMaxSingleAIWithScaling',
-							'findMaxMultiAI', 'findMaxMultiRun', 'targetUtilization', 'single', 'findMax' );
+our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunWithScaling',
+							'findMaxMultiAI', 'findMaxMultiRun', 'single', 'findMax' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 our @configurationSizes = ( 'micro', 'small', 'medium', 'large');

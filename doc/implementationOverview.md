@@ -8,7 +8,7 @@ of these components is represented by a sub-project in the project directory.
 ## Implementation Technologies
 
 This section gives a brief introduction to the various programming laguages and
-key technologies used in Weathervane.  
+key technologies used in Weathervane. 
 
 The following programming languages are used in the various components of
 Weathervane:
@@ -59,20 +59,9 @@ classes for the domain model for the Auction application, as well as for the
 data-access objects (DAOs) and repository classes used to bridge between the
 object model and the relational and NoSQL data stores.  It also contains the
 code for the ImageStore, including implementations for placing the imageStore
-in-memory, in a filesystem, or in MongoDB.
+in-memory or in MongoDB.
 
 auctionApp is written in Java.
-
-### auctionConfigManager
-
-The auctionConfigManager is a microservice which is used to keep
-track of the current configuration of a Auction deployment, and to manage
-the addition and removal of services while the application is running.  The
-auctionConfigManager exposes a REST API over HTTP with operations for
-querying and changing the application configuration. The auctionConfigManager is
-used by the elasticity features of Weathervane.
-
-The auctionConfigService is written in Java.
 
 ### auctionWeb
 

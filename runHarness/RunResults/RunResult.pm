@@ -22,11 +22,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 has 'runNum' => (
 	is  => 'rw',
-	isa => 'Int',
-);
-
-has 'resultsDir' => (
-	is  => 'rw',
 	isa => 'Str',
 );
 

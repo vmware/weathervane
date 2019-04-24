@@ -26,11 +26,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 use namespace::autoclean;
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'description' => (
 	is  => 'ro',
 	isa => 'Str',
@@ -72,29 +67,12 @@ has 'portMap' => (
 
 override 'initialize' => sub {
 	my ( $self ) = @_;
-	my $paramHashRef = $self->paramHashRef;
-
-	my $weathervaneHome        = $paramHashRef->{ 'weathervaneHome' };
-	my $workloadDriverDir = $self->getParamValue('workloadDriverDir');
-	if ( !( $workloadDriverDir =~ /^\// ) ) {
-		$workloadDriverDir = $weathervaneHome . "/" . $workloadDriverDir;
-	}
-	$self->setParamValue( 'workloadDriverDir', $workloadDriverDir );
-
-	my $distDir = $self->getParamValue('distDir' );
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue( 'distDir', $distDir );
 	
-	# if the tmpDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $tmpDir = $self->getParamValue('tmpDir');
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue( 'tmpDir', $tmpDir );
-	
+	# Assign a name to this driver
+	my $workloadNum = $self->workload->instanceNum;
+	my $instanceNum = $self->instanceNum;
+	$self->name("driverW${workloadNum}I${instanceNum}");
+
 	super();
 
 };
@@ -110,40 +88,6 @@ sub getNextPortMultiplier {
 	$self->nextPortMultiplier($retVal + 1);
 	
 	return $retVal;
-}
-
-sub registerPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For workloadDriver on host ", $self->host->hostName, " registering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->registerPortNumber($portNumber, $self);
-		}				
-	}
-
-}
-
-sub unRegisterPortsWithHost {
-	my ($self) = @_;
-	my $logger = get_logger("Weathervane::Services::Service");	
-	
-	foreach my $key (keys %{$self->portMap}) {
-		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For workload driver on host ", $self->host->hostName, " unregistering port $portNumber for key $key");
-		if ($portNumber) {
- 			$self->host->unRegisterPortNumber($portNumber);
-		}				
-	}
-
-}
-
-sub setHost {
-	my ($self, $host) = @_;
-	
-	$self->host($host);
 }
 
 sub setWorkload {

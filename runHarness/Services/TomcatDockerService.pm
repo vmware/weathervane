@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'Tomcat', );
-
-has '+version' => ( default => '8', );
-
-has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -43,12 +37,8 @@ override 'initialize' => sub {
 override 'create' => sub {
 	my ( $self, $logPath ) = @_;
 
-	if ( !$self->getParamValue('useDocker') ) {
-		return;
-	}
-
-	my $name     = $self->getParamValue('dockerName');
-	my $hostname = $self->host->hostName;
+	my $name     = $self->name;
+	my $hostname = $self->host->name;
 	my $impl     = $self->getImpl();
 
 	my $logName = "$logPath/CreateTomcatDocker-$hostname-$name.log";
@@ -63,43 +53,37 @@ override 'create' => sub {
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
-	my $numCpus            = $self->host->cpus;
-	if ($self->getParamValue('dockerCpus')) {
-		$numCpus = $self->getParamValue('dockerCpus');
-	}
+	my $serviceType = $self->getParamValue( 'serviceType' );
+	my $numCpus = $self->getParamValue( $serviceType . "Cpus" );
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('appServerJdbcConnections') / 2);
-	my $nodeNum = $self->getParamValue('instanceNum');
+	my $nodeNum = $self->instanceNum;
 	my $users = $self->appInstance->getUsers();
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /
-		  ( $self->appInstance->getNumActiveOfServiceType('appServer') * 1.0 ) );
+		  ( $self->appInstance->getTotalNumOfServiceType('appServer') * 1.0 ) );
 	if ( $maxConnections < 100 ) {
 		$maxConnections = 100;
 	}
 
 	my $completeJVMOpts .= $self->getParamValue('appServerJvmOpts');
 	$completeJVMOpts .= " " . $serviceParamsHashRef->{"jvmOpts"};
-	if ( $self->getParamValue('appServerEnableJprofiler') ) {
-		$completeJVMOpts .=
-		  " -agentpath:/opt/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849,nowait -XX:MaxPermSize=400m";
-	}
 
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";
 	}
 	$completeJVMOpts .= " -DnodeNumber=$nodeNum ";
 	
-	my $dbServicesRef = $self->appInstance->getActiveServicesByType("dbServer");
+	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
 	my $dbHostname    = $self->getHostnameForUsedService($dbService);
 	my $db            = $dbService->getImpl();
 	my $dbPort        = $self->getPortNumberForUsedService( $dbService, $db );
 	my $useTLS = 0;
-	if ( $self->getParamValue('ssl') && ( $self->appInstance->getNumActiveOfServiceType('webServer') == 0 ) ) {
+	if ( $self->getParamValue('ssl') && ( $self->appInstance->getTotalNumOfServiceType('webServer') == 0 ) ) {
 		$useTLS = 1;
 	}
 	my %envVarMap;
@@ -119,11 +103,6 @@ override 'create' => sub {
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-	if ( $self->isEdgeService() && $useVirtualIp ) {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
-	}
 	foreach my $key ( keys %{ $self->internalPortMap } ) {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
@@ -133,7 +112,7 @@ override 'create' => sub {
 	my $entryPoint = "";
 
 	$self->host->dockerRun(
-		$applog, $self->getParamValue('dockerName'),
+		$applog, $self->name,
 		$impl, $directMap, \%portMap, \%volumeMap, \%envVarMap, $self->dockerConfigHashRef,
 		$entryPoint, $cmd, $self->needsTty
 	);
@@ -146,8 +125,8 @@ sub stopInstance {
 	my $logger = get_logger("Weathervane::Services::TomcatDockerService");
 	$logger->debug("stop TomcatDockerService");
 
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/StopTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -161,8 +140,8 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/StartTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -184,9 +163,6 @@ sub startInstance {
 		$self->portMap->{"shutdown"} = $portMapRef->{ $self->internalPortMap->{"shutdown"} };
 	}
 
-	$self->registerPortsWithHost();
-	$self->host->startNscd();
-
 	close $applog;
 }
 
@@ -194,8 +170,8 @@ override 'remove' => sub {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::TomcatDockerService");
 	$logger->debug("logPath = $logPath");
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 	my $logName  = "$logPath/RemoveTomcatDocker-$hostname-$name.log";
 
 	my $applog;
@@ -209,7 +185,7 @@ override 'remove' => sub {
 
 sub isUp {
 	my ( $self, $applog ) = @_;
-	my $hostname = $self->getIpAddr();
+	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{"http"};
 
 	my $response = `curl -s http://$hostname:$port/auction/healthCheck`;
@@ -226,24 +202,27 @@ sub isUp {
 
 sub isRunning {
 	my ( $self, $fileout ) = @_;
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 
 	return $self->host->dockerIsRunning( $fileout, $name );
 
+}
+
+sub isStopped {
+	my ( $self, $fileout ) = @_;
+	my $name = $self->name;
+
+	return !$self->host->dockerExists( $fileout, $name );
 }
 
 sub setPortNumbers {
 	my ( $self ) = @_;
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
-
 	my $portOffset = 0;
 	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
-	if (!$useVirtualIp) {
-		$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
-		  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
-	} 
+	$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
+	  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;
 	$self->internalPortMap->{"https"} = 443 + $portOffset;
 	$self->internalPortMap->{"shutdown"} = 8005 + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
@@ -251,7 +230,7 @@ sub setPortNumbers {
 
 sub setExternalPortNumbers {
 	my ($self)     = @_;
-	my $name       = $self->getParamValue('dockerName');
+	my $name       = $self->name;
 	
 	my $portMapRef = $self->host->dockerPort($name);
 
@@ -279,8 +258,8 @@ sub configure {
 sub stopStatsCollection {
 	my ($self)   = @_;
 	my $port     = $self->portMap->{"http"};
-	my $hostname = $self->host->hostName;
-	my $name     = $self->getParamValue('dockerName');
+	my $hostname = $self->host->name;
+	my $name     = $self->name;
 
 	if ( $self->getParamValue('appServerPerformanceMonitor') ) {
 `curl -s -o /tmp/$hostname-$name-performanceMonitor.csv http://$hostname:$port/auction/javasimon/data/table.csv?type=STOPWATCH&type=COUNTER&timeFormat=NANOSECOND `;
@@ -293,8 +272,8 @@ sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
 	my $setupLogDir        = $self->getParamValue('tmpDir') . "/setupLogs";
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 
 	my $logName = "$setupLogDir/StartStatsCollectionTomcatDocker-$hostname-$name.log";
@@ -312,8 +291,8 @@ sub getStatsFiles {
 	my ( $self, $destinationPath ) = @_;
 
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -329,7 +308,7 @@ sub getStatsFiles {
 	`mv /tmp/$hostname-$name-performanceMonitor.csv $logpath/. 2>&1`;
 	`mv /tmp/$hostname-$name-performanceMonitor.json $logpath/. 2>&1`;
 
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc*.log", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc*.log", "$logpath/." );
 
 	close $applog;
 
@@ -346,8 +325,8 @@ sub getLogFiles {
 	$logger->debug("getLogFiles");
 
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -380,8 +359,8 @@ sub parseLogFiles {
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $name               = $self->getParamValue('dockerName');
-	my $hostname           = $self->host->hostName;
+	my $name               = $self->name;
+	my $hostname           = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -394,8 +373,8 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/conf/*",        "$logpath/." );
-	$self->host->dockerScpFileFrom( $applog, $name, "$tomcatCatalinaBase/bin/setenv.sh", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/conf/*",        "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/bin/setenv.sh", "$logpath/." );
 	close $applog;
 
 }
@@ -413,11 +392,7 @@ sub getStatsSummary {
 	my ( $self, $statsLogPath, $users ) = @_;
 	tie( my %csv, 'Tie::IxHash' );
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
 	my $gcviewerDir     = $self->getParamValue('gcviewerDir');
-	if ( !( $gcviewerDir =~ /^\// ) ) {
-		$gcviewerDir = $weathervaneHome . "/" . $gcviewerDir;
-	}
 
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {
@@ -428,16 +403,16 @@ sub getStatsSummary {
 
 		tie( my %accumulatedCsv, 'Tie::IxHash' );
 		my $serviceType = $self->getParamValue('serviceType');
-		my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+		my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 		my $numServices = $#{$servicesRef} + 1;
 		my $csvHashRef;
 		foreach my $service (@$servicesRef) {
-			my $name    = $service->getParamValue('dockerName');
-			my $logPath = $statsLogPath . "/" . $service->host->hostName . "/$name";
+			my $name    = $service->name;
+			my $logPath = $statsLogPath . "/" . $service->host->name . "/$name";
 			$csvHashRef = ParseGC::parseGCLog( $logPath, "", $gcviewerDir );
 
 			if ( !$addedHeaders ) {
-				print HOSTCSVFILE "Hostname,IP Addr";
+				print HOSTCSVFILE "Hostname";
 				foreach my $key ( keys %$csvHashRef ) {
 					print HOSTCSVFILE ",$key";
 				}
@@ -446,7 +421,7 @@ sub getStatsSummary {
 				$addedHeaders = 1;
 			}
 
-			print HOSTCSVFILE $service->host->hostName . "," . $service->host->ipAddr;
+			print HOSTCSVFILE $service->host->name;
 			foreach my $key ( keys %$csvHashRef ) {
 				print HOSTCSVFILE "," . $csvHashRef->{$key};
 				if ( $csvHashRef->{$key} eq "na" ) {

@@ -9,7 +9,6 @@ print "Cleaning data\n";
 my $auctions = 0;
 
 my $dbPrepOptions = " -a $auctions -c ";
-$dbPrepOptions .= " -f $ENV{'MAXDURATION'} ";
 
 my $users = $ENV{'USERS'};
 $dbPrepOptions .= " -u $users ";

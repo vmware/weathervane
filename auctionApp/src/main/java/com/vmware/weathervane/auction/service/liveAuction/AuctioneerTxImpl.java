@@ -166,6 +166,21 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 	@Override
 	@Transactional
+	public void resetItems(Long auctionId) {
+		Auction currentAuction = auctionDao.get(auctionId);
+		auctionDao.resetItemsToFuture(currentAuction);
+	}
+
+	@Override
+	@Transactional
+	public void deleteHighbids(Long auctionId) {
+		Auction currentAuction = auctionDao.get(auctionId);
+		highBidDao.deleteByAuction(currentAuction);
+	}
+	
+
+	@Override
+	@Transactional
 	public HighBid startNextItem(HighBid curHighBid) {
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 
@@ -177,25 +192,18 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		Item nextItem = null;
 		try {
 			nextItem = auctionDao.getNextUnsoldItem(currentAuction);
-			logger.info("startNextItem: found nextItem " + nextItem.getId() + " for auction "
-					+ currentAuction.getId());
+			System.out.println("startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			/*
-			 * There are no more items. The auction is complete.
+			 * There are no more items. Return null.
 			 */
-			logger.info("startNextItem:  auction " + currentAuction.getId() + " is complete");
-			// Pull the auction into the persistence context
-			currentAuction = auctionDao.get(currentAuction.getId());
-			currentAuction.setState(AuctionState.COMPLETE);
-			currentAuction.setEndTime(now);
-			
+			System.out.println("startNextItem:  auction " + currentAuction.getId() + " is complete.  Return null so that can restart");
 			return null;
 		} catch (NonUniqueResultException ex) {
 			throw new RuntimeException(
-					"In startNextItem: Got multiple next items for auction "
-							+ currentAuction.getId());
+					"In startNextItem: Got multiple next items for auction " + currentAuction.getId());
 		}
-
+		
 		logger.debug("startNextItem: Making item " + nextItem.getId()
 				+ " the current item for Auction " + currentAuction.getId());
 

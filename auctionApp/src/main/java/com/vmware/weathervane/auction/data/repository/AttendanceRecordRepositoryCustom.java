@@ -25,4 +25,6 @@ public interface AttendanceRecordRepositoryCustom {
 
 	void leaveAuctionsForUser(Long userId);
 	
+	void deleteByAuctionId(Long auctionId);
+	
 }

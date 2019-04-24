@@ -28,20 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-<<<<<<< HEAD
-has '+name' => ( default => 'AuctionBidService', );
-
-has '+version' => ( default => '8', );
-
-has '+description' => ( default => 'The Apache Tomcat Servlet Container', );
-=======
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
->>>>>>> 2.0-dev
-
 override 'initialize' => sub {
 	my ($self) = @_;
 

@@ -6,7 +6,6 @@ use POSIX;
 # the usersPerAuctionScaleFactor
 my $maxUsers = $ENV{'MAXUSERS'};
 my $users = $ENV{'USERS'};
-my $maxDuration = $ENV{'MAXDURATION'};
 my $workloadNum = $ENV{'WORKLOADNUM'};
 my $appInstanceNum = $ENV{'APPINSTANCENUM'};
 my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
@@ -34,7 +33,6 @@ if (($auctions % 2) != 0) {
 # Load the data
 my $dbLoaderOptions = "-d /items.json -t $threads ";
 $dbLoaderOptions .= " -u $maxUsers ";
-$dbLoaderOptions .= " -f $maxDuration ";
 $dbLoaderOptions .= " -a 'Workload $workloadNum, appInstance $appInstanceNum.' ";
 $dbLoaderOptions .= " -r \"/images\"";
 

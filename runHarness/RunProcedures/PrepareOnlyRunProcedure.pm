@@ -34,17 +34,7 @@ extends 'RunProcedure';
 
 has '+name' => ( default => 'Prepare-Only', );
 
-has 'loadDb' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
 has 'reloadDb' => (
-	is  => 'rw',
-	isa => 'Bool',
-);
-
-has 'isPowerControl' => (
 	is  => 'rw',
 	isa => 'Bool',
 );
@@ -62,46 +52,53 @@ override 'initialize' => sub {
 
 sub run {
 	my ( $self ) = @_;
-	my $runLog             = $self->runLog;
-	my $sequenceNumberFile = $self->getParamValue('sequenceNumberFile');
-	my $outputDir          = $self->getParamValue('outputDir');
+	my $majorSequenceNumberFile = $self->getParamValue('sequenceNumberFile');
 	my $tmpDir             = $self->getParamValue('tmpDir');
-	my $weathervaneHome    = $self->getParamValue('weathervaneHome');
 	my $console_logger     = get_logger("Console");
 	my $debug_logger       = get_logger("Weathervane::RunProcedures::PrepareOnlyRunProcedure");
 	my @pids;
 	my $pid;
 
-	# Get the sequence number of the next run
-	my $seqnum;
-	if ( -e "$sequenceNumberFile" ) {
-		open SEQFILE, "<$sequenceNumberFile";
-		$seqnum = <SEQFILE>;
+	# Get the major sequence number
+	my $majorSeqNum;
+	if ( -e "$majorSequenceNumberFile" ) {
+		open SEQFILE, "<$majorSequenceNumberFile";
+		$majorSeqNum = <SEQFILE>;
 		close SEQFILE;
-		if ( -e "$outputDir/$seqnum" ) {
-			print "Next run number is $seqnum, but directory for run $seqnum already exists in $outputDir\n";
-			exit -1;
-		}
-		open SEQFILE, ">$sequenceNumberFile";
-		my $nextSeqNum = $seqnum + 1;
+		$majorSeqNum--; #already incremented in weathervane.pl
+	} else {
+		print "Major sequence number file is missing.\n";
+		exit -1;
+	}
+	# Get the minor sequence number of the next run
+	my $minorSequenceNumberFile = "$tmpDir/minorsequence.num";
+	my $minorSeqNum;
+	if ( -e "$minorSequenceNumberFile" ) {
+		open SEQFILE, "<$minorSequenceNumberFile";
+		$minorSeqNum = <SEQFILE>;
+		close SEQFILE;
+		open SEQFILE, ">$minorSequenceNumberFile";
+		my $nextSeqNum = $minorSeqNum + 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
 	else {
-		if ( -e "$outputDir/0" ) {
-			print "Sequence number file is missing, but run 0 already exists in $outputDir\n";
-			exit -1;
-		}
-		$seqnum = 0;
-		open SEQFILE, ">$sequenceNumberFile";
+		$minorSeqNum = 0;
+		open SEQFILE, ">$minorSequenceNumberFile";
 		my $nextSeqNum = 1;
 		print SEQFILE $nextSeqNum;
 		close SEQFILE;
 	}
+	my $seqnum = $majorSeqNum . "-" . $minorSeqNum;
 	$self->seqnum($seqnum);
-	
-	# clean out the tmp directory
-	`rm -r $tmpDir/* 2>&1`;
+
+	my $tmpDirTop = $tmpDir;
+	# Now send all output to new subdir 	
+	$tmpDir = "$tmpDir/$minorSeqNum";
+	if ( !( -e $tmpDir ) ) {
+		`mkdir $tmpDir`;
+	}
+	$self->tmpDir($tmpDir);
 
 	# directory for logs related to start/stop/etc
 	my $setupLogDir = $tmpDir . "/setupLogs";
@@ -119,32 +116,17 @@ sub run {
 	);
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
-
-	## power control.
-	if ( $self->getParamValue('powerOnVms') || $self->getParamValue('powerOffVms') ) {
-		$debug_logger->debug("doPowerControl");
-		$self->doPowerControl();
-
-		# Only do powercontrol the first run
-		$self->setParamValue( 'powerOnVms',  0 );
-		$self->setParamValue( 'powerOffVms', 0 );
-	}
 	
-	# Now get the cpu and memory config of all hosts
-	$self->getCpuMemConfig();
-	
-	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
+	$console_logger->info("Stopping services from previous runs.\n");
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
 	$self->killOldWorkloadDrivers($setupLogDir);
 
 	$debug_logger->debug("stop services");
+	$self->stopDataManager($setupLogDir);		
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
-
-	$debug_logger->debug("Unregister port numbers");
-	$self->unRegisterPortNumbers();
 	
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");
 	$self->cleanup($setupLogDir);
@@ -156,32 +138,19 @@ sub run {
 		$self->setParamValue( 'redeploy', 0 );
 	}
 	
-	# Make sure that all hosts are running the same version of Weathervane
-	my $allSame = $self->checkVersions();
-	if (!$allSame) {
-		$console_logger->info("Mismatching Weathervane versions detected.");		
-		$console_logger->info("To synchronize the version of Weathervane on all hosts to match the local host, use the --redeploy flag.");
-		exit;		
-	}
-	
-	# Copy the version file into the output directory
-	`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
-		
-	# Prepare the data for this run and start the data services
+	# Start the data services for all AppInstances.  This happens serially so
+	# that we don't have to spawn processes and lose port number info.
+	$self->prepareDataServices($setupLogDir);	
+	# Prepare the data for this run.  This happens in parallel on all appInstances
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);
 	if ( !$dataPrepared ) {
-		$self->cleanupAfterFailure( "Could not properly load or prepare data for run $seqnum.  Exiting.", $seqnum, $tmpDir, $outputDir );
+		$self->cleanupAfterFailure( "Could not properly load or prepare data for run $seqnum.  Exiting.", $seqnum, $tmpDir );
 	}
 
 	$self->clearReloadDb();
 
 	## start all of the backend services.  Data services should be up.
-	$console_logger->info("Starting data services");
-	$self->startServices( "data", $setupLogDir );
-	# Make sure that the services know their external port numbers
-	$self->setExternalPortNumbers();
-
 	$console_logger->info("Pre-warming data services.\n");
 	$self->pretouchData($setupLogDir);
 
@@ -204,11 +173,19 @@ sub run {
 	$debug_logger->debug("Check isUp");
 	my $allUp = $self->isUp($setupLogDir);
 	if ( !$allUp ) {
-		$self->cleanupAfterFailure( "Couldn't start all application services for run $seqnum. Exiting.", $seqnum, $tmpDir, $outputDir );
+		$self->cleanupAfterFailure( "Couldn't start all application services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+	}
+
+	my $runProcedureType = $self->getRunProcedureImpl();
+	if ( $runProcedureType eq 'prepareOnly' ) {
+		my $prepareOnlyMinorSequenceNumberFile = "$tmpDirTop/prepareOnly.num";
+		open SEQFILE, ">$prepareOnlyMinorSequenceNumberFile";
+		print SEQFILE $minorSeqNum;
+		close SEQFILE;
 	}
 
 	# Write users.txt
-	$self->writeUsersTxt();
+	$self->writeUsersTxt($tmpDir);
 	
 	my $runResult = RunResult->new(
 		'runNum'     => $seqnum,

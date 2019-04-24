@@ -2,8 +2,7 @@
  
 "micro" : {
   "maxUsers" : 1000,
-  "maxDuration" : 3600, 
-
+  
   "numWebServers" : 1,
   "webServerCpus" : "100m",
   "webServerMem"  : "2Gi",
@@ -12,18 +11,16 @@
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "100m",
   "auctionBidServerMem" : "2Gi",
-  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
+  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 20,
   "auctionBidServerJdbcConnections" : 21,
-  "highBidQueueConcurrency" : 2,
-  "newBidQueueConcurrency" : 2,
   "numClientUpdateThreads" : 2,
   "auctionBidServerImpl" : "auctionbidservice",
   
   "numAppServers" : 1,
   "appServerCpus" : "100m",
   "appServerMem" : "2Gi",
-  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+AlwaysPreTouch ",
+  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,
   "numAuctioneerThreads" : 1,  
@@ -56,7 +53,6 @@
 
 "small" : {
   "maxUsers" : 20000,
-  "maxDuration" : 7200, 
 
   "numWebServers" : 1,
   "webServerCpus" : "2",
@@ -66,18 +62,16 @@
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "2",
   "auctionBidServerMem" : "7Gi",
-  "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
+  "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 100,
   "auctionBidServerJdbcConnections" : 101,
-  "highBidQueueConcurrency" : 2,
-  "newBidQueueConcurrency" : 2,
   "numClientUpdateThreads" : 2,
   "auctionBidServerImpl" : "auctionbidservice",
   
   "numAppServers" : 3,
   "appServerCpus" :"2",
   "appServerMem" : "7Gi",
-  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch ",
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 100,
   "appServerJdbcConnections" : 101,
   "numAuctioneerThreads" : 1,  

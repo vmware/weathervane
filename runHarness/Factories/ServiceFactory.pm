@@ -15,34 +15,18 @@ package ServiceFactory;
 
 use Moose;
 use MooseX::Storage;
-use Services::KeepalivedService;
-use Services::HaproxyService;
-use Services::HaproxyDockerService;
-use Services::HttpdService;
-use Services::NginxService;
 use Services::NginxKubernetesService;
 use Services::NginxDockerService;
-use Services::TomcatService;
 use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
-use Services::AuctionBidService;
-use Services::MysqlService;
-use Services::PostgresqlService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::CassandraKubernetesService;
-use Services::ZookeeperService;
 use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
-use Services::RabbitmqService;
 use Services::RabbitmqKubernetesService;
 use Services::RabbitmqDockerService;
-use Services::NfsService;
-use Services::ConfigurationManager;
-use Services::ConfigurationManagerDocker;
-use Services::ScheduledElasticityService;
-use Services::SimpleElasticityService;
 use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
@@ -62,148 +46,75 @@ sub getServiceByNameAndVersion {
 		die "No matching service name $serviceName and version available to ServiceFactory";
 	}
 
-	$service->initialize($paramsHashRef);
-
 	return $service;
 }
 
 sub getServiceByType {
-	my ( $self, $paramHashRef, $serviceType, $numScvInstances, $appInstance ) = @_;
+	my ( $self, $paramHashRef, $serviceType, $numSvcInstances, $appInstance, $host ) = @_;
 	my $console_logger = get_logger("Console");
-	my $service;
-
-	my $serviceName = $paramHashRef->{$serviceType . "Impl"};
 	
-	my $docker = $paramHashRef->{"useDocker"};
+	my $hostType = ref $host;
+	my $serviceName = $paramHashRef->{$serviceType . "Impl"};	
 
+	my $service;
 	if ( $serviceName eq "tomcat" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = TomcatKubernetesService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
-		} elsif ($docker) {
-			$service = TomcatDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
+		if ($hostType eq "KubernetesCluster") {
+			$service = TomcatKubernetesService->new(
+			paramHashRef => $paramHashRef,
+			appInstance => $appInstance,
 			);
-		}
-		else {
-			$service = TomcatService->new(
+		} else {
+			$service = TomcatDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
 		}
 	}
 	elsif ( $serviceName eq "auctionbidservice" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($hostType eq "KubernetesCluster") {
 				$service = AuctionBidKubernetesService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
-		} elsif ($docker) {
+		} else {
 			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes");
 			exit(-1);
 		}
-		else {
-				$service = AuctionBidService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-		}
-	}
-	elsif ( $serviceName eq "keepalived" ) {
-		$service = KeepalivedService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "haproxy" ) {
-		if ($docker) {
-			$service = HaproxyDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {
-			$service = HaproxyService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-	}
-	elsif ( $serviceName eq "httpd" ) {
-			$service = HttpdService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
 	}
 	elsif ( $serviceName eq "zookeeper" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($hostType eq "KubernetesCluster") {
 				$service = ZookeeperKubernetesService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
-		} elsif ($docker) {
+		} else {
 			$service = ZookeeperDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-		else {
-			$service = ZookeeperService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
 		}
 	}
 	elsif ( $serviceName eq "nginx" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($hostType eq "KubernetesCluster") {
 				$service = NginxKubernetesService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
-		} elsif ($docker) {
+		} else {
 			$service = NginxDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
 		}
-		else {
-			$service = NginxService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		}
-	}
-	elsif ( $serviceName eq "mysql" ) {
-		$service = MysqlService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	elsif ( $serviceName eq "postgresql" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($hostType eq "KubernetesCluster") {
 				$service = PostgresqlKubernetesService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
-		} elsif ($docker) {
+		} else {
 			$service = PostgresqlDockerService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
-		} else {	
-			$service = PostgresqlService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
@@ -220,68 +131,21 @@ sub getServiceByType {
 		} 
 	}
 	elsif ( $serviceName eq "rabbitmq" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
+		if ($hostType eq "KubernetesCluster") {
 				$service = RabbitmqKubernetesService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 				);
-			}		
-		} elsif ($docker) {
+		} else {
 			$service = RabbitmqDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);
-		} else {
-			$service = RabbitmqService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-			);
 		}
-	}
-	elsif ( $serviceName eq "nfs" ) {
-		$service = NfsService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "webConfig" ) {
-		if ($paramHashRef->{'clusterName'}) {
-			if ($paramHashRef->{'clusterType'} eq 'kubernetes') {
-				$service = ConfigurationManagerKubernetes->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
-			}		
-		} elsif ($docker) {
-			$service = ConfigurationManagerDocker->new(
-					paramHashRef => $paramHashRef,
-					appInstance => $appInstance,
-			);
-		} else {
-			$service = ConfigurationManager->new(
-						paramHashRef => $paramHashRef,
-					appInstance => $appInstance,
-			);	
-		}
-	}
-	elsif ( $serviceName eq "simpleES" ) {
-		$service = SimpleElasticityService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
-	}
-	elsif ( $serviceName eq "scheduledES" ) {
-		$service = ScheduledElasticityService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-		);
 	}
 	else {
 		die "No matching service name $serviceName available to ServiceFactory";
 	}
-
-	$service->initialize($numScvInstances);
 
 	return $service;
 }

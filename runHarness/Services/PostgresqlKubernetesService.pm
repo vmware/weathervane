@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'PostgreSQL 9.3', );
-
-has '+version' => ( default => '9.3.5', );
-
-has '+description' => ( default => '', );
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -42,7 +36,7 @@ override 'initialize' => sub {
 sub clearDataBeforeStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 	$logger->debug("clearDataBeforeStart for $name");
 }
 
@@ -50,7 +44,7 @@ sub clearDataAfterStart {
 	my ( $self, $logPath ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");
 	my $cluster    = $self->host;
-	my $name        = $self->getParamValue('dockerName');
+	my $name        = $self->name;
 
 	$logger->debug("clearDataAfterStart for $name");
 
@@ -68,7 +62,7 @@ sub clearDataAfterStart {
 }
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("Configure Postgresql kubernetes");
 	print $dblog "Configure Postgresql Kubernetes\n";
@@ -91,7 +85,7 @@ sub configure {
 
 	my $dataVolumeSize = $self->getParamValue('postgresqlDataVolumeSize');
 	my $logVolumeSize = $self->getParamValue('postgresqlLogVolumeSize');
-
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/postgresql.yaml" ) or die "$configDir/kubernetes/postgresql.yaml: $!\n";
 	open( FILEOUT, ">/tmp/postgresql-$namespace.yaml" )             or die "Can't open file /tmp/postgresql-$namespace.yaml: $!\n";	
@@ -131,9 +125,13 @@ sub configure {
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
 		}
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
 			print FILEOUT $inline;
@@ -200,13 +198,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
-		return 0;
-	} else {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "/usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432", $self->namespace, '', $numServers)) { 
 		return 1;
 	}
+	return 0;
 };
 
 sub cleanLogFiles {
@@ -217,7 +213,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -233,7 +229,7 @@ sub getConfigFiles {
 
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("startStatsCollection");
 
@@ -258,7 +254,7 @@ override 'stopStatsCollection' => sub {
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("stopStatsCollection");
 	# Get interesting views on the pg_stats table
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $cluster = $self->host;
 	
 	open( STATS, ">/tmp/postgresql_stats_$hostname.txt" ) or die "Error opening /tmp/postgresql_stats_$hostname.txt:$!";
@@ -302,7 +298,7 @@ override 'stopStatsCollection' => sub {
 
 override 'getStatsFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("getStatsFiles");
 

@@ -34,9 +34,7 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	private Long id;
 	
 	private Long maxusers;
-	
-	private Long maxduration;
-	
+
 	private String imagestoretype;
 	
 	public DbBenchmarkInfo() {
@@ -72,14 +70,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 
 	public void setMaxusers(Long maxusers) {
 		this.maxusers = maxusers;
-	}
-
-	public Long getMaxduration() {
-		return maxduration;
-	}
-
-	public void setMaxduration(Long maxduration) {
-		this.maxduration = maxduration;
 	}
 
 }

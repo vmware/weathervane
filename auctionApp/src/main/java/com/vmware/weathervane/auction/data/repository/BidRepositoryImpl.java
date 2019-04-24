@@ -19,6 +19,10 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+
+import com.vmware.weathervane.auction.data.model.Bid;
 
 public class BidRepositoryImpl implements BidRepositoryCustom {
 
@@ -26,4 +30,10 @@ public class BidRepositoryImpl implements BidRepositoryCustom {
 	@Named("bidMongoTemplate")
 	MongoOperations bidMongoTemplate;
 	
+	@Override
+	public void deleteByItemId(Long itemId) {
+		Query query = new Query(Criteria.where("itemId").is(itemId));
+		bidMongoTemplate.remove(query, Bid.class);
+	}
+
 }

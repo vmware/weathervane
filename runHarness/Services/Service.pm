@@ -30,21 +30,6 @@ use Instance;
 
 extends 'Instance';
 
-has 'name' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'version' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
-has 'description' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'appInstance' => (
 	is      => 'rw',
 	isa     => 'AppInstance',
@@ -88,13 +73,6 @@ has 'needsTty' => (
 	default => 0,
 );
 
-# This service is currently actively part of the running configuration
-has 'isActive' => (
-	is => 'rw',
-	isa => 'Bool',
-	default => 0,
-);
-
 # Hold the id assigned by the configuration manager
 has 'id' => (
 	is => 'rw',
@@ -112,81 +90,38 @@ has 'removeUrl' => (
 override 'initialize' => sub {
 	my ( $self ) = @_;
 
+	# Assign a name to this service
+	my $serviceType = $self->getParamValue('serviceType');
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $instanceNum = $self->instanceNum;
+	$self->name("${serviceType}W${workloadNum}A${appInstanceNum}I${instanceNum}");
 
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $configDir  = $self->getParamValue('configDir');
-	if ( !( $configDir =~ /^\// ) ) {
-		$configDir = $weathervaneHome . "/" . $configDir;
-	}
-	$self->setParamValue('configDir', $configDir);
-	
-	my $distDir  = $self->getParamValue( 'distDir' );
-	if ( !( $distDir =~ /^\// ) ) {
-		$distDir = $weathervaneHome . "/" . $distDir;
-	}
-	$self->setParamValue('distDir', $distDir);
-	
-	# if the tmpDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $tmpDir = $self->getParamValue('tmpDir' );
-	if ( !( $tmpDir =~ /^\// ) ) {
-		$tmpDir = $weathervaneHome . "/" . $tmpDir;
-	}
-	$self->setParamValue('tmpDir', $tmpDir);
-
-	# if the dbScriptDir doesn't start with a / then it
-	# is relative to weathervaneHome
-	my $dbScriptDir    = $self->getParamValue('dbScriptDir' );
-	if ( !( $dbScriptDir =~ /^\// ) ) {
-		$dbScriptDir = $weathervaneHome . "/" . $dbScriptDir;
-	}
-	$self->setParamValue('dbScriptDir', $dbScriptDir);
-
-	# make sure the directories exist
-	if ( !( -e $dbScriptDir ) ) {
-		die "Error: The directory for the database creation scripts, $dbScriptDir, does not exist.";
-	}
-	
+	my $cpus = $self->getParamValue( $serviceType . "Cpus" );
+	my $mem = $self->getParamValue( $serviceType . "Mem" );
 	if ($self->getParamValue('dockerNet')) {
 		$self->dockerConfigHashRef->{'net'} = $self->getParamValue('dockerNet');
 	}
-	if ($self->getParamValue('dockerCpus')) {
-		$self->dockerConfigHashRef->{'cpus'} = $self->getParamValue('dockerCpus');
+	if ($cpus) {
+		$self->dockerConfigHashRef->{'cpus'} = $cpus;
 	}
 	if ($self->getParamValue('dockerCpuShares')) {
 		$self->dockerConfigHashRef->{'cpu-shares'} = $self->getParamValue('dockerCpuShares');
 	} 
 	if ($self->getParamValue('dockerCpuSetCpus') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-cpus'} = $self->getParamValue('dockerCpuSetCpus');
-		
-		if ($self->getParamValue('dockerCpus') == 0) {
-			# Parse the CpuSetCpus parameter to determine how many CPUs it covers and 
-			# set dockerCpus accordingly so that services can know how many CPUs the 
-			# container has when configuring
-			my $numCpus = 0;
-			my @cpuGroups = split(/,/, $self->getParamValue('dockerCpuSetCpus'));
-			foreach my $cpuGroup (@cpuGroups) {
-				if ($cpuGroup =~ /-/) {
-					# This cpu group is a range
-					my @rangeEnds = split(/-/,$cpuGroup);
-					$numCpus += ($rangeEnds[1] - $rangeEnds[0] + 1);
-				} else {
-					$numCpus++;
-				}
-			}
-			$self->setParamValue('dockerCpus', $numCpus);
-		}
 	}
 	if ($self->getParamValue('dockerCpuSetMems') ne "unset") {
 		$self->dockerConfigHashRef->{'cpuset-mems'} = $self->getParamValue('dockerCpuSetMems');
 	}
-	if ($self->getParamValue('dockerMemory')) {
-		$self->dockerConfigHashRef->{'memory'} = $self->getParamValue('dockerMemory');
+	if ($mem) {
+		$self->dockerConfigHashRef->{'memory'} = $mem;
 	}
 	if ($self->getParamValue('dockerMemorySwap')) {
 		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
 	}
 		
+	
 	super();
 
 };
@@ -205,12 +140,11 @@ sub registerPortsWithHost {
 	
 	foreach my $key (keys %{$self->portMap}) {
 		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For service ", $self->getDockerName(), ", registering port $portNumber for key $key");
+		$logger->debug("For service ", $self->name, ", registering port $portNumber for key $key");
 		if ($portNumber) {
  			$self->host->registerPortNumber($portNumber, $self);
 		}				
 	}
-
 }
 
 sub unRegisterPortsWithHost {
@@ -219,12 +153,11 @@ sub unRegisterPortsWithHost {
 	
 	foreach my $key (keys %{$self->portMap}) {
 		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For service ", $self->getDockerName(), ", unregistering port $portNumber for key $key");
+		$logger->debug("For service ", $self->name, ", unregistering port $portNumber for key $key");
 		if ($portNumber) {
  			$self->host->unRegisterPortNumber($portNumber);
 		}				
 	}
-
 }
 
 sub setAppInstance {
@@ -241,34 +174,11 @@ sub isEdgeService {
 	}
 }
 
-sub getWorkloadNum {
-	my ($self) = @_;
-	return $self->getParamValue('workloadNum');
-}
-
-sub getAppInstanceNum {
-	my ($self) = @_;
-	return $self->getParamValue('appInstanceNum');
-}
-
-sub getIpAddr {
-	my ($self) = @_;
-	if ($self->useDocker() && $self->host->dockerNetIsExternal($self->dockerConfigHashRef->{'net'})) {
-		return $self->host->dockerGetExternalNetIP($self->getDockerName(), $self->dockerConfigHashRef->{'net'});
-	}
-	return $self->host->ipAddr;
-}
-
 sub create {
 	my ($self, $logPath)            = @_;
-	my $useVirtualIp     = $self->getParamValue('useVirtualIp');
 	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
-	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
@@ -285,10 +195,7 @@ sub create {
 	# Create the container
 	my %portMap;
 	my $directMap = 0;
-	if ($self->isEdgeService() && $useVirtualIp)  {
-		# This is an edge service and we are using virtual IPs.  Map the internal ports to the host ports
-		$directMap = 1;
-	}
+
 	foreach my $key (keys %{$self->internalPortMap}) {
 		my $port = $self->internalPortMap->{$key};
 		$portMap{$port} = $port;
@@ -297,7 +204,7 @@ sub create {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -311,31 +218,31 @@ sub start {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"start serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "Create " . $service->getDockerName() . "\n" );
+			$logger->debug( "Create " . $service->name . "\n" );
 			$service->create($logPath);
 		}
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Configure " . $service->getDockerName() . "\n" );
+		$logger->debug( "Configure " . $service->name . "\n" );
 		$service->configure( $logPath, $users, $suffix );
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Start " . $service->getDockerName() . "\n" );
+		$logger->debug( "Start " . $service->name . "\n" );
 		$service->startInstance($logPath);
 	}
 		
@@ -347,33 +254,33 @@ sub stop {
 	my $logger = get_logger("Weathervane::Service::Service");
 	$logger->debug(
 		"stop serviceType $serviceType, Workload ",
-		$self->getParamValue('workloadNum'),
+		$self->appInstance->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('instanceNum')
+		$self->instanceNum
 	);
 
 	my $impl   = $self->appInstance->getParamValue('workloadImpl');
-	my $suffix = "_W" . $self->getParamValue('workloadNum') . "I" . $self->getParamValue('appInstanceNum');
+	my $suffix = "_W" . $self->appInstance->workload->instanceNum . "I" . $self->appInstance->instanceNum;
 
 	my $dockerServiceTypesRef = $WeathervaneTypes::dockerServiceTypes{$impl};
-	my $servicesRef = $self->appInstance->getActiveServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Stop " . $service->getDockerName() . "\n" );
+		$logger->debug( "Stop " . $service->name . "\n" );
 		$service->stopInstance( $logPath );
 	}
 
 	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "Remove " . $service->getDockerName() . "\n" );
+			$logger->debug( "Remove " . $service->name . "\n" );
 			$service->remove($logPath);
 		}
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "CleanLogFiles " . $service->getDockerName() . "\n" );
+		$logger->debug( "CleanLogFiles " . $service->name . "\n" );
 		$service->cleanLogFiles();
-		$logger->debug( "CleanStatsFiles " . $service->getDockerName() . "\n" );
+		$logger->debug( "CleanStatsFiles " . $service->name . "\n" );
 		$service->cleanStatsFiles();
 	}
 	
@@ -388,13 +295,8 @@ sub pullDockerImage {
 	my ($self, $logfile)            = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
 	
-	if (!$self->getParamValue('useDocker')) {
-		$logger->debug("$self->meta->name is not using docker.  Not pulling.");
-		return;
-	}
-
 	my $impl = $self->getImpl();
-	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->getParamValue("instanceNum"));
+	$logger->debug("Calling dockerPull for service ", $self->meta->name," instanceNum ", $self->instanceNum);
 	$self->host->dockerPull($logfile, $impl);
 }
 
@@ -411,7 +313,7 @@ sub sanityCheck {
 
 sub isReachable {
 	my ($self, $fileout) = @_;
-	my $hostname = $self->host->hostName;
+	my $hostname = $self->host->name;
 	
 	my $pingResult = `ping -c 1 $hostname`;
 	
@@ -440,18 +342,6 @@ sub isStopped {
 	return 1;
 }
 
-sub useDocker {
-	my ($self) = @_;
-	
-	return $self->getParamValue("useDocker");
-}
-
-sub getDockerName {
-	my ($self) = @_;
-	
-	return $self->getParamValue("dockerName");
-}
-
 sub getPort {
 	my ($self, $key) = @_;
 	return $self->portMap->{$key};
@@ -469,15 +359,18 @@ sub getImpl {
 # using docker host networking
 sub corunningDockerized {
 	my ($self, $other) = @_;
-	if (!$self->useDocker() || !$other->useDocker()
+	my $logger = get_logger("Weathervane::Services::Service");
+	if (((ref $self->host) ne 'DockerHost') || ((ref $other->host) ne 'DockerHost')
 		|| ($self->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($other->dockerConfigHashRef->{'net'} eq 'host')
 		|| ($self->dockerConfigHashRef->{'net'} ne $other->dockerConfigHashRef->{'net'})
 		|| !$self->host->equals($other->host)
 		|| ($self->host->getParamValue('vicHost') && ($self->dockerConfigHashRef->{'net'} ne "bridge"))) 
 	{
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are not corunningDockerized");
 		return 0;
 	} else {
+		$logger->debug("corunningDockerized: " . $self->name . " and " . $other->name . " are corunningDockerized");
 		return 1;
 	}	
 	
@@ -492,22 +385,29 @@ sub corunningDockerized {
 # returns the hostname of the other host.
 sub getHostnameForUsedService {
 	my ($self, $other) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
-		return $other->host->dockerGetIp($other->getDockerName());
+		my $ip = $other->host->dockerGetIp($other->name);
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $ip);
+		return $ip;
 	} else {
-		return $other->getIpAddr();
+		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
+		return $other->host->name;
 	}	
 }
 
 sub getPortNumberForUsedService {
 	my ($self, $other, $portName) = @_;
+	my $logger = get_logger("Weathervane::Services::Service");
 	
 	if ($self->corunningDockerized($other)) 
 	{
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->internalPortMap->{$portName});
 		return $other->internalPortMap->{$portName};
 	} else {
+		$logger->debug("getPortNumberForUsedService: Corunning dockerized, returning " . $other->portMap->{$portName});
 		return $other->portMap->{$portName};
 	}	
 }
@@ -516,31 +416,31 @@ sub checkSizeAndTruncate {
 	my ($self, $path, $filename, $maxLogLines) = @_;
 	my $logger = get_logger("Weathervane::Services::Service");
 
-	my $sshConnectString = $self->host->sshConnectString;
-	
-	$logger->debug("checkSizeAndTruncate.  path = $path, filename = $filename, maxLogLines = $maxLogLines");	
-	
-	my $wc = `$sshConnectString wc -l $path/$filename 2>&1`;
-	if ($wc =~ /^(\d*)\s/) {
-		$wc = $1;
-	} else {
-		return;
-	}
-	$logger->debug("checkSizeAndTruncate.  wc = $wc");	
-	
-	if ($wc > $maxLogLines) {
-		# The log is too large.  Truncate it to maxLogLines by taking
-		# The start and end of the file
-		$logger->debug("checkSizeAndTruncate.  Truncating file");	
-		my $halfLines = floor($maxLogLines/2);
-		`$sshConnectString "head -n $halfLines $path/$filename > $path/$filename.head"`;
-		`$sshConnectString "tail -n $halfLines $path/$filename > $path/$filename.tail"`;
-		`$sshConnectString "mv -f $path/$filename.head $path/$filename"`;
-		`$sshConnectString "echo \"   +++++++ File truncated to $maxLogLines lines. Middle section removed.++++++   \" >> $path/$filename"`;
-		`$sshConnectString "cat $path/$filename.tail >> $path/$filename"`;
-		`$sshConnectString "rm -f $path/$filename.tail "`;
-		
-	}
+#	my $sshConnectString = $self->host->sshConnectString;
+#	
+#	$logger->debug("checkSizeAndTruncate.  path = $path, filename = $filename, maxLogLines = $maxLogLines");	
+#	
+#	my $wc = `$sshConnectString wc -l $path/$filename 2>&1`;
+#	if ($wc =~ /^(\d*)\s/) {
+#		$wc = $1;
+#	} else {
+#		return;
+#	}
+#	$logger->debug("checkSizeAndTruncate.  wc = $wc");	
+#	
+#	if ($wc > $maxLogLines) {
+#		# The log is too large.  Truncate it to maxLogLines by taking
+#		# The start and end of the file
+#		$logger->debug("checkSizeAndTruncate.  Truncating file");	
+#		my $halfLines = floor($maxLogLines/2);
+#		`$sshConnectString "head -n $halfLines $path/$filename > $path/$filename.head"`;
+#		`$sshConnectString "tail -n $halfLines $path/$filename > $path/$filename.tail"`;
+#		`$sshConnectString "mv -f $path/$filename.head $path/$filename"`;
+#		`$sshConnectString "echo \"   +++++++ File truncated to $maxLogLines lines. Middle section removed.++++++   \" >> $path/$filename"`;
+#		`$sshConnectString "cat $path/$filename.tail >> $path/$filename"`;
+#		`$sshConnectString "rm -f $path/$filename.tail "`;
+#		
+#	}
 	
 }
 sub clearDataBeforeStart {

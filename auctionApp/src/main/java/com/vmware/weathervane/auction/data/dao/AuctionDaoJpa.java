@@ -335,6 +335,90 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 		return theAuctions;
 	}
 
+	@Override
+	public void resetToFuture(Auction auction) {
+		logger.info("resetToFuture. auctionId = " + auction.getId());
+		GregorianCalendar calendar = FixedOffsetCalendarFactory.getCalendar();
+		calendar.add(Calendar.YEAR, 1);
+		Date startTime = calendar.getTime();
+
+		// Bring the auction back into the context
+		Auction theAuction = this.get(auction.getId());
+
+		/*
+		 * reset the fields of the Auction that are changed when the auction is
+		 * run
+		 */
+		theAuction.setActivated(false);
+		theAuction.setStartTime(startTime);
+		theAuction.setEndTime(null);
+		theAuction.setState(AuctionState.FUTURE);
+
+		logger.info("resetToFuture. auctionId = " + auction.getId()
+				+ ". Delete the attendance records.");
+
+		/*
+		 * Delete all of the attendance records for this auction
+		 */
+		attendanceRecordRepository.deleteByAuctionId(theAuction.getId());
+
+		/*
+		 * Now reset all items in the auction
+		 */
+		logger.info("resetToFuture. auctionId = " + auction.getId() + ". Reset the items.");
+		for (Item anItem : theAuction.getItems()) {
+			anItem.setState(ItemState.INAUCTION);
+
+			// Delete all bids for the item
+			logger.info("resetToFuture. auctionId = " + auction.getId()
+					+ ". Delete the bids for item " + anItem.getId());
+			bidRepository.deleteByItemId(anItem.getId());
+
+			/*
+			 * Because cascadeType=All on this association, setting the highbid
+			 * to null should delete the associated highbid
+			 */
+			HighBid highBid = anItem.getHighbid();
+			if (highBid != null) {
+				logger.info("resetToFuture. auctionId = " + auction.getId()
+						+ ". Setting the highBid to null for item " + anItem.getId()
+						+ ", highBid = " + highBid.getId());
+				anItem.setHighbid(null);
+				logger.info("resetToFuture. auctionId = " + auction.getId()
+						+ ". Explicitly removing the highBid for item " + anItem.getId()
+						+ ", highBid = " + highBid.getId());
+			}
+		}
+
+	}
+
+	@Override
+	public void resetItemsToFuture(Auction auction) {
+		logger.info("resetItemsToFuture. auctionId = " + auction.getId());
+
+		// Bring the auction into the context
+		Auction theAuction = this.get(auction.getId());
+
+		/*
+		 * Now reset all items in the auction
+		 */
+		logger.info("resetItemsToFuture. auctionId = " + auction.getId() + ". Reset the items.");
+		for (Item anItem : theAuction.getItems()) {
+			anItem.setState(ItemState.INAUCTION);
+			/*
+			 * Because cascadeType=All on this association, setting the highbid
+			 * to null should delete the associated highbid
+			 */
+			anItem.setHighbid(null);
+
+			// Delete all bids for the item
+			logger.info("resetItemsToFuture. auctionId = " + auction.getId()
+					+ ". Delete the bids for item " + anItem.getId());
+			bidRepository.deleteByItemId(anItem.getId());
+		}
+
+	}
+
 	@Transactional
 	public Set<Keyword> getKeywordsForAuction(Auction anAuction) {
 

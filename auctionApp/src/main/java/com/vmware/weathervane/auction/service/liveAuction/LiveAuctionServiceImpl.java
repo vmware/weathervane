@@ -435,7 +435,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		}
 
 		if (theAuction.getState() != AuctionState.RUNNING) {
-			throw new InvalidStateException("Auction is not Running.");
+			throw new InvalidStateException("Auction is not Running. Auction: " + theAuction);
 		}
 
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();

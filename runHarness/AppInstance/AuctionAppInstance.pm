@@ -58,14 +58,6 @@ has 'numRabbitmqProcessed' => (
 	predicate => 'has_numRabbitmqProcessed',
 );
 
-# AppInstance variables for keepalived
-has 'wwwIpAddrs' => (
-	is        => 'rw',
-	isa       => 'ArrayRef[Str]',
-	predicate => 'has_wwwIpAddrs',
-);
-
-
 override 'initialize' => sub {
 	my ($self) = @_;
 		
@@ -77,97 +69,52 @@ override 'getEdgeService' => sub {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"getEdgeService for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",               $self->getParamValue('appInstanceNum')
+		"getEdgeService for workload ", $self->workload->instanceNum,
+		", appInstance ",               $self->instanceNum
 	);
 
-	my $numLbServers  = $self->getNumActiveOfServiceType('lbServer');
-	my $numWebServers = $self->getNumActiveOfServiceType('webServer');
-	my $numAppServers = $self->getNumActiveOfServiceType('appServer');
+	my $numWebServers = $self->getTotalNumOfServiceType('webServer');
+	my $numAppServers = $self->getTotalNumOfServiceType('appServer');
 	$logger->debug(
-		"getEdgeService: numLbServers = $numLbServers, numWebServers = $numWebServers, numAppServers = $numAppServers");
+		"getEdgeService: numWebServers = $numWebServers, numAppServers = $numAppServers");
 
 	# Used to keep track of which server is acting as the edge (client-facing) service
 	my $edgeServer;
-
-	if ( $numLbServers == 0 ) {
-		if ( $numWebServers == 0 ) {
-
-			# small configuration. App server is the edge service
-			$edgeServer = "appServer";
-		}
-		else {
-
-			# medium configuration. Web server is the edge service
-			$edgeServer = "webServer";
-		}
+	if ( $numWebServers == 0 ) {
+		# small configuration. App server is the edge service
+		$edgeServer = "appServer";
 	}
 	else {
-
-		# large configuration. load-balancer is the edge service
-		$edgeServer = "lbServer";
+		# medium configuration. Web server is the edge service
+		$edgeServer = "webServer";
 	}
 
 	$logger->debug(
 		"getEdgeService for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		", returning ", $edgeServer
 	);
 
 	return $edgeServer;
-
 };
 
 override 'checkConfig' => sub {
 	my ($self)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AuctionAppInstance");
-	my $workloadNum = $self->getParamValue('workloadNum');
-	my $appInstanceNum = $self->getParamValue('appInstanceNum');
+	my $workloadNum = $self->workload->instanceNum;
+	my $appInstanceNum = $self->instanceNum;
 	$logger->debug("checkConfig for workload ", $workloadNum, " appInstance ", $appInstanceNum);
 
-	# First make sure that any configPaths specified didn't ask for more services
-	# than the user specified
-	my $impl         = $self->getParamValue('workloadImpl');
-	my $serviceTiersHashRef = $WeathervaneTypes::workloadToServiceTypes{$impl};
-	my $serviceTypes =  $serviceTiersHashRef->{"infrastructure"};
-	foreach my $serviceType (@$serviceTypes) {
-		if ( $self->getMaxNumOfServiceType($serviceType) < $self->getTotalNumOfServiceType($serviceType) ) {
-			$console_logger->error(
-				    "For service $serviceType the config path specifies more servers than were configured by num"
-				  . $serviceType . "s or "
-				  . $serviceType
-				  . "s.\nMust specify at least "
-				  . $self->getMaxNumOfServiceType($serviceType) . " "
-				  . $serviceType
-				  . "s for the configPath to be viable.\n." );
-			return 0;
-		}
-	}
-
 	my $edgeService              = $self->getParamValue('edgeService');
-	my $numLbServers             = $self->getNumActiveOfServiceType('lbServer');
-	my $numCoordinationServers   = $self->getNumActiveOfServiceType('coordinationServer');
-	my $numWebServers            = $self->getNumActiveOfServiceType('webServer');
-	my $numAppServers            = $self->getNumActiveOfServiceType('appServer');
-	my $numMsgServers            = $self->getNumActiveOfServiceType('msgServer');
-	my $numDbServers             = $self->getNumActiveOfServiceType('dbServer');
-	my $numFileServers           = $self->getNumActiveOfServiceType('fileServer');
-	my $numConfigurationManagers = $self->getNumActiveOfServiceType('configurationManager');
-	my $numElasticityServers     = $self->getNumActiveOfServiceType('elasticityService');
-	my $numNosqlServers          = $self->getNumActiveOfServiceType('nosqlServer');
-
-	if ( $numElasticityServers > 1 ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The workload can be run with at most one elasticityServer.");
-		return 0;
-	}
-	my $configPath = $self->getConfigPath();
-	if (($#$configPath >= 0 ) && ($numElasticityServers < 1)) {
-		$console_logger->error( "Workload $workloadNum, AppInstance $appInstanceNum: When running an appInstance with a configPath, the deployment must include an elasticity service.\n" );
-		return 0;
-	}
+	my $numCoordinationServers   = $self->getTotalNumOfServiceType('coordinationServer');
+	my $numWebServers            = $self->getTotalNumOfServiceType('webServer');
+	my $numAppServers            = $self->getTotalNumOfServiceType('appServer');
+	my $numMsgServers            = $self->getTotalNumOfServiceType('msgServer');
+	my $numDbServers             = $self->getTotalNumOfServiceType('dbServer');
+	my $numNosqlServers          = $self->getTotalNumOfServiceType('nosqlServer');
 
 	my $minimumUsers = $self->getParamValue('minimumUsers');
 	if ( $self->getParamValue('users') < $minimumUsers ) {
@@ -217,26 +164,73 @@ override 'checkConfig' => sub {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The number of application servers must be 1 or greater");
 		return 0;
 	}
+	
+	# Validate the the CPU and Mem sizings are in valid Kubernetes format
+	my $workloadImpl    = $self->getParamValue('workloadImpl');
+	my $serviceTypesRef = $WeathervaneTypes::dockerServiceTypes{$workloadImpl};
+	push @$serviceTypesRef, "driver";
+	foreach my $serviceType (@$serviceTypesRef) {
+		# A K8S CPU limit should be either a real number (e.g. 1.5), which
+		# is legal docker notation, or an integer followed an "m" to indicate a millicpu
+		my $cpus = $self->getParamValue($serviceType . "Cpus");
+		if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $cpus is not a valid value for ${serviceType}Cpus.");
+			$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
+		}
 
-	if ( $numConfigurationManagers == 0 ) {
-		if ( $self->getParamValue('prewarmAppServers')  && !$self->getParamValue('clusterName')) {
-			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: Can't pre-warm appServers when there is no Configuration Manager");
-			return 0;
+		# K8s Memory limits are an integer followed by an optional suffix.
+		# The legal suffixes in K8s are:
+		#  * E, P, T, G, M, K (powers of 10)
+		#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
+		my $mem = $self->getParamValue($serviceType . "Mem");
+		if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $mem is not a valid value for ${serviceType}Mem.");
+			$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
 		}
 	}
 
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( ( $appServerCacheImpl ne 'ehcache' ) && ( $appServerCacheImpl ne 'ignite' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter appServerCacheImpl must be either ehcache or ignite");
-		return 0;
+	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
+	# This is only for services running on DockerHosts
+	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+	foreach my $nosqlServer (@$nosqlServersRef) {
+		my $host = $nosqlServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+			# use named volumes.  Error if does not exist
+			my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+		}
 	}
-
-	my $igniteAuthTokenCacheMode = $self->getParamValue('igniteAuthTokenCacheMode');
-	if ( ( $igniteAuthTokenCacheMode ne 'LOCAL' ) && ( $igniteAuthTokenCacheMode ne 'REPLICATED' ) ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The parameter igniteAuthTokenCacheMode must be either LOCAL or REPLICATED");
-		return 0;
+	my $dbServersRef = $self->getAllServicesByType("dbServer");
+	foreach my $dbServer (@$dbServersRef) {
+		my $host = $dbServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
+			# use named volumes.  Error if does not exist
+			my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+			$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+		}
 	}
-
+	
 	return 1;
 };
 
@@ -244,12 +238,9 @@ override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 	$logger->debug(
-		"redeploy for workload ", $self->getParamValue('workloadNum'),
-		", appInstance ",         $self->getParamValue('appInstanceNum')
+		"redeploy for workload ", $self->workload->instanceNum,
+		", appInstance ",         $self->instanceNum
 	);
-
-	my $weathervaneHome = $self->getParamValue('weathervaneHome');
-	my $distDir         = $self->getParamValue('distDir');
 
 	# Refresh the docker images on all of the servers
 	$logger->debug("Redeploy by docker pull for services that are running on docker.");
@@ -262,17 +253,6 @@ override 'redeploy' => sub {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		$logger->debug("Calling pullDockerImage for $serviceType services ");
 		foreach my $service (@$servicesRef) {
-			my $host = $service->host;
-			my $hostname = $host->hostName;
-			my $sshConnectString = $host->sshConnectString;	
-			if ($host->isNonDocker()) {			
-				my $ls          = `$sshConnectString \"ls\" 2>&1`;
-				if ( $ls =~ /No route/ ) {
-					# This host is not up so can't redeploy
-					$logger->debug("Don't redeploy to $hostname as it is not up.");
-					next;
-				}
-			}
 			$logger->debug( "Calling pullDockerImage for service ", $service->meta->name );
 			$service->pullDockerImage($logfile);
 		}
@@ -281,194 +261,6 @@ override 'redeploy' => sub {
 	# Pull the datamanager image
 	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
 	
-	# Redeploy the dataManager files
-	my $localHostname = `hostname`; 
-	my $localIpsRef = Utils::getIpAddresses($localHostname);
-	my $hostname         = $self->dataManager->host->hostName;
-	my $ip = Utils::getIpAddress($hostname);		
-	if (!($ip ~~ @$localIpsRef)) {	
-		my $sshConnectString = $self->dataManager->host->sshConnectString;
-		my $scpConnectString = $self->dataManager->host->scpConnectString;
-		my $scpHostString    = $self->dataManager->host->scpHostString;
-
-		my $cmdString = "$sshConnectString rm -r $distDir/* 2>&1";
-		$logger->debug("Redeploy: $cmdString");
-		print $logfile "$cmdString\n";
-		my $out = `$cmdString`;
-		print $logfile $out;
-
-		$cmdString = "$scpConnectString -r $distDir/* root\@$scpHostString:$distDir/.";
-		$logger->debug("Redeploy: $cmdString");
-		print $logfile "$cmdString\n";
-		$out = `$cmdString`;
-		print $logfile $out;
-	}
-	
-	my $appServicesRef = $self->getAllServicesByType('appServer');
-	foreach my $server (@$appServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $appServerImpl    = $server->getParamValue('appServerImpl');
-		my $warDestination;
-		if ( $appServerImpl eq 'tomcat' ) {
-			$warDestination = $self->getParamValue('tomcatCatalinaBase') . "/webapps";
-
-			print $logfile "$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"\n";
-			my $out = `$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"`;
-			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.\n";
-			$out = `$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.`;
-			$logger->debug("$scpConnectString $distDir/auction.war root\@$scpHostString:$warDestination/.  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.\n";
-			$out = `$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.`;
-			$logger->debug("$scpConnectString $distDir/auctionWeb.war root\@$scpHostString:$warDestination/.  out = $out");
-			print $logfile $out;
-
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only tomcat is supported as app servers.\n";
-		}
-	}
-
-	my $bidServicesRef = $self->getAllServicesByType('auctionBidServer');
-	foreach my $server (@$bidServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $serverImpl    = $server->getParamValue('auctionBidServerImpl');
-		my $warDestination;
-		if ( $serverImpl eq 'auctionbidservice' ) {
-			$warDestination = $self->getParamValue('bidServiceCatalinaBase') . "/webapps";
-
-			print $logfile "$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"\n";
-			my $out = `$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"`;
-			$logger->debug("$sshConnectString \"rm -rf $warDestination/auction* 2>&1\"  out = $out");
-			print $logfile $out;
-
-			print $logfile "$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war\n";
-			$out = `$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war`;
-			$logger->debug("$scpConnectString $distDir/auctionBidService.war root\@$scpHostString:$warDestination/auction.war  out = $out");
-			print $logfile $out;
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only auctionbidservice is supported as bid server.\n";
-		}
-	}
-
-	my $webServicesRef = $self->getAllServicesByType('webServer');
-	foreach my $server (@$webServicesRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-		my $webServerImpl    = $server->getParamValue('webServerImpl');
-		my $webContentRoot;
-		if ( $webServerImpl eq 'httpd' ) {
-			$webContentRoot = $self->getParamValue('httpdDocumentRoot');
-		}
-		elsif ( $webServerImpl eq 'nginx' ) {
-			$webContentRoot = $self->getParamValue('nginxDocumentRoot');
-		}
-		else {
-			die "AuctionAppInstance::redeploy: Only httpd and nginx are supported .as web servers\n";
-		}
-
-		print $logfile "$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"\n";
-		my $out = `$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"`;
-		$logger->debug("$sshConnectString \"rm -rf $webContentRoot/* 2>&1\"  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.\n";
-		$out = `$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.`;
-		$logger->debug("$scpConnectString $distDir/auctionWeb.tgz root\@$scpHostString:$webContentRoot/.  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"\n";
-		$out = `$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"`;
-		$logger->debug("$sshConnectString \"cd $webContentRoot; tar zxf auctionWeb.tgz\"  out = $out");
-		print $logfile $out;
-		
-		print $logfile "$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"\n";
-		$out = `$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"`;
-		$logger->debug("$sshConnectString \"rm -f $webContentRoot/auctionWeb.tgz 2>&1\"  out = $out");
-		print $logfile $out;
-
-	}
-
-	# redeploy the configuration service
-	my $configManagersRef = $self->getAllServicesByType('configurationManager');
-	foreach my $server (@$configManagersRef) {
-		if ( $server->useDocker() ) {
-			next;
-		}
-		my $host = $server->host;
-		my $hostname = $host->hostName;
-		my $sshConnectString = $host->sshConnectString;
-		if ($host->isNonDocker()) {			
-			my $ls          = `$sshConnectString \"ls\" 2>&1`;
-			if ( $ls =~ /No route/ ) {
-				# This host is not up so can't redeploy
-				$logger->debug("Don't redeploy to $hostname as it is not up.");
-				next;
-			}
-		}
-		my $scpConnectString = $server->host->scpConnectString;
-		my $scpHostString    = $server->host->scpHostString;
-
-		print $logfile
-"$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar\n";
-		my $out =
-		  `$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar`;
-		$logger->debug("$scpConnectString $distDir/auctionConfigManager.jar root\@$scpHostString:$distDir/auctionConfigManager.jar  out = $out");
-		print $logfile $out;
-
-	}
 };
 
 sub getSpringProfilesActive {
@@ -476,23 +268,11 @@ sub getSpringProfilesActive {
 	my $springProfilesActive;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionAppInstance");
 
-	my $dbsRef = $self->getActiveServicesByType('dbServer');
+	my $dbsRef = $self->getAllServicesByType('dbServer');
 	my $db     = $dbsRef->[0]->getImpl();
 
-	if ( $db eq "mysql" ) {
-		$springProfilesActive = "mysql";
-	}
-	else {
-		$springProfilesActive = "postgresql";
-	}
-
-	my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-	if ( $appServerCacheImpl eq "ehcache" ) {
-		$springProfilesActive .= ",ehcache";
-	}
-	else {
-		$springProfilesActive .= ",ignite";
-	}
+	$springProfilesActive = "postgresql";
+	$springProfilesActive .= ",ehcache";
 
 	my $imageStore = $self->getParamValue('imageStoreType');
 	if ( $imageStore eq "cassandra" ) {
@@ -502,7 +282,7 @@ sub getSpringProfilesActive {
 		$springProfilesActive .= ",imagesInMemory";
 	}
 
-	my $numMsgServers = $self->getNumActiveOfServiceType('msgServer');
+	my $numMsgServers = $self->getTotalNumOfServiceType('msgServer');
 	if ( $numMsgServers > 1 ) {
 		$springProfilesActive .= ",clusteredRabbit";
 	}
@@ -518,7 +298,7 @@ sub getSpringProfilesActive {
 		$springProfilesActive .= ",performanceMonitor";
 	}
 
-	my $numBidServers = $self->getNumActiveOfServiceType('auctionBidServer');
+	my $numBidServers = $self->getTotalNumOfServiceType('auctionBidServer');
 	if ($numBidServers > 0) {
 		$springProfilesActive .= ",bidService";
 	} else {
@@ -527,9 +307,9 @@ sub getSpringProfilesActive {
 
 	$logger->debug(
 		"getSpringProfilesActive finished for workload ",
-		$self->getParamValue('workloadNum'),
+		$self->workload->instanceNum,
 		", appInstance ",
-		$self->getParamValue('appInstanceNum'),
+		$self->instanceNum,
 		". Returning: ",
 		$springProfilesActive
 	);
@@ -559,8 +339,8 @@ sub getServiceConfigParameters {
 		if ( !$auctions ) {
 			$auctions = ceil( $users / $self->getParamValue('usersPerAuctionScaleFactor') );
 		}
-		my $numAppServers                  = $self->getNumActiveOfServiceType('appServer');
-		my $numWebServers                  = $self->getNumActiveOfServiceType('webServer');
+		my $numAppServers                  = $self->getTotalNumOfServiceType('appServer');
+		my $numWebServers                  = $self->getTotalNumOfServiceType('webServer');
 		my $authTokenCacheSize             = 2 * $users;
 		my $activeAuctionCacheSize         = 2 * $auctions;
 		my $itemsForAuctionCacheSize       = 2 * $auctions;
@@ -577,23 +357,8 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
 
-		my $appServerCacheImpl = $self->getParamValue('appServerCacheImpl');
-		if ( $appServerCacheImpl eq 'ignite' ) {
-
-			$jvmOpts .= " -DAUTHTOKENCACHEMODE=" . $self->getParamValue('igniteAuthTokenCacheMode') . " ";
-	
-			my $copyOnRead = "false";
-			if ( $self->getParamValue('igniteCopyOnRead') ) {
-				$copyOnRead = "true";
-			}
-			$jvmOpts .= " -DIGNITECOPYONREAD=$copyOnRead ";
-
-			my $appServersRef = $self->getActiveServicesByType('appServer');
-			my $app1Hostname  = $appServersRef->[0]->getIpAddr();
-			$jvmOpts .= " -DIGNITEAPP1HOSTNAME=$app1Hostname ";
-		}
 		my $zookeeperConnectionString = "";
-		my $coordinationServersRef    = $self->getActiveServicesByType('coordinationServer');
+		my $coordinationServersRef    = $self->getAllServicesByType('coordinationServer');
 		foreach my $coordinationServer (@$coordinationServersRef) {
 			my $zkHost = $service->getHostnameForUsedService($coordinationServer);
 			my $zkPort = $service->getPortNumberForUsedService( $coordinationServer, "client" );
@@ -630,14 +395,7 @@ sub getServiceConfigParameters {
 			$jvmOpts .= " -DRANDOMIZEIMAGES=false ";
 		}
 
-		my $numCpus;
-		if ( $service->useDocker() && $service->getParamValue('dockerCpus')) {
-			$numCpus = $service->getParamValue('dockerCpus');
-		}
-		else {
-			$numCpus = $service->host->cpus;
-		}
-		
+		my $numCpus = $service->getParamValue("${serviceType}Cpus");
 		my $highBidQueueConcurrency = $service->getParamValue('highBidQueueConcurrency');
 		if (!$highBidQueueConcurrency) {
 			$highBidQueueConcurrency = $numCpus;
@@ -677,12 +435,12 @@ sub getServiceConfigParameters {
 
 
 		my $clusteredRabbit = '';
-		my $numMsgServers   = $self->getNumActiveOfServiceType('msgServer');
+		my $numMsgServers   = $self->getTotalNumOfServiceType('msgServer');
 		if ( $numMsgServers > 1 ) {
 			$clusteredRabbit = 1;
 		}
 
-		my $msgServicesRef = $self->getActiveServicesByType("msgServer");
+		my $msgServicesRef = $self->getAllServicesByType("msgServer");
 		if ($clusteredRabbit) {
 
 			# start the list of rabbit hosts in rotating order
@@ -718,7 +476,7 @@ sub getServiceConfigParameters {
 		}
 
 		my $cassandraContactpoints = "";
-		my $nosqlServicesRef = $self->getActiveServicesByType("nosqlServer");
+		my $nosqlServicesRef = $self->getTotalNumOfServiceType("nosqlServer");
 		my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
 		foreach my $nosqlServer (@$nosqlServicesRef) {
 			$cassandraContactpoints .= $nosqlServer->hostName+ ",";
@@ -726,7 +484,7 @@ sub getServiceConfigParameters {
 		$cassandraContactpoints =~ s/,$//;		
 		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints -DCASSANDRA_PORT=$cassandraPort ";
 
-		my $dbServicesRef = $self->getActiveServicesByType("dbServer");
+		my $dbServicesRef = $self->getAllServicesByType("dbServer");
 		my $dbService     = $dbServicesRef->[0];
 		my $dbHostname    = $service->getHostnameForUsedService($dbService);
 		my $dbPort        = $service->getPortNumberForUsedService( $dbService, $dbService->getImpl() );

@@ -9,7 +9,6 @@ print "Checking whether data is loaded\n";
 my $auctions = ceil($ENV{'USERS'} / $ENV{'USERSPERAUCTIONSCALEFACTOR'}); 
 
 my $dbPrepOptions = " -a $auctions -c ";
-$dbPrepOptions .= " -f $ENV{'MAXDURATION'} ";
 
 my $users = $ENV{'USERS'};
 my $maxUsers = $ENV{'MAXUSERS'};

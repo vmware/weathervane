@@ -27,20 +27,13 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'Nginx', );
-
-has '+version' => ( default => '1.7.xx', );
-
-has '+description' => ( default => 'Nginx Web Server', );
-
-
 override 'initialize' => sub {
 	my ( $self ) = @_;
 	super();
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::NginxService");
 	$logger->debug("Configure Nginx kubernetes");
 	print $dblog "Configure Nginx Kubernetes\n";
@@ -48,17 +41,17 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 
-	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getNumActiveOfServiceType('webServer') * 1.0 ) );
+	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );
 	if ( $workerConnections < 100 ) {
 		$workerConnections = 100;
 	}
 	if ( $self->getParamValue('nginxWorkerConnections') ) {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getNumActiveOfServiceType('appServer') );
+	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
 
-	my $numWebServers = $self->appInstance->getNumActiveOfServiceType('webServer');
-	my $numAuctionBidServers = $self->appInstance->getNumActiveOfServiceType('auctionBidServer');
+	my $numWebServers = $self->appInstance->getTotalNumOfServiceType('webServer');
+	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 
 	open( FILEIN,  "$configDir/kubernetes/nginx.yaml" ) or die "$configDir/kubernetes/nginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/nginx-$namespace.yaml" )             or die "Can't open file /tmp/nginx-$namespace.yaml: $!\n";
@@ -96,9 +89,10 @@ sub configure {
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numWebServers\n";
@@ -120,13 +114,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	my $response = $cluster->kubernetesExecOne ($self->getImpl(), "curl -s -w \"%{http_code}\n\" -o /dev/null http://127.0.0.1:80", $self->namespace );
-	if ( $response =~ /200/ ) {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s -w \"%{http_code}\n\" -o /dev/null http://127.0.0.1:80", $self->namespace, '200', $numServers)) { 
 		return 1;
 	}
-	else {
-		return 0;
-	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {
@@ -137,7 +129,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::NginxKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 
@@ -159,7 +151,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

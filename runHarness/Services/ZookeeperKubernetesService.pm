@@ -30,12 +30,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has '+name' => ( default => 'ZookeeperServer', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 override 'initialize' => sub {
 	my ( $self, $numMsgServers ) = @_;
 
@@ -43,7 +37,7 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users, $numShards, $numReplicas ) = @_;
+	my ( $self, $dblog, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperKubernetesService");
 	$logger->debug("Configure Zookeeper kubernetes");
 	print $dblog "Configure Zookeeper Kubernetes\n";
@@ -53,6 +47,16 @@ sub configure {
 
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
+
+	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	my $servers = "";
+	for (my $i = 0; $i < $numReplicas; $i++) {
+		my $serverNum = $i + 1;
+		$servers .= "server.${serverNum}=zookeeper-${i}.zookeeper:2888:3888";
+		if ($serverNum < $numReplicas) {
+			$servers .= ",";
+		}
+	}
 
 	open( FILEIN,  "$configDir/kubernetes/zookeeper.yaml" ) or die "$configDir/kubernetes/zookeeper.yaml: $!\n";
 	open( FILEOUT, ">/tmp/zookeeper-$namespace.yaml" )             or die "Can't open file /tmp/zookeeper-$namespace.yaml: $!\n";
@@ -68,9 +72,16 @@ sub configure {
 		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
 			print FILEOUT "            memory: " . $self->getParamValue('coordinationServerMem') . "\n";
 		}
-		elsif ( $inline =~ /(\s+\-\simage:.*\:)/ ) {
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			print FILEOUT "${1}$version\n";
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		elsif ( $inline =~ /ZK_SERVERS:/ ) {
+			print FILEOUT "  ZK_SERVERS: \"$servers\"\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numReplicas\n";
 		}
 		else {
 			print FILEOUT $inline;
@@ -86,13 +97,11 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"\$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
-		return 0;
-	} else {
+	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "/bin/sh -c '[ \"imok\" = \"\$(echo ruok | nc -w 1 127.0.0.1 2181)\" ]'", $self->namespace, '', $numServers)) { 
 		return 1;
 	}
+	return 0;
 };
 
 override 'stopStatsCollection' => sub {
@@ -103,7 +112,7 @@ override 'stopStatsCollection' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::ZookeeperKubernetesService");
 	$logger->debug("startStatsCollection hostname = $hostname");
 
@@ -129,7 +138,7 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 

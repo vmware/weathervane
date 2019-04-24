@@ -59,7 +59,6 @@ override 'start' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
 
-	# TargetUtilization run strategy used fixed load-paths only
 	$self->runProcedure->setLoadPathType("interval");
 
 	$console_logger->info($self->name . " starting run.");
@@ -68,7 +67,7 @@ override 'start' => sub {
 
 	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
 	if ( $runProcedureType eq 'prepareOnly' ) {
-		$console_logger->info("Application configured and running.  Connect with a browser to http://www.weathervane");
+		$console_logger->info("Application configured and running. ");
 	}
 	elsif ( $runProcedureType eq 'stop' ) {
 		$console_logger->info("Run stopped");

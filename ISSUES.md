@@ -35,8 +35,6 @@ The following labels are used to indicate the general category of the issue.  As
 The following labels are used to indicate which Weathervane components are impacted by or related to the issue.  If you don't know, you can leave these out and the Weathervane team will help identify the correct labels.
 
 - *component/auctionApp*: Issues related to the core Auction Java application.
-- *component/auctionConfigurationManager*: Issues related to the Configuration Manager microservice.
-- *component/auctionSimpleElasticityService*: Issues related to the Simple Elasticity Service.
 - *component/autoSetup*: Issues related to the autoSetup.pl script or the setup process in general.
 - *component/build*: Issues related to the build files and process.
 - *component/dbLoader*: Issues related to the database loader and data preparation process.

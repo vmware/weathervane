@@ -27,12 +27,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has '+name' => ( default => 'RabbitMQ', );
-
-has '+version' => ( default => 'xx', );
-
-has '+description' => ( default => '', );
-
 # Names of stats collected for RabbitMQ and the text to match in the list queues output
 my @rabbitmqStatNames = (
 	"memory",       "messages",       "messages_ready", "messages_unacked", "ack_rate", "deliver_rate",
@@ -55,12 +49,8 @@ override 'initialize' => sub {
 override 'create' => sub {
 	my ($self, $logPath)            = @_;
 	
-	if (!$self->getParamValue('useDocker')) {
-		return;
-	}
-	
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $impl = $self->getImpl();
 
 	my $logName          = "$logPath/Create" . ucfirst($impl) . "Docker-$hostname-$name.log";
@@ -92,7 +82,7 @@ override 'create' => sub {
 	my $cmd = "";
 	my $entryPoint = "";
 	
-	$self->host->dockerRun($applog, $self->getParamValue('dockerName'), $impl, $directMap, 
+	$self->host->dockerRun($applog, $self->name, $impl, $directMap, 
 		\%portMap, \%volumeMap, \%envVarMap,$self->dockerConfigHashRef,	
 		$entryPoint, $cmd, $self->needsTty);
 		
@@ -106,8 +96,8 @@ sub stopInstance {
 	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 	$logger->debug("stop RabbitmqDockerService");
 
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StopRabbitmqDocker-$hostname-$name.log";
 
 	my $applog;
@@ -122,9 +112,8 @@ sub stopInstance {
 
 sub startInstance {
 	my ( $self, $logPath ) = @_;
-	my $sshConnectString = $self->host->sshConnectString;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $logName          = "$logPath/StartRabbitmqDocker-$hostname-$name.log";
 
 	my $applog;
@@ -144,9 +133,6 @@ sub startInstance {
 		$self->portMap->{'mgmt'} = $portMapRef->{$self->internalPortMap->{'mgmt'}};
 		$self->portMap->{'dist'} = $portMapRef->{$self->internalPortMap->{'dist'}};
 	}
-	$self->registerPortsWithHost();
-
-	$self->host->startNscd();
 
 	sleep 5;
 
@@ -158,7 +144,7 @@ sub startInstance {
 sub configureAfterIsUp {
 	my ( $self, $applog ) = @_;
 	
-	if ( $self->appInstance->getNumActiveOfServiceType('msgServer') > 1 ) {
+	if ( $self->appInstance->getTotalNumOfServiceType('msgServer') > 1 ) {
 		$self->configureAfterIsUpClusteredRabbitMQ($applog);
 	}
 	else {
@@ -174,8 +160,8 @@ sub configureAfterIsUpSingleRabbitMQ {
 sub configureAfterIsUpClusteredRabbitMQ {
 	my ( $self, $applog ) = @_;
 
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 	my $out; 
 	my $appInstance = $self->appInstance;
 	
@@ -213,7 +199,7 @@ sub configureAfterIsUpClusteredRabbitMQ {
 		# Get the hostname of a node already in the cluster
 		my $hostsRef                = $appInstance->rabbitmqClusterHosts;
 		my $clusterHost             = $hostsRef->[0];
-		my $clusterHostname         = $clusterHost->hostName;
+		my $clusterHostname         = $clusterHost->name;
 
 		# Need to use exactly the same hostname as the cluster host thinks it has,
 		# which may not be the same as the hostname the service knows
@@ -230,7 +216,7 @@ sub configureAfterIsUpClusteredRabbitMQ {
 
 	# If this is the last rabbit service to be processed,
 	# then clear the static variables for the next action
-	if ( $appInstance->numRabbitmqProcessed == $self->appInstance->getNumActiveOfServiceType('msgServer') ) {
+	if ( $appInstance->numRabbitmqProcessed == $self->appInstance->getTotalNumOfServiceType('msgServer') ) {
 		$appInstance->clear_numRabbitmqProcessed;
 		$appInstance->clear_rabbitmqClusterHosts;
 	}
@@ -256,15 +242,22 @@ sub isUp {
 sub isRunning {
 	my ( $self, $fileout ) = @_;
 
-	return $self->host->dockerIsRunning($fileout, $self->getParamValue('dockerName'));
+	return $self->host->dockerIsRunning($fileout, $self->name);
 
+}
+
+sub isStopped {
+	my ( $self, $fileout ) = @_;
+	my $name = $self->name;
+
+	return !$self->host->dockerExists( $fileout, $name );
 }
 
 override 'remove' => sub {
 	my ($self, $logPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 	my $logName          = "$logPath/RemoveRabbitmqDocker-$hostname-$name.log";
 
 	my $applog;
@@ -291,7 +284,7 @@ sub setPortNumbers {
 sub setExternalPortNumbers {
 	my ($self) = @_;
 	
-	my $name = $self->getParamValue('dockerName');
+	my $name = $self->name;
 	my $portMapRef = $self->host->dockerPort($name);
 
 	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
@@ -321,7 +314,7 @@ sub clearDataAfterStart {
 }
 
 sub stopStatsCollection {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
@@ -344,8 +337,8 @@ sub cleanStatsFiles {
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;
 
-	my $name = $self->getParamValue('dockerName');
-	my $hostname         = $self->host->hostName;
+	my $name = $self->name;
+	my $hostname         = $self->host->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -358,7 +351,7 @@ sub getLogFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening $logName:$!";
 	  	
-	my $logContents = $self->host->dockerGetLogs($applog, $self->getParamValue('dockerName')); 
+	my $logContents = $self->host->dockerGetLogs($applog, $self->name); 
 	print $applog $logContents;
 	
 	close $applog;
@@ -372,14 +365,14 @@ sub cleanLogFiles {
 }
 
 sub parseLogFiles {
-	my ( $self, $host, $configPath ) = @_;
+	my ( $self, $host ) = @_;
 
 }
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
-	my $name = $self->getParamValue('dockerName');
+	my $hostname         = $self->host->name;
+	my $name = $self->name;
 
 	my $logpath = "$destinationPath/$name";
 	if ( !( -e $logpath ) ) {
@@ -393,8 +386,8 @@ sub getConfigFiles {
 
 	$self->host->dockerExec($applog, $name, "rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt");
 
-	$self->host->dockerScpFileFrom($applog, $name, "/tmp/{hostname}_rabbitmqctl_report.txt", "$logpath/.");
-	$self->host->dockerScpFileFrom($applog, $name, "/etc/rabbitmq/*", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "/tmp/{hostname}_rabbitmqctl_report.txt", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "/etc/rabbitmq/*", "$logpath/.");
 	close $applog;
 	
 }

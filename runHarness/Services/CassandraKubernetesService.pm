@@ -56,7 +56,7 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 	my $dataVolumeSize = $self->getParamValue("cassandraDataVolumeSize");
-	my $numServers = $self->appInstance->getNumActiveOfServiceType('nosqlServer');
+	my $numServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 
 	open( FILEIN,  "$configDir/kubernetes/cassandra.yaml" ) or die "$configDir/kubernetes/cassandra.yaml: $!\n";
 	open( FILEOUT, ">/tmp/cassandra-$namespace.yaml" )             or die "Can't open file /tmp/cassandra-$namespace.yaml: $!\n";	

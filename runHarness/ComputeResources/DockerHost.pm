@@ -595,9 +595,15 @@ sub dockerGetLogs {
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
+	my $maxLogLines = $self->getParamValue('maxLogLines');
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker logs $name 2>&1`;
+		my $out;
+		if ($maxLogLines > 0) {
+			$out = `$dockerHostString docker logs --tail $maxLogLines $name 2>&1`;
+		} else {
+			$out = `$dockerHostString docker logs $name 2>&1`;
+		}
 		return $out;
 	}
 	return "";

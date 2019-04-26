@@ -5,6 +5,9 @@ use POSIX;
 
 my $seeds = $ENV{'CASSANDRA_SEEDS'};
 my $clusterName  = $ENV{'CASSANDRA_CLUSTER_NAME'};
+my $hostname = `hostname`;
+chomp($hostname);
+
 print "configure cassandra. \n";
 
 # Configure setenv.sh
@@ -16,6 +19,12 @@ while ( my $inline = <FILEIN> ) {
 	}
 	elsif ( $inline =~ /^cluster\_name:/ ) {
 		print FILEOUT "cluster_name: '$clusterName'\n";
+	}
+	elsif ( $inline =~ /^\#listen\_address\:\slocalhost/ ) {
+		print FILEOUT "listen_address: $hostname\n";
+	}
+	elsif ( $inline =~ /^rpc\_address\:\slocalhost/ ) {
+		print FILEOUT "rpc_address: $hostname\n";
 	}
 	else {
 		print FILEOUT $inline;

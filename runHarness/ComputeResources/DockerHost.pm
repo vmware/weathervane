@@ -17,6 +17,7 @@ use Moose;
 use MooseX::Storage;
 use MIME::Base64;
 use POSIX;
+use Math::Round;
 use Log::Log4perl qw(get_logger);
 use ComputeResources::Host;
 use namespace::autoclean;

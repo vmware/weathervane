@@ -665,6 +665,8 @@ public class DBLoader {
 		dbLoaderDao.saveBenchmarkInfo(maxUsers, imageStoreType);
 		
 		fixedTimeOffsetDao.deleteAll();
+		
+		System.exit(0);
 
 	}
 }

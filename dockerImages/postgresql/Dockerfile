@@ -1,4 +1,4 @@
-FROM hrosenbe/weathervane-centos7:2.0.0
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 ENV PG_MAJOR 9.3

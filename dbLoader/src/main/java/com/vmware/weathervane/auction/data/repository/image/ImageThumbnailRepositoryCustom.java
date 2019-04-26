@@ -16,6 +16,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.repository.image;
 
 public interface ImageThumbnailRepositoryCustom {
-	void deleteByKeyPreloaded(boolean preloaded);
+	void deleteByPreloaded(boolean preloaded);
 
 }

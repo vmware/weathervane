@@ -92,7 +92,7 @@ public class DBPrep {
 		} catch (ParseException ex) {
 			imageStore.stopServiceThreads();
 			System.err.println("DBPrep.  Caught ParseException " + ex.getMessage());
-			return;
+			System.exit(1);
 		}
 
 		String auctionsString = cliCmd.getOptionValue('a');
@@ -232,7 +232,7 @@ public class DBPrep {
 		if (cliCmd.hasOption("c")) {
 			logger.info("Benchmark is loaded correctly. Exiting cleanly.");
 			imageStore.stopServiceThreads();
-			return;
+			System.exit(0);
 		}
 
 		/*
@@ -339,5 +339,6 @@ public class DBPrep {
 
 		fixedTimeOffsetDao.deleteAll();
 
+		System.exit(0);
 	}
 }

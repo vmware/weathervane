@@ -302,9 +302,9 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 	public void clearNonpreloadedImages() {
 		logger.info("clearNonPreloadedImages");
 		imageFullRepository.deleteByPreloaded(false);
+		imagePreviewRepository.deleteByPreloaded(false);
+		imageThumbnailRepository.deleteByPreloaded(false);
 		imageInfoRepository.deleteByPreloaded(false);
-		imagePreviewRepository.deleteByKeyPreloaded(false);
-		imageThumbnailRepository.deleteByKeyPreloaded(false);
 	}
 
 	@Override

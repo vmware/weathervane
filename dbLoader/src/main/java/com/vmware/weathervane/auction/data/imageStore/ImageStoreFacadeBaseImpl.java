@@ -100,7 +100,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 
 	@Override
 	public void stopServiceThreads() {
-		logger.info("ImageStoreFacadeMongodbImpl stopServiceThreads");
+		logger.info("ImageStoreFacadeBaseImpl stopServiceThreads");
 		for (ImageWriter imageWriter : imageWriters) {
 			imageWriter.kill();
 		}

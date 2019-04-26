@@ -74,21 +74,21 @@ CREATE TABLE auction_image.image_info (
 CREATE TABLE auction_image.image_full (
   image_id uuid,
   preloaded boolean,
-  image bytea,
+  image blob,
   PRIMARY KEY ((image_id), preloaded)
   ) WITH CLUSTERING ORDER BY (preloaded DESC);
      
 CREATE TABLE auction_image.image_preview (
   image_id uuid,
   preloaded boolean,
-  image bytea,
+  image blob,
   PRIMARY KEY ((image_id), preloaded))
   WITH CLUSTERING ORDER BY (preloaded DESC);
      
 CREATE TABLE auction_image.image_thumbnail (
   image_id uuid,
   preloaded boolean,
-  image bytea,
+  image blob,
   PRIMARY KEY ((image_id), preloaded))
   WITH CLUSTERING ORDER BY (preloaded DESC);
      

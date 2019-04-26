@@ -15,7 +15,7 @@ my $cassandraContactpoints = $ENV{'CASSANDRA_CONTACTPOINTS'};
 my $cassandraPort = $ENV{'CASSANDRA_PORT'};
 
 my $heap              = "6G";
-my $threads = 16;
+my $threads = 8;
 
 if ( $users > $maxUsers ) {
 	$maxUsers = $users;

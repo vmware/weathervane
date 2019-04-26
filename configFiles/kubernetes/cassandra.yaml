@@ -40,8 +40,8 @@ spec:
     spec:
       terminationGracePeriodSeconds: 1800
       containers:
-      - name: cassandra
-        image: hrosenbe/weathervane-cassandra:1.2.0
+      - image: hrosenbe/weathervane-cassandra:1.2.0
+        name: cassandra
         imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:

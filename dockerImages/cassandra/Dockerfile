@@ -17,6 +17,7 @@ RUN yum install -y java-1.8.0-openjdk && \
 	yum -y clean all && \
 	mkdir -p /data && \
 	rm /etc/security/limits.d/cassandra.conf && \
+    chmod +x /clearAfterStart.sh && \
     chmod +x /cassandra-init.sh && \
     chmod +x /entrypoint.sh 
     

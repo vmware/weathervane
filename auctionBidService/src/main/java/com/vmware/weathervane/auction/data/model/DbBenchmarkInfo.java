@@ -13,41 +13,63 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.model;
 
-import java.util.Collection;
+import java.io.Serializable;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-import org.springframework.data.mongodb.core.MongoOperations;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
+@Entity
+@Table(name = "dbbenchmarkinfo")
+public class DbBenchmarkInfo implements Serializable, DomainObject {
 
-import org.springframework.data.mongodb.core.query.Query;
+	private static final long serialVersionUID = 1L;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail;
 
-public class ImageThumbnailRepositoryImpl implements ImageThumbnailRepositoryCustom {
-
-	@Inject
-	@Named("thumbnailImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
+	private Long id;
 	
-	public void saveImage(ImageThumbnail image) {
-		imageMongoTemplate.save(image);
+	private Long maxusers;
+
+	private String imagestoretype;
+	
+	public DbBenchmarkInfo() {
+
 	}
 
-	@Override
-	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageMongoTemplate.remove(query, ImageThumbnail.class);
+	@Id
+	@GeneratedValue(strategy=GenerationType.TABLE)
+	public Long getId() {
+		return id;
 	}
 
+	public void setId(Long id) {
+		this.id = id;
+	}
+	
+	public String getImagestoretype() {
+		return imagestoretype;
+	}
+
+	public void setImagestoretype(String imageStoreType) {
+		this.imagestoretype = imageStoreType;
+	}
+	
 	@Override
-	public void insertBatch(Collection<ImageThumbnail> imageThumbnails) {
-		imageMongoTemplate.insert(imageThumbnails, ImageThumbnail.class);
+	public String toString() {
+		return "DbBenchmarkInfo. ";
+	}
+
+	public Long getMaxusers() {
+		return maxusers;
+	}
+
+	public void setMaxusers(Long maxusers) {
+		this.maxusers = maxusers;
 	}
 
 }

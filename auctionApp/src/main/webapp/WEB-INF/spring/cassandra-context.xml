@@ -18,7 +18,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:context="http://www.springframework.org/schema/context"
   xmlns:cassandra="http://www.springframework.org/schema/data/cassandra"
-    >
+>
 
 <cassandra:cluster contact-points="${CASSANDRA_CONTACTPOINTS:cassandra}" port="${CASSANDRA_PORT:9042}"/>
 

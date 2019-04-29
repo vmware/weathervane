@@ -17,18 +17,18 @@ package com.vmware.weathervane.auction.data.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.cassandra.core.Ordering;
+import org.springframework.cassandra.core.PrimaryKeyType;
+import org.springframework.data.cassandra.mapping.Column;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
+import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
-@CompoundIndexes({
-	@CompoundIndex(name="bid_bidder_bidTime_idx", def="{'bidderId': 1, 'bidTime': 1 }"),
-	@CompoundIndex(name="bid_bidder_id_idx", def="{'bidderId': 1, '_id': 1 }")
-})
+@Table("bid_by_bidderid")
 public class Bid implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -38,46 +38,89 @@ public class Bid implements Serializable {
 		AUCTIONCOMPLETE, NOSUCHAUCTION, NOSUCHITEM, ITEMSOLD, ITEMNOTACTIVE, INSUFFICIENTFUNDS, DUMMY, STARTING, 
 		NOSUCHUSER, UNKNOWN
 	};
+	
+	@PrimaryKeyClass
+	public static class BidKey implements Serializable {
+		private static final long serialVersionUID = 1L;
 
-	private String id;
+		@PrimaryKeyColumn(name="bidder_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
+		private Long bidderId;
+
+		@PrimaryKeyColumn(name="bid_time", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
+		private Date bidTime;
+
+		@PrimaryKeyColumn(name="item_id", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
+		private Long itemId;
+
+
+		public Date getBidTime() {
+			return bidTime;
+		}
+
+		public void setBidTime(Date bidTime) {
+			this.bidTime = bidTime;
+		}
+
+		public Long getItemId() {
+			return itemId;
+		}
+
+		public void setItemId(Long itemId) {
+			// defer to the item to connect the two
+			this.itemId = itemId;
+		}
+
+		public Long getBidderId() {
+			return bidderId;
+		}
+
+		public void setBidderId(Long bidderId) {
+			this.bidderId = bidderId;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(bidTime, bidderId, itemId);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			BidKey other = (BidKey) obj;
+			return Objects.equals(bidTime, other.bidTime) && Objects.equals(bidderId, other.bidderId)
+					&& Objects.equals(itemId, other.itemId);
+		}
+	}
+	
+	@PrimaryKey
+	private BidKey key;
+	
 	private Float amount;
 	private BidState state;
-	private Date bidTime;
+	
+	@Column("bid_id")
+	private UUID id;
+	
+	@Column("bid_count")
 	private Integer bidCount;
 	
+	@Column("receiving_node")
 	private Long receivingNode;
 	
-	// References to other entities
+	@Column("auction_id")
 	private Long auctionId;
-	
-	@Indexed
-	private Long itemId;
-	
-	private Long bidderId;
 
-	public Bid() {
-
+	public BidKey getKey() {
+		return key;
 	}
 
-	public Bid(Bid that) {
-		this.setId(that.getId());
-		this.setAmount(that.getAmount());
-		this.setState(that.getState());
-		this.setBidTime(that.getBidTime());
-		this.setBidCount(that.getBidCount());
-		this.setReceivingNode(that.getReceivingNode());
-		this.setAuctionId(that.getAuctionId());
-		this.setItemId(that.getItemId());
-		this.setBidderId(that.getBidderId());
-	}
-	
-	@Id
-	public String getId() {
-		return id;
-	}
-
-	private void setId(String id) {
-		this.id = id;
+	public void setKey(BidKey key) {
+		this.key = key;
 	}
 
 	public Float getAmount() {
@@ -88,37 +131,20 @@ public class Bid implements Serializable {
 		this.amount = amount;
 	}
 
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID bidId) {
+		this.id = bidId;
+	}
+
 	public BidState getState() {
 		return state;
 	}
 
 	public void setState(BidState bidState) {
 		this.state = bidState;
-	}
-
-	public Date getBidTime() {
-		return bidTime;
-	}
-
-	public void setBidTime(Date bidTime) {
-		this.bidTime = bidTime;
-	}
-
-	public Long getItemId() {
-		return itemId;
-	}
-
-	public void setItemId(Long itemId) {
-		// defer to the item to connect the two
-		this.itemId = itemId;
-	}
-
-	public Long getBidderId() {
-		return bidderId;
-	}
-
-	public void setBidderId(Long bidderId) {
-		this.bidderId = bidderId;
 	}
 
 	public Long getAuctionId() {
@@ -149,7 +175,7 @@ public class Bid implements Serializable {
 	public String toString() {
 		String bidString;
 		
-		bidString = "Bid Id: " + id 
+		bidString = "Bidder Id: " + getKey().getBidderId()
 				+ " amount : " + amount 
 				+ " state : " + state;
 		

@@ -13,20 +13,60 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+/**
+ * 
+ *
+ * @author Hal
+ */
+package com.vmware.weathervane.auction.rest.representation;
 
-import java.util.List;
+import java.io.Serializable;
+/**
+ * @author Hal
+ * 
+ */
+public class ImageServiceStatsRepresentation extends Representation implements
+		Serializable {
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-
-@Repository
-public interface ImageInfoRepository extends MongoRepository<ImageInfo, String>, ImageInfoRepositoryCustom {
-	List<ImageInfo> findByEntitytypeAndEntityid(String entityType, Long entityId);
+	private static final long serialVersionUID = 1L;
 	
-	Long countByEntityidAndEntitytype(Long entityId, String entityType);
+	private long resizesRequested;
+	private long resizesCompleted;
+	private long averageResizeDelay;
 	
-	List<ImageInfo> findByFilepath(String filepath);
+	
+	public ImageServiceStatsRepresentation() {
+
+	}
+
+	public long getResizesRequested() {
+		return resizesRequested;
+	}
+
+
+	public void setResizesRequested(long resizesRequested) {
+		this.resizesRequested = resizesRequested;
+	}
+
+
+	public long getResizesCompleted() {
+		return resizesCompleted;
+	}
+
+
+	public void setResizesCompleted(long resizesCompleted) {
+		this.resizesCompleted = resizesCompleted;
+	}
+
+
+	public long getAverageResizeDelay() {
+		return averageResizeDelay;
+	}
+
+
+	public void setAverageResizeDelay(long averageResizeDelay) {
+		this.averageResizeDelay = averageResizeDelay;
+	}
+
+
 }

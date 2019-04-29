@@ -13,14 +13,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
+public interface ImageThumbnailRepositoryCustom {
+	void deleteByPreloaded(boolean preloaded);
 
-import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
-
-
-@Repository
-public interface ImageStoreBenchmarkInfoRepository extends MongoRepository<ImageStoreBenchmarkInfo, String> {
 }

@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+/*
 Copyright (c) 2017 VMware, Inc. All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -13,20 +12,28 @@ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PRO
 SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+*/
+package com.vmware.weathervane.auction.data.repository.event;
 
-<beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:jee="http://www.springframework.org/schema/jee"
-	xmlns:p="http://www.springframework.org/schema/p"
-	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+import java.util.Date;
 
-	<beans profile="postgresql">
-		<jee:jndi-lookup id="dataSource" jndi-name="jdbc/auction"
-			expected-type="javax.sql.DataSource" />
-	</beans>
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-</beans>
+import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
+
+@Repository
+public interface AttendanceRecordRepository extends CrudRepository<AttendanceRecord, AttendanceRecordKey>, AttendanceRecordRepositoryCustom {
+	
+	Page<AttendanceRecord> findByUserId(Long userId, Pageable pageable);
+
+	Page<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate, Pageable pageable);	
+
+	Page<AttendanceRecord> findByUserIdAndTimestampGreaterThanEqual(Long userId, Date fromDate, Pageable pageable);	
+
+	Page<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate, Pageable pageable);	
+
+}

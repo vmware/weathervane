@@ -13,55 +13,57 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Update.update;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.update;
 
 import java.util.Date;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-
-import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 
 public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositoryCustom {
 
-	@Inject
-	@Named("attendanceRecordMongoTemplate")
-	MongoOperations attendanceRecordMongoTemplate;
+	@Autowired
+	@Qualifier("cassandraEventTemplate")
+	CassandraOperations cassandraOperations;
 	
 	@Override
 	public void updateLastActiveTime(Long auctionId, Long userId, Date time) {
-		Query query = new Query(where("auctionId").is(auctionId).and("userId").is(userId));
-		attendanceRecordMongoTemplate.updateFirst(query, update("lastActiveTime", time), AttendanceRecord.class);
+		BuiltStatement update = update("attendancerecord_by_userid")
+				.with(set("record_time", time))
+				.where(eq("auction_id", auctionId)).and(eq("user_id", userId));
+		cassandraOperations.execute(update);
 	}
 
 	@Override
 	public void leaveAuctionsForUser(Long userId) {
-		Query query = new Query(where("userId").is(userId).and("state").is(AttendanceRecordState.ATTENDING));
-		attendanceRecordMongoTemplate.updateMulti(query, update("state", AttendanceRecordState.LEFT), AttendanceRecord.class);
+		BuiltStatement update = update("attendancerecord_by_userid")
+				.with(set("state", AttendanceRecordState.LEFT))
+				.where(eq("state", AttendanceRecordState.ATTENDING)).and(eq("user_id", userId));
+		cassandraOperations.execute(update);
+
 	}
 
 	@Override
 	public void leaveAuctionForUser(Long auctionId, Long userId, Date time) {
-		Query query = new Query(where("userId").is(userId).and("auctionId").is(auctionId));
-		Update theUpdate = new Update();
-		theUpdate.set("state", AttendanceRecordState.LEFT);
-		theUpdate.set("lastActiveTime", time);
-		
-		attendanceRecordMongoTemplate.updateMulti(query, theUpdate, AttendanceRecord.class);		
+		BuiltStatement update = update("attendancerecord_by_userid")
+				.with(set("record_time", time))
+				.and(set("state", AttendanceRecordState.LEFT))
+				.where(eq("auction_id", auctionId)).and(eq("user_id", userId));
+		cassandraOperations.execute(update);
+
 	}
 
 	@Override
 	public void deleteByAuctionId(Long auctionId) {
-		Query query = new Query(where("auctionId").is(auctionId));
-		attendanceRecordMongoTemplate.remove(query, AttendanceRecord.class);		
+		String cql = "DELETE FROM attendancerecord_by_userid WHERE auction_id = " + auctionId + ";";
+		cassandraOperations.execute(cql);
 	}
-
 }

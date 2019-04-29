@@ -19,71 +19,57 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.imageio.ImageIO;
-import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullKey;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
+import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview.ImagePreviewKey;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail.ImageThumbnailKey;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
-import com.vmware.weathervane.auction.data.repository.ImageFullRepository;
-import com.vmware.weathervane.auction.data.repository.ImagePreviewRepository;
-import com.vmware.weathervane.auction.data.repository.ImageStoreBenchmarkInfoRepository;
-import com.vmware.weathervane.auction.data.repository.ImageThumbnailRepository;
+import com.vmware.weathervane.auction.data.repository.event.ImageStoreBenchmarkInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageFullRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImagePreviewRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageThumbnailRepository;
 
 /**
  * This is an implementation of the ImageStoreFacade that stores all images in a
- * collection in MongoDB.
+ * collection in Cassandra.
  * 
  * @author Hal
  * 
  */
-public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
+public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 
-	private static final Logger logger = LoggerFactory.getLogger(ImageStoreFacadeMongodbImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger(ImageStoreFacadeCassandraImpl.class);
 
-	@Inject
-	ImageFullRepository imageFullRepository;
+	@Autowired
+	private ImageFullRepository imageFullRepository;
 
-	@Inject
-	ImagePreviewRepository imagePreviewRepository;
+	@Autowired
+	private ImagePreviewRepository imagePreviewRepository;
 
-	@Inject
-	ImageThumbnailRepository imageThumbnailRepository;
+	@Autowired
+	private ImageThumbnailRepository imageThumbnailRepository;
 
-	@Inject
-	ImageStoreBenchmarkInfoRepository imageStoreBenchmarkInfoRepository;
-
-	@Inject
-	@Named("imageInfoMongoTemplate")
-	MongoOperations imageInfoMongoTemplate;
-
-	@Inject
-	@Named("fullImageMongoTemplate")
-	MongoOperations fullImageMongoTemplate;
-
-	@Inject
-	@Named("previewImageMongoTemplate")
-	MongoOperations previewImageMongoTemplate;
-
-	@Inject
-	@Named("thumbnailImageMongoTemplate")
-	MongoOperations thumbnailImageMongoTemplate;
+	@Autowired
+	private ImageStoreBenchmarkInfoRepository imageStoreBenchmarkInfoRepository;
+	
+	@Autowired
+	@Qualifier("cassandraImageTemplate")
+	private CassandraOperations cassandraOperations;
 
 	/*
 	 * Method to print stats for cache misses at end of runs
@@ -124,33 +110,38 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		String imageId = imageInfo.getId();
+		UUID imageId = imageInfo.getImageId();
 
-		boolean preloaded = imageInfo.isPreloaded();
+		boolean preloaded = imageInfo.getKey().isPreloaded();
 
 		// put the full size image on the queue to be written
+		ImageFullKey ifKey = new ImageFullKey();
+		ifKey.setImageId(imageId);
+		ifKey.setPreloaded(preloaded);
 		ImageFull imageFull = new ImageFull();
+		imageFull.setKey(ifKey);
 		imageFull.setImage(imageBytes);
-		imageFull.setImageid(imageId);
-		imageFull.setPreloaded(preloaded);
-		imageFullRepository.saveImage(imageFull);
+		imageFullRepository.save(imageFull);
 
 		BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
 
 		// put the preview size image on the queue to be written
+		ImagePreviewKey ipKey = new ImagePreviewKey();
+		ipKey.setImageId(imageId);
+		ipKey.setPreloaded(preloaded);
 		ImagePreview imagePreview = new ImagePreview();
+		imagePreview.setKey(ipKey);
 		imagePreview.setImage(resizeImage(image, ImageSize.PREVIEW));
-		imagePreview.setImageid(imageId);
-		imagePreview.setPreloaded(preloaded);
-		imagePreviewRepository.saveImage(imagePreview);
+		imagePreviewRepository.save(imagePreview);
 
 		// put the thumbnail size image on the queue to be written
+		ImageThumbnailKey itKey = new ImageThumbnailKey();
+		itKey.setImageId(imageId);
+		itKey.setPreloaded(preloaded);
 		ImageThumbnail imageThumbnail = new ImageThumbnail();
+		imageThumbnail.setKey(itKey);
 		imageThumbnail.setImage(resizeImage(image, ImageSize.THUMBNAIL));
-		imageThumbnail.setImageid(imageId);
-		imageThumbnail.setPreloaded(preloaded);
-		imageThumbnailRepository.saveImage(imageThumbnail);
-		
+		imageThumbnailRepository.save(imageThumbnail);
 	}
 	
 	@Override
@@ -162,24 +153,26 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		String imageId = imageInfo.getId();
+		UUID imageId = imageInfo.getImageId();
 
-		boolean preloaded = imageInfo.isPreloaded();
+		boolean preloaded = imageInfo.getKey().isPreloaded();
 
 		// save the full size image 
+		ImageFullKey ifKey = new ImageFullKey();
+		ifKey.setImageId(imageId);
+		ifKey.setPreloaded(preloaded);
 		ImageFull imageFull = new ImageFull();
+		imageFull.setKey(ifKey);
 		imageFull.setImage(imageBytes);
-		imageFull.setImageid(imageId);
-		imageFull.setPreloaded(preloaded);
-		imageFullRepository.saveImage(imageFull);
+		imageFullRepository.save(imageFull);
 		
 	}
 	
 	@Override
 	public ImageInfo addImage(ImageInfo imageInfo, BufferedImage fullImage, BufferedImage previewImage,
 			BufferedImage thumbnailImage) throws IOException {
-		logger.info("addImage with all bytes. Writing image for " + imageInfo.getEntitytype()
-				+ " with id=" + imageInfo.getEntityid());
+		logger.info("addImage with all bytes. Writing image for " + imageInfo.getKey().getEntitytype()
+				+ " with id=" + imageInfo.getKey().getEntityid());
 
 		/*
 		 * First save the imageInfo. This will cause the image to get a unique
@@ -187,45 +180,50 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 		 */
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
-		String imageId = imageInfo.getId();
-		boolean preloaded = imageInfo.isPreloaded();
+		UUID imageId = imageInfo.getImageId();
+		boolean preloaded = imageInfo.getKey().isPreloaded();
 
 		// put the full size image on the queue to be written
 		if (fullImage != null) {
-			logger.debug("addImage bytes adding full image for " + imageInfo.getEntitytype() + ":"
-					+ imageInfo.getEntityid());
+			logger.debug("addImage bytes adding full image for " + imageInfo.getKey().getEntitytype() + ":"
+					+ imageInfo.getKey().getEntityid());
 
 			// Randomize the image
+			ImageFullKey ifKey = new ImageFullKey();
+			ifKey.setImageId(imageId);
+			ifKey.setPreloaded(preloaded);			
 			ImageFull imageFull = new ImageFull();
+			imageFull.setKey(ifKey);
 			imageFull.setImage(randomizeImage(fullImage));
-			imageFull.setImageid(imageId);
-			imageFull.setPreloaded(preloaded);
 			imageFullRepository.save(imageFull);
 		}
 
 		// put the preview size image on the queue to be written
 		if (previewImage != null) {
-			logger.debug("addImage bytes adding preview image for " + imageInfo.getEntitytype() + ":"
-					+ imageInfo.getEntityid());
-			
+			logger.debug("addImage bytes adding preview image for " + imageInfo.getKey().getEntitytype() + ":"
+					+ imageInfo.getKey().getEntityid());
 			// Randomize the image
+			ImagePreviewKey ipKey = new ImagePreviewKey();
+			ipKey.setImageId(imageId);
+			ipKey.setPreloaded(preloaded);
 			ImagePreview imagePreview = new ImagePreview();
+			imagePreview.setKey(ipKey);
 			imagePreview.setImage(randomizeImage(previewImage));
-			imagePreview.setImageid(imageId);
-			imagePreview.setPreloaded(preloaded);
 			imagePreviewRepository.save(imagePreview);
 		}
 
 		// put the thumbnail size image on the queue to be written
 		if (thumbnailImage != null) {
-			logger.debug("addImage bytes adding thumbnail image for " + imageInfo.getEntitytype() + ":"
-					+ imageInfo.getEntityid());
+			logger.debug("addImage bytes adding thumbnail image for " + imageInfo.getKey().getEntitytype() + ":"
+					+ imageInfo.getKey().getEntityid());
 			
 			// Randomize the image
+			ImageThumbnailKey itKey = new ImageThumbnailKey();
+			itKey.setImageId(imageId);
+			itKey.setPreloaded(preloaded);
 			ImageThumbnail imageThumbnail = new ImageThumbnail();
+			imageThumbnail.setKey(itKey);
 			imageThumbnail.setImage(randomizeImage(thumbnailImage));
-			imageThumbnail.setImageid(imageId);
-			imageThumbnail.setPreloaded(preloaded);
 			imageThumbnailRepository.save(imageThumbnail);
 		}
 		return imageInfo;
@@ -266,36 +264,36 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 	}
 
 	@Override
-	public byte[] retrieveImage(String imageHandle, ImageSize size) throws NoSuchImageException,
+	public byte[] retrieveImage(UUID imageHandle, ImageSize size) throws NoSuchImageException,
 			IOException {
 		logger.info("retrieveImage imageHandle = " + imageHandle + ", imageSize = " + size);
 		switch (size) {
 		case THUMBNAIL:
-			List<ImageThumbnail> thumbs = imageThumbnailRepository.findByImageid(imageHandle);
+			List<ImageThumbnail> thumbs = imageThumbnailRepository.findByKeyImageId(imageHandle);
 			if (thumbs == null) {
 				logger.warn("retrieveImage thumbs = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return thumbs.get(0).getImage();
+			return thumbs.get(0).getImage().array();
 
 		case PREVIEW:
-			List<ImagePreview> previews = imagePreviewRepository.findByImageid(imageHandle);
+			List<ImagePreview> previews = imagePreviewRepository.findByKeyImageId(imageHandle);
 			if (previews == null) {
 				logger.warn("retrieveImage previews = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return previews.get(0).getImage();
+			return previews.get(0).getImage().array();
 
 		default:
-			List<ImageFull> fulls = imageFullRepository.findByImageid(imageHandle);
+			List<ImageFull> fulls = imageFullRepository.findByKeyImageId(imageHandle);
 			if (fulls == null) {
 				logger.warn("retrieveImage fulls = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
 			}
-			return fulls.get(0).getImage();
+			return fulls.get(0).getImage().array();
 		}
 	}
 
@@ -303,34 +301,32 @@ public class ImageStoreFacadeMongodbImpl extends ImageStoreFacadeBaseImpl {
 	public void clearNonpreloadedImages() {
 		logger.info("clearNonPreloadedImages");
 		imageFullRepository.deleteByPreloaded(false);
-		imageInfoRepository.deleteByPreloaded(false);
 		imagePreviewRepository.deleteByPreloaded(false);
 		imageThumbnailRepository.deleteByPreloaded(false);
+		imageInfoRepository.deleteByPreloaded(false);
 	}
 
 	@Override
 	public void resetImageStore() throws IOException {
-		// empty mongo collections
-		fullImageMongoTemplate.dropCollection("imageFull");
-		previewImageMongoTemplate.dropCollection("imagePreview");
-		thumbnailImageMongoTemplate.dropCollection("imageThumbnail");
-		imageInfoMongoTemplate.dropCollection("imageInfo");
-
+		// empty tables
+		cassandraOperations.execute(QueryBuilder.truncate("image_info"));
+		cassandraOperations.execute(QueryBuilder.truncate("image_full"));
+		cassandraOperations.execute(QueryBuilder.truncate("image_preview"));
+		cassandraOperations.execute(QueryBuilder.truncate("image_thumbnail"));
 	}
 
 	@Override
-	public void setScale(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
+	public void setBenchmarkInfo(ImageStoreBenchmarkInfo imageStoreBenchmarkInfo) {
 
 		imageStoreBenchmarkInfoRepository.save(imageStoreBenchmarkInfo);
 	}
 
 	@Override
-	public ImageStoreBenchmarkInfo getScale() throws NoScaleException {
-		List<ImageStoreBenchmarkInfo> imageStoreBenchmarkInfos = imageStoreBenchmarkInfoRepository
-				.findAll();
+	public ImageStoreBenchmarkInfo getBenchmarkInfo() throws NoBenchmarkInfoException {
+		List<ImageStoreBenchmarkInfo> imageStoreBenchmarkInfos = (List<ImageStoreBenchmarkInfo>) imageStoreBenchmarkInfoRepository.findAll();
 		if ((imageStoreBenchmarkInfos == null) || (imageStoreBenchmarkInfos.size() < 1)) {
 			logger.warn("getScale imageStoreBenchmarkInfos = null");
-			throw new NoScaleException();
+			throw new NoBenchmarkInfoException();
 		}
 		return imageStoreBenchmarkInfos.get(0);
 

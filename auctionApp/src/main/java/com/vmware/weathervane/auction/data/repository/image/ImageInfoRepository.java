@@ -13,16 +13,19 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.service;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import java.util.Date;
+import java.util.List;
 
-import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-public interface BidService {
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
+
+@Repository
+public interface ImageInfoRepository extends CrudRepository<ImageInfo, ImageInfoKey>, ImageInfoRepositoryCustom {
+	List<ImageInfo> findByKeyEntitytypeAndKeyEntityid(String entityType, Long entityId);
 	
-	public CollectionRepresentation<BidRepresentation> getBidsForUser(Long userId,
-			Date fromDate, Date toDate, Integer page, Integer pageSize);
-		
+	Long countByKeyEntityidAndKeyEntitytype(Long entityId, String entityType);	
 }

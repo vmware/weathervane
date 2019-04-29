@@ -287,8 +287,8 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	public HighBid postNewHighBidTx(Bid theBid) throws InvalidStateException {
 
 		Long auctionId = theBid.getAuctionId();
-		Long itemId = theBid.getItemId();
-		Long bidderId = theBid.getBidderId();
+		Long itemId = theBid.getKey().getItemId();
+		Long bidderId = theBid.getKey().getBidderId();
 
 		/* 
 		 * Get the HighBid
@@ -301,9 +301,9 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		User theUser = userDao.get(bidderId);
 		if (theUser == null) {
 			logger.warn("PostNewBidTx: Attempt to post a bid for a nonexistant user with ID "
-					+ theBid.getBidderId());
+					+ theBid.getKey().getBidderId());
 			throw new InvalidStateException("Attempt to post a bid for a nonexistant user with ID "
-					+ theBid.getBidderId());
+					+ theBid.getKey().getBidderId());
 		}
 
 		// Determine the status of the new bid
@@ -325,10 +325,9 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 			curHighBid.setBidCount(curHighBid.getBidCount() + 1);
 			curHighBid.setAmount(theBid.getAmount());
 			curHighBid.setBidder(theUser);
-			curHighBid.setBidId(theBid.getId().toString());
+			curHighBid.setBidId(theBid.getId());
 			curHighBid.setState(HighBidState.OPEN);
-			curHighBid.setCurrentBidTime(theBid.getBidTime());
-
+			curHighBid.setCurrentBidTime(theBid.getKey().getBidTime());
 		}
 
 		return curHighBid;

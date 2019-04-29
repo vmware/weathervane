@@ -16,37 +16,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.model;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-import org.bson.types.ObjectId;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.cassandra.mapping.Column;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
+@Table("nosql_benchmark_info")
 public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 
 	private static final long serialVersionUID = 1L;
 
-
-	private ObjectId id;
+	@PrimaryKey
+	private UUID id;
 	
+	@Column("max_users")
 	private Long maxusers;
-		
-	private Integer numShards;
-	
-	private Integer numReplicas;
-	
+			
+	@Column("imagestore_type")
 	private String imageStoreType;
 
 	public NosqlBenchmarkInfo() {
 
 	}
 
-	@Id
-	public ObjectId getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(ObjectId id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 	
@@ -60,9 +58,7 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 
 	@Override
 	public String toString() {
-		return "NosqlBenchmarkInfo.  maxusers = " + maxusers 
-				+ ", numShards = " + numShards
-				+ ", numReplicas = " + numReplicas
+		return "NosqlBenchmarkInfo. maxusers = " + maxusers 
 				+ ", imageStoreType = " + imageStoreType;
 	}
 
@@ -72,22 +68,5 @@ public class NosqlBenchmarkInfo implements Serializable, DomainObject {
 
 	public void setMaxusers(Long maxusers) {
 		this.maxusers = maxusers;
-	}
-
-	public Integer getNumShards() {
-		return numShards;
-	}
-
-	public void setNumShards(Integer numShards) {
-		this.numShards = numShards;
-	}
-
-	public Integer getNumReplicas() {
-		return numReplicas;
-	}
-
-	public void setNumReplicas(Integer numReplicas) {
-		this.numReplicas = numReplicas;
-	}
-	
+	}	
 }

@@ -13,25 +13,41 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-/**
- * 
- *
- * @author Hal
- */
-package com.vmware.weathervane.auction.data.imageStore;
+package com.vmware.weathervane.auction.data.repository.image;
 
-/**
- * @author Hal
- *
- */
-public class NoScaleNeededException extends Exception {
+import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 
-	public NoScaleNeededException() {
-		super();
-	}
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
+
+import com.datastax.driver.core.querybuilder.BuiltStatement;
+
+public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
+
+	@Autowired
+	@Qualifier("cassandraImageTemplate")
+	CassandraOperations cassandraOperations;
 	
-	public NoScaleNeededException(String msg) {
-		super(msg);
-	}
+	@Override
+	public void deleteByPreloaded(boolean preloaded) {
+		
+		List<Long> entityIds = 
+				cassandraOperations.select("select entity_id from image_info where preloaded=true allow filtering;", Long.class);
+		
+		entityIds.parallelStream().forEach(
+				new Consumer<Long>() {
 
+					@Override
+					public void accept(Long t) {
+						BuiltStatement delete = delete().from("image_info").where(eq("entity_id", t)).and(eq("entity_type", "Item"));
+						cassandraOperations.execute(delete);						
+					}
+				});
+
+	}
 }

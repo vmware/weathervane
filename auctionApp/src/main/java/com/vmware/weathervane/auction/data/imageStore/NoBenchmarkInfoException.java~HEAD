@@ -13,16 +13,25 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.service;
+/**
+ * 
+ *
+ * @author Hal
+ */
+package com.vmware.weathervane.auction.data.imageStore;
 
-import java.util.Date;
+/**
+ * @author Hal
+ *
+ */
+public class NoBenchmarkInfoException extends Exception {
 
-import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
-import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
-
-public interface BidService {
+	public NoBenchmarkInfoException() {
+		super();
+	}
 	
-	public CollectionRepresentation<BidRepresentation> getBidsForUser(Long userId,
-			Date fromDate, Date toDate, Integer page, Integer pageSize);
-		
+	public NoBenchmarkInfoException(String msg) {
+		super(msg);
+	}
+
 }

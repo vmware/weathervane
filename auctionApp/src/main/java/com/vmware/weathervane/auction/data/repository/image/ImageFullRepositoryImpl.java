@@ -13,12 +13,41 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 
-public interface ImageFullRepositoryCustom {
-	void saveImage(ImageFull image);
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
+
+import com.datastax.driver.core.querybuilder.BuiltStatement;
+
+public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
+
+	@Autowired
+	@Qualifier("cassandraImageTemplate")
+	CassandraOperations cassandraOperations;
 	
-	void deleteByPreloaded(boolean preloaded);
+	@Override
+	public void deleteByPreloaded(boolean preloaded) {
+		
+		List<UUID> imageIds = 
+				cassandraOperations.select("select image_id from image_full where preloaded=true allow filtering;", UUID.class);
+		
+		imageIds.parallelStream().forEach(
+				new Consumer<UUID>() {
+
+					@Override
+					public void accept(UUID t) {
+						BuiltStatement delete = delete().from("image_full").where(eq("image_id", t));
+						cassandraOperations.execute(delete);						
+					}
+				});
+	}
 }

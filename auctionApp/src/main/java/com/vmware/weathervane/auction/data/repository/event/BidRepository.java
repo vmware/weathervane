@@ -13,20 +13,20 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
 import java.util.Date;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.model.Bid;
+import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 
 @Repository
-public interface BidRepository extends MongoRepository<Bid, String>, BidRepositoryCustom {
-		
+public interface BidRepository extends CrudRepository<Bid, BidKey>, BidRepositoryCustom {
 	Page<Bid> findByBidderId(Long bidderId, Pageable pageable);
 	
 	Page<Bid> findByBidderIdAndBidTimeLessThanEqual(Long bidderId, Date toDate, Pageable pageable);	
@@ -34,5 +34,5 @@ public interface BidRepository extends MongoRepository<Bid, String>, BidReposito
 	Page<Bid> findByBidderIdAndBidTimeGreaterThanEqual(Long bidderId, Date fromDate, Pageable pageable);	
 
 	Page<Bid> findByBidderIdAndBidTimeBetween(Long bidderId, Date fromDate, Date toDate, Pageable pageable);	
-	
+
 }

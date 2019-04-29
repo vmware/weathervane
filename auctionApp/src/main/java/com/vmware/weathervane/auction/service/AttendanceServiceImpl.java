@@ -37,7 +37,7 @@ import org.springframework.data.domain.Sort;
 
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.model.Bid;
-import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;

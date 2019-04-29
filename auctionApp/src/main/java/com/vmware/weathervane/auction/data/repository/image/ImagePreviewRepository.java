@@ -13,13 +13,18 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageThumbnail;
+import java.util.List;
+import java.util.UUID;
 
-public interface ImageThumbnailRepositoryCustom {
-	void saveImage(ImageThumbnail image);
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-	void deleteByPreloaded(boolean preloaded);
+import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
+import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview.ImagePreviewKey;
 
+@Repository
+public interface ImagePreviewRepository extends CrudRepository<ImagePreview, ImagePreviewKey>, ImagePreviewRepositoryCustom {
+	List<ImagePreview> findByKeyImageId(UUID imageid);
 }

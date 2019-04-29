@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -40,8 +41,9 @@ import com.vmware.weathervane.auction.data.dao.ItemDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageQueueFullException;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.NoSuchImageException;
-import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade.ImageSize;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoKey;
+import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade.ImageSize;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.User;
@@ -296,11 +298,13 @@ public class ItemServiceImpl implements ItemService {
 		
 		// Now save the image
 		ImageInfo imageInfo = new ImageInfo();
+		ImageInfoKey key = new ImageInfoKey();
+		key.setEntitytype(Item.class.getSimpleName());
+		key.setEntityid(itemId);
+		key.setPreloaded(false);
+		imageInfo.setKey(key);
 		imageInfo.setDateadded(foc.getTime());
-		imageInfo.setEntitytype(Item.class.getSimpleName());
-		imageInfo.setEntityid(itemId);
 		imageInfo.setName(imageName);
-		imageInfo.setPreloaded(false);
 		
 		imageInfo = imageStore.addImage(imageInfo, imageBytes);
 		
@@ -309,7 +313,7 @@ public class ItemServiceImpl implements ItemService {
 	
 	@Override
 	@Cacheable(value="itemThumbnailImageCache")
-	public byte[] getThumbnailImageForItemCacheable(long itemId, String itemImageId) {
+	public byte[] getThumbnailImageForItemCacheable(long itemId, UUID itemImageId) {
 		logger.info("getThumbnailImageForItem: Getting image for itemId=" + itemId + ", imageId=" + itemImageId);
 		thumbnailMisses++;
 		byte[] image = null;
@@ -330,7 +334,7 @@ public class ItemServiceImpl implements ItemService {
 	
 	@Override
 	@Cacheable(value="itemThumbnailImageCache")
-	public byte[] getThumbnailImageForItem(long itemId, String itemImageId) {
+	public byte[] getThumbnailImageForItem(long itemId, UUID itemImageId) {
 		logger.info("getThumbnailImageForItem: Getting image for itemId=" + itemId + ", imageId=" + itemImageId);
 		byte[] image = null;
 		try {
@@ -349,7 +353,7 @@ public class ItemServiceImpl implements ItemService {
 
 	@Override
 	@Cacheable(value="itemPreviewImageCache")
-	public byte[] getPreviewImageForItem(long itemId, String itemImageId) {
+	public byte[] getPreviewImageForItem(long itemId, UUID itemImageId) {
 		logger.info("getPreviewImageForItem: Getting image for itemId=" + itemId + ", imageId=" + itemImageId);
 		previewMisses++;
 		
@@ -369,7 +373,7 @@ public class ItemServiceImpl implements ItemService {
 
 	@Override
 	@Cacheable(value="itemFullImageCache")
-	public byte[] getFullImageForItem(long itemId, String itemImageId) {
+	public byte[] getFullImageForItem(long itemId, UUID itemImageId) {
 		logger.info("getFullImageForItem: Getting image for itemId=" + itemId + ", imageId=" + itemImageId);
 		fullMisses++;
 		

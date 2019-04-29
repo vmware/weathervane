@@ -46,6 +46,7 @@ use Factories::AppInstanceFactory;
 use Parameters
   qw(getParamDefault getParamType getParamKeys getParamValue setParamValue mergeParameters usage fullUsage);
 use StderrToLogerror;
+use Utils qw(runCmd);
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
@@ -406,12 +407,19 @@ else {
 	close SEQFILE;
 }
 
+my $cmdFailed;
 # Copy the version file into the output directory
-`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
+$cmdFailed = runCmd('cp ' . $weathervaneHome .'/version.txt ' . $tmpDir . '/version.txt');
+if ($cmdFailed) {
+	die "version cp failed: $cmdFailed\n";
+}
 
 # Save the original config file and processed command line parameters
 my $saveConfigFile = $tmpDir . "/" . basename($configFileName) . ".save";
-`cp $configFileName $saveConfigFile`;
+$cmdFailed = runCmd('cp ' . $configFileName . ' ' . $saveConfigFile);
+if ($cmdFailed) {
+	die "config cp failed: $cmdFailed\n";
+}
 open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
 print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
 close PARAMCOMMANDLINEFILE;
@@ -921,5 +929,11 @@ $console_logger->info( "Running Weathervane with "
 $runManager->start();
 
 my $resultsDir = "$outputDir/$seqnum";
-`mkdir -p $resultsDir`;
-`mv $tmpDir/* $resultsDir/.`;
+$cmdFailed = runCmd('mkdir -p ' . $resultsDir);
+if ($cmdFailed) {
+	die "resultDir mkdir failed: $cmdFailed\n";
+}
+$cmdFailed = runCmd('mv ' . $tmpDir . '/* ' . $resultsDir . '/.');
+if ($cmdFailed) {
+	die "tmpDir mv failed: $cmdFailed\n";
+}

@@ -13,15 +13,48 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.model;
 
-import java.util.Collection;
+import java.io.Serializable;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-public interface ImageInfoRepositoryCustom {
-		
-	void deleteByPreloaded(boolean preloaded);
+@Entity
+@Table(name = "auctionmgmt")
+public class AuctionMgmt implements Serializable, DomainObject {
 
-	void insertBatch(Collection<ImageInfo> imageInfos);
+	private static final long serialVersionUID = 1L;
+
+	private Long id;
+
+	private Long masternodeid;
+
+	public AuctionMgmt(Long id, Long nodeid) {
+		this.id = id;
+		this.masternodeid = nodeid;
+	}
+
+	public AuctionMgmt() {
+
+	}
+
+	@Id
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public Long getMasternodeid() {
+		return masternodeid;
+	}
+
+	public void setMasternodeid(Long masternodeid) {
+		this.masternodeid = masternodeid;
+	}
+
 }

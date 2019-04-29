@@ -13,38 +13,18 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-import org.springframework.data.mongodb.core.MongoOperations;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullKey;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-
-public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
-
-	@Inject
-	@Named("imageInfoMongoTemplate")
-	MongoOperations imageInfoMongoTemplate;
-	
-	@Override
-	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageInfoMongoTemplate.remove(query, ImageInfo.class);
-	}
-
-	
-	@Override
-	public void insertBatch(Collection<ImageInfo> imageInfos) {
-		imageInfoMongoTemplate.insert(imageInfos, ImageInfo.class);
-	}
-
+@Repository
+public interface ImageFullRepository extends CrudRepository<ImageFull, ImageFullKey>, ImageFullRepositoryCustom {
+	List<ImageFull> findByKeyImageId(UUID imageid);
 }

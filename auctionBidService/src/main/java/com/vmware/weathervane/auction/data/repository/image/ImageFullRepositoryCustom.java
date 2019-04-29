@@ -13,18 +13,8 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import java.util.List;
-
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
-
-@Repository
-public interface ImageFullRepository extends MongoRepository<ImageFull, String>, ImageFullRepositoryCustom {
-	List<ImageFull> findByImageid(String imageid);
-	
+public interface ImageFullRepositoryCustom {	
 	void deleteByPreloaded(boolean preloaded);
 }

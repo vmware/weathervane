@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.data.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -55,8 +56,8 @@ public class HighBid implements Serializable, DomainObject {
 	private Item item;
 	private User bidder;
 	
-	// reference to documents in MongoDB
-	private String bidId;
+	// reference to documents in Cassandra
+	private UUID bidId;
 
 	/*
 	 * These fields are included to enable a 
@@ -96,6 +97,7 @@ public class HighBid implements Serializable, DomainObject {
 		this.itemId = that.itemId;
 		this.bidderId = that.bidderId;
 		this.preloaded = that.preloaded;
+		this.version = that.version;
 	}
 
 	@Id
@@ -217,11 +219,11 @@ public class HighBid implements Serializable, DomainObject {
 	}
 
 	@Column(name="bidid")
-	public String getBidId() {
+	public UUID getBidId() {
 		return bidId;
 	}
 
-	public void setBidId(String bidid) {
+	public void setBidId(UUID bidid) {
 		this.bidId = bidid;
 	}
 

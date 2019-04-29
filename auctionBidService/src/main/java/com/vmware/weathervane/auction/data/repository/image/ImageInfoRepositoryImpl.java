@@ -13,41 +13,41 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import java.util.Collection;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import java.util.List;
+import java.util.function.Consumer;
 
-import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.cassandra.core.CassandraOperations;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
+import com.datastax.driver.core.querybuilder.BuiltStatement;
 
-import org.springframework.data.mongodb.core.query.Query;
+public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
-
-public class ImagePreviewRepositoryImpl implements ImagePreviewRepositoryCustom {
-
-	@Inject
-	@Named("previewImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
+	@Autowired
+	@Qualifier("cassandraImageTemplate")
+	CassandraOperations cassandraOperations;
 	
-	public void saveImage(ImagePreview image) {
-		imageMongoTemplate.save(image);
-	}
-
 	@Override
 	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
 		
-		imageMongoTemplate.remove(query, ImagePreview.class);
-	}
+		List<Long> entityIds = 
+				cassandraOperations.select("select entity_id from image_info where preloaded=true allow filtering;", Long.class);
+		
+		entityIds.parallelStream().forEach(
+				new Consumer<Long>() {
 
-	@Override
-	public void insertBatch(Collection<ImagePreview> imagePreviews) {
-		imageMongoTemplate.insert(imagePreviews, ImagePreview.class);
-	}
+					@Override
+					public void accept(Long t) {
+						BuiltStatement delete = delete().from("image_info").where(eq("entity_id", t)).and(eq("entity_type", "Item"));
+						cassandraOperations.execute(delete);						
+					}
+				});
 
+	}
 }

@@ -26,7 +26,7 @@ BEGIN {
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3
 	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-	  callMethodOnObjectsParamListParallel1);
+	  callMethodOnObjectsParamListParallel1 runCmd);
 }
 
 sub createDebugLogger {
@@ -368,6 +368,38 @@ sub callMethodOnObjects1 {
 
 	foreach my $object (@$objectsRef) {
 			$object->$method($param1);
+	}
+}
+
+sub runCmd {
+	my ($cmd) = @_;
+	my $logger = get_logger("Weathervane");
+
+	# Do some sanity checks before running commands.
+	if ($cmd =~ /\$/ ) {
+		die "error, command contains unexpanded variable: $cmd\n";
+	}
+	if ($cmd =~ / \// ) {
+		if ( !($cmd =~ / \/tmp\// || $cmd =~ /\/weathervane/) ) {
+			die "error, command references /: $cmd\n";
+		}
+	}
+
+	my $output = `$cmd 2>&1`;
+	my $exitStatus = $?;
+	my $failed = $exitStatus >> 8;
+	if ($failed) {
+		if (!(length $output)) {
+			$output = "(error with no output)";
+		}
+		$logger->debug("runCmd Error ($cmd): $output");
+		return $output;
+	} else {
+		if (!(length $output)) {
+			$output = "(no output)";
+		}
+		$logger->debug("runCmd Success ($cmd): $output");
+		return "";
 	}
 }
 

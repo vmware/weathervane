@@ -248,7 +248,8 @@ foreach my $key (@$keysRef) {
 	}
 	push @paramStrings, $key . $type;
 }
-GetOptions( \%paramCommandLine, @paramStrings );
+GetOptions( \%paramCommandLine, @paramStrings )
+or die("Error in command line options.\n");
 
 # Check for a request for the help text
 if ( exists $paramCommandLine{'help'} ) {
@@ -300,7 +301,7 @@ my $paramConfig = $json->decode($paramJson);
 # Make sure that all of the parameters read from the config file are valid
 foreach my $key ( keys %$paramConfig ) {
 	if ( !( $key ~~ @validParams ) ) {
-		die "Parameter $key in configuration file $configFileName is not a valid parameter";
+		die "Parameter $key in configuration file $configFileName is not a valid parameter.\n";
 	}
 }
 

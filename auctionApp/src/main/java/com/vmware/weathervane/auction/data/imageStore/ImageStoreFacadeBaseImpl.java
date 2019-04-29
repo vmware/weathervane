@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-import com.vmware.weathervane.auction.data.repository.ImageInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageInfoRepository;
 
 /**
  * This is the base implementation of the ImageStoreFacade 
@@ -100,7 +100,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 
 	@Override
 	public void stopServiceThreads() {
-		logger.info("ImageStoreFacadeMongodbImpl stopServiceThreads");
+		logger.info("ImageStoreFacadeBaseImpl stopServiceThreads");
 		for (ImageWriter imageWriter : imageWriters) {
 			imageWriter.kill();
 		}
@@ -361,7 +361,6 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 						"No space in the imageWriter queue. Already contains "
 								+ imageAddQueue.size() + " images to be written");
 			}
-			imageInfo.setId("pending");
 		} else {
 			byte[] randomizedImage = imageBytes;
 			if (randomizeImages) {
@@ -535,7 +534,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 
 				if (nextImage != null) {
 					logger.debug("ImageWriter got image for imageId "
-							+ nextImage.getImageInfo().getId());
+							+ nextImage.getImageInfo().getImageId());
 					try {
 						byte[] randomizedImage = nextImage.getImage();
 						if (randomizeImages) {
@@ -545,7 +544,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 						saveImage(nextImage.getImageInfo(), randomizedImage);
 					} catch (IOException e) {
 						logger.warn("Got IOException when resizing and saving image with id "
-								+ nextImage.getImageInfo().getId());
+								+ nextImage.getImageInfo().getImageId());
 						e.printStackTrace();
 					}
 				}

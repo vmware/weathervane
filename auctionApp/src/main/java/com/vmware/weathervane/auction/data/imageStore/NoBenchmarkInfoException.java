@@ -13,34 +13,25 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+/**
+ * 
+ *
+ * @author Hal
+ */
+package com.vmware.weathervane.auction.data.imageStore;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+/**
+ * @author Hal
+ *
+ */
+public class NoBenchmarkInfoException extends Exception {
 
-import org.springframework.data.mongodb.core.MongoOperations;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-
-import org.springframework.data.mongodb.core.query.Query;
-
-import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
-
-public class ImagePreviewRepositoryImpl implements ImagePreviewRepositoryCustom {
-
-	@Inject
-	@Named("previewImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
-	
-	public void saveImage(ImagePreview image) {
-		imageMongoTemplate.save(image);
+	public NoBenchmarkInfoException() {
+		super();
 	}
-
-	@Override
-	public void deleteByPreloaded(boolean preloaded) {
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageMongoTemplate.remove(query, ImagePreview.class);
+	
+	public NoBenchmarkInfoException(String msg) {
+		super(msg);
 	}
 
 }

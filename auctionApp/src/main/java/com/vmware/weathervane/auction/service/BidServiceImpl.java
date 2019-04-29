@@ -34,7 +34,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vmware.weathervane.auction.data.model.Bid;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
 import com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceConstants;
@@ -51,19 +51,6 @@ public class BidServiceImpl implements BidService {
 	private BidRepository bidRepository;
 
 	public BidServiceImpl() {
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * 
-	 * @see com.vmware.liveAuction.services.BidService#getBid(java.lang.Long)
-	 */
-	@Override
-	public BidRepresentation getBid(String bidId) {
-
-		Bid theBid = bidRepository.findOne(bidId);
-		return new BidRepresentation(theBid, null);
 	}
 
 	@Override

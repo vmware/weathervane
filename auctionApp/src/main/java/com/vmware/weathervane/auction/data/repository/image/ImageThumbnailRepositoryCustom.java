@@ -13,25 +13,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-/**
- * 
- *
- * @author Hal
- */
-package com.vmware.weathervane.auction.data.imageStore;
+package com.vmware.weathervane.auction.data.repository.image;
 
-/**
- * @author Hal
- *
- */
-public class NoScaleException extends Exception {
-
-	public NoScaleException() {
-		super();
-	}
-	
-	public NoScaleException(String msg) {
-		super(msg);
-	}
+public interface ImageThumbnailRepositoryCustom {
+	void deleteByPreloaded(boolean preloaded);
 
 }

@@ -13,39 +13,18 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.image;
 
-import static org.springframework.data.mongodb.core.query.Criteria.where;
+import java.util.List;
+import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.mongodb.core.MongoOperations;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageFull;
+import com.vmware.weathervane.auction.data.imageStore.model.ImageFull.ImageFullKey;
 
-
-public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
-
-	private static final Logger logger = LoggerFactory.getLogger(ImageFullRepositoryImpl.class);
-
-	@Inject
-	@Named("fullImageMongoTemplate")
-	MongoOperations imageMongoTemplate;
-	
-	public void saveImage(ImageFull image) {
-		imageMongoTemplate.save(image);
-	}
-
-	@Override
-	public void deleteByPreloaded(boolean preloaded) {
-		logger.debug("deleteByPreloaded preloaded = " + preloaded);
-		Query query = new Query(where("preloaded").is(preloaded));
-		
-		imageMongoTemplate.remove(query, ImageFull.class);
-	}
-
+@Repository
+public interface ImageFullRepository extends CrudRepository<ImageFull, ImageFullKey>, ImageFullRepositoryCustom {
+	List<ImageFull> findByKeyImageId(UUID imageid);
 }

@@ -13,18 +13,27 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.auction.data.repository;
+package com.vmware.weathervane.auction.data.repository.event;
 
-import java.util.List;
+import java.util.Date;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.vmware.weathervane.auction.data.imageStore.model.ImagePreview;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
 
 @Repository
-public interface ImagePreviewRepository extends MongoRepository<ImagePreview, String>, ImagePreviewRepositoryCustom {
-	List<ImagePreview> findByImageid(String imageid);
+public interface AttendanceRecordRepository extends CrudRepository<AttendanceRecord, AttendanceRecordKey>, AttendanceRecordRepositoryCustom {
 	
-	void deleteByPreloaded(boolean preloaded);
+	Page<AttendanceRecord> findByUserId(Long userId, Pageable pageable);
+
+	Page<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate, Pageable pageable);	
+
+	Page<AttendanceRecord> findByUserIdAndTimestampGreaterThanEqual(Long userId, Date fromDate, Pageable pageable);	
+
+	Page<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate, Pageable pageable);	
+
 }

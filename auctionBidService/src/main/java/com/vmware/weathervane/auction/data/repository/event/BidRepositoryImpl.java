@@ -15,9 +15,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository.event;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.cassandra.core.CassandraOperations;
+
+import com.vmware.weathervane.auction.data.model.Bid;
 
 public class BidRepositoryImpl implements BidRepositoryCustom {
 
@@ -29,6 +36,43 @@ public class BidRepositoryImpl implements BidRepositoryCustom {
 	public void deleteByItemId(Long itemId) {
 		String cql = "DELETE FROM bid_by_bidderid WHERE item_id = " + itemId + ";";
 		cassandraOperations.execute(cql);
+	}
+
+	private DateFormat dateFormat; 
+
+	public BidRepositoryImpl() {
+		super();
+
+		String datePattern = "yyyy-MM-dd";
+		dateFormat = new SimpleDateFormat(datePattern); 
+	}
+
+	@Override
+	public List<Bid> findByBidderId(Long bidderId) {
+		String selectString = "select * from bid_by_bidderid where bidder_id = " + bidderId;
+		return cassandraOperations.select(selectString, Bid.class);
+	}
+
+	@Override
+	public List<Bid> findByBidderIdAndBidTimeLessThanEqual(Long bidderId, Date toDate) {
+		String selectString = "select * from bid_by_bidderid where bidder_id = " + bidderId;
+		selectString += " and bid_time <= " + dateFormat.format(toDate);
+		return cassandraOperations.select(selectString, Bid.class);
+	}
+
+	@Override
+	public List<Bid> findByBidderIdAndBidTimeGreaterThanEqual(Long bidderId, Date fromDate) {
+		String selectString = "select * from bid_by_bidderid where bidder_id = " + bidderId;
+		selectString += " and bid_time >= " + dateFormat.format(fromDate);
+		return cassandraOperations.select(selectString, Bid.class);
+	}
+
+	@Override
+	public List<Bid> findByBidderIdAndBidTimeBetween(Long bidderId, Date fromDate, Date toDate) {
+		String selectString = "select * from bid_by_bidderid where bidder_id = " + bidderId;
+		selectString += " and bid_time <= " + dateFormat.format(toDate);
+		selectString += " and bid_time >= " + dateFormat.format(fromDate);
+		return cassandraOperations.select(selectString, Bid.class);
 	}
 
 }

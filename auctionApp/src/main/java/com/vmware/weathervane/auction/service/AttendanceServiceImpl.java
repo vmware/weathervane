@@ -24,19 +24,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
-import com.vmware.weathervane.auction.data.model.Bid;
 import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
@@ -70,29 +65,26 @@ public class AttendanceServiceImpl implements AttendanceService {
 		logger.info("AttendanceServiceImpl::getAttendanceRecordsForUser page = " + realPage + ", pageSize = "
 				+ realPageSize);
 
-		Page<AttendanceRecord> queryResults = null;
-		Pageable pageRequest = new PageRequest(realPage, realPageSize, Sort.Direction.ASC, "id");
+		List<AttendanceRecord> queryResults = null;
 		if (fromDate == null) 
 			if (toDate == null)
-				queryResults = attendanceRecordRepository.findByUserId(userId, pageRequest);
+				queryResults = attendanceRecordRepository.findByUserId(userId);
 			else 
-				queryResults = attendanceRecordRepository.findByUserIdAndTimestampLessThanEqual(userId, toDate, pageRequest);
+				queryResults = attendanceRecordRepository.findByUserIdAndTimestampLessThanEqual(userId, toDate);
 		else 
 			if (toDate == null)
-				queryResults = attendanceRecordRepository.findByUserIdAndTimestampGreaterThanEqual(userId, fromDate, pageRequest);
+				queryResults = attendanceRecordRepository.findByUserIdAndTimestampGreaterThanEqual(userId, fromDate);
 		else
-				queryResults = attendanceRecordRepository.findByUserIdAndTimestampBetween(userId, fromDate, toDate, pageRequest);
+				queryResults = attendanceRecordRepository.findByUserIdAndTimestampBetween(userId, fromDate, toDate);
 			
-		
-		ArrayList<AttendanceRecordRepresentation> liveAttendanceRecords = new ArrayList<AttendanceRecordRepresentation>();
-		for (AttendanceRecord anAttendanceRecord : queryResults.getContent()) {
-			liveAttendanceRecords.add( new AttendanceRecordRepresentation(anAttendanceRecord));
-		}
+		List<AttendanceRecordRepresentation> liveAttendanceRecords = 
+				queryResults.stream().limit(realPageSize)
+					.map(r -> new AttendanceRecordRepresentation(r)).collect(Collectors.toList());
 
 		CollectionRepresentation<AttendanceRecordRepresentation> colRep = new CollectionRepresentation<AttendanceRecordRepresentation>();
 		colRep.setPage(realPage);
 		colRep.setPageSize(realPageSize);
-		colRep.setTotalRecords(queryResults.getTotalElements());
+		colRep.setTotalRecords(realPageSize.longValue());
 		colRep.setResults(liveAttendanceRecords);
 
 		return colRep;

@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.controllers;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -61,7 +62,7 @@ public class HealthCheckController extends BaseController {
 	 */
 	@PostConstruct
 	private void initializeObjectMapper() throws JsonParseException, JsonMappingException, IOException {
-		BidRepresentation aBid = objectMapper.readValue("{\"id\": \"unused\"}", BidRepresentation.class);
+		BidRepresentation aBid = objectMapper.readValue("{\"id\": \"" + UUID.randomUUID() + "\"}", BidRepresentation.class);
 		String jsonString = objectMapper.writeValueAsString(aBid);
 		logger.debug("Initialized BidRepresentation de/serializer: " + jsonString );
 		
@@ -78,7 +79,7 @@ public class HealthCheckController extends BaseController {
 		logger.debug("Initialized UserRepresentation de/serializer: " + jsonString );
 
 		CollectionRepresentation<BidRepresentation>  aBidCollection 
-		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"unused\"}]}", 
+		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"" + UUID.randomUUID() + "\"}]}", 
 				new TypeReference<CollectionRepresentation<BidRepresentation>>() { });
 		jsonString = objectMapper.writeValueAsString(aBidCollection);
 		logger.debug("Initialized CollectionRepresentation<BidRepresentation> de/serializer: " + jsonString );

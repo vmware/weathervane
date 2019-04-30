@@ -15,10 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository.event;
 
-import java.util.Date;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
@@ -28,12 +24,4 @@ import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceReco
 @Repository
 public interface AttendanceRecordRepository extends CrudRepository<AttendanceRecord, AttendanceRecordKey>, AttendanceRecordRepositoryCustom {
 	
-	Page<AttendanceRecord> findByUserId(Long userId, Pageable pageable);
-
-	Page<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate, Pageable pageable);	
-
-	Page<AttendanceRecord> findByUserIdAndTimestampGreaterThanEqual(Long userId, Date fromDate, Pageable pageable);	
-
-	Page<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate, Pageable pageable);	
-
 }

@@ -31,6 +31,7 @@ CREATE TABLE auction_event.attendancerecord_by_userid (
   auction_id bigint,
   state text,
   auction_name text,
+  id uuid,
   PRIMARY KEY ((user_id), record_time, auction_id)
   ) WITH CLUSTERING ORDER BY (record_time ASC, auction_id ASC);
   

@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -446,8 +447,9 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		key.setTimestamp(now);
 		key.setAuctionId(theAuction.getId());
 		newRecord.setAuctionName(theAuction.getName());
-		key.setState(AttendanceRecordState.ATTENDING);
+		newRecord.setState(AttendanceRecordState.ATTENDING);
 		newRecord.setKey(key);
+		newRecord.setId(UUID.randomUUID());
 		attendanceRecordRepository.save(newRecord);
 
 		return new AttendanceRecordRepresentation(newRecord);
@@ -464,8 +466,9 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		key.setAuctionId(auctionId);
 		key.setUserId(userId);
 		key.setTimestamp(now);
-		key.setState(AttendanceRecordState.LEFT);
+		attendanceRecord.setState(AttendanceRecordState.LEFT);
 		attendanceRecord.setKey(key);
+		attendanceRecord.setId(UUID.randomUUID());
 		attendanceRecordRepository.save(attendanceRecord);
 
 		return new AttendanceRecordRepresentation(attendanceRecord);

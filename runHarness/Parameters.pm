@@ -1676,7 +1676,7 @@ $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 $parameters{"maxLogLines"} = {
 	"type"      => "=i",
 	"default"   => 4000,
-	"parent"    => "appInstance",
+	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };

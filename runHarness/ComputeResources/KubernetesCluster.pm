@@ -513,8 +513,14 @@ sub kubernetesGetLogs {
 		exit(-1);
 	}
 	
-	foreach my $podName (@names) { 	
-		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs -c $serviceTypeImpl --namespace=$namespace $podName 2>&1";
+	my $maxLogLines = $self->getParamValue('maxLogLines');
+
+	foreach my $podName (@names) {
+		if ($maxLogLines > 0) {
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs --tail $maxLogLines -c $serviceTypeImpl --namespace=$namespace $podName 2>&1";
+		} else {
+			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs -c $serviceTypeImpl --namespace=$namespace $podName 2>&1";
+		}
 		$outString = `$cmd`;
 
 		$logger->debug("Command: $cmd");

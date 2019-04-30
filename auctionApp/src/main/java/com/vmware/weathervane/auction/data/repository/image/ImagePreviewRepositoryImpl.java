@@ -38,7 +38,7 @@ public class ImagePreviewRepositoryImpl implements ImagePreviewRepositoryCustom 
 	public void deleteByPreloaded(boolean preloaded) {
 		
 		List<UUID> imageIds = 
-				cassandraOperations.select("select image_id from image_preview where preloaded=true allow filtering;", UUID.class);
+				cassandraOperations.select("select image_id from image_preview where preloaded=false allow filtering;", UUID.class);
 		
 		imageIds.parallelStream().forEach(
 				new Consumer<UUID>() {

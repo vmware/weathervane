@@ -19,16 +19,28 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.update;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.cassandra.core.CassandraOperations;
 
 import com.datastax.driver.core.querybuilder.BuiltStatement;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 
 public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositoryCustom {
+
+	private DateFormat dateFormat; 
+	public AttendanceRecordRepositoryImpl() {
+		super();
+
+		String datePattern = "yyyy-MM-dd";
+		dateFormat = new SimpleDateFormat(datePattern); 
+	}
 
 	@Autowired
 	@Qualifier("cassandraEventTemplate")
@@ -66,4 +78,33 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 		String cql = "DELETE FROM attendancerecord_by_userid WHERE auction_id = " + auctionId + ";";
 		cassandraOperations.execute(cql);
 	}
+
+	@Override
+	public List<AttendanceRecord> findByUserId(Long userId) {
+		String selectString = "select * from attendancerecord_by_userid where user_id = " + userId;
+		return cassandraOperations.select(selectString, AttendanceRecord.class);
+	}
+
+	@Override
+	public List<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate) {
+		String selectString = "select * from attendancerecord_by_userid where user_id = " + userId;
+		selectString += " and record_time <= " + dateFormat.format(toDate);
+		return cassandraOperations.select(selectString, AttendanceRecord.class);
+	}
+
+	@Override
+	public List<AttendanceRecord> findByUserIdAndTimestampGreaterThanEqual(Long userId, Date fromDate) {
+		String selectString = "select * from attendancerecord_by_userid where user_id = " + userId;
+		selectString += " and record_time >= " + dateFormat.format(fromDate);
+		return cassandraOperations.select(selectString, AttendanceRecord.class);
+	}
+
+	@Override
+	public List<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate) {
+		String selectString = "select * from attendancerecord_by_userid where user_id = " + userId;
+		selectString += " and record_time <= " + dateFormat.format(toDate);
+		selectString += " and record_time >= " + dateFormat.format(fromDate);
+		return cassandraOperations.select(selectString, AttendanceRecord.class);
+	}
+
 }

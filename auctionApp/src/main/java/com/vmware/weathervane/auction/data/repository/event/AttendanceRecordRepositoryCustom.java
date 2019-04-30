@@ -16,6 +16,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.data.repository.event;
 
 import java.util.Date;
+import java.util.List;
+
+import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 
 public interface AttendanceRecordRepositoryCustom {
 			
@@ -26,5 +29,13 @@ public interface AttendanceRecordRepositoryCustom {
 	void leaveAuctionsForUser(Long userId);
 	
 	void deleteByAuctionId(Long auctionId);
+
+	List<AttendanceRecord> findByUserId(Long userId);
+
+	List<AttendanceRecord> findByUserIdAndTimestampLessThanEqual(Long userId, Date toDate);	
+
+	List<AttendanceRecord> findByUserIdAndTimestampGreaterThanEqual(Long userId, Date fromDate);	
+
+	List<AttendanceRecord> findByUserIdAndTimestampBetween(Long userId, Date fromDate, Date toDate);	
 
 }

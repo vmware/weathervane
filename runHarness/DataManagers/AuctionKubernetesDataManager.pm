@@ -401,63 +401,8 @@ sub cleanData {
 		return 0;
 	}
 	
-	if ( $self->getParamValue('mongodbCompact') ) {
-
-		# Compact all mongodb collections
-			print $logHandle "Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum.\n";
-			$logger->debug(
-				"cleanData. Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum. "	);
-
-			$logger->debug(
-				"cleanData. Compacting attendanceRecord collection for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-
-			my $cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting bid collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageInfo collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageFull collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imagePreview collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageThumbnail collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages", $namespace);
-			print $logHandle $cmdout;
-
-	}
+	# ToDo: Compact cassandra is not done by dataManager container
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -15,10 +15,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository.event;
 
-import java.util.Date;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
@@ -27,12 +23,5 @@ import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 
 @Repository
 public interface BidRepository extends CrudRepository<Bid, BidKey>, BidRepositoryCustom {
-	Page<Bid> findByBidderId(Long bidderId, Pageable pageable);
-	
-	Page<Bid> findByBidderIdAndBidTimeLessThanEqual(Long bidderId, Date toDate, Pageable pageable);	
-
-	Page<Bid> findByBidderIdAndBidTimeGreaterThanEqual(Long bidderId, Date fromDate, Pageable pageable);	
-
-	Page<Bid> findByBidderIdAndBidTimeBetween(Long bidderId, Date fromDate, Date toDate, Pageable pageable);	
 
 }

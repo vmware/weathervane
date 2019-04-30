@@ -39,6 +39,7 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 	 */
 	private static final long serialVersionUID = 1L;
 
+	private String id;
 	private Date timestamp;
 
 	private AttendanceRecordState state;
@@ -59,17 +60,12 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 		}
 
 		AttendanceRecordKey key = theRecord.getKey();
+		this.id = theRecord.getId().toString();
 		this.timestamp = key.getTimestamp();
-		this.state = key.getState();
+		this.state = theRecord.getState();
 		this.auctionId = key.getAuctionId();
 		this.userId = key.getUserId();
 		this.auctionName = theRecord.getAuctionName();
-
-		/*
-		 * ToDo: This is where the links should be returned. Right now am just
-		 * returning a state in the LiveBid.
-		 */
-		this.setState(key.getState());
 
 	}
 
@@ -111,6 +107,14 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 
 	public void setAuctionName(String auctionName) {
 		this.auctionName = auctionName;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 }

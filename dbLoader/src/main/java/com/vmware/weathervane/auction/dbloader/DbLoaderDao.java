@@ -715,7 +715,7 @@ public class DbLoaderDao {
 				anAttendanceRecord.setKey(arKey);
 				anAttendanceRecord.setState(AttendanceRecordState.AUCTIONCOMPLETE);
 				anAttendanceRecord.setAuctionName(anAuction.getName());
-				
+				anAttendanceRecord.setId(UUID.randomUUID());
 				attendanceRecordRepository.save(anAttendanceRecord);
 			}
 

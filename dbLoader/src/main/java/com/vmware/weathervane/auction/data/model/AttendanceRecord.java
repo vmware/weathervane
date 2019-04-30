@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.data.model;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.cassandra.core.Ordering;
 import org.springframework.cassandra.core.PrimaryKeyType;
@@ -93,6 +94,8 @@ public class AttendanceRecord implements Serializable {
 	@PrimaryKey
 	private AttendanceRecordKey key;
 	
+	private UUID id;
+	
 	private AttendanceRecordState state;
 	
 	@Column("auction_name")
@@ -123,6 +126,14 @@ public class AttendanceRecord implements Serializable {
 
 	public void setKey(AttendanceRecordKey key) {
 		this.key = key;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
 	}
 	
 }

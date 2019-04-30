@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+ Copyright (c) 2017 VMware, Inc. All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -38,7 +38,7 @@ public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
 	public void deleteByPreloaded(boolean preloaded) {
 		
 		List<UUID> imageIds = 
-				cassandraOperations.select("select image_id from image_full where preloaded=true allow filtering;", UUID.class);
+				cassandraOperations.select("select image_id from image_full where preloaded=false allow filtering;", UUID.class);
 		
 		imageIds.parallelStream().forEach(
 				new Consumer<UUID>() {

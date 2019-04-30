@@ -1,5 +1,5 @@
 /*
-"Copyright (c) 2017 VMware, Inc. All Rights Reserved.
+Copyright (c) 2017 VMware, Inc. All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.data.model;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.cassandra.core.Ordering;
 import org.springframework.cassandra.core.PrimaryKeyType;
@@ -45,9 +46,6 @@ public class AttendanceRecord implements Serializable {
 
 		@PrimaryKeyColumn(name="auction_id", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
 		private Long auctionId;
-
-		@PrimaryKeyColumn(name="state", ordinal= 3, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
-		private AttendanceRecordState state;
 
 		@Override
 		public int hashCode() {
@@ -91,24 +89,28 @@ public class AttendanceRecord implements Serializable {
 			this.userId = userId;
 		}
 
-		public AttendanceRecordState getState() {
-			return state;
-		}
-
-		public void setState(AttendanceRecordState state) {
-			this.state = state;
-		}
 	}
 
 	@PrimaryKey
 	private AttendanceRecordKey key;
 	
+	private UUID id;
+	
+	private AttendanceRecordState state;
 	
 	@Column("auction_name")
 	private String auctionName;
 	
 	public AttendanceRecord() {
 	}	
+
+	public AttendanceRecordState getState() {
+		return state;
+	}
+
+	public void setState(AttendanceRecordState state) {
+		this.state = state;
+	}
 
 	public String getAuctionName() {
 		return auctionName;
@@ -124,6 +126,14 @@ public class AttendanceRecord implements Serializable {
 
 	public void setKey(AttendanceRecordKey key) {
 		this.key = key;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
 	}
 	
 }

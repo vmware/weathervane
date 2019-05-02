@@ -32,3 +32,12 @@ while ( my $inline = <FILEIN> ) {
 }
 close FILEIN;
 close FILEOUT;
+
+# ToDo: Configure jvm.options bassed on assigned memory size
+open( FILEIN,  "/jvm.options" ) or die "Can't open file /jvm.options: $!\n";
+open( FILEOUT, ">/etc/cassandra/conf/jvm.options" ) or die "Can't open file /etc/cassandra/conf/jvm.options: $!\n";
+while ( my $inline = <FILEIN> ) {
+	print FILEOUT $inline;
+}
+close FILEIN;
+close FILEOUT;

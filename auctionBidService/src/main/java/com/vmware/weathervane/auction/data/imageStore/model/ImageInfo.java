@@ -20,7 +20,6 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.springframework.cassandra.core.Ordering;
 import org.springframework.cassandra.core.PrimaryKeyType;
 import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
@@ -44,12 +43,6 @@ public class ImageInfo implements Serializable {
 		@PrimaryKeyColumn(name="entity_id", ordinal= 1, type=PrimaryKeyType.PARTITIONED)
 		private Long entityid;
 
-		/*
-		 * The field is used by the Weathervane benchmark infrastructure to 
-		 * simplify cleanup between runs.
-		 */
-		@PrimaryKeyColumn(name="preloaded", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
-		private boolean preloaded;
 	
 		public String getEntitytype() {
 			return entitytype;
@@ -67,17 +60,9 @@ public class ImageInfo implements Serializable {
 			this.entityid = entityid;
 		}
 
-		public boolean isPreloaded() {
-			return preloaded;
-		}
-
-		public void setPreloaded(boolean preloaded) {
-			this.preloaded = preloaded;
-		}
-
 		@Override
 		public int hashCode() {
-			return Objects.hash(entityid, entitytype, preloaded);
+			return Objects.hash(entityid, entitytype);
 		}
 
 		@Override
@@ -89,8 +74,7 @@ public class ImageInfo implements Serializable {
 			if (getClass() != obj.getClass())
 				return false;
 			ImageInfoKey other = (ImageInfoKey) obj;
-			return Objects.equals(entityid, other.entityid) && Objects.equals(entitytype, other.entitytype)
-					&& preloaded == other.preloaded;
+			return Objects.equals(entityid, other.entityid) && Objects.equals(entitytype, other.entitytype);
 		}
 	}
 	
@@ -100,6 +84,12 @@ public class ImageInfo implements Serializable {
 	@Column("image_id")
 	private UUID imageId;
 	
+	/*
+	 * The field is used by the Weathervane benchmark infrastructure to 
+	 * simplify cleanup between runs.
+	 */
+	private boolean preloaded;
+
 	private String name;
 	private String format;
 	
@@ -116,7 +106,7 @@ public class ImageInfo implements Serializable {
 		this.key = new ImageInfoKey();
 		this.key.entitytype = that.key.entitytype;
 		this.key.entityid = that.key.entityid;
-		this.key.preloaded = that.key.preloaded;
+		this.preloaded = that.preloaded;
 		this.name = that.name;
 		this.format = that.format;
 		this.imagenum = that.imagenum;
@@ -171,4 +161,11 @@ public class ImageInfo implements Serializable {
 		this.dateadded = dateadded;
 	}
 	
+	public boolean isPreloaded() {
+		return preloaded;
+	}
+
+	public void setPreloaded(boolean preloaded) {
+		this.preloaded = preloaded;
+	}
 }

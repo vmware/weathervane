@@ -113,14 +113,14 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 
 		UUID imageId = imageInfo.getImageId();
 
-		boolean preloaded = imageInfo.getKey().isPreloaded();
+		boolean preloaded = imageInfo.isPreloaded();
 
 		// put the full size image on the queue to be written
 		ImageFullKey ifKey = new ImageFullKey();
 		ifKey.setImageId(imageId);
-		ifKey.setPreloaded(preloaded);
 		ImageFull imageFull = new ImageFull();
 		imageFull.setKey(ifKey);
+		imageFull.setPreloaded(preloaded);
 		imageFull.setImage(imageBytes);
 		imageFullRepository.save(imageFull);
 
@@ -129,8 +129,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		// put the preview size image on the queue to be written
 		ImagePreviewKey ipKey = new ImagePreviewKey();
 		ipKey.setImageId(imageId);
-		ipKey.setPreloaded(preloaded);
 		ImagePreview imagePreview = new ImagePreview();
+		imagePreview.setPreloaded(preloaded);
 		imagePreview.setKey(ipKey);
 		imagePreview.setImage(resizeImage(image, ImageSize.PREVIEW));
 		imagePreviewRepository.save(imagePreview);
@@ -138,8 +138,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		// put the thumbnail size image on the queue to be written
 		ImageThumbnailKey itKey = new ImageThumbnailKey();
 		itKey.setImageId(imageId);
-		itKey.setPreloaded(preloaded);
 		ImageThumbnail imageThumbnail = new ImageThumbnail();
+		imageThumbnail.setPreloaded(preloaded);
 		imageThumbnail.setKey(itKey);
 		imageThumbnail.setImage(resizeImage(image, ImageSize.THUMBNAIL));
 		imageThumbnailRepository.save(imageThumbnail);
@@ -156,13 +156,13 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 
 		UUID imageId = imageInfo.getImageId();
 
-		boolean preloaded = imageInfo.getKey().isPreloaded();
+		boolean preloaded = imageInfo.isPreloaded();
 
 		// save the full size image 
 		ImageFullKey ifKey = new ImageFullKey();
 		ifKey.setImageId(imageId);
-		ifKey.setPreloaded(preloaded);
 		ImageFull imageFull = new ImageFull();
+		imageFull.setPreloaded(preloaded);
 		imageFull.setKey(ifKey);
 		imageFull.setImage(imageBytes);
 		imageFullRepository.save(imageFull);
@@ -182,7 +182,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 		UUID imageId = imageInfo.getImageId();
-		boolean preloaded = imageInfo.getKey().isPreloaded();
+		boolean preloaded = imageInfo.isPreloaded();
 
 		// put the full size image on the queue to be written
 		if (fullImage != null) {
@@ -192,8 +192,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			// Randomize the image
 			ImageFullKey ifKey = new ImageFullKey();
 			ifKey.setImageId(imageId);
-			ifKey.setPreloaded(preloaded);			
 			ImageFull imageFull = new ImageFull();
+			imageFull.setPreloaded(preloaded);			
 			imageFull.setKey(ifKey);
 			imageFull.setImage(randomizeImage(fullImage));
 			imageFullRepository.save(imageFull);
@@ -206,8 +206,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			// Randomize the image
 			ImagePreviewKey ipKey = new ImagePreviewKey();
 			ipKey.setImageId(imageId);
-			ipKey.setPreloaded(preloaded);
 			ImagePreview imagePreview = new ImagePreview();
+			imagePreview.setPreloaded(preloaded);
 			imagePreview.setKey(ipKey);
 			imagePreview.setImage(randomizeImage(previewImage));
 			imagePreviewRepository.save(imagePreview);
@@ -221,8 +221,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			// Randomize the image
 			ImageThumbnailKey itKey = new ImageThumbnailKey();
 			itKey.setImageId(imageId);
-			itKey.setPreloaded(preloaded);
 			ImageThumbnail imageThumbnail = new ImageThumbnail();
+			imageThumbnail.setPreloaded(preloaded);
 			imageThumbnail.setKey(itKey);
 			imageThumbnail.setImage(randomizeImage(thumbnailImage));
 			imageThumbnailRepository.save(imageThumbnail);

@@ -146,9 +146,9 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			newBid.setAuctionId(_highBid.getAuctionId());
 			BidKey bidKey = new BidKey();
 			bidKey.setBidderId(_highBid.getBidderId());
-			bidKey.setItemId(_highBid.getItemId());
 			bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
 			newBid.setKey(bidKey);
+			newBid.setItemId(_highBid.getItemId());
 			newBid.setReceivingNode(nodeNumber);
 			newBid.setState(BidState.PROVISIONALLYHIGH);
 			logger.debug("newBidMessageQueue saving provisionallyHigh bid in bid repository: "
@@ -346,9 +346,9 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					newBid.setAuctionId(theBid.getAuctionId());
 					BidKey bidKey = new BidKey();
 					bidKey.setBidderId(theBid.getUserId());
-					bidKey.setItemId(theBid.getItemId());
 					bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
 					newBid.setKey(bidKey);
+					newBid.setItemId(theBid.getItemId());
 					newBid.setBidCount(theBid.getLastBidCount());
 					newBid.setReceivingNode(nodeNumber);
 					newBid.setState(BidState.PROVISIONALLYHIGH);

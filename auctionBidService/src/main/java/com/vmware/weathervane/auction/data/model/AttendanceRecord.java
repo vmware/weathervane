@@ -44,12 +44,9 @@ public class AttendanceRecord implements Serializable {
 		@PrimaryKeyColumn(name="record_time", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
 		private Date timestamp;
 
-		@PrimaryKeyColumn(name="auction_id", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
-		private Long auctionId;
-
 		@Override
 		public int hashCode() {
-			return Objects.hash(auctionId, timestamp, userId);
+			return Objects.hash(timestamp, userId);
 		}
 
 		@Override
@@ -61,8 +58,7 @@ public class AttendanceRecord implements Serializable {
 			if (getClass() != obj.getClass())
 				return false;
 			AttendanceRecordKey other = (AttendanceRecordKey) obj;
-			return Objects.equals(auctionId, other.auctionId) && Objects.equals(timestamp, other.timestamp)
-					&& Objects.equals(userId, other.userId);
+			return Objects.equals(timestamp, other.timestamp) && Objects.equals(userId, other.userId);
 		}
 
 		public Date getTimestamp() {
@@ -71,14 +67,6 @@ public class AttendanceRecord implements Serializable {
 
 		public void setTimestamp(Date timestamp) {
 			this.timestamp = timestamp;
-		}
-
-		public Long getAuctionId() {
-			return auctionId;
-		}
-
-		public void setAuctionId(Long auctionId) {
-			this.auctionId = auctionId;
 		}
 
 		public Long getUserId() {
@@ -96,6 +84,9 @@ public class AttendanceRecord implements Serializable {
 	
 	private UUID id;
 	
+	@Column("auction_id")
+	private Long auctionId;
+
 	private AttendanceRecordState state;
 	
 	@Column("auction_name")
@@ -135,5 +126,13 @@ public class AttendanceRecord implements Serializable {
 	public void setId(UUID id) {
 		this.id = id;
 	}
-	
+
+	public Long getAuctionId() {
+		return auctionId;
+	}
+
+	public void setAuctionId(Long auctionId) {
+		this.auctionId = auctionId;
+	}
+
 }

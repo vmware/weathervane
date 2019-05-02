@@ -63,7 +63,7 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 		AttendanceRecordKey key = theRecord.getKey();
 		this.timestamp = key.getTimestamp();
 		this.state = theRecord.getState();
-		this.auctionId = key.getAuctionId();
+		this.auctionId = theRecord.getAuctionId();
 		this.userId = key.getUserId();
 		this.auctionName = theRecord.getAuctionName();
 		this.id = theRecord.getId().toString();

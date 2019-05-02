@@ -445,7 +445,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		AttendanceRecordKey key = new AttendanceRecordKey();
 		key.setUserId(record.getUserId());
 		key.setTimestamp(now);
-		key.setAuctionId(theAuction.getId());
+		newRecord.setAuctionId(theAuction.getId());
 		newRecord.setAuctionName(theAuction.getName());
 		newRecord.setState(AttendanceRecordState.ATTENDING);
 		newRecord.setKey(key);
@@ -463,7 +463,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 		AttendanceRecord attendanceRecord = new AttendanceRecord();
 		AttendanceRecordKey key = new AttendanceRecordKey();
-		key.setAuctionId(auctionId);
+		attendanceRecord.setAuctionId(auctionId);
 		key.setUserId(userId);
 		key.setTimestamp(now);
 		attendanceRecord.setState(AttendanceRecordState.LEFT);

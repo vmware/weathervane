@@ -49,25 +49,12 @@ public class Bid implements Serializable {
 		@PrimaryKeyColumn(name="bid_time", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
 		private Date bidTime;
 
-		@PrimaryKeyColumn(name="item_id", ordinal= 2, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
-		private Long itemId;
-
-
 		public Date getBidTime() {
 			return bidTime;
 		}
 
 		public void setBidTime(Date bidTime) {
 			this.bidTime = bidTime;
-		}
-
-		public Long getItemId() {
-			return itemId;
-		}
-
-		public void setItemId(Long itemId) {
-			// defer to the item to connect the two
-			this.itemId = itemId;
 		}
 
 		public Long getBidderId() {
@@ -80,7 +67,7 @@ public class Bid implements Serializable {
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(bidTime, bidderId, itemId);
+			return Objects.hash(bidTime, bidderId);
 		}
 
 		@Override
@@ -92,14 +79,16 @@ public class Bid implements Serializable {
 			if (getClass() != obj.getClass())
 				return false;
 			BidKey other = (BidKey) obj;
-			return Objects.equals(bidTime, other.bidTime) && Objects.equals(bidderId, other.bidderId)
-					&& Objects.equals(itemId, other.itemId);
+			return Objects.equals(bidTime, other.bidTime) && Objects.equals(bidderId, other.bidderId);
 		}
 	}
 	
 	@PrimaryKey
 	private BidKey key;
 	
+	@Column("item_id")
+	private Long itemId;
+
 	private Float amount;
 	private BidState state;
 	
@@ -169,6 +158,15 @@ public class Bid implements Serializable {
 
 	public void setReceivingNode(Long receivingNode) {
 		this.receivingNode = receivingNode;
+	}
+
+	public Long getItemId() {
+		return itemId;
+	}
+
+	public void setItemId(Long itemId) {
+		// defer to the item to connect the two
+		this.itemId = itemId;
 	}
 
 	@Override

@@ -287,7 +287,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	public HighBid postNewHighBidTx(Bid theBid) throws InvalidStateException {
 
 		Long auctionId = theBid.getAuctionId();
-		Long itemId = theBid.getKey().getItemId();
+		Long itemId = theBid.getItemId();
 		Long bidderId = theBid.getKey().getBidderId();
 
 		/* 

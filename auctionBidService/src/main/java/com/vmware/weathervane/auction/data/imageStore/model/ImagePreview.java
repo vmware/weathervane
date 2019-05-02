@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.springframework.cassandra.core.Ordering;
 import org.springframework.cassandra.core.PrimaryKeyType;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
@@ -39,13 +38,6 @@ public class ImagePreview implements Serializable {
 
 		@PrimaryKeyColumn(name="image_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
 		private UUID imageId;	
-
-		/*
-		 * The field is used by the Weathervane benchmark infrastructure to 
-		 * simplify cleanup between runs.
-		 */
-		@PrimaryKeyColumn(name="preloaded", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.DESCENDING)
-		private boolean preloaded;
 	
 		public UUID getImageId() {
 			return imageId;
@@ -55,17 +47,9 @@ public class ImagePreview implements Serializable {
 			this.imageId = imageId;
 		}
 
-		public boolean isPreloaded() {
-			return preloaded;
-		}
-
-		public void setPreloaded(boolean preloaded) {
-			this.preloaded = preloaded;
-		}
-
 		@Override
 		public int hashCode() {
-			return Objects.hash(imageId, preloaded);
+			return Objects.hash(imageId);
 		}
 
 		@Override
@@ -77,7 +61,7 @@ public class ImagePreview implements Serializable {
 			if (getClass() != obj.getClass())
 				return false;
 			ImagePreviewKey other = (ImagePreviewKey) obj;
-			return Objects.equals(imageId, other.imageId) && preloaded == other.preloaded;
+			return Objects.equals(imageId, other.imageId);
 		}
 	}
 	
@@ -85,6 +69,12 @@ public class ImagePreview implements Serializable {
 	private ImagePreviewKey key;
 	
 	private ByteBuffer image;
+
+	/*
+	 * The field is used by the Weathervane benchmark infrastructure to 
+	 * simplify cleanup between runs.
+	 */
+	private boolean preloaded;
 
 	public ImagePreviewKey getKey() {
 		return key;
@@ -104,5 +94,13 @@ public class ImagePreview implements Serializable {
 
 	public void setKey(ImagePreviewKey key) {
 		this.key = key;
+	}
+
+	public boolean isPreloaded() {
+		return preloaded;
+	}
+
+	public void setPreloaded(boolean preloaded) {
+		this.preloaded = preloaded;
 	}
 }

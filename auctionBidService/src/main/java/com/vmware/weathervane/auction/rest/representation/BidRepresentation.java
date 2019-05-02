@@ -76,7 +76,7 @@ public class BidRepresentation extends Representation implements Serializable {
 		this.setBidTime(key.getBidTime());
 
 		this.setAuctionId(theBid.getAuctionId());
-		this.setItemId(key.getItemId());
+		this.setItemId(theBid.getItemId());
 		this.setUserId(key.getBidderId());
 		this.setReceivingNode(theBid.getReceivingNode());
 		

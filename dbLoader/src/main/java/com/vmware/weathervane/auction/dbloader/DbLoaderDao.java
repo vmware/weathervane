@@ -708,10 +708,10 @@ public class DbLoaderDao {
 				attendeeIds.add(attendeeId);
 
 				AttendanceRecordKey arKey = new AttendanceRecordKey();
-				arKey.setAuctionId(anAuction.getId());
 				arKey.setTimestamp(endTime);
 				arKey.setUserId(attendeeId);
 				AttendanceRecord anAttendanceRecord = new AttendanceRecord();
+				anAttendanceRecord.setAuctionId(anAuction.getId());
 				anAttendanceRecord.setKey(arKey);
 				anAttendanceRecord.setState(AttendanceRecordState.AUCTIONCOMPLETE);
 				anAttendanceRecord.setAuctionName(anAuction.getName());
@@ -746,8 +746,8 @@ public class DbLoaderDao {
 					bidKey.setBidderId(lastBidderId);
 					bidKey.setBidTime(new Date(bidTime));
 					bidTime += milliSecPerBid;
-					bidKey.setItemId(anItem.getId());
 					aBid = new Bid();
+					aBid.setItemId(anItem.getId());
 					aBid.setId(UUID.randomUUID());
 					aBid.setKey(bidKey);
 					aBid.setReceivingNode(0L);
@@ -885,10 +885,10 @@ public class DbLoaderDao {
 				ImageInfoKey key = new ImageInfoKey();
 				key.setEntityid(anItem.getId());
 				key.setEntitytype(Item.class.getSimpleName());
-				key.setPreloaded(true);
 				
 				ImageInfo theImageInfo = new ImageInfo();
 				theImageInfo.setKey(key);
+				theImageInfo.setPreloaded(true);
 				theImageInfo.setFormat(imageStore.getImageFormat());
 				theImageInfo.setName(imageNames.getString(k));
 				theImageInfo.setImageId(UUID.randomUUID());

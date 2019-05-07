@@ -2103,7 +2103,7 @@ $parameters{"dbServerPortStep"} = {
 
 $parameters{"nosqlServerPortStep"} = {
 	"type"      => "=i",
-	"default"   => 100,
+	"default"   => 1,
 	"parent"    => "nosqlServer",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2212,19 +2212,12 @@ $parameters{"cassandraDataStorageClass"} = {
 
 $parameters{"cassandraDataVolume"} = {
 	"type"      => "=s",
-	"default"   => "mongoData",
+	"default"   => "cassandraData",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"cassandraDataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "100Gi",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 $parameters{"rampupInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,

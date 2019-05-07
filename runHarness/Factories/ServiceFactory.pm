@@ -23,6 +23,7 @@ use Services::AuctionBidKubernetesService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::CassandraKubernetesService;
+use Services::CassandraDockerService;
 use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
 use Services::RabbitmqKubernetesService;
@@ -126,7 +127,12 @@ sub getServiceByType {
 			paramHashRef => $paramHashRef,
 			appInstance => $appInstance,
 			);
-		} 
+		} else {
+			$service = CassandraDockerService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+			);
+		}
 	}
 	elsif ( $serviceName eq "rabbitmq" ) {
 		if ($hostType eq "KubernetesCluster") {

@@ -15,7 +15,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.auction.data.repository.event;
 
+import static com.datastax.driver.core.querybuilder.QueryBuilder.delete;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.in;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.update;
 
@@ -23,6 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,6 +37,10 @@ import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceReco
 
 public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositoryCustom {
 
+	@Autowired
+	@Qualifier("cassandraEventTemplate")
+	CassandraOperations cassandraOperations;
+	
 	private DateFormat dateFormat; 
 	public AttendanceRecordRepositoryImpl() {
 		super();
@@ -42,41 +49,32 @@ public class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 		dateFormat = new SimpleDateFormat(datePattern); 
 	}
 
-	@Autowired
-	@Qualifier("cassandraEventTemplate")
-	CassandraOperations cassandraOperations;
-	
-	@Override
-	public void updateLastActiveTime(Long auctionId, Long userId, Date time) {
-		BuiltStatement update = update("attendancerecord_by_userid")
-				.with(set("record_time", time))
-				.where(eq("auction_id", auctionId)).and(eq("user_id", userId));
-		cassandraOperations.execute(update);
-	}
-
 	@Override
 	public void leaveAuctionsForUser(Long userId) {
+		List<Date> recordTimes = 
+				cassandraOperations.select("select record_time from attendancerecord_by_userid WHERE user_id = " + userId + ";", Date.class);
 		BuiltStatement update = update("attendancerecord_by_userid")
-				.with(set("state", AttendanceRecordState.LEFT))
-				.where(eq("state", AttendanceRecordState.ATTENDING)).and(eq("user_id", userId));
-		cassandraOperations.execute(update);
-
-	}
-
-	@Override
-	public void leaveAuctionForUser(Long auctionId, Long userId, Date time) {
-		BuiltStatement update = update("attendancerecord_by_userid")
-				.with(set("record_time", time))
-				.and(set("state", AttendanceRecordState.LEFT))
-				.where(eq("auction_id", auctionId)).and(eq("user_id", userId));
+				.with(set("state", AttendanceRecordState.LEFT.toString()))
+				.where(eq("user_id", userId)).and(in("record_time", recordTimes));
 		cassandraOperations.execute(update);
 
 	}
 
 	@Override
 	public void deleteByAuctionId(Long auctionId) {
-		String cql = "DELETE FROM attendancerecord_by_userid WHERE auction_id = " + auctionId + ";";
-		cassandraOperations.execute(cql);
+		
+		List<Long> userIds = 
+				cassandraOperations.select("select user_id from attendancerecord_by_userid WHERE auction_id = " + auctionId + ";", Long.class);
+		
+		userIds.parallelStream().forEach(
+				new Consumer<Long>() {
+
+					@Override
+					public void accept(Long t) {
+						BuiltStatement delete = delete().from("attendancerecord_by_userid").where(eq("auction_id", t));
+						cassandraOperations.execute(delete);						
+					}
+				});
 	}
 
 	@Override

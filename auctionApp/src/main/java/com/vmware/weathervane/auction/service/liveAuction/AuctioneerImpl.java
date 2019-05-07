@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Date;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -149,6 +150,8 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
 			newBid.setKey(bidKey);
 			newBid.setItemId(_highBid.getItemId());
+			newBid.setId(_highBid.getBidId());
+			newBid.setBidCount(_highBid.getBidCount());
 			newBid.setReceivingNode(nodeNumber);
 			newBid.setState(BidState.PROVISIONALLYHIGH);
 			logger.debug("newBidMessageQueue saving provisionallyHigh bid in bid repository: "
@@ -348,6 +351,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					bidKey.setBidderId(theBid.getUserId());
 					bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
 					newBid.setKey(bidKey);
+					newBid.setId(UUID.randomUUID());
 					newBid.setItemId(theBid.getItemId());
 					newBid.setBidCount(theBid.getLastBidCount());
 					newBid.setReceivingNode(nodeNumber);
@@ -405,7 +409,8 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 									+ _auctionId
 									+ " itemId="
 									+ itemId
-									+ " bid returned from _auctioneerTx.postNewHighBidTx was a new high bid");
+									+ " bid returned from _auctioneerTx.postNewHighBidTx was a new high bid: "
+									+ returnedBid);
 
 							_highBid = returnedBid;
 

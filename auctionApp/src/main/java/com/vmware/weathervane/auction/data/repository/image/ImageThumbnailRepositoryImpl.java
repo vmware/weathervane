@@ -38,7 +38,7 @@ public class ImageThumbnailRepositoryImpl implements ImageThumbnailRepositoryCus
 	public void deleteByPreloaded(boolean preloaded) {
 		
 		List<UUID> imageIds = 
-				cassandraOperations.select("select image_id from image_thumbnail where preloaded=false allow filtering;", UUID.class);
+				cassandraOperations.select("select image_id from image_thumbnail where preloaded=false;", UUID.class);
 		
 		imageIds.parallelStream().forEach(
 				new Consumer<UUID>() {

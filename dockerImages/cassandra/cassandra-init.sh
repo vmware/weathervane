@@ -3,8 +3,6 @@ set -e
 
 chown -R cassandra:cassandra /data
 
-# Cleanup
-
 echo "Configure cassandra.yaml"
 perl /configure.pl	
 

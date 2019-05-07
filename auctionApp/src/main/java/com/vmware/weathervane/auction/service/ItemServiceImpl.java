@@ -299,8 +299,8 @@ public class ItemServiceImpl implements ItemService {
 		// Now save the image
 		ImageInfo imageInfo = new ImageInfo();
 		ImageInfoKey key = new ImageInfoKey();
-		key.setEntitytype(Item.class.getSimpleName());
 		key.setEntityid(itemId);
+		key.setImageId(UUID.randomUUID());
 		imageInfo.setKey(key);
 		imageInfo.setPreloaded(false);
 		imageInfo.setDateadded(foc.getTime());

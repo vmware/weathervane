@@ -102,8 +102,7 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 
 		BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
 				
-		logger.info("Resizing and then dropping image for " + imageInfo.getKey().getEntitytype() + 
-				" with id=" + imageInfo.getKey().getEntityid());
+		logger.info("Resizing and then dropping image with id=" + imageInfo.getKey().getEntityid());
 
 		// Resize but don't store image
 		for (ImageSize size : ImageStoreFacade.ImageSize.values()) {
@@ -128,8 +127,7 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 	@Override
 	public ImageInfo addImage(ImageInfo imageInfo, BufferedImage fullImage, 
 			BufferedImage previewImage, BufferedImage thumbnailImage) throws IOException {
-		logger.info("addImage with all bytes. Writing image for " + imageInfo.getKey().getEntitytype() 
-				+ " with id=" + imageInfo.getKey().getEntityid());
+		logger.info("addImage with all bytes. Writing image with id=" + imageInfo.getKey().getEntityid());
 
 		/*
 		 *  First save the imageInfo.  This will cause the image to 

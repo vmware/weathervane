@@ -3,12 +3,19 @@
 use strict;
 use POSIX;
 
+my $clearBeforeStart = $ENV{'CLEARBEFORESTART'};
 my $seeds = $ENV{'CASSANDRA_SEEDS'};
 my $clusterName  = $ENV{'CASSANDRA_CLUSTER_NAME'};
 my $hostname = `hostname`;
 chomp($hostname);
 
 print "configure cassandra. \n";
+
+if ($clearBeforeStart) {
+	# Delete the directories for the auction_image and auction_event keyspaces
+	`rm -rf /data/data/auction_event`;
+	`rm -rf /data/data/auction_image`;
+}
 
 # Configure setenv.sh
 open( FILEIN,  "/cassandra.yaml" ) or die "Can't open file /cassandra.yaml: $!\n";

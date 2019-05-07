@@ -22,6 +22,7 @@ package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -240,11 +241,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setBidder(unsoldUser);
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
-		
-		/*
-		 * No persistent Bid entry for starting bids
-		 */
-		newHighBid.setBidId(null);		
+		newHighBid.setBidId(UUID.randomUUID());		
 		
 		nextItem.setHighbid(newHighBid);
 		
@@ -260,7 +257,6 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		
 		Calendar now = FixedOffsetCalendarFactory.getCalendar();
 		BidCompletionDelay delayRecord = new BidCompletionDelay();
-		delayRecord.setBidId(acceptedBid.getId());
 		delayRecord.setNumCompletedBids(numCompletedBids);
 		delayRecord.setTimestamp(now.getTime());
 		delayRecord.setBiddingState(acceptedBid.getBiddingState().name());
@@ -448,12 +444,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setBidder(unsoldUser);
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
-		
-		
-		/*
-		 * No persistent Bid entry for starting bids
-		 */
-		newHighBid.setBidId(null);		
+		newHighBid.setBidId(UUID.randomUUID());		
 		
 		firstItem.setHighbid(newHighBid);
 		

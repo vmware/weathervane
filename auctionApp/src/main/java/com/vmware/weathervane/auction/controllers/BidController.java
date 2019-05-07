@@ -131,7 +131,7 @@ public class BidController extends BaseController {
 			} catch (InvalidStateException ex) {
 				// Create a bidepresentation with the error message
 				bidRepresentation = new BidRepresentation(null, null);
-				bidRepresentation.setId(UUID.randomUUID());
+				bidRepresentation.setId("error");
 				bidRepresentation.setMessage(ex.getMessage());
 				break;
 			}
@@ -175,7 +175,7 @@ public class BidController extends BaseController {
 				logger.warn("BidController:getNextBid: got InvalidStateException with message "
 						+ ex.getMessage());
 				bidRepresentation = new BidRepresentation(null);
-				bidRepresentation.setId(UUID.randomUUID());
+				bidRepresentation.setId("error");
 				bidRepresentation.setMessage(ex.getMessage());
 				break;
 			} catch (AuthenticationException e) {

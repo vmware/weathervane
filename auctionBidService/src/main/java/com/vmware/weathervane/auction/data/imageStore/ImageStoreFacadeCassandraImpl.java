@@ -19,7 +19,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 
@@ -111,7 +110,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 
 		boolean preloaded = imageInfo.isPreloaded();
 
@@ -119,8 +118,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		ImageFullKey ifKey = new ImageFullKey();
 		ifKey.setImageId(imageId);
 		ImageFull imageFull = new ImageFull();
-		imageFull.setKey(ifKey);
 		imageFull.setPreloaded(preloaded);
+		imageFull.setKey(ifKey);
 		imageFull.setImage(imageBytes);
 		imageFullRepository.save(imageFull);
 
@@ -154,7 +153,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 
 		boolean preloaded = imageInfo.isPreloaded();
 
@@ -162,8 +161,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		ImageFullKey ifKey = new ImageFullKey();
 		ifKey.setImageId(imageId);
 		ImageFull imageFull = new ImageFull();
-		imageFull.setPreloaded(preloaded);
 		imageFull.setKey(ifKey);
+		imageFull.setPreloaded(preloaded);
 		imageFull.setImage(imageBytes);
 		imageFullRepository.save(imageFull);
 		
@@ -172,8 +171,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 	@Override
 	public ImageInfo addImage(ImageInfo imageInfo, BufferedImage fullImage, BufferedImage previewImage,
 			BufferedImage thumbnailImage) throws IOException {
-		logger.info("addImage with all bytes. Writing image for " + imageInfo.getKey().getEntitytype()
-				+ " with id=" + imageInfo.getKey().getEntityid());
+		logger.info("addImage with all bytes. Writing image with id=" + imageInfo.getKey().getEntityid());
 
 		/*
 		 * First save the imageInfo. This will cause the image to get a unique
@@ -181,49 +179,49 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		 */
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 		boolean preloaded = imageInfo.isPreloaded();
 
 		// put the full size image on the queue to be written
 		if (fullImage != null) {
-			logger.debug("addImage bytes adding full image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding full image: "
 					+ imageInfo.getKey().getEntityid());
 
 			// Randomize the image
 			ImageFullKey ifKey = new ImageFullKey();
 			ifKey.setImageId(imageId);
 			ImageFull imageFull = new ImageFull();
-			imageFull.setPreloaded(preloaded);			
 			imageFull.setKey(ifKey);
+			imageFull.setPreloaded(preloaded);			
 			imageFull.setImage(randomizeImage(fullImage));
 			imageFullRepository.save(imageFull);
 		}
 
 		// put the preview size image on the queue to be written
 		if (previewImage != null) {
-			logger.debug("addImage bytes adding preview image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding preview image: "
 					+ imageInfo.getKey().getEntityid());
 			// Randomize the image
 			ImagePreviewKey ipKey = new ImagePreviewKey();
 			ipKey.setImageId(imageId);
 			ImagePreview imagePreview = new ImagePreview();
-			imagePreview.setPreloaded(preloaded);
 			imagePreview.setKey(ipKey);
+			imagePreview.setPreloaded(preloaded);
 			imagePreview.setImage(randomizeImage(previewImage));
 			imagePreviewRepository.save(imagePreview);
 		}
 
 		// put the thumbnail size image on the queue to be written
 		if (thumbnailImage != null) {
-			logger.debug("addImage bytes adding thumbnail image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding thumbnail image: "
 					+ imageInfo.getKey().getEntityid());
 			
 			// Randomize the image
 			ImageThumbnailKey itKey = new ImageThumbnailKey();
 			itKey.setImageId(imageId);
 			ImageThumbnail imageThumbnail = new ImageThumbnail();
-			imageThumbnail.setPreloaded(preloaded);
 			imageThumbnail.setKey(itKey);
+			imageThumbnail.setPreloaded(preloaded);
 			imageThumbnail.setImage(randomizeImage(thumbnailImage));
 			imageThumbnailRepository.save(imageThumbnail);
 		}

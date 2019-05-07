@@ -59,8 +59,34 @@ sub stopInstance {
 	close $applog;
 }
 
-override 'create' => sub {
-	my ( $self, $logPath ) = @_;
+# Need to override start so that we can set CASSANDRA_SEEDS 
+override 'start' => sub {
+	my ($self, $serviceType, $users, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraDockerServer");
+	$logger->debug(
+		"start serviceType $serviceType, Workload ",
+		$self->appInstance->workload->instanceNum,
+		", appInstance ",
+		$self->instanceNum
+	);
+
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
+
+	my $seeds = "";
+	foreach my $service (@$servicesRef) {
+		$seeds .= $self->host->name . ",";
+	}
+	chomp($seeds);
+	
+	foreach my $service (@$servicesRef) {
+		$logger->debug( "Start " . $service->name . "\n" );
+		$service->create($logPath, $seeds);
+	}
+	
+};
+
+sub create {
+	my ( $self, $logPath, $seeds ) = @_;
 
 	my $name             = $self->name;
 	my $hostname         = $self->host->name;
@@ -70,7 +96,7 @@ override 'create' => sub {
 
 	my $time     = `date +%H:%M`;
 	chomp($time);
-	my $logName = "$logPath/Create" . ucfirst($impl) . "CassandraDockerService-$hostname-$name-$time.log";
+	my $logName = "$logPath/CreateCassandraDockerService-$hostname-$name-$time.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
@@ -82,9 +108,10 @@ override 'create' => sub {
 	}
 
 	my %envVarMap;
-	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart ;
-	$envVarMap{"CASSANDRA_SEEDS"} = "cassandra-0.cassandra.${namespace}.svc.cluster.local";
-	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = $namespace;
+	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
+	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
+	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
+													. "i" . $self->appInstance->instanceNum;
 	 	
 	# Create the container
 	my %portMap;
@@ -102,35 +129,6 @@ override 'create' => sub {
 
 	close $applog;
 };
-
-sub startInstance {
-	my ( $self, $logPath ) = @_;
-	my $logger = get_logger("Weathervane::Services::CassandraService");
-	my $hostname         = $self->host->name;
-	my $name             = $self->name;
-	my $time     = `date +%H:%M`;
-	chomp($time);
-	my $logName          = "$logPath/StartCassandraDocker-$hostname-$name-$time.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	my $portMapRef = $self->host->dockerPort($name);
-
-	if ( $self->host->dockerNetIsHostOrExternal($self->getParamValue('dockerNet') )) {
-
-		# For docker host networking, external ports are same as internal ports
-		$self->portMap->{ $self->getImpl() } = $self->internalPortMap->{ $self->getImpl() };
-	}
-	else {
-
-		# For bridged networking, ports get assigned at start time
-		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
-	}
-	
-	close $applog;
-}
 
 override 'remove' => sub {
 	my ( $self, $logPath ) = @_;

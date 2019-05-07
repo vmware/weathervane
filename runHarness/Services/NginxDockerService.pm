@@ -331,8 +331,9 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/*.conf", "$logpath/.");
-	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/conf.d/*.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/nginx.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/conf.d/ssl.conf", "$logpath/.");
+	$self->host->dockerCopyFrom($applog, $name, "$nginxServerRoot/conf.d/default.conf", "$logpath/.");
 	close $applog;
 
 }

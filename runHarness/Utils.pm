@@ -372,34 +372,55 @@ sub callMethodOnObjects1 {
 }
 
 sub runCmd {
+	#returns two values (cmdFailed, cmdOutput)
+	# cmdFailed ("" if success, $logOutput(cmd $output and not "") if failed)
+	# cmdOutput (cmd $output if success, cmd $output if failed)
+
 	my ($cmd) = @_;
 	my $logger = get_logger("Weathervane");
 
-	# Do some sanity checks before running commands.
-	if ($cmd =~ /\$/ ) {
-		die "error, command contains unexpanded variable: $cmd\n";
+	# Do some sanity/safety checks before running commands.
+	#check for unexpanded variable
+	if ( $cmd =~ /\$/ ) {
+		#add some special case exceptions
+		if ( $cmd =~ /mongo\s+\-\-eval.*\{\s*\$/ ) {
+			#mong eval
+		} elsif ( $cmd =~ /\"\$\(echo/ ) {
+			#kubernetes zookeeper ruok check
+		} else {
+			die "runCmd error, command possibly contains unexpanded variable: $cmd";
+		}
 	}
-	if ($cmd =~ / \// ) {
-		if ( !($cmd =~ / \/tmp\// || $cmd =~ /\/weathervane/) ) {
-			die "error, command references /: $cmd\n";
+	#check for unexpected paths off /
+	if ( $cmd =~ / \// ) {
+		#add some special case exceptions
+		if ( $cmd =~ / \/tmp\// || $cmd =~ /\/weathervane/ ) {
+		} elsif ( $cmd =~ /docker exec \w+ perl \// ) {
+		} elsif ( $cmd =~ /docker exec \w+ \/\w+\.sh/ ) {
+		} elsif ( $cmd =~ /kubectl exec .* \-\- perl \// ) {
+		} elsif ( $cmd =~ /kubectl exec .* \-\- \// ) {
+		} elsif ( $cmd =~ /-o \/dev\/null/ ) {
+		} else {
+			die "runCmd error, command references /: $cmd";
 		}
 	}
 
 	my $output = `$cmd 2>&1`;
 	my $exitStatus = $?;
 	my $failed = $exitStatus >> 8;
+	my $logOutput = $output;
 	if ($failed) {
 		if (!(length $output)) {
-			$output = "(error with no output)";
+			$logOutput = "(failure with no output)";
 		}
-		$logger->debug("runCmd Error ($cmd): $output");
-		return $output;
+		$logger->debug("runCmd Failure ($cmd): $logOutput");
+		return ($logOutput, $output);
 	} else {
 		if (!(length $output)) {
-			$output = "(no output)";
+			$logOutput = "(no output)";
 		}
-		$logger->debug("runCmd Success ($cmd): $output");
-		return "";
+		$logger->debug("runCmd Success ($cmd): $logOutput");
+		return ("", $output);
 	}
 }
 

@@ -20,6 +20,7 @@ use POSIX;
 use Log::Log4perl qw(get_logger);
 use ComputeResources::Host;
 use namespace::autoclean;
+use Utils qw(runCmd);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -66,12 +67,16 @@ override 'registerService' => sub {
 	push @$servicesRef, $serviceRef;
 
 };
+
 sub dockerExists {
 	my ( $self, $logFileHandle, $name ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;
 	
-	my $out = `$dockerHostString docker ps -a`;
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps -a");
+	if ($cmdFailed) {
+		die "dockerExists docker ps failed: $cmdFailed";
+	}
 	print $logFileHandle "$dockerHostString docker ps -a\n";
 	print $logFileHandle "$out\n";
 	$logger->debug("name = $name, result of ps -a: $out");
@@ -97,7 +102,10 @@ sub dockerIsRunning {
 	
 	my $dockerHostString  = $self->dockerHostString;
 	
-	my $out = `$dockerHostString docker ps `;
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps");
+	if ($cmdFailed) {
+		die "dockerIsRunning docker ps failed: $cmdFailed";
+	}
 	if ($logFileHandle) {
 		print $logFileHandle "$dockerHostString docker ps\n";
 		print $logFileHandle "$out\n";
@@ -130,7 +138,10 @@ sub dockerStop {
 	my $dockerHostString  = $self->dockerHostString;
 	
 	if ($self->dockerIsRunning($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker stop -t 60 $name`;
+		my ($cmdFailed, $out) = runCmd("$dockerHostString docker stop -t 60 $name");
+		if ($cmdFailed) {
+			die "dockerStop docker stop failed: $cmdFailed";
+		}
 		print $logFileHandle "$dockerHostString docker stop $name\n";
 		print $logFileHandle "$out\n";
 	}
@@ -147,7 +158,10 @@ sub dockerStopAndRemove {
 	if ($self->dockerExists($logFileHandle, $name)) {
 		print $logFileHandle "dockerStopAndRemove $name exists on" . $self->name .  "\n";
 		$logger->debug("name = $name, exists, removing");
-		my $out = `$dockerHostString docker rm -vf $name 2>&1`;
+		my ($cmdFailed, $out) = runCmd("$dockerHostString docker rm -vf $name");
+		if ($cmdFailed) {
+			die "dockerStopAndRemove failed: $cmdFailed";
+		}
 		print $logFileHandle "$dockerHostString docker rm -vf $name\n";
 		print $logFileHandle "$out\n";
 		$logger->debug("name = $name, Result of remove: $out");
@@ -164,7 +178,10 @@ sub dockerStart {
 	my $dockerHostString  = $self->dockerHostString;
 	
 	if (!$self->dockerIsRunning($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker start $name`;
+		my ($cmdFailed, $out) = runCmd("$dockerHostString docker start $name");
+		if ($cmdFailed) {
+			die "dockerStart docker start failed: $cmdFailed";
+		}
 		print $logFileHandle "$dockerHostString docker start $name\n";
 		print $logFileHandle "$out\n";
 	}
@@ -186,7 +203,10 @@ sub dockerNetIsHostOrExternal {
 	$logger->debug("dockerNetIsHostOrExternal dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
 
-	my $out = `$dockerHostString docker network ls`;
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker network ls");
+	if ($cmdFailed) {
+		die "dockerNetIsHostOrExternal failed: $cmdFailed";
+	}
 	$logger->debug("output of docker network ls: $out");
 	my @lines = split /\n/, $out;	
 	foreach my $line (@lines) {
@@ -206,38 +226,15 @@ sub dockerNetIsHostOrExternal {
 	die("Network $dockerNetName not found on host ", $self->name);
 }
 
-sub dockerNetIsExternal {
-	my ( $self, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("dockerNetIsExternal dockerNetName = $dockerNetName");
-	my $dockerHostString  = $self->dockerHostString;
-
-	my $out = `$dockerHostString docker network ls`;
-	$logger->debug("output of docker network ls: $out");
-	my @lines = split /\n/, $out;	
-	foreach my $line (@lines) {
-		if ($line =~ /^[^\s]+\s+([^\s]+)\s+([^\s]+)\s+.*$/) {
-			if ($1 eq $dockerNetName) {
-				if ($2 eq 'external') {
-					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is external");
-					return 1;
-				} else {
-					$logger->debug("dockerNetIsHostOrExternal $dockerNetName is not external");
-					return 0;
-				}
-			}
-		}
-	}
-	
-	die("Network $dockerNetName not found on host ", $self->name);
-}
-
 sub dockerPort {
 	my ( $self, $name) = @_;
 	my %portMap;
 
 	my $dockerHostString  = $self->dockerHostString;
-	my $out = `$dockerHostString docker port $name`;	
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker port $name");
+	if ($cmdFailed) {
+		die "dockerPort failed: $cmdFailed";
+	}
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
 		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
@@ -247,38 +244,6 @@ sub dockerPort {
 	
 	return \%portMap;
 	
-}
-
-sub dockerRestart {
-	my ( $self, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("name = $name");
-	my $dockerHostString  = $self->dockerHostString;
-	
-	my $out = `$dockerHostString docker restart $name`;
-	print $logFileHandle "$dockerHostString docker restart $name\n";
-	print $logFileHandle "$out\n";
-	
-	if (!$self->dockerIsRunning($logFileHandle, $name)) {
-		my $logcontents = $self->dockerGetLogs($logFileHandle, $name);
-		print $logFileHandle "Error: Container did not start.  Logs:\n";
-		print $logFileHandle $logcontents;
-		die "Docker container $name did not start on host " . $self->name;
-	}	
-	
-	$out = `$dockerHostString docker port $name`;
-	print $logFileHandle "$dockerHostString docker port $name\n";
-	print $logFileHandle "$out\n";
-	
-	my %portMap;
-	my @lines = split /\n/, $out;
-	foreach my $line (@lines) {
-		$line =~ /(\d+)\/.*\:(\d+)\s*$/;
-		$portMap{$1} = $2;
-	}
-	
-	return \%portMap;
-		
 }
 
 sub dockerKill {
@@ -287,38 +252,13 @@ sub dockerKill {
 	$logger->debug("dockerKill name = $name");
 	my $dockerHostString  = $self->dockerHostString;
 	
-	my $out;
-	$out = `$dockerHostString docker kill --signal $signal $name 2>&1`;
-	print $logFileHandle "$dockerHostString docker kill --signal $signal $name 2>&1\n";
-	print $logFileHandle "$out\n";	
-
-}
-
-sub dockerReload {
-	my ( $self, $logFileHandle, $name) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("name = $name");
-	my $dockerHostString  = $self->dockerHostString;
-	
-	my $out;
-	$out = `$dockerHostString docker kill --signal USR1 $name 2>&1`;
-	print $logFileHandle "$dockerHostString docker kill --signal USR1 $name 2>&1\n";
-	print $logFileHandle "$out\n";	
-
-	$out = `$dockerHostString docker port $name`;
-	print $logFileHandle "$dockerHostString docker port $name\n";
-	print $logFileHandle "$out\n";
-	
-	my %portMap;
-	my @lines = split /\n/, $out;
-	foreach my $line (@lines) {
-		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
-			$portMap{$1} = $2;
-		}
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker kill --signal $signal $name");
+	if ($cmdFailed) {
+		die "dockerKill failed: $cmdFailed";
 	}
-	
-	return \%portMap;
-	
+	print $logFileHandle "$dockerHostString docker kill --signal $signal $name\n";
+	print $logFileHandle "$out\n";
+
 }
 
 sub dockerPull {
@@ -332,119 +272,14 @@ sub dockerPull {
 	my $imageName = $imagesHashRef->{$impl};
 	my $namespace = $self->getParamValue('dockerNamespace');
 
-	my $out = `$dockerHostString docker pull $namespace/$imageName:$version 2>&1`;
-	print $logFileHandle "$dockerHostString docker pull $namespace/$imageName:$version 2>&1\n";
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker pull $namespace/$imageName:$version");
+	if ($cmdFailed) {
+		die "dockerPull failed: $cmdFailed";
+	}
+	print $logFileHandle "$dockerHostString docker pull $namespace/$imageName:$version\n";
 	print $logFileHandle "$out\n";
 
 }
-
-sub dockerCreate {
-	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
-		$envVarHashRef, $dockerConfigHashRef, $entryPoint, $cmd) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("name = $name");
-
-	my $version  = $self->getParamValue('dockerWeathervaneVersion');
-	my $dockerHostString  = $self->dockerHostString;
-	my $imagesHashRef = $self->getParamValue('dockerServiceImages');
-	my $imageName = $imagesHashRef->{$impl};
-	my $namespace = $self->getParamValue('dockerNamespace');
-	my $isVicHost = 	$self->getParamValue('vicHost');
-	
-	my $netString = "";
-	if ((defined $dockerConfigHashRef->{"net"}) && ($dockerConfigHashRef->{"net"} ne "bridge")) {
-		$netString = "--net=". $dockerConfigHashRef->{"net"};
-	}
-	
-	my $portString = "";
-	if (!($netString =~ /host/)) {
-		$portString = "-P ";
-		if (%$portMapHashRef) {
-			# Use the explicit port mappings provided
-			$portString = "";
-			foreach my $containerPort (keys %$portMapHashRef) {
-				if ($directMap) {
-					my $hostPort = $portMapHashRef->{$containerPort};
-					$portString .= "-p $hostPort:$containerPort ";
-				} else {
-					$portString .= "-p $containerPort ";
-				}
-			}
-		}
-	}
-	
-	my $volumeString = "";
-	foreach my $containerDir (keys %$volumeMapHashRef) {
-		my $hostDir = $volumeMapHashRef->{$containerDir};
-		if (!$hostDir) {
-			# This is a regular volume
-			$volumeString .= " -v $containerDir ";
-		} else {
-			# This is a bind-mount volume
-			$volumeString .= " -v $hostDir:$containerDir ";
-		}
-	}
-	
-	my $envString = "";
-	foreach my $envVar (keys %$envVarHashRef) {
-		my $value = $envVarHashRef->{$envVar};
-		$envString .= " -e $envVar=$value ";
-	}
-	
-	my $cpuSharesString = "";
-	if (defined $dockerConfigHashRef->{"cpu-shares"} && $dockerConfigHashRef->{"cpu-shares"}) {
-		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
-	}
-
-	my $cpusString = "";
-	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
-		my $cpus = $self->convertK8sCpuString($dockerConfigHashRef->{"cpus"});
-		if (!$isVicHost) {
-			$cpusString = sprintf("--cpus=%0.2f", $cpus);
-		} else {
-			$cpuSetCpusString = "--cpuset-cpus=". $cpus;
-		}
-	}
-
-	if (defined $dockerConfigHashRef->{"cpuset-cpus"}) {
-		$cpuSetCpusString = "--cpuset-cpus=". $dockerConfigHashRef->{"cpuset-cpus"};
-	}
-
-	my $cpuSetMemsString = "";
-	if (defined $dockerConfigHashRef->{"cpuset-mems"}) {
-		$cpuSetMemsString = "--cpuset-mems=". $dockerConfigHashRef->{"cpuset-mems"};
-	}
-	
-	my $memoryString = "";
-	if (defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
-		$memoryString = "--memory=". $self->convertK8sMemString($dockerConfigHashRef->{"memory"});
-	}
-	
-	my $memorySwapString = "";
-	if (defined $dockerConfigHashRef->{"memory-swap"} && $dockerConfigHashRef->{"memory-swap"}) {
-		$memorySwapString = "--memory-swap=". $dockerConfigHashRef->{"memory-swap"};
-	}
-	
-	my $entryPointString = "";
-	if ($entryPoint) {
-		$entryPointString = "--entrypoint=\"$entryPoint\"";
-	}
-		 
-	if (!defined($cmd)) {
-		$cmd = "";
-	}
-	
-	my $cmdString = "$dockerHostString docker create $envString $volumeString $netString $portString "
-		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
-		. " $memoryString $memorySwapString $entryPointString " 
-		. " --name $name $namespace/$imageName:$version $cmd 2>&1";
-	my $out = `$cmdString`;
-	print $logFileHandle "$cmdString\n";
-	print $logFileHandle "$out\n";
-	
-}
-
 
 sub dockerRun {
 	my ( $self, $logFileHandle, $name, $impl, $directMap, $portMapHashRef, $volumeMapHashRef, 
@@ -551,9 +386,14 @@ sub dockerRun {
 	my $cmdString = "$dockerHostString docker run -d $envString $volumeString $netString $portString "
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $ttyString $entryPointString " 
-		. " --name $name $namespace/$imageName:$version $cmd 2>&1";
+		. " --name $name $namespace/$imageName:$version $cmd";
 	$logger->debug($cmdString);
-	my $out = `$cmdString`;
+	my $cmdFailed;
+	my $out;
+	($cmdFailed, $out) = runCmd($cmdString);
+	if ($cmdFailed) {
+		die "dockerRun docker run failed: $cmdFailed";
+	}
 	print $logFileHandle "$cmdString\n";
 	print $logFileHandle "$out\n";
 		
@@ -564,7 +404,10 @@ sub dockerRun {
 		$logger->error("Docker container $name did not start on host " . $self->name);
 	}	
 	
-	$out = `$dockerHostString docker port $name`;
+	($cmdFailed, $out) = runCmd("$dockerHostString docker port $name");
+	if ($cmdFailed) {
+		die "dockerRun docker port failed: $cmdFailed";
+	}
 	print $logFileHandle "$dockerHostString docker port $name\n";
 	print $logFileHandle "$out\n";
 	
@@ -590,10 +433,17 @@ sub dockerGetLogs {
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
 		my $out;
+		my $cmdFailed;
 		if ($maxLogLines > 0) {
-			$out = `$dockerHostString docker logs --tail $maxLogLines $name 2>&1`;
+			($cmdFailed, $out) = runCmd("$dockerHostString docker logs --tail $maxLogLines $name");
+			if ($cmdFailed) {
+				die "dockerGetLogs with tail failed: $cmdFailed";
+			}
 		} else {
-			$out = `$dockerHostString docker logs $name 2>&1`;
+			($cmdFailed, $out) = runCmd("$dockerHostString docker logs $name");
+			if ($cmdFailed) {
+				die "dockerGetLogs failed: $cmdFailed";
+			}
 		}
 		return $out;
 	}
@@ -608,31 +458,13 @@ sub dockerFollowLogs {
 	$logger->debug("dockerFollowLogs name = $name, outfile = $outFile, dockerHostString = $dockerHostString");
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker logs --follow $name 2>&1 > $outFile`;
+		my ($cmdFailed, $out) = runCmd("$dockerHostString docker logs --follow $name > $outFile");
+		if ($cmdFailed) {
+			die "dockerFollowLogs failed: $cmdFailed";
+		}
 		return $out;
 	}
 	return "";
-}
-
-sub dockerVolumeCreate {
-	my ( $self, $logFileHandle, $volumeName, $volumeSize ) = @_;
-	print $logFileHandle "dockerVolumeCreate $volumeName\n";
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("dockerVolumeCreate $volumeName");
-	
-	my $dockerHostString  = $self->dockerHostString;
-	my $cmd = "$dockerHostString docker volume create --name $volumeName ";
-	if ($self->getParamValue('vicHost')) {
-		# Add capacity
-		$cmd .= "--opt Capacity=" . $volumeSize;
-	}
-	
-	$logger->debug("dockerVolumeCreate cmd = $cmd");
-	print $logFileHandle "$cmd\n";
-	my $out = `$cmd`;
-	$logger->debug("dockerVolumeCreate out = $out");
-	print $logFileHandle "$out\n";
-
 }
 
 sub dockerVolumeExists {
@@ -642,7 +474,10 @@ sub dockerVolumeExists {
 	
 	my $dockerHostString  = $self->dockerHostString;
 	my $cmd = "$dockerHostString docker volume ls -q";
-	my $out = `$cmd`;
+	my ($cmdFailed, $out) = runCmd($cmd);
+	if ($cmdFailed) {
+		die "dockerVolumeExists failed: $cmdFailed";
+	}
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
 		chomp($line);
@@ -655,59 +490,25 @@ sub dockerVolumeExists {
 	return 0;	
 }
 
-sub dockerRm {
-	my ( $self, $logFileHandle, $name ) = @_;
-	print $logFileHandle "dockerRm $name\n";
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("name = $name");
-	
-	my $dockerHostString  = $self->dockerHostString;
-	
-	if ($self->dockerExists($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker rm -f $name 2>&1`;
-		print $logFileHandle "$dockerHostString docker rm -f $name\n";
-		print $logFileHandle "$out\n";
-	}
-}
-
-sub dockerGetNetwork {
-	my ( $self,  $name ) = @_;
-	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name");
-	my $dockerHostString  = $self->dockerHostString;	
-	my $out = `$dockerHostString docker inspect --format '{{range \$key, \$element := .NetworkSettings.Networks}}{{\$key}} {{end}}' $name 2>&1`;
-	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name got $out");
-	my @networks = split(/\s/,$out);
-	chomp($networks[0]);
-	$logger->debug("dockerGetNetwork on host " . $self->name . " for container $name returning " . $networks[0]);
-	return $networks[0];
-}
-
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;	
 	my $out;
+	my $cmdFailed;
 	if ($self->getParamValue('vicHost')) {
-		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
+		($cmdFailed, $out) = runCmd("$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name");
+		if ($cmdFailed) {
+			die "dockerGetIp failed vicHost: $cmdFailed";
+		}
 	} else {
 		$logger->debug("dockerGetIp: Getting ip address for container $name on host " . $self->name);
-		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
+		($cmdFailed, $out) = runCmd("$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name");
+		if ($cmdFailed) {
+			die "dockerGetIp failed: $cmdFailed";
+		}
 	}
 	chomp($out);
-	return $out;
-}
-
-sub dockerGetExternalNetIP {
-	my ( $self, $name, $dockerNetName) = @_;
-	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName");
-	my $dockerHostString  = $self->dockerHostString;
-	my $cmd = "$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.$dockerNetName.IPAddress }}' $name 2>&1";
-	$logger->debug("command: $cmd");
-	my $out = `$cmd`;
-	chomp($out);
-	$logger->debug("dockerGetExternalNetIP.  name = $name, dockerNetName = $dockerNetName, ipAddr = $out");
 	return $out;
 }
 
@@ -719,9 +520,12 @@ sub dockerExec {
 	
 	$logger->debug("name = $name, hostname = $hostname");
 		
-	my $out = `$dockerHostString docker exec $name $commandString 2>&1`;
-	$logger->debug("$dockerHostString docker exec $name $commandString 2>&1");
-	print $logFileHandle "$dockerHostString docker exec $name $commandString 2>&1\n";
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker exec $name $commandString");
+	if ($cmdFailed) {
+		die "dockerExec failed: $cmdFailed";
+	}
+	$logger->debug("$dockerHostString docker exec $name $commandString");
+	print $logFileHandle "$dockerHostString docker exec $name $commandString\n";
 	$logger->debug("docker exec output: $out");
 	print $logFileHandle "$out\n";
 	
@@ -731,11 +535,16 @@ sub dockerExec {
 sub dockerCopyTo {
 	my ( $self, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
-	
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerCopyTo serviceName = $name");
-	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile 2>&1";
-	my $out = `$cmdString`;
+	if ( $sourceFile =~ /\*/ ) {
+		die "dockerCopyTo error, docker cp does not support wildcards: $sourceFile";
+	}
+	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile";
+	my ($cmdFailed, $out) = runCmd($cmdString);
+	if ($cmdFailed) {
+		$logger->error("dockerCopyTo failed: $cmdFailed");
+	}
 	$logger->debug("$cmdString");
 	$logger->debug("docker cp output: $out");
 	
@@ -746,9 +555,15 @@ sub dockerCopyFrom {
 	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;
-	$logger->debug("dockerCopyTo serviceName = $name");
-	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile 2>&1";
-	my $out = `$cmdString`;
+	$logger->debug("dockerCopyFrom serviceName = $name");
+	if ( $sourceFile =~ /\*/ ) {
+		die "dockerCopyFrom error, docker cp does not support wildcards: $sourceFile";
+	}
+	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile";
+	my ($cmdFailed, $out) = runCmd($cmdString);
+	if ($cmdFailed) {
+		$logger->error("dockerCopyFrom failed: $cmdFailed");
+	}
 	$logger->debug("$cmdString");
 	print $logFileHandle "$cmdString\n";
 	$logger->debug("docker cp output: $out");

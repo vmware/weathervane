@@ -33,7 +33,7 @@ use JSON;
 use Utils
   qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callBooleanMethodOnObjectsParallel1
   callBooleanMethodOnObjectsParallel2 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2
-  callMethodsOnObject1 callMethodOnObjects1);
+  callMethodsOnObject1 callMethodOnObjects1 runCmd);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -1096,9 +1096,13 @@ sub startRun {
 	}
 	$console_logger->info("Run is complete");
 	
-	# Get the stats files from the workloadDriver before shutting it down
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
-	$self->getStatsFiles($destinationPath);
+	if ( !( -e $destinationPath ) ) {
+		my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $destinationPath");
+		if ($cmdFailed) {
+			die "AuctionWorkloadDriver startRun destinationPath mkdir failed: $cmdFailed";
+		}
+	}
 	
 	# Write the endRun status
 	open( FILE, ">$destinationPath/FinalRunState.json" )
@@ -1462,9 +1466,12 @@ sub getStatsFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance*.csv", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance*-summary.txt", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1.csv", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1-allSamples.csv", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/." );
 
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
@@ -1472,7 +1479,7 @@ sub getStatsFiles {
 		$destinationPath = $baseDestinationPath . "/" . $secHostname;
 		`mkdir -p $destinationPath 2>&1`;
 		$name     = $secondary->name;
-		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}*.log", "$destinationPath/." );
+		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
 	}
 
 }

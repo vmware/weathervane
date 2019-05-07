@@ -201,9 +201,9 @@ override 'checkConfig' => sub {
 		if ((ref $host) ne "DockerHost") {
 			next;
 		}
-		if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		if ($nosqlServer->getParamValue('cassandraUseNamedVolumes') || $host->getParamValue('vicHost')) {
 			# use named volumes.  Error if does not exist
-			my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
+			my $volumeName = $nosqlServer->getParamValue('cassandraDataVolume');
 			if (!$host->dockerVolumeExists($volumeName)) {
 				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 				return 0;

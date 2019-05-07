@@ -23,6 +23,7 @@ use StatsParsers::ParseGC qw( parseGCLog );
 use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
+use Utils qw(runCmd);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -269,12 +270,19 @@ sub stopStatsCollection {
 }
 
 sub startStatsCollection {
-	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
+	my ( $self, $intervalLengthSec, $numIntervals, $tmpDir ) = @_;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');
-	my $setupLogDir        = $self->getParamValue('tmpDir') . "/setupLogs";
+	my $setupLogDir        = "$tmpDir/setupLogs";
 	my $name               = $self->name;
 	my $hostname           = $self->host->name;
 
+	#If using a runOnly RunProcedure, this directory doesn't yet exist so create it to be safe.
+	if ( !( -e $setupLogDir ) ) {
+		my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $setupLogDir");
+		if ($cmdFailed) {
+			die "TomcatDockerService startStatsCollection setupLogDir mkdir failed: $cmdFailed";
+		}
+	}
 
 	my $logName = "$setupLogDir/StartStatsCollectionTomcatDocker-$hostname-$name.log";
 
@@ -308,7 +316,9 @@ sub getStatsFiles {
 	`mv /tmp/$hostname-$name-performanceMonitor.csv $logpath/. 2>&1`;
 	`mv /tmp/$hostname-$name-performanceMonitor.json $logpath/. 2>&1`;
 
-	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc*.log", "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc.log", "$logpath/." );
+	#This file does not exist yet, see comments in AuctionWorkloadDriver startStatsCollection
+	#$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/logs/gc_rampup.log", "$logpath/." );
 
 	close $applog;
 
@@ -373,7 +383,8 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/conf/*",        "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/conf/server.xml",        "$logpath/." );
+	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/conf/web.xml",        "$logpath/." );
 	$self->host->dockerCopyFrom( $applog, $name, "$tomcatCatalinaBase/bin/setenv.sh", "$logpath/." );
 	close $applog;
 

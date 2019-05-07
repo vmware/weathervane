@@ -384,10 +384,10 @@ sub getConfigFiles {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 
-	$self->host->dockerExec($applog, $name, "rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt");
 
-	$self->host->dockerCopyFrom($applog, $name, "/tmp/{hostname}_rabbitmqctl_report.txt", "$logpath/.");
-	$self->host->dockerCopyFrom($applog, $name, "/etc/rabbitmq/*", "$logpath/.");
+	$self->host->dockerExec($applog, $name, "sh -c \"rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt\"");
+
+	$self->host->dockerCopyFrom($applog, $name, "/tmp/${hostname}_rabbitmqctl_report.txt", "$logpath/.");
 	close $applog;
 	
 }

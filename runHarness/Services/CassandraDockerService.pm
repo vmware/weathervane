@@ -76,7 +76,7 @@ override 'start' => sub {
 	foreach my $service (@$servicesRef) {
 		$seeds .= $self->host->name . ",";
 	}
-	chomp($seeds);
+	chop($seeds);
 	
 	foreach my $service (@$servicesRef) {
 		$logger->debug( "Start " . $service->name . "\n" );
@@ -108,6 +108,7 @@ sub create {
 	}
 
 	my %envVarMap;
+	$envVarMap{"CASSANDRA_HOSTNAME"}     = $hostname;
 	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
 	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 

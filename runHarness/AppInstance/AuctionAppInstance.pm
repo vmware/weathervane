@@ -20,6 +20,7 @@ use POSIX;
 use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use AppInstance::AppInstance;
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -193,9 +194,25 @@ override 'checkConfig' => sub {
 		}
 	}
 
+	# If Cassandra is running on Docker, make sure that each node is running on a different host
+	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+	my @cassandraHosts;
+	foreach my $nosqlServer (@$nosqlServersRef) {
+		my $host = $nosqlServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		my $hostname = $host->name;
+		if ( $hostname ~~ @cassandraHosts ) ) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: When using more than one nosqlServer (Cassandra) nodes, each must run on a different Docker host.");
+			return 0;
+		} else {
+			push @cassandraHosts, $hostname;
+		}
+	}
+
 	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
 	# This is only for services running on DockerHosts
-	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $host = $nosqlServer->host;
 		if ((ref $host) ne "DockerHost") {

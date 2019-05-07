@@ -69,10 +69,10 @@ sub startDataManagerContainer {
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
 	
 	my $cassandraContactpoints = "";
-	my $nosqlServicesRef = $self->getAllServicesByType("nosqlServer");
+	my $nosqlServicesRef = $self->appInstance->getAllServicesByType("nosqlServer");
 	my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
 	foreach my $nosqlServer (@$nosqlServicesRef) {
-		$cassandraContactpoints .= $nosqlServer->hostName + ",";
+		$cassandraContactpoints .= $nosqlServer->host->name . ",";
 	}
 	$cassandraContactpoints =~ s/,$//;		
 	$envVarMap{"CASSANDRA_CONTACTPOINTS"} = $cassandraContactpoints;

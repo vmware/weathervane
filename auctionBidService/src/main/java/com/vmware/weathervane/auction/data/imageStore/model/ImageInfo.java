@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.cassandra.core.PrimaryKeyType;
-import org.springframework.data.cassandra.mapping.Column;
 import org.springframework.data.cassandra.mapping.PrimaryKey;
 import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
 import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
@@ -37,20 +36,11 @@ public class ImageInfo implements Serializable {
 
 		private static final long serialVersionUID = 1L;
 
-		@PrimaryKeyColumn(name="entity_type", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
-		private String entitytype;	
-
-		@PrimaryKeyColumn(name="entity_id", ordinal= 1, type=PrimaryKeyType.PARTITIONED)
+		@PrimaryKeyColumn(name="entity_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
 		private Long entityid;
 
-	
-		public String getEntitytype() {
-			return entitytype;
-		}
-
-		public void setEntitytype(String entitytype) {
-			this.entitytype = entitytype;
-		}
+		@PrimaryKeyColumn(name="image_id", ordinal= 1, type=PrimaryKeyType.CLUSTERED)
+		private UUID imageId;
 
 		public Long getEntityid() {
 			return entityid;
@@ -60,9 +50,17 @@ public class ImageInfo implements Serializable {
 			this.entityid = entityid;
 		}
 
+		public UUID getImageId() {
+			return imageId;
+		}
+
+		public void setImageId(UUID imageId) {
+			this.imageId = imageId;
+		}
+
 		@Override
 		public int hashCode() {
-			return Objects.hash(entityid, entitytype);
+			return Objects.hash(entityid, imageId);
 		}
 
 		@Override
@@ -74,15 +72,13 @@ public class ImageInfo implements Serializable {
 			if (getClass() != obj.getClass())
 				return false;
 			ImageInfoKey other = (ImageInfoKey) obj;
-			return Objects.equals(entityid, other.entityid) && Objects.equals(entitytype, other.entitytype);
+			return Objects.equals(entityid, other.entityid) 
+					&& Objects.equals(imageId, other.imageId);
 		}
 	}
 	
 	@PrimaryKey
 	private ImageInfoKey key;
-	
-	@Column("image_id")
-	private UUID imageId;
 	
 	/*
 	 * The field is used by the Weathervane benchmark infrastructure to 
@@ -104,7 +100,6 @@ public class ImageInfo implements Serializable {
 	
 	public ImageInfo(ImageInfo that) {
 		this.key = new ImageInfoKey();
-		this.key.entitytype = that.key.entitytype;
 		this.key.entityid = that.key.entityid;
 		this.preloaded = that.preloaded;
 		this.name = that.name;
@@ -119,14 +114,6 @@ public class ImageInfo implements Serializable {
 
 	public void setKey(ImageInfoKey key) {
 		this.key = key;
-	}
-
-	public UUID getImageId() {
-		return imageId;
-	}
-
-	public void setImageId(UUID imageId) {
-		this.imageId = imageId;
 	}
 
 	public String getName() {

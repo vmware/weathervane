@@ -38,7 +38,7 @@ public class ImageFullRepositoryImpl implements ImageFullRepositoryCustom {
 	public void deleteByPreloaded(boolean preloaded) {
 		
 		List<UUID> imageIds = 
-				cassandraOperations.select("select image_id from image_full where preloaded=false allow filtering;", UUID.class);
+				cassandraOperations.select("select image_id from image_full where preloaded=false;", UUID.class);
 		
 		imageIds.parallelStream().forEach(
 				new Consumer<UUID>() {

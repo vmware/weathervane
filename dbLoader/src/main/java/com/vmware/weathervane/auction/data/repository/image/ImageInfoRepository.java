@@ -25,7 +25,7 @@ import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo.ImageInfoK
 
 @Repository
 public interface ImageInfoRepository extends CrudRepository<ImageInfo, ImageInfoKey>, ImageInfoRepositoryCustom {
-	List<ImageInfo> findByKeyEntitytypeAndKeyEntityid(String entityType, Long entityId);
+	List<ImageInfo> findByKeyEntityid(Long entityId);
 	
-	Long countByKeyEntityidAndKeyEntitytype(Long entityId, String entityType);	
+	Long countByKeyEntityid(Long entityId);	
 }

@@ -116,5 +116,4 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 	public void setId(String id) {
 		this.id = id;
 	}
-
 }

@@ -534,7 +534,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 
 				if (nextImage != null) {
 					logger.debug("ImageWriter got image for imageId "
-							+ nextImage.getImageInfo().getImageId());
+							+ nextImage.getImageInfo().getKey().getImageId());
 					try {
 						byte[] randomizedImage = nextImage.getImage();
 						if (randomizeImages) {
@@ -544,7 +544,7 @@ public abstract class ImageStoreFacadeBaseImpl implements ImageStoreFacade {
 						saveImage(nextImage.getImageInfo(), randomizedImage);
 					} catch (IOException e) {
 						logger.warn("Got IOException when resizing and saving image with id "
-								+ nextImage.getImageInfo().getImageId());
+								+ nextImage.getImageInfo().getKey().getImageId());
 						e.printStackTrace();
 					}
 				}

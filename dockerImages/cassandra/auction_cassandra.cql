@@ -61,7 +61,6 @@ CREATE TABLE auction_event.imagestore_benchmark_info (
   );
  
 CREATE TABLE auction_image.image_info (
-  entity_type text,
   entity_id bigint,
   preloaded boolean,
   image_id uuid,
@@ -69,29 +68,29 @@ CREATE TABLE auction_image.image_info (
   format text,
   imagenum bigint,
   dateadded timestamp,
-  PRIMARY KEY ((entity_type, entity_id))
-  );
+  PRIMARY KEY ((entity_id), image_id)
+  ) WITH CLUSTERING ORDER BY (image_id ASC);
      
 CREATE TABLE auction_image.image_full (
   image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id))
-  );
+  ) WITH compression = { 'enabled' : false };
      
 CREATE TABLE auction_image.image_preview (
   image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id))
-  );
+  ) WITH compression = { 'enabled' : false };
      
 CREATE TABLE auction_image.image_thumbnail (
   image_id uuid,
   preloaded boolean,
   image blob,
   PRIMARY KEY ((image_id))
-  );
+  ) WITH compression = { 'enabled' : false };
   
 /*
  * SASI Indexes
@@ -99,7 +98,7 @@ CREATE TABLE auction_image.image_thumbnail (
 CREATE CUSTOM INDEX ar_sasi_auctionId ON auction_event.attendancerecord_by_userid (auction_id) 
    USING 'org.apache.cassandra.index.sasi.SASIIndex';
 
-CREATE CUSTOM INDEX bid_sasi_itemId ON auction_event.auction_event.bid_by_bidderid (item_id) 
+CREATE CUSTOM INDEX bid_sasi_itemId ON auction_event.bid_by_bidderid (item_id) 
    USING 'org.apache.cassandra.index.sasi.SASIIndex';
      
 CREATE CUSTOM INDEX imageinfo_sasi_preloaded ON auction_image.image_info (preloaded) 

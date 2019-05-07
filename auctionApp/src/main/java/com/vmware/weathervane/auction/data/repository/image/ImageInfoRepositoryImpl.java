@@ -37,7 +37,7 @@ public class ImageInfoRepositoryImpl implements ImageInfoRepositoryCustom {
 	public void deleteByPreloaded(boolean preloaded) {
 		
 		List<Long> entityIds = 
-				cassandraOperations.select("select entity_id from image_info where preloaded=false allow filtering;", Long.class);
+				cassandraOperations.select("select entity_id from image_info where preloaded=false;", Long.class);
 		
 		entityIds.parallelStream().forEach(
 				new Consumer<Long>() {

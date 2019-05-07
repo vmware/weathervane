@@ -21,7 +21,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.auction.service;
 
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,9 +33,7 @@ import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
-import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 import com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceConstants;
-import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
 /**
  * @author Hal
@@ -87,12 +84,6 @@ public class AttendanceServiceImpl implements AttendanceService {
 		colRep.setResults(liveAttendanceRecords);
 
 		return colRep;
-	}
-
-	@Override
-	public void updateAttendanceRecord(long userId, long auctionId) throws InvalidStateException {
-		GregorianCalendar now = FixedOffsetCalendarFactory.getCalendar();
-		attendanceRecordRepository.updateLastActiveTime(userId, auctionId, now.getTime());
 	}
 	
 }

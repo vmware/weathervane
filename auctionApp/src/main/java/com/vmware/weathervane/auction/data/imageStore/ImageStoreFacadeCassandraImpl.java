@@ -110,7 +110,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 
 		boolean preloaded = imageInfo.isPreloaded();
 
@@ -153,7 +153,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
 
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 
 		boolean preloaded = imageInfo.isPreloaded();
 
@@ -171,8 +171,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 	@Override
 	public ImageInfo addImage(ImageInfo imageInfo, BufferedImage fullImage, BufferedImage previewImage,
 			BufferedImage thumbnailImage) throws IOException {
-		logger.info("addImage with all bytes. Writing image for " + imageInfo.getKey().getEntitytype()
-				+ " with id=" + imageInfo.getKey().getEntityid());
+		logger.info("addImage with all bytes. Writing image with id=" + imageInfo.getKey().getEntityid());
 
 		/*
 		 * First save the imageInfo. This will cause the image to get a unique
@@ -180,12 +179,12 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 		 */
 		imageInfo.setFormat(getImageFormat());
 		imageInfo = imageInfoRepository.save(imageInfo);
-		UUID imageId = imageInfo.getImageId();
+		UUID imageId = imageInfo.getKey().getImageId();
 		boolean preloaded = imageInfo.isPreloaded();
 
 		// put the full size image on the queue to be written
 		if (fullImage != null) {
-			logger.debug("addImage bytes adding full image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding full image: "
 					+ imageInfo.getKey().getEntityid());
 
 			// Randomize the image
@@ -200,7 +199,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 
 		// put the preview size image on the queue to be written
 		if (previewImage != null) {
-			logger.debug("addImage bytes adding preview image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding preview image: "
 					+ imageInfo.getKey().getEntityid());
 			// Randomize the image
 			ImagePreviewKey ipKey = new ImagePreviewKey();
@@ -214,7 +213,7 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 
 		// put the thumbnail size image on the queue to be written
 		if (thumbnailImage != null) {
-			logger.debug("addImage bytes adding thumbnail image for " + imageInfo.getKey().getEntitytype() + ":"
+			logger.debug("addImage bytes adding thumbnail image: "
 					+ imageInfo.getKey().getEntityid());
 			
 			// Randomize the image

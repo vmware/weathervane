@@ -884,14 +884,13 @@ public class DbLoaderDao {
 
 				ImageInfoKey key = new ImageInfoKey();
 				key.setEntityid(anItem.getId());
-				key.setEntitytype(Item.class.getSimpleName());
-				
+				key.setImageId(UUID.randomUUID());
+
 				ImageInfo theImageInfo = new ImageInfo();
 				theImageInfo.setKey(key);
 				theImageInfo.setPreloaded(true);
 				theImageInfo.setFormat(imageStore.getImageFormat());
 				theImageInfo.setName(imageNames.getString(k));
-				theImageInfo.setImageId(UUID.randomUUID());
 				theImageInfo.setImagenum(new Long(k + 1));
 				theImageInfo.setDateadded(calendar.getTime());
 				imageInfos.add(theImageInfo);

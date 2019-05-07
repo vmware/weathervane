@@ -21,11 +21,7 @@ import java.util.List;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 
 public interface AttendanceRecordRepositoryCustom {
-			
-	void updateLastActiveTime(Long auctionId, Long userId, Date time);
-	
-	void leaveAuctionForUser(Long auctionId, Long userId, Date time);
-
+				
 	void leaveAuctionsForUser(Long userId);
 	
 	void deleteByAuctionId(Long auctionId);

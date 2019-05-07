@@ -34,7 +34,7 @@ public class BidRepresentation extends Representation implements Serializable {
 	public enum BiddingState {OPEN, LASTCALL, SOLD, INFO, AUCTIONCOMPLETE, AUCTIONNOTACTIVE, 
 		NOSUCHAUCTION, ITEMNOTACTIVE, NOSUCHITEM, NOSUCHUSER, ACCEPTED, UNKNOWN};
 
-	private UUID id;
+	private String id;
 	private Float amount;
 	private BiddingState biddingState;
 	private Integer lastBidCount;
@@ -71,7 +71,7 @@ public class BidRepresentation extends Representation implements Serializable {
 		}
 		BidKey key = theBid.getKey();
 		this.setAmount(theBid.getAmount());
-		this.setId(theBid.getId());
+		this.setId(theBid.getId().toString());
 		this.setMessage(theBid.getState().toString());
 		this.setBidTime(key.getBidTime());
 
@@ -173,7 +173,7 @@ public class BidRepresentation extends Representation implements Serializable {
 			return;
 		}
 		
-		this.setId(theHighBid.getBidId());
+		this.setId(theHighBid.getBidId().toString());
 		this.setAmount(theHighBid.getAmount());
 		this.setLastBidCount(theHighBid.getBidCount());
 		this.setBidTime(theHighBid.getCurrentBidTime());
@@ -224,11 +224,11 @@ public class BidRepresentation extends Representation implements Serializable {
 		this.biddingState = biddingState;
 	}
 
-	public UUID getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(UUID id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 

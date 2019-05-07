@@ -67,11 +67,6 @@ sub startDataManagerContainer {
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
-
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
-	$envVarMap{"MAXDURATION"} = max( $maxDuration, $totalTime );
 	
 	my $cassandraContactpoints = "";
 	my $nosqlServicesRef = $self->getAllServicesByType("nosqlServer");

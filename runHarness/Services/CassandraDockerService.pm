@@ -73,7 +73,7 @@ override 'start' => sub {
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 	foreach my $service (@$servicesRef) {
 		$logger->debug( "Start " . $service->name . "\n" );
-		$service->create($logPath, $seeds);
+		$service->create($logPath);
 	}
 	
 };
@@ -100,7 +100,7 @@ sub create {
 		$volumeMap{"/data"} = $self->getParamValue('cassandraDataVolume');
 	}
 
-	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
+	my $servicesRef = $self->appInstance->getAllServicesByType("nosqlServer");
 
 	my $seeds = "";
 	foreach my $service (@$servicesRef) {
@@ -117,7 +117,6 @@ sub create {
 	$envVarMap{"CASSANDRA_DOCKER_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
 													. "i" . $self->appInstance->instanceNum;
-	 	
 	# Create the container
 	my %portMap;
 	my $directMap = 1;

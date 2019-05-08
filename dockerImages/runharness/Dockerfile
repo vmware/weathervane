@@ -39,4 +39,4 @@ RUN yum install -y perl-App-cpanminus && \
 	cpanm LWP 
 
 
-ENTRYPOINT ["perl", "/root/weathervane/runHarness/weathervane.pl"]
+ENTRYPOINT ["perl", "/root/weathervane/weathervane.pl"]

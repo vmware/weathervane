@@ -2146,9 +2146,25 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"postgresqlDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlLogVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlLogs",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2213,6 +2229,14 @@ $parameters{"cassandraDataStorageClass"} = {
 $parameters{"cassandraDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "cassandraData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"cassandraDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "40GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

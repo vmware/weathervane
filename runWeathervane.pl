@@ -144,7 +144,12 @@ sub dockerExists {
 
 	return $found;
 }
-	
+
+if ($help) {
+	usage();
+	exit 0;
+}
+
 # Force acceptance of the license if not using the accept parameter
 sub forceLicenseAccept {
 	open( my $fileout, "./Notice.txt" ) or die "Can't open file ./Notice.txt: $!\n";

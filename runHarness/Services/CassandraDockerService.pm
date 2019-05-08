@@ -120,7 +120,7 @@ sub create {
 	 	
 	# Create the container
 	my %portMap;
-	my $directMap = 0;
+	my $directMap = 1;
 
 	my $cmd        = "";
 	my $entryPoint = "";

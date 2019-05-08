@@ -31,12 +31,6 @@ use namespace::autoclean;
 
 extends 'DataManager';
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 has 'dockerConfigHashRef' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -58,10 +52,6 @@ override 'initialize' => sub {
 	super();
 };
 
-sub setMongosDocker {
-	my ( $self, $mongosDockerName ) = @_;
-	$self->mongosDocker($mongosDockerName);
-}
 
 sub startDataManagerContainer {
 	my ( $self, $users, $applog ) = @_;
@@ -77,39 +67,16 @@ sub startDataManagerContainer {
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
-
-	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
-	$envVarMap{"NUMNOSQLSHARDS"} = $numNosqlShards;
 	
-	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
-	$envVarMap{"NUMNOSQLREPLICAS"} = $numNosqlReplicas;
-	
-	my $mongodbHostname;
-	my $mongodbPort;
-	if ( $nosqlServerRef->numNosqlShards == 0 ) {
-		$mongodbHostname =  $self->getHostnameForUsedService($nosqlServerRef);
-		$mongodbPort   = $self->getPortNumberForUsedService($nosqlServerRef, 'mongod');
+	my $cassandraContactpoints = "";
+	my $nosqlServicesRef = $self->appInstance->getAllServicesByType("nosqlServer");
+	my $cassandraPort = $self->getPortNumberForUsedService($nosqlServicesRef->[0], $nosqlServicesRef->[0]->getImpl());
+	foreach my $nosqlServer (@$nosqlServicesRef) {
+		$cassandraContactpoints .= $self->getHostnameForUsedService($nosqlServer) . ",";
 	}
-	else {
-		# The mongos will be running on the dataManager host
-		$mongodbHostname = $self->host->name;
-		$mongodbPort   = $self->internalPortMap->{'mongos'};
-	}
-
-	my $mongodbReplicaSet = "$mongodbHostname:$mongodbPort";
-	if ( $nosqlServerRef->numNosqlReplicas > 0 ) {
-		for ( my $i = 1 ; $i <= $#{$nosqlServersRef} ; $i++ ) {
-			my $nosqlService  = $nosqlServersRef->[$i];
-			my $mongodbHostname = $self->getHostnameForUsedService($nosqlService);
-			my $mongodbPort   = $self->getPortNumberForUsedService($nosqlService,'mongod');
-			$mongodbReplicaSet .= ",$mongodbHostname:$mongodbPort";
-		}
-	}
-	$envVarMap{"MONGODBHOSTNAME"} = $mongodbHostname;
-	$envVarMap{"MONGODBPORT"} = $mongodbPort;
-	$envVarMap{"MONGODBREPLICASET"} = $mongodbReplicaSet;
+	$cassandraContactpoints =~ s/,$//;		
+	$envVarMap{"CASSANDRA_CONTACTPOINTS"} = $cassandraContactpoints;
+	$envVarMap{"CASSANDRA_PORT"} = $cassandraPort;
 	
 	my $dbServicesRef = $self->appInstance->getAllServicesByType("dbServer");
 	my $dbService     = $dbServicesRef->[0];
@@ -245,7 +212,7 @@ sub prepareData {
 		# cleanup the databases from any previous run
 		$self->cleanData( $users, $logHandle );
 	}
-	
+
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $dockerHostString  = $self->host->dockerHostString;	
@@ -256,15 +223,6 @@ sub prepareData {
 		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
 		$self->stopDataManagerContainer($logHandle);
 		return 0;
-	}
-
-	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $logHandle );
 	}
 
 	# stop the auctiondatamanager container
@@ -291,284 +249,7 @@ sub pretouchData {
 	};
 
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-
-	my @pids            = ();
-	if ( $self->getParamValue('mongodbTouch') ) {
-		my $nosqlService = $nosqlServersRef->[0];
-		if ($nosqlService->host->getParamValue('vicHost')) {
-			# mongoDb takes longer to start on VIC
-			sleep 240;
-		}
-
-		foreach $nosqlService (@$nosqlServersRef) {
-
-			my $name = $nosqlService->name;
-			my $cmdString;
-			my $cmdout;
-			my $pid;
-			if ( $self->getParamValue('mongodbTouchFull') ) {
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					print $logHandle "Touching imageFull collection to preload data and indexes\n";
-					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-						"mongo --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages");
-					print $logHandle $cmdout;
-
-					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-						"mongo --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages");
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-			}
-
-			if ( $self->getParamValue('mongodbTouchPreview') ) {
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					print $logHandle "Touching imagePreview collection to preload data and indexes\n";
-					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-						"mongo --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages");
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-
-				$pid = fork();
-				if ( !defined $pid ) {
-					$console_logger->error("Couldn't fork a process: $!");
-					exit(-1);
-				}
-				elsif ( $pid == 0 ) {
-					$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-						"mongo --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages");
-					print $logHandle $cmdout;
-					exit;
-				}
-				else {
-					push @pids, $pid;
-				}
-			}
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages");
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imageInfo collection to preload data and indexes\n";
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo");
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching attendanceRecord collection to preload data and indexes\n";
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord");
-				print $logHandle $cmdout;
-
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching bid collection to preload data and indexes\n";
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $nosqlService->host->dockerExec($logHandle, $name, 
-					"mongo --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid");
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-
-		}
-
-	}
-
-	foreach my $pid (@pids) {
-		waitpid $pid, 0;
-	}
+	# ToDo: Pretouch cassandra either here or in datamanager container
 
 	$logger->debug( "pretouchData complete for workload ", $workloadNum );
 
@@ -621,15 +302,6 @@ sub loadData {
 	my $logOut = $self->host->dockerGetLogs($applog, $self->name);
 	$logger->debug($logOut);
 	
-	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $applog );
-	}
-
 	close $applog;
 
 	# Now make sure that the data is really loaded properly
@@ -709,92 +381,15 @@ sub cleanData {
 	my $cmdOut = `$dockerHostString docker exec $name perl /cleanData.pl`;
 	print $logHandle "Output: $cmdOut, \$? = $?\n";
 	$logger->debug("Output: $cmdOut, \$? = $?");
-
 	if ($?) {
 		$console_logger->error(
 			"Data cleaning process failed.  Check CleanData_W${workloadNum}I${appInstanceNum}.log for more information."
 		);
 		return 0;
 	}
-
+	
+	# ToDo: Compact cassandra is not done by dataManager container
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	my $nosqlService = $nosqlServersRef->[0];
-	if (   ( $nosqlService->numNosqlReplicas > 0 )
-		&& ( $nosqlService->numNosqlShards == 0 ) )
-	{
-		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-		waitForMongodbReplicaSync( $self, $logHandle );
-	}
-
-	if ( $self->getParamValue('mongodbCompact') ) {
-
-		# Compact all mongodb collections
-		foreach my $nosqlService (@$nosqlServersRef) {
-			my $hostname = $nosqlService->host->name;
-			print $logHandle "Compacting MongoDB collections on $hostname\n";
-			$logger->debug(
-				"cleanData. Compacting MongoDB collections on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			my $name = $nosqlService->name;
-
-			$logger->debug(
-				"cleanData. Compacting attendanceRecord collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			my $cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting bid collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageInfo collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageFull collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imagePreview collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageThumbnail collection on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $nosqlService->host->dockerExec($logHandle, $name, "mongo --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages");
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Getting du -hsc /mnt/mongoData on $hostname for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-
-		}
-	}
 }
 
 __PACKAGE__->meta->make_immutable;

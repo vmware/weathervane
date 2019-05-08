@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.data.statsModel;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -51,7 +52,7 @@ public class BidCompletionDelay implements Serializable, DomainObject {
 	private Long completingNode;
 	
 	// References to other entities
-	private String bidId;
+	private UUID bidId;
 	private Auction auction;
 	private Item item;
 
@@ -106,11 +107,11 @@ public class BidCompletionDelay implements Serializable, DomainObject {
 	}
 
 	@Column(name="bidid")
-	public String getBidId() {
+	public UUID getBidId() {
 		return bidId;
 	}
 
-	public void setBidId(String bidId) {
+	public void setBidId(UUID bidId) {
 		this.bidId = bidId;
 	}
 

@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -60,12 +61,13 @@ import com.vmware.weathervane.auction.data.dao.ItemDao;
 import com.vmware.weathervane.auction.data.dao.UserDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
 import com.vmware.weathervane.auction.data.model.HighBid;
-import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.AuctionRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
@@ -427,7 +429,7 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 		Auction theAuction = auctionDao.get(record.getAuctionId());
 		if (theAuction == null) {
-			logger.warn("Invalid attempt to join non-existent auction with id " + record.getId());
+			logger.warn("Invalid attempt to join non-existent auction with id " + record.getAuctionId());
 			throw new RuntimeException("In JoinAuction: no auction found with Id " + record.getAuctionId());
 		}
 		if (theAuction.getState().equals(Auction.AuctionState.COMPLETE)) {
@@ -440,12 +442,14 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 		AttendanceRecord newRecord = new AttendanceRecord();
-		newRecord.setUserId(record.getUserId());
-		newRecord.setTimestamp(now);
+		AttendanceRecordKey key = new AttendanceRecordKey();
+		key.setUserId(record.getUserId());
+		key.setTimestamp(now);
 		newRecord.setAuctionId(theAuction.getId());
 		newRecord.setAuctionName(theAuction.getName());
 		newRecord.setState(AttendanceRecordState.ATTENDING);
-
+		newRecord.setKey(key);
+		newRecord.setId(UUID.randomUUID());
 		attendanceRecordRepository.save(newRecord);
 
 		return new AttendanceRecordRepresentation(newRecord);
@@ -458,11 +462,13 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 
 		AttendanceRecord attendanceRecord = new AttendanceRecord();
+		AttendanceRecordKey key = new AttendanceRecordKey();
 		attendanceRecord.setAuctionId(auctionId);
-		attendanceRecord.setUserId(userId);
-		attendanceRecord.setTimestamp(now);
+		key.setUserId(userId);
+		key.setTimestamp(now);
 		attendanceRecord.setState(AttendanceRecordState.LEFT);
-
+		attendanceRecord.setKey(key);
+		attendanceRecord.setId(UUID.randomUUID());
 		attendanceRecordRepository.save(attendanceRecord);
 
 		return new AttendanceRecordRepresentation(attendanceRecord);

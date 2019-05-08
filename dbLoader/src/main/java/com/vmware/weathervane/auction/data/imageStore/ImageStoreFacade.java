@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.data.imageStore;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
@@ -58,7 +59,7 @@ public interface ImageStoreFacade {
 	 * @throws NoSuchImageException If no such image exists in the image store
 	 * @throws IOException 
 	 */
-	public byte[] retrieveImage(String imageHandle, ImageSize size) throws NoSuchImageException, IOException;
+	public byte[] retrieveImage(UUID imageHandle, ImageSize size) throws NoSuchImageException, IOException;
 
 	/**
 	 * Used by the benchmark infrastructure to clear out user-added images 

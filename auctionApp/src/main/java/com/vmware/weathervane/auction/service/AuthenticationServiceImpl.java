@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.vmware.weathervane.auction.data.dao.UserDao;
 import com.vmware.weathervane.auction.data.model.User;
-import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.rest.representation.LoginResponse;
 import com.vmware.weathervane.auction.rest.representation.UserRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuthenticationException;

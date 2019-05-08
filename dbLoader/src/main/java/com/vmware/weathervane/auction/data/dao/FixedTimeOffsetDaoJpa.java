@@ -38,7 +38,7 @@ public class FixedTimeOffsetDaoJpa extends GenericDaoJpa<FixedTimeOffset, Long> 
 	@Override
 	@Transactional
 	public int deleteAll() {
-		logger.info("deleteAll");
+		logger.info("FixedTimeOffsetDaoJpa deleteAll");
 		
 		Query theQuery = entityManager
 				.createQuery("DELETE from FixedTimeOffset b");

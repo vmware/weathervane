@@ -22,8 +22,6 @@ import com.vmware.weathervane.auction.rest.representation.CollectionRepresentati
 
 public interface BidService {
 	
-	public BidRepresentation getBid(String bidId);
-
 	public CollectionRepresentation<BidRepresentation> getBidsForUser(Long userId,
 			Date fromDate, Date toDate, Integer page, Integer pageSize);
 		

@@ -2616,7 +2616,7 @@ $parameters{"statsInterval"} = {
 
 $parameters{"showPeriodicOutput"} = {
 	"type"      => "!",
-	"default"   => JSON::false,
+	"default"   => JSON::true,
 	"parent"    => "workloadDriver",
 	"usageText" => "Controls whether periodic workload stats are echoed to stdout.",
 	"showUsage" => 1,

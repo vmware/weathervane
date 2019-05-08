@@ -17,9 +17,8 @@ if ($ENV{'CASSANDRA_USE_IP'}) {
 print "configure cassandra. \n";
 
 if ($clearBeforeStart) {
-	# Delete the directories for the auction_image and auction_event keyspaces
-	`rm -rf /data/data/auction_event`;
-	`rm -rf /data/data/auction_image`;
+	`rm -rf /data/data/*`;
+	`rm -rf /data/commitlog/*`;
 }
 
 # Configure setenv.sh

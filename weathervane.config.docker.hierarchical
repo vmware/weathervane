@@ -39,9 +39,9 @@
       "nosqlServerCpus" : "1",
       "dbServers" : [ {} ],
 
-      # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and mongoData
+      # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and cassandraData
       "postgresqlUseNamedVolumes" : true,
-      "mongodbUseNamedVolumes" : true,
+      "cassandraUseNamedVolumes" : true,
 
       "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer",
       "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer -XX:+UseG1GC",

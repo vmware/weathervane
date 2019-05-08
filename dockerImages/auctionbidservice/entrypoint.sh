@@ -36,8 +36,7 @@ fi
 chmod 400 /fifo
 
 sleep 30;
-tail -f /opt/apache-tomcat-bid/logs/gc.log &
-tail -f /opt/apache-tomcat-bid/logs/auction.log &
+tail -f /opt/apache-tomcat-bid/logs/* &
 
 # wait indefinitely
 while true;

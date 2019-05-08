@@ -20,6 +20,7 @@ use POSIX;
 use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use AppInstance::AppInstance;
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -193,17 +194,33 @@ override 'checkConfig' => sub {
 		}
 	}
 
-	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
-	# This is only for services running on DockerHosts
+	# If Cassandra is running on Docker, make sure that each node is running on a different host
 	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+	my @cassandraHosts;
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $host = $nosqlServer->host;
 		if ((ref $host) ne "DockerHost") {
 			next;
 		}
-		if ($nosqlServer->getParamValue('mongodbUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		my $hostname = $host->name;
+		if ( $hostname ~~ @cassandraHosts ) {
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: When using more than one nosqlServer (Cassandra) nodes, each must run on a different Docker host.");
+			return 0;
+		} else {
+			push @cassandraHosts, $hostname;
+		}
+	}
+
+	# Make sure that if useNamedVolumes is true for the nosql and db server, then the volume exists
+	# This is only for services running on DockerHosts
+	foreach my $nosqlServer (@$nosqlServersRef) {
+		my $host = $nosqlServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		if ($nosqlServer->getParamValue('cassandraUseNamedVolumes') || $host->getParamValue('vicHost')) {
 			# use named volumes.  Error if does not exist
-			my $volumeName = $nosqlServer->getParamValue('mongodbDataVolume');
+			my $volumeName = $nosqlServer->getParamValue('cassandraDataVolume');
 			if (!$host->dockerVolumeExists($volumeName)) {
 				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 				return 0;
@@ -258,18 +275,9 @@ override 'redeploy' => sub {
 		}
 	}
 	
-	# Figure out if mongodb is using docker, and if so pull docker images
-	# to app servers and data manager
-	my $nosqlServicesRef = $self->getAllServicesByType('nosqlServer');
-	my $nosqlServer      = $nosqlServicesRef->[0];
-	my $appServicesRef = $self->getAllServicesByType('appServer');
-	foreach my $appServer (@$appServicesRef) {
-		$appServer->host->dockerPull( $logfile, $nosqlServer->getImpl() );
-	}
-	$self->dataManager->host->dockerPull( $logfile, $nosqlServer->getImpl() );
-
 	# Pull the datamanager image
-	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");	
+	$self->dataManager->host->dockerPull( $logfile, "auctiondatamanager");
+	
 };
 
 sub getSpringProfilesActive {
@@ -284,21 +292,11 @@ sub getSpringProfilesActive {
 	$springProfilesActive .= ",ehcache";
 
 	my $imageStore = $self->getParamValue('imageStoreType');
-	if ( $imageStore eq "mongodb" ) {
-		$springProfilesActive .= ",imagesInMongo";
+	if ( $imageStore eq "cassandra" ) {
+		$springProfilesActive .= ",imagesInCassandra";
 	}
 	elsif ( $imageStore eq "memory" ) {
 		$springProfilesActive .= ",imagesInMemory";
-	}
-
-	if ( $self->getParamValue('nosqlSharded') ) {
-		$springProfilesActive .= ",shardedMongo";
-	}
-	elsif ( $self->getParamValue('nosqlReplicated') ) {
-		$springProfilesActive .= ",replicatedMongo";
-	}
-	else {
-		$springProfilesActive .= ",singleMongo";
 	}
 
 	my $numMsgServers = $self->getTotalNumOfServiceType('msgServer');
@@ -494,38 +492,14 @@ sub getServiceConfigParameters {
 			$jvmOpts .= " -DRABBITMQ_HOST=$msgHostname -DRABBITMQ_PORT=$rabbitMQPort ";
 		}
 
-		my $nosqlHostname;
-		my $mongodbPort;
-		my $nosqlServicesRef = $self->getAllServicesByType("nosqlServer");
-		if ( !$self->getParamValue('nosqlSharded') ) {
-			my $nosqlService = $nosqlServicesRef->[0];
-			$nosqlHostname = $service->getHostnameForUsedService($nosqlService);
-			$mongodbPort = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
+		my $cassandraContactpoints = "";
+		my $nosqlServicesRef = $service->appInstance->getAllServicesByType("nosqlServer");
+		my $cassandraPort = $service->getPortNumberForUsedService($nosqlServicesRef->[0], $nosqlServicesRef->[0]->getImpl());
+		foreach my $nosqlServer (@$nosqlServicesRef) {
+			$cassandraContactpoints .= $service->getHostnameForUsedService($nosqlServer) . ",";
 		}
-		else {
-
-			# The mongos will be running on this app server
-			$nosqlHostname = $service->host->name;
-			if ( $service->mongosDocker ) {
-				$nosqlHostname = $service->mongosDocker;
-			}
-			$mongodbPort = $service->internalPortMap->{'mongos'};
-		}
-		$jvmOpts .= " -DMONGODB_HOST=$nosqlHostname -DMONGODB_PORT=$mongodbPort ";
-
-		if ( $self->getParamValue('nosqlReplicated') ) {
-			my $nosqlService      = $nosqlServicesRef->[0];
-			my $nosqlHostname     = $service->getHostnameForUsedService($nosqlService);
-			my $mongodbPort       = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
-			my $mongodbReplicaSet = "$nosqlHostname:$mongodbPort";
-			for ( my $i = 1 ; $i <= $#{$nosqlServicesRef} ; $i++ ) {
-				$nosqlService  = $nosqlServicesRef->[$i];
-				$nosqlHostname = $service->getHostnameForUsedService($nosqlService);
-				$mongodbPort   = $service->getPortNumberForUsedService( $nosqlService, 'mongod' );
-				$mongodbReplicaSet .= ",$nosqlHostname:$mongodbPort";
-			}
-			$jvmOpts .= " -DMONGODB_REPLICA_SET=$mongodbReplicaSet ";
-		}
+		$cassandraContactpoints =~ s/,$//;		
+		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints -DCASSANDRA_PORT=$cassandraPort ";
 
 		my $dbServicesRef = $self->getAllServicesByType("dbServer");
 		my $dbService     = $dbServicesRef->[0];

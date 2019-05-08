@@ -47,17 +47,7 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 	
 	List<Auction> findByCurrent(Boolean current, int numDesired);
 	List<Auction> findByCurrentAndActivated(Boolean current, Boolean activated);
-	
-	/**
-	 * This method resets the auction to a state that is correct for an 
-	 * auction that will be run in the future.  It is used by the DBPrep
-	 * program to reset auctions that were preloaded and then were used
-	 * in a previous run.
-	 * 
-	 * @param auction
-	 */
-	void resetToFuture(Auction auction);
-		
+			
 	/**
 	 * This method prepares an auction to be used in the next benchmark run by 
 	 * setting its startTime to the time at which all runs start. It is assumed
@@ -71,6 +61,8 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 	Item getNextUnsoldItem(Auction theAuction);
 
 	void resetItemsToFuture(Auction auction);
+
+	void resetToFuture(Auction auction);
 
 	
 }

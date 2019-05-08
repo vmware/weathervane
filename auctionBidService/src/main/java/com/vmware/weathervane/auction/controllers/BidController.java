@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.controllers;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Named;

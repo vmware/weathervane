@@ -108,9 +108,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		</bean>
 	</beans>
 
-	<beans profile="imagesInMongo">
+	<beans profile="imagesInCassandra">
 		<bean id="imageStoreFacade"
-			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeMongodbImpl">
+			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeCassandraImpl">
 			<property name="imageFormat" value="jpg" />
 			<property name="thumbnailWidth" value="100" />
 			<property name="thumbnailHeight" value="100" />

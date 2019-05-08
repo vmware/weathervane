@@ -70,7 +70,7 @@ CREATE TABLE highbid (
     auctionid bigint NOT NULL,
     itemid bigint NOT NULL,
     bidderid bigint,
-    bidid character varying(40),
+    bidid bytea,
     preloaded boolean,
     version integer
 );
@@ -115,7 +115,7 @@ CREATE TABLE bidcompletiondelay (
     auction_id bigint,
     item_id bigint,
 	biddingstate character varying(20),
-    bidid character varying(40),
+    bidid bytea,
     "bidtime" timestamp without time zone,
     receivingnode bigint,
     completingnode bigint

@@ -305,7 +305,7 @@ public class JoinAuctionOperation extends AuctionOperation implements NeedsLogin
 		logger.debug("JoinAuctionOperation:finalStep behaviorID = " + this.getBehaviorId());
 
 		String bidId = _currentBidProvider.getBidId();
-		if (bidId.equals("error")) {
+		if ((bidId != null) && bidId.equals("error")) {
 			throw new RuntimeException(_currentBidProvider.getMessage());
 		}
 

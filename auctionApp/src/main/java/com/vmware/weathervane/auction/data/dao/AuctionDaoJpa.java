@@ -38,10 +38,10 @@ import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.Keyword;
 import com.vmware.weathervane.auction.data.model.User;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
 import com.vmware.weathervane.auction.data.model.Item.ItemState;
-import com.vmware.weathervane.auction.data.repository.AttendanceRecordRepository;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
 import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
 @Repository("auctionDao")

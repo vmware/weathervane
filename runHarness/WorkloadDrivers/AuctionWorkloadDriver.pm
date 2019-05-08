@@ -1307,7 +1307,7 @@ sub stopAppStatsCollection {
 	my $dbServer          = $dbServicesRef->[0];
 	my $dbHostname        = $dbServer->host->name;
 
-	my $appStartDate    = "2020-02-02";
+	my $appStartDate    = "2030-02-02";
 	my $appStartHour    = 12;
 	my $appStartMinute  = 0;
 	my $appStartSeconds = 0;

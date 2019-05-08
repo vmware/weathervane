@@ -23,8 +23,8 @@ use Services::AuctionBidKubernetesService;
 use Services::AuctionBidDockerService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
-use Services::MongodbKubernetesService;
-use Services::MongodbDockerService;
+use Services::CassandraKubernetesService;
+use Services::CassandraDockerService;
 use Services::ZookeeperKubernetesService;
 use Services::ZookeeperDockerService;
 use Services::RabbitmqKubernetesService;
@@ -124,14 +124,14 @@ sub getServiceByType {
 			);
 		}
 	}
-	elsif ( $serviceName eq "mongodb" ) {
+	elsif ( $serviceName eq "cassandra" ) {
 		if ($hostType eq "KubernetesCluster") {
-				$service = MongodbKubernetesService->new(
-				paramHashRef => $paramHashRef,
-				appInstance => $appInstance,
-				);
+			$service = CassandraKubernetesService->new(
+			paramHashRef => $paramHashRef,
+			appInstance => $appInstance,
+			);
 		} else {
-			$service = MongodbDockerService->new(
+			$service = CassandraDockerService->new(
 				paramHashRef => $paramHashRef,
 				appInstance => $appInstance,
 			);

@@ -12,6 +12,12 @@ trap 'sigterm' TERM
 
 perl /updateResolveConf.pl
 
+# Need to wait for zookeeperServers.txt file to exist before continuing
+while [ ! -f /zookeeperServers.txt ] && [ -z "$ZK_SERVERS" ]; do
+  echo "Waiting for setup completion"
+  sleep 5
+done
+
 perl /configure.pl
 
 # If zookeeper is clustered, then wait until all nodes are reachable

@@ -34,9 +34,7 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 	private Long id;
 	
 	private Long maxusers;
-	
-	private Long maxduration;
-	
+		
 	private Long numnosqlshards;
 	
 	private Long numnosqlreplicas;
@@ -92,14 +90,6 @@ public class DbBenchmarkInfo implements Serializable, DomainObject {
 
 	public void setNumnosqlreplicas(Long numnosqlreplicas) {
 		this.numnosqlreplicas = numnosqlreplicas;
-	}
-
-	public Long getMaxduration() {
-		return maxduration;
-	}
-
-	public void setMaxduration(Long maxduration) {
-		this.maxduration = maxduration;
 	}
 
 }

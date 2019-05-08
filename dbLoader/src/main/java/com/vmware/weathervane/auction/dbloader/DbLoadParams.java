@@ -34,7 +34,6 @@ public class DbLoadParams {
 	private int numImageSizesPerFutureItem;
 
 	private int usersPerCurrentAuction;
-	private int itemsPerCurrentAuction;
 	private int maxImagesPerCurrentItem;
 	private int numImageSizesPerCurrentItem;
 
@@ -61,7 +60,6 @@ public class DbLoadParams {
 		this.numImageSizesPerHistoryItem = that.numImageSizesPerHistoryItem;
 		
 		this.usersPerCurrentAuction = that.usersPerCurrentAuction;
-		this.itemsPerCurrentAuction = that.itemsPerCurrentAuction;
 		
 		this.usersScaleFactor = that.usersScaleFactor;
 		
@@ -169,14 +167,6 @@ public class DbLoadParams {
 
 	public void setUsersPerCurrentAuction(int usersPerCurrentAuction) {
 		this.usersPerCurrentAuction = usersPerCurrentAuction;
-	}
-
-	public int getItemsPerCurrentAuction() {
-		return itemsPerCurrentAuction;
-	}
-
-	public void setItemsPerCurrentAuction(int itemsPerCurrentAuction) {
-		this.itemsPerCurrentAuction = itemsPerCurrentAuction;
 	}
 
 	public int getUsersScaleFactor() {

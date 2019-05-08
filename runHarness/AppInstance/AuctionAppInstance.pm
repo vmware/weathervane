@@ -493,10 +493,10 @@ sub getServiceConfigParameters {
 		}
 
 		my $cassandraContactpoints = "";
-		my $nosqlServicesRef = $self->getTotalNumOfServiceType("nosqlServer");
-		my $cassandraPort = $nosqlServicesRef->[0]->getParamValue('cassandraPort');
+		my $nosqlServicesRef = $service->appInstance->getAllServicesByType("nosqlServer");
+		my $cassandraPort = $service->getPortNumberForUsedService($nosqlServicesRef->[0], $nosqlServicesRef->[0]->getImpl());
 		foreach my $nosqlServer (@$nosqlServicesRef) {
-			$cassandraContactpoints .= $nosqlServer->hostName+ ",";
+			$cassandraContactpoints .= $service->getHostnameForUsedService($nosqlServer) . ",";
 		}
 		$cassandraContactpoints =~ s/,$//;		
 		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints -DCASSANDRA_PORT=$cassandraPort ";

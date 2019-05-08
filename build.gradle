@@ -51,9 +51,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		mockitoVersion = "1.10.19"
 		postgreSQLJdbcVersion = "9.4.1212.jre7"
 		dbcpVersion = "1.4"
-		springDataMongoVersion = "1.10.9.RELEASE"
 		springDataCassandraVersion = "1.5.20.RELEASE"
-		mongodbJavaDriverVersion = "3.2.1"
 		javasimonVersion = "3.5.2"
 		curatorVersion = "2.11.0"
 		ehcacheVersion = "2.10.0"
@@ -75,8 +73,6 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		compile "org.springframework.security:spring-security-taglibs:$orgSpringframeworkSecurityVersion"
 		compile "org.springframework.amqp:spring-rabbit:$orgSpringframeworkAmqpVersion"
 		compile "org.springframework.data:spring-data-cassandra:$springDataCassandraVersion"
-		compile "org.springframework.data:spring-data-mongodb:$springDataMongoVersion"
-		compile "org.mongodb:mongo-java-driver:$mongodbJavaDriverVersion"
 
 		compile "org.hibernate:hibernate-entitymanager:$orgHibernateVersion"
     	compile ("org.hibernate:hibernate-ehcache:$orgHibernateVersion") {

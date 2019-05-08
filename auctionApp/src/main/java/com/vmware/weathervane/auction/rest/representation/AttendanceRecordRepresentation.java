@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 import com.vmware.weathervane.auction.data.model.AttendanceRecord;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordKey;
 import com.vmware.weathervane.auction.data.model.AttendanceRecord.AttendanceRecordState;
 import com.vmware.weathervane.auction.rest.representation.Representation;
 
@@ -33,7 +34,13 @@ import com.vmware.weathervane.auction.rest.representation.Representation;
  */
 public class AttendanceRecordRepresentation extends Representation implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	private String id;
+	
 	private Date timestamp;
 
 	private AttendanceRecordState state;
@@ -53,27 +60,13 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 			return;
 		}
 
-		this.id = theRecord.getId();
-		this.timestamp = theRecord.getTimestamp();
+		AttendanceRecordKey key = theRecord.getKey();
+		this.timestamp = key.getTimestamp();
 		this.state = theRecord.getState();
 		this.auctionId = theRecord.getAuctionId();
-		this.userId = theRecord.getUserId();
+		this.userId = key.getUserId();
 		this.auctionName = theRecord.getAuctionName();
-
-		/*
-		 * ToDo: This is where the links should be returned. Right now am just
-		 * returning a state in the LiveBid.
-		 */
-		this.setState(theRecord.getState());
-
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
+		this.id = theRecord.getId().toString();
 	}
 
 	public Date getTimestamp() {
@@ -116,4 +109,11 @@ public class AttendanceRecordRepresentation extends Representation implements Se
 		this.auctionName = auctionName;
 	}
 
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 }

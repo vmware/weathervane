@@ -17,54 +17,83 @@ package com.vmware.weathervane.auction.data.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.cassandra.core.Ordering;
+import org.springframework.cassandra.core.PrimaryKeyType;
+import org.springframework.data.cassandra.mapping.Column;
+import org.springframework.data.cassandra.mapping.PrimaryKey;
+import org.springframework.data.cassandra.mapping.PrimaryKeyClass;
+import org.springframework.data.cassandra.mapping.PrimaryKeyColumn;
+import org.springframework.data.cassandra.mapping.Table;
 
-@Document
-@CompoundIndexes({
-	@CompoundIndex(name="attendanceRecord_user_timestamp_idx", def="{'userId': 1, 'timestamp': 1 }"),
-	@CompoundIndex(name="attendanceRecord_user_id_idx", def="{'userId': 1, '_id': 1 }"),
-	@CompoundIndex(name="attendanceRecord_user_auction_state_idx", def="{'userId': 1, 'auctionId': 1, 'state': 1 }")
-})
+@Table("attendancerecord_by_userid")
 public class AttendanceRecord implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	public enum AttendanceRecordState {ATTENDING, LEFT, AUCTIONCOMPLETE, BADRECORD};
 
-	private String id;
-	private Date timestamp;
+	@PrimaryKeyClass
+	public static class AttendanceRecordKey implements Serializable {
+		private static final long serialVersionUID = 1L;
+
+		@PrimaryKeyColumn(name="user_id", ordinal= 0, type=PrimaryKeyType.PARTITIONED)
+		private Long userId;
+
+		@PrimaryKeyColumn(name="record_time", ordinal= 1, type=PrimaryKeyType.CLUSTERED, ordering=Ordering.ASCENDING)
+		private Date timestamp;
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(timestamp, userId);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			AttendanceRecordKey other = (AttendanceRecordKey) obj;
+			return Objects.equals(timestamp, other.timestamp) && Objects.equals(userId, other.userId);
+		}
+
+		public Date getTimestamp() {
+			return timestamp;
+		}
+
+		public void setTimestamp(Date timestamp) {
+			this.timestamp = timestamp;
+		}
+
+		public Long getUserId() {
+			return userId;
+		}
+
+		public void setUserId(Long userId) {
+			this.userId = userId;
+		}
+
+	}
+
+	@PrimaryKey
+	private AttendanceRecordKey key;
+	
+	private UUID id;
+	
+	@Column("auction_id")
+	private Long auctionId;
+
 	private AttendanceRecordState state;
+	
+	@Column("auction_name")
 	private String auctionName;
 	
-	// References to other entities
-	@Indexed
-	private Long auctionId;
-	
-	private Long userId;
-			
 	public AttendanceRecord() {
 	}	
-
-	@Id
-	public String getId() {
-		return id;
-	}
-
-	private void setId(String id) {
-		this.id = id;
-	}
-
-	public Date getTimestamp() {
-		return timestamp;
-	}
-
-	public void setTimestamp(Date timestamp) {
-		this.timestamp = timestamp;
-	}
 
 	public AttendanceRecordState getState() {
 		return state;
@@ -72,6 +101,30 @@ public class AttendanceRecord implements Serializable {
 
 	public void setState(AttendanceRecordState state) {
 		this.state = state;
+	}
+
+	public String getAuctionName() {
+		return auctionName;
+	}
+
+	public void setAuctionName(String auctionName) {
+		this.auctionName = auctionName;
+	}
+
+	public AttendanceRecordKey getKey() {
+		return key;
+	}
+
+	public void setKey(AttendanceRecordKey key) {
+		this.key = key;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
 	}
 
 	public Long getAuctionId() {
@@ -82,20 +135,4 @@ public class AttendanceRecord implements Serializable {
 		this.auctionId = auctionId;
 	}
 
-	public Long getUserId() {
-		return userId;
-	}
-
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
-
-	public String getAuctionName() {
-		return auctionName;
-	}
-
-	public void setAuctionName(String auctionName) {
-		this.auctionName = auctionName;
-	}
-	
 }

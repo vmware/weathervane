@@ -20,10 +20,7 @@ if (($auctions % 2) != 0) {
 }
 
 my $dbPrepOptions = " -a $auctions ";
-$dbPrepOptions .= " -m $ENV{'NUMNOSQLSHARDS'} ";
-$dbPrepOptions .= " -p $ENV{'NUMNOSQLREPLICAS'} ";
 
-my $users = $ENV{'USERS'};
 $dbPrepOptions .= " -u $users ";
 
 my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
@@ -35,9 +32,12 @@ my $heap              = "4G";
 my $threads = 8;
 my $dbLoaderJavaOptions = "";
 
-my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$ENV{'DBHOSTNAME'} -DDBPORT=$ENV{'DBPORT'} -DMONGODB_HOST=$ENV{'MONGODBHOSTNAME'} -DMONGODB_PORT=$ENV{'MONGODBPORT'} -DMONGODB_REPLICA_SET=$ENV{'MONGODBREPLICASET'} com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
+my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLoaderClasspath" .
+				" -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$ENV{'DBHOSTNAME'}" . 
+				" -DDBPORT=$ENV{'DBPORT'} -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'}" .
+				" -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'} com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
+				
 print "Running: $cmdString\n";
-
 my $cmdOut = `$cmdString`;
 
 print "$cmdOut\n";

@@ -13,17 +13,18 @@ COPY configure.pl /configure.pl
 COPY dumpStats.pl /dumpStats.pl
 COPY postgresql.conf /postgresql.conf
 COPY clearAfterStart.sh /clearAfterStart.sh
+COPY pgdg-93-centos.repo /etc/yum/repos.d/pgdg-93-centos.repo
+COPY RPM-GPG-KEY-PGDG-93 /etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
 
 RUN mkdir -p /mnt/dbLogs/postgresql && \
 	mkdir -p /mnt/dbData/postgresql && \
 	echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo && \
-	yum install -y http://yum.postgresql.org/${PG_MAJOR}/redhat/rhel-7-x86_64/pgdg-redhat${PG_MAJOR_PKG}-${PG_MAJOR}-3.noarch.rpm && \
 	yum install -y postgresql${PG_MAJOR_PKG} && \
 	yum install -y postgresql${PG_MAJOR_PKG}-server && \
 	chmod 777 /pg-init.sh && \
 	chmod 777 /entrypoint.sh && \
 	chmod 777 /clearAfterStart.sh && \
   	yum -y clean all 
-  	
-	
+
+
 ENTRYPOINT ["/entrypoint.sh"]  

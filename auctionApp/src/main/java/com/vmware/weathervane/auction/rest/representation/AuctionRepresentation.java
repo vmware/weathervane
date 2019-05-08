@@ -55,7 +55,7 @@ public class AuctionRepresentation extends Representation implements Serializabl
 				return;
 			}
 			
-			this.setId(theAuction.getId());
+		this.setId(theAuction.getId());
 		this.setCategory(theAuction.getCategory());
 		this.setName(theAuction.getName());
 		this.setStartTime(DateFormat.getTimeInstance(DateFormat.LONG).format(theAuction.getStartTime()));

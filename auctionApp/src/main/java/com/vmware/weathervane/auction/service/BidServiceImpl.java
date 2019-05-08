@@ -22,19 +22,18 @@ package com.vmware.weathervane.auction.service;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.vmware.weathervane.auction.data.model.Bid;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
+import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
 import com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceConstants;
@@ -53,19 +52,6 @@ public class BidServiceImpl implements BidService {
 	public BidServiceImpl() {
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * 
-	 * @see com.vmware.liveAuction.services.BidService#getBid(java.lang.Long)
-	 */
-	@Override
-	public BidRepresentation getBid(String bidId) {
-
-		Bid theBid = bidRepository.findOne(bidId);
-		return new BidRepresentation(theBid, null);
-	}
-
 	@Override
 	@Transactional(readOnly = true)
 	public CollectionRepresentation<BidRepresentation> getBidsForUser(Long userId, Date fromDate,
@@ -77,30 +63,25 @@ public class BidServiceImpl implements BidService {
 		logger.info("BidServiceImpl::getBidsForUser page = " + realPage + ", pageSize = "
 				+ realPageSize);
 
-		Pageable pageRequest = new PageRequest(realPage, realPageSize, Sort.Direction.ASC, "id");
-		Page<Bid> queryResults = null;
+		List<Bid> queryResults = null;
 		if (fromDate == null)
 			if (toDate == null)
-				queryResults = bidRepository.findByBidderId(userId, pageRequest);
+				queryResults = bidRepository.findByBidderId(userId);
 			else
-				queryResults = bidRepository.findByBidderIdAndBidTimeLessThanEqual(userId, toDate,
-						pageRequest);
+				queryResults = bidRepository.findByBidderIdAndBidTimeLessThanEqual(userId, toDate);
 		else if (toDate == null)
-			queryResults = bidRepository.findByBidderIdAndBidTimeGreaterThanEqual(userId, fromDate,
-					pageRequest);
+			queryResults = bidRepository.findByBidderIdAndBidTimeGreaterThanEqual(userId, fromDate);
 		else
-			queryResults = bidRepository.findByBidderIdAndBidTimeBetween(userId, fromDate, toDate,
-					pageRequest);
+			queryResults = bidRepository.findByBidderIdAndBidTimeBetween(userId, fromDate, toDate);
 
-		ArrayList<BidRepresentation> liveBids = new ArrayList<BidRepresentation>();
-		for (Bid aBid : queryResults.getContent()) {
-			liveBids.add(new BidRepresentation(aBid, null));
-		}
-
+		List<BidRepresentation> liveBids = 
+				queryResults.stream().limit(realPageSize)
+					.map(r -> new BidRepresentation(r, null)).collect(Collectors.toList());
+		
 		CollectionRepresentation<BidRepresentation> colRep = new CollectionRepresentation<BidRepresentation>();
 		colRep.setPage(realPage);
 		colRep.setPageSize(realPageSize);
-		colRep.setTotalRecords(queryResults.getTotalElements());
+		colRep.setTotalRecords(realPageSize.longValue());
 		colRep.setResults(liveBids);
 
 		return colRep;

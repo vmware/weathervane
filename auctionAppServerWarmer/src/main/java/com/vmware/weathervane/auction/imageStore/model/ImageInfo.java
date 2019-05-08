@@ -17,61 +17,92 @@ package com.vmware.weathervane.auction.imageStore.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 
 public class ImageInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	private String id;
+	public static class ImageInfoKey implements Serializable {
 
-	private String entitytype;	
-	
-	private Long entityid;
-			
-	private String name;
-	private String format;
+		private static final long serialVersionUID = 1L;
 
-	private String filepath;
+		private Long entityid;
+
+		private UUID imageId;
+
+		public Long getEntityid() {
+			return entityid;
+		}
+
+		public void setEntityid(Long entityid) {
+			this.entityid = entityid;
+		}
+
+		public UUID getImageId() {
+			return imageId;
+		}
+
+		public void setImageId(UUID imageId) {
+			this.imageId = imageId;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(entityid, imageId);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ImageInfoKey other = (ImageInfoKey) obj;
+			return Objects.equals(entityid, other.entityid) 
+					&& Objects.equals(imageId, other.imageId);
+		}
+	}
 	
-	private Long imagenum = 0L;
-	
-	private Date dateadded;
+	private ImageInfoKey key;
 	
 	/*
 	 * The field is used by the Weathervane benchmark infrastructure to 
 	 * simplify cleanup between runs.
 	 */
 	private boolean preloaded;
+
+	private String name;
+	private String format;
+	
+	private Long imagenum = 0L;
+	
+	private Date dateadded;
+	
 	
 	public ImageInfo() {
 		
 	}
 	
 	public ImageInfo(ImageInfo that) {
-		this.id = that.id;
-		this.entitytype = that.entitytype;
-		this.entityid = that.entityid;
+		this.key = new ImageInfoKey();
+		this.key.entityid = that.key.entityid;
+		this.preloaded = that.preloaded;
 		this.name = that.name;
 		this.format = that.format;
-		this.filepath = that.filepath;
 		this.imagenum = that.imagenum;
 		this.dateadded = that.dateadded;
 	}
 	
-	public void setId(String id) {
-		this.id = id;
+	public ImageInfoKey getKey() {
+		return key;
 	}
 
-	public String getId() {
-		return id;
-	}
-
-	public Long getEntityid() {
-		return entityid;
-	}
-
-	public void setEntityid(Long entityid) {
-		this.entityid = entityid;
+	public void setKey(ImageInfoKey key) {
+		this.key = key;
 	}
 
 	public String getName() {
@@ -90,14 +121,6 @@ public class ImageInfo implements Serializable {
 		this.format = format;
 	}
 
-	public String getEntitytype() {
-		return entitytype;
-	}
-
-	public void setEntitytype(String entitytype) {
-		this.entitytype = entitytype;
-	}
-
 	public Long getImagenum() {
 		return imagenum;
 	}
@@ -113,7 +136,7 @@ public class ImageInfo implements Serializable {
 	public void setDateadded(Date dateadded) {
 		this.dateadded = dateadded;
 	}
-
+	
 	public boolean isPreloaded() {
 		return preloaded;
 	}
@@ -121,13 +144,4 @@ public class ImageInfo implements Serializable {
 	public void setPreloaded(boolean preloaded) {
 		this.preloaded = preloaded;
 	}
-
-	public String getFilepath() {
-		return filepath;
-	}
-
-	public void setFilepath(String filepath) {
-		this.filepath = filepath;
-	}
-	
 }

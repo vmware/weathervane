@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
@@ -101,8 +102,7 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 
 		BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
 				
-		logger.info("Resizing and then dropping image for " + imageInfo.getEntitytype() + 
-				" with id=" + imageInfo.getEntityid());
+		logger.info("Resizing and then dropping image with id=" + imageInfo.getKey().getEntityid());
 
 		// Resize but don't store image
 		for (ImageSize size : ImageStoreFacade.ImageSize.values()) {
@@ -127,7 +127,7 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 	@Override
 	public ImageInfo addImage(ImageInfo imageInfo, BufferedImage fullImage, 
 			BufferedImage previewImage, BufferedImage thumbnailImage) throws IOException {
-		logger.info("addImage with all bytes. Writing image for " + imageInfo.getEntitytype() + " with id=" + imageInfo.getEntityid());
+		logger.info("addImage with all bytes. Writing image with id=" + imageInfo.getKey().getEntityid());
 
 		/*
 		 *  First save the imageInfo.  This will cause the image to 
@@ -140,7 +140,7 @@ public class ImageStoreFacadeInMemoryImpl extends ImageStoreFacadeBaseImpl {
 	}
 	
 	@Override
-	public byte[] retrieveImage(String imageHandle, ImageSize size) throws NoSuchImageException, IOException {
+	public byte[] retrieveImage(UUID imageHandle, ImageSize size) throws NoSuchImageException, IOException {
 		// Get the imageInfo for the image
 
 		byte[] image;

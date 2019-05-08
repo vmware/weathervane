@@ -19,12 +19,9 @@ import java.util.Date;
 
 import com.vmware.weathervane.auction.rest.representation.AttendanceRecordRepresentation;
 import com.vmware.weathervane.auction.rest.representation.CollectionRepresentation;
-import com.vmware.weathervane.auction.service.exception.InvalidStateException;
 
 public interface AttendanceService {
 
 	public CollectionRepresentation<AttendanceRecordRepresentation> getAttendanceRecordsForUser(long userId,
 			Date fromDate, Date toDate, Integer page, Integer pageSize);
-		
-	public void updateAttendanceRecord(long userId, long auctionId) throws InvalidStateException;
 }

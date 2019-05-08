@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Date;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -37,10 +38,11 @@ import com.vmware.weathervane.auction.data.dao.AuctionDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.Bid;
+import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 import com.vmware.weathervane.auction.data.model.Bid.BidState;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
-import com.vmware.weathervane.auction.data.repository.BidRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.rest.representation.BidRepresentation;
 import com.vmware.weathervane.auction.service.exception.AuctionNoItemsException;
 import com.vmware.weathervane.auction.service.exception.InvalidStateException;
@@ -143,9 +145,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 			Bid newBid = new Bid();
 			newBid.setAmount(_highBid.getAmount());
 			newBid.setAuctionId(_highBid.getAuctionId());
-			newBid.setBidderId(_highBid.getBidderId());
+			BidKey bidKey = new BidKey();
+			bidKey.setBidderId(_highBid.getBidderId());
+			bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
+			newBid.setKey(bidKey);
 			newBid.setItemId(_highBid.getItemId());
-			newBid.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
+			newBid.setId(_highBid.getBidId());
+			newBid.setBidCount(_highBid.getBidCount());
 			newBid.setReceivingNode(nodeNumber);
 			newBid.setState(BidState.PROVISIONALLYHIGH);
 			logger.debug("newBidMessageQueue saving provisionallyHigh bid in bid repository: "
@@ -341,9 +347,12 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					Bid newBid = new Bid();
 					newBid.setAmount(theBid.getAmount());
 					newBid.setAuctionId(theBid.getAuctionId());
-					newBid.setBidderId(theBid.getUserId());
+					BidKey bidKey = new BidKey();
+					bidKey.setBidderId(theBid.getUserId());
+					bidKey.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
+					newBid.setKey(bidKey);
+					newBid.setId(UUID.randomUUID());
 					newBid.setItemId(theBid.getItemId());
-					newBid.setBidTime(FixedOffsetCalendarFactory.getCalendar().getTime());
 					newBid.setBidCount(theBid.getLastBidCount());
 					newBid.setReceivingNode(nodeNumber);
 					newBid.setState(BidState.PROVISIONALLYHIGH);
@@ -400,7 +409,8 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 									+ _auctionId
 									+ " itemId="
 									+ itemId
-									+ " bid returned from _auctioneerTx.postNewHighBidTx was a new high bid");
+									+ " bid returned from _auctioneerTx.postNewHighBidTx was a new high bid: "
+									+ returnedBid);
 
 							_highBid = returnedBid;
 

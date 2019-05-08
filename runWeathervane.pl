@@ -27,15 +27,49 @@ my $configFile = 'weathervane.config';
 my $version = '2.0.0';
 my $outputDir = 'output';
 my $tmpDir = '';
+my $help = '';
 
-GetOptions(	'accept=s' => \$accept,
+GetOptions(	'accept!' => \$accept,
 			'configFile=s' => \$configFile,
-			'version=s' => \$version,
-			'output=s' => \$outputDir,
+			'outputDir=s' => \$outputDir,
 			'tmpDir=s' => \$tmpDir,
+			'help!' => \$help,
 		);
 		
 my $wvCommandLineArgs = join(" ", @ARGV);
+
+sub usage {
+	print "runWeathervane.pl is used to run the Weathervane benchmark using the configuration specified in a configuration file.\n";
+	print "This script takes the following parameters:\n";
+	print "\tconfigFile: This is the configuration file used to control the Weathervane run.\n";
+	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "\t            the location of the file is assumed to be relative to the directory in which\n";
+	print "\t            this script was invoked.\n";
+	print "\t            For a description of the Weathervane configuration file, please see the \n";
+	print "\t            Weathervane User's Guide\n";
+	print "\t            default value: weathervane.config\n";
+	print "\toutputDir:  The directory in which to store the output from the Weathervane run.  You should\n";
+	print "\t            use the same directory for all runs. Output is only placed in this directory\n";
+	print "\t            at the end of a run.  The directory is created if it does not exist.\n";
+	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "\t            the location of the file is assumed to be relative to the directory in which\n";
+	print "\t            this script was invoked.\n";
+	print "\t            default value: output\n";
+	print "\ttmpDir:     The directory in which to store temporary output created during the run.\n";
+	print "\t            This information can be helpful when troubleshooting runs which do not complete\n";
+	print "\t            properly.  The directory is created if it does not exist.\n";
+	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "\t            the location of the file is assumed to be relative to the directory in which\n";
+	print "\t            this script was invoked.\n";
+	print "\t            default value: None.  If no value is specified the temporary files are stored\n";
+	print "\t                           inside the Weathervane container.\n";
+	print "\accept:      Accepts the terms of the Weathervane license.  Useful when running this script\n";
+	print "\t            from another script.  Only needs to be specified on the first run in a given \n";
+	print "\t            directory.\n";
+	print "\t            default value: None.  If no value is specified the user is prompted to accept the\n";
+	print "\t                           license terms.\n";
+	print "\thelp:       Displays this text.\n";
+}
 
 sub parseConfigFile {
 	my ($configFileName) = @_;
@@ -65,12 +99,18 @@ sub parseConfigFile {
 			my $clusterConfigName = $clusterHashRef->{'kubernetesConfigFile'};
 			if (!$clusterConfigName) {
 				if ($clusterName) {
-					die "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName.\n"										
+					print "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName.\n";
+					usage();
+					exit 1;									
 				} else {
-					die "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName.\n"										
+					print "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName.\n";
+					usage();
+					exit 1;									
 				}
 			} elsif ((! -e $clusterConfigName) || (! -f $clusterConfigName)) {
-				die "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.\n";
+				print "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.\n";
+				usage();
+				exit 1;									
 			}
 			push(@k8sConfigFiles, $clusterConfigName);
 		}
@@ -79,7 +119,9 @@ sub parseConfigFile {
 	# Get the dockernamespace
 	my $dockerNamespace = $paramConfig->{"dockerNamespace"};
 	if (!$dockerNamespace) {
-		die "You must specify the dockerNamespace parameter in configuration file $configFileName.\n"										
+		print "You must specify the dockerNamespace parameter in configuration file $configFileName.\n";
+		usage();
+		exit 1;									
 	}
 	
 	my @return = (\@k8sConfigFiles, $dockerNamespace);
@@ -141,10 +183,14 @@ unless ( -e "./.accept-weathervane" ) {
 }
 
 if (!(-e $configFile)) {
-	die "You must specify a valid configuration file using the configFile parameter.  The file $configFile does not exist.\n";
+	print "You must specify a valid configuration file using the configFile parameter.  The file $configFile does not exist.\n";
+	usage();
+	exit 1;									
 }
 if (!(-f $configFile)) {
-	die "The Weathervane configuration file $configFile must not be a directory.\n";
+	print "The Weathervane configuration file $configFile must not be a directory.\n";
+	usage();
+	exit 1;									
 }
 # If the configFile does not reference a file with an absolute path, 
 # then make it an absolute path relative to the local dir
@@ -163,7 +209,9 @@ if (!(-e $outputDir)) {
 	`mkdir -p $outputDir`;
 }
 if (!(-d $outputDir)) {
-	die "The Weathervane output directory $outputDir must be a directory.\n";
+	print "The Weathervane output directory $outputDir must be a directory.\n";
+	usage();
+	exit 1;									
 }
 my $outputMountString = "-v $outputDir:/root/weathervane/output";
 
@@ -179,7 +227,9 @@ if ($tmpDir) {
 		`mkdir -p $tmpDir`;
 	}
 	if (!(-d $tmpDir)) {
-		die "The Weathervane tmp directory $tmpDir must be a directory.\n";
+		print "The Weathervane tmp directory $tmpDir must be a directory.\n";
+		usage();
+		exit 1;									
 	}
 	$tmpMountString = "-v $tmpDir:/root/weathervane/tmpLog";
 }

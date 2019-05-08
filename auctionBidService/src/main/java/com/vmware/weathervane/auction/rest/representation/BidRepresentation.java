@@ -17,11 +17,13 @@ package com.vmware.weathervane.auction.rest.representation;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.auction.data.model.Bid;
+import com.vmware.weathervane.auction.data.model.Bid.BidKey;
 import com.vmware.weathervane.auction.data.model.HighBid;
 
 public class BidRepresentation extends Representation implements Serializable {
@@ -67,14 +69,15 @@ public class BidRepresentation extends Representation implements Serializable {
 			this.setBiddingState(BiddingState.UNKNOWN);
 			return;
 		}
+		BidKey key = theBid.getKey();
 		this.setAmount(theBid.getAmount());
-		this.setId(theBid.getId());
+		this.setId(theBid.getId().toString());
 		this.setMessage(theBid.getState().toString());
-		this.setBidTime(theBid.getBidTime());
+		this.setBidTime(key.getBidTime());
 
 		this.setAuctionId(theBid.getAuctionId());
 		this.setItemId(theBid.getItemId());
-		this.setUserId(theBid.getBidderId());
+		this.setUserId(key.getBidderId());
 		this.setReceivingNode(theBid.getReceivingNode());
 		
 		if (theHighBid!= null) {
@@ -170,11 +173,7 @@ public class BidRepresentation extends Representation implements Serializable {
 			return;
 		}
 		
-		if (theHighBid.getBidId() == null) {
-			this.setId(theHighBid.getId().toString());
-		} else {
-			this.setId(theHighBid.getBidId());
-		}
+		this.setId(theHighBid.getBidId().toString());
 		this.setAmount(theHighBid.getAmount());
 		this.setLastBidCount(theHighBid.getBidCount());
 		this.setBidTime(theHighBid.getCurrentBidTime());

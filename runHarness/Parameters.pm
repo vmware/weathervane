@@ -1186,7 +1186,7 @@ $parameters{"dockerServiceImages"} = {
 		"auctionbidservice"     => "weathervane-auctionbidservice",
 		"rabbitmq"   => "weathervane-rabbitmq",
 		"postgresql" => "weathervane-postgresql",
-		"mongodb"    => "weathervane-mongodb",
+		"cassandra"  => "weathervane-cassandra",
 		"zookeeper"  => "weathervane-zookeeper",
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
 		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
@@ -1305,30 +1305,6 @@ $parameters{"numNosqlServers"} = {
 	"default"   => 0,
 	"parent"    => "appInstance",
 	"isa"       => "nosqlServer",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nosqlReplicated"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nosqlSharded"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"nosqlReplicasPerShard"} = {
-	"type"      => "=i",
-	"default"   => 3,
-	"parent"    => "nosqlServer",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1481,9 +1457,9 @@ $parameters{"dbServerImpl"} = {
 };
 $parameters{"nosqlServerImpl"} = {
 	"type"      => "=s",
-	"default"   => "mongodb",
+	"default"   => "cassandra",
 	"parent"    => "appInstance",
-	"usageText" => "Controls which NoSQL data-store to use.\n\t" . "Currently only MongoDB is supported.",
+	"usageText" => "Controls which NoSQL data-store to use.\n\t" . "Currently only Cassandra is supported.",
 	"showUsage" => 0,
 };
 $parameters{"msgServerImpl"} = {
@@ -1495,10 +1471,10 @@ $parameters{"msgServerImpl"} = {
 };
 $parameters{"imageStoreType"} = {
 	"type"      => "=s",
-	"default"   => "mongodb",
+	"default"   => "cassandra",
 	"parent"    => "appInstance",
 	"usageText" => "Controls which imageStore implementation to use.\n\t"
-	  . "Must be one of: mongodb, or memory",
+	  . "Must be one of: cassandra or memory",
 	"showUsage" => 1,
 };
 
@@ -1956,47 +1932,6 @@ $parameters{"postgresqlMaxConnections"} = {
 	"showUsage" => 1,
 };
 
-# Parameters specific to MongoDB
-$parameters{"mongodbUseTHP"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "nosqlServer",
-	"usageText" => "Controls whether transparent huge pages are used on the MongoDB VM.",
-	"showUsage" => 1,
-};
-
-$parameters{"mongodbTouch"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "appInstance",
-	"usageText" => "Controls whether the Attendance, Bid, imageThumbnail, and imageInfo tables are preloaded using touch.",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbTouchFull"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "Controls whether the imageFull tables are preloaded using touch.",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbTouchPreview"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "Controls whether the imagePreview tables are preloaded using touch.",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbCompact"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "appInstance",
-	"usageText" => "Controls whether storage is reclaimed from MongoDB by compacting the tables after a run.",
-	"showUsage" => 0,
-};
-
 # parameters specific to the bid service
 $parameters{"bidServiceCatalinaHome"} = {
 	"type"      => "=s",
@@ -2168,7 +2103,7 @@ $parameters{"dbServerPortStep"} = {
 
 $parameters{"nosqlServerPortStep"} = {
 	"type"      => "=i",
-	"default"   => 100,
+	"default"   => 1,
 	"parent"    => "nosqlServer",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2177,6 +2112,13 @@ $parameters{"postgresqlPort"} = {
 	"type"      => "=i",
 	"default"   => 5432,
 	"parent"    => "dbServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"cassandraPort"} = {
+	"type"      => "=i",
+	"default"   => 9042,
+	"parent"    => "nosqlServer",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2204,9 +2146,25 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"postgresqlDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlLogVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlLogs",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2252,7 +2210,7 @@ $parameters{"postgresqlServiceName"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbUseNamedVolumes"} = {
+$parameters{"cassandraUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
 	"parent"    => "appInstance",
@@ -2260,7 +2218,7 @@ $parameters{"mongodbUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"mongodbDataStorageClass"} = {
+$parameters{"cassandraDataStorageClass"} = {
 	"type"      => "=s",
 	"default"   => "fast",
 	"parent"    => "appInstance",
@@ -2268,81 +2226,17 @@ $parameters{"mongodbDataStorageClass"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbDataVolume"} = {
+$parameters{"cassandraDataVolume"} = {
 	"type"      => "=s",
-	"default"   => "mongoData",
+	"default"   => "cassandraData",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
 };
 
-$parameters{"mongodbC1DataDir"} = {
+$parameters{"cassandraDataVolumeSize"} = {
 	"type"      => "=s",
-	"parent"    => "appInstance",
-	"default"   => "/mnt/mongoC1Data",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC1DataVolume"} = {
-	"type"      => "=s",
-	"default"   => "mongoC1Data",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC1DataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "10GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC2DataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoC2Data",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC2DataVolume"} = {
-	"type"      => "=s",
-	"default"   => "mongoC2Data",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC2DataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "10GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC3DataDir"} = {
-	"type"      => "=s",
-	"default"   => "/mnt/mongoC3Data",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC3DataVolume"} = {
-	"type"      => "=s",
-	"default"   => "mongoC3Data",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"mongodbC3DataVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "10GB",
+	"default"   => "40GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

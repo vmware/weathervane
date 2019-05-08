@@ -43,16 +43,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		class="com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory">
 		<constructor-arg name="simulatedDate">
 			<bean factory-bean="dateFormat" factory-method="parse">
-				<constructor-arg value="2020-02-02:12-00" />
+				<constructor-arg value="2030-02-02:12-00" />
 			</bean>
 		</constructor-arg>
 	</bean>
 
 	<bean id="imageInfoCacheFacade" class="com.vmware.weathervane.auction.data.imageStore.ImageInfoCacheFacade"/>
-	
-	<beans profile="imagesInMongo">
+	<beans profile="imagesInCassandra">
 		<bean id="imageStoreFacade"
-			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeMongodbImpl">
+			class="com.vmware.weathervane.auction.data.imageStore.ImageStoreFacadeCassandraImpl">
 			<property name="imageFormat" value="jpg" />
 			<property name="thumbnailWidth" value="100" />
 			<property name="thumbnailHeight" value="100" />

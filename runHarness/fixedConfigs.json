@@ -46,8 +46,8 @@
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "100m",
   "nosqlServerMem" : "2Gi",
-  "nosqlServerImpl" : "mongodb",
-  "mongodbDataVolumeSize" : "5Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "5Gi",
   
 },
 
@@ -59,16 +59,16 @@
   "webServerMem"  : "10Gi",
   "webServerImpl" : "nginx",
 
-  "numAuctionBidServers" : 1,
+  "numAuctionBidServers" : 2,
   "auctionBidServerCpus" : "2",
-  "auctionBidServerMem" : "7Gi",
-  "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "auctionBidServerMem" : "5Gi",
+  "auctionBidServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 100,
   "auctionBidServerJdbcConnections" : 101,
   "numClientUpdateThreads" : 2,
   "auctionBidServerImpl" : "auctionbidservice",
   
-  "numAppServers" : 3,
+  "numAppServers" : 2,
   "appServerCpus" :"2",
   "appServerMem" : "7Gi",
   "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
@@ -97,8 +97,8 @@
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "2",
   "nosqlServerMem" : "32Gi",
-  "nosqlServerImpl" : "mongodb",
-  "mongodbDataVolumeSize" : "200Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "100Gi",
   
 },
 

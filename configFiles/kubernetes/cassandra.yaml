@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-config
+  labels:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: cassandra
+data:
+  CLEARBEFORESTART: "0"
+  CASSANDRA_SEEDS: "cassandra-0.cassandra.default.svc.cluster.local"
+  CASSANDRA_CLUSTER_NAME: "Auction"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+  labels:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: cassandra
+spec:
+  serviceName: cassandra
+  selector:
+    matchLabels:
+      app: auction
+      tier: data
+      type: nosqlServer
+      impl: cassandra
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: auction
+        tier: data
+        type: nosqlServer
+        impl: cassandra
+    spec:
+      terminationGracePeriodSeconds: 1800
+      containers:
+      - image: hrosenbe/weathervane-cassandra:1.2.0
+        name: cassandra
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: cassandra-config
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+              - /bin/sh
+              - -c
+              - nodetool drain
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -i
+            - -c
+            - 'nodetool status | grep $POD_IP | grep -Eq UN'
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: cassandra-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi
+      storageClassName: fast
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: cassandra
+  name: cassandra
+spec:
+  clusterIP: None
+  ports:
+  - port: 9042
+  selector:
+    app: auction
+    tier: data
+    type: nosqlServer
+    impl: cassandra

@@ -55,13 +55,13 @@ our %serviceImpls = (
 	'webServer'   => [ 'nginx' ],
 	'appServer'   => [ 'tomcat' ],
 	'auctionBidServer'   => [ 'auctionbidservice' ],
+	'nosqlServer' => ['cassandra'],
 	'dbServer'    => [ 'postgresql' ],
-	'nosqlServer' => ['mongodb'],
 	'msgServer'   => ['rabbitmq'],
 );
 
 our @virtualInfrastructureTypes = ('vsphere');
-our @imageStoreTypes            = ('memory', 'mongodb' );
+our @imageStoreTypes            = ( 'memory', 'cassandra' );
 our @oses                  = ('centos6', 'ubuntu');
 our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');

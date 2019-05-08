@@ -443,6 +443,14 @@ sub checkSizeAndTruncate {
 #	}
 	
 }
+sub clearDataBeforeStart {
+	my ( $self, $logPath ) = @_;
+}
+
+sub clearDataAfterStart {
+	my ( $self, $logPath ) = @_;
+}
+
 
 
 #-------------------------------

@@ -33,7 +33,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.vmware.weathervane.auction.data.dao.AuctionDao;
 import com.vmware.weathervane.auction.data.dao.AuctionMgmtDao;
-import com.vmware.weathervane.auction.data.dao.BidCompletionDelayDao;
 import com.vmware.weathervane.auction.data.dao.DbBenchmarkInfoDao;
 import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
@@ -45,14 +44,12 @@ import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.DbBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
-import com.vmware.weathervane.auction.data.repository.NosqlBenchmarkInfoRepository;
+import com.vmware.weathervane.auction.data.repository.event.NosqlBenchmarkInfoRepository;
 
 public class DBPrep {
 
 	private static String numThreadsDefault = "30";
 	private static String maxUsersDefault = "120";
-	private static String numNosqlShardsDefault = "0";
-	private static String numNosqlReplicasDefault = "0";
 	private static List<Thread> threadList = new ArrayList<Thread>();
 
 	private static ImageStoreFacade imageStore;
@@ -61,7 +58,6 @@ public class DBPrep {
 	private static ItemDao itemDao;
 	private static HighBidDao highBidDao;
 	private static AuctionMgmtDao auctionMgmtDao;
-	private static BidCompletionDelayDao bidCompletionDelayDao;
 	private static FixedTimeOffsetDao fixedTimeOffsetDao;
 
 	private static final Logger logger = LoggerFactory.getLogger(DBPrep.class);
@@ -76,10 +72,6 @@ public class DBPrep {
 
 		Option u = new Option("u", "users", true,
 				"Number of active users to be supported in this run.");
-		Option m = new Option("m", "shards", true,
-				"Number of NoSQL shards in the configuration. This is used only for storing in the benchmarkInfo");
-		Option p = new Option("p", "replicas", true,
-				"Number of NoSQL replicas in the configuration. This is used only for storing in the benchmarkInfo");
 		Option c = new Option("c", "check", false,
 				"Only check whether the database is loaded with the proper number of users and then exit.");
 		Option a = new Option("a", "auctions", true,
@@ -89,8 +81,6 @@ public class DBPrep {
 
 		Options cliOptions = new Options();
 		cliOptions.addOption(u);
-		cliOptions.addOption(m);
-		cliOptions.addOption(p);
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
 		cliOptions.addOption(t);
@@ -102,7 +92,7 @@ public class DBPrep {
 		} catch (ParseException ex) {
 			imageStore.stopServiceThreads();
 			System.err.println("DBPrep.  Caught ParseException " + ex.getMessage());
-			return;
+			System.exit(1);
 		}
 
 		String auctionsString = cliCmd.getOptionValue('a');
@@ -110,12 +100,6 @@ public class DBPrep {
 
 		String usersString = cliCmd.getOptionValue('u', maxUsersDefault);
 		int users = Integer.valueOf(usersString);
-
-		String numNosqlShardsString = cliCmd.getOptionValue('m', numNosqlShardsDefault);
-		int numNosqlShards = Integer.valueOf(numNosqlShardsString);
-
-		String numNosqlReplicasString = cliCmd.getOptionValue('p', numNosqlReplicasDefault);
-		int numNosqlReplicas = Integer.valueOf(numNosqlReplicasString);
 
 		int numAuctions = Integer.valueOf(auctionsString);
 		long numThreads = Long.valueOf(numThreadsString);
@@ -128,17 +112,18 @@ public class DBPrep {
 			throw new RuntimeException("The spring.profiles.active property must be set for DBPrep");
 		}
 		String imageStoreType;
-		if (springProfilesActive.contains("Mongo")) {
-			imageStoreType = "mongodb";
+		if (springProfilesActive.contains("Memory")) {
+			imageStoreType = "memory";
+		} else if (springProfilesActive.contains("Cassandra")) {
+			imageStoreType = "cassandra";
 		} else {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
-					"The spring.profiles.active property be imagesInMongo for DBPrep.");
+					"The spring.profiles.active property be either imagesInCassandra or imagesInMemory for DBPrep.");
 		}
 
 		ApplicationContext context = new ClassPathXmlApplicationContext(new String[] {
-				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml",
-				"mongo-context.xml" });
+				"dbprep-context.xml", "datasource-context.xml", "jpa-context.xml", "cassandra-context.xml" });
 		imageStore = (ImageStoreFacade) context.getBean("imageStoreFacade");
 		NosqlBenchmarkInfoRepository nosqlBenchmarkInfoRepository = (NosqlBenchmarkInfoRepository) context
 				.getBean("nosqlBenchmarkInfoRepository");
@@ -148,7 +133,6 @@ public class DBPrep {
 		itemDao = (ItemDao) context.getBean("itemDao");
 		highBidDao = (HighBidDao) context.getBean("highBidDao");
 		auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
-		bidCompletionDelayDao = (BidCompletionDelayDao) context.getBean("bidCompletionDelayDao");
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
 
 		/*
@@ -178,19 +162,6 @@ public class DBPrep {
 								+ imageStoreType + ", Found " + dbBenchmarkInfo.getImagestoretype()
 								+ ", Make sure that correct data is loaded.");
 			}
-			if (!dbBenchmarkInfo.getNumnosqlshards().equals(Long.valueOf(numNosqlShards))) {
-				throw new RuntimeException(
-						"Number of shards in NoSQL datastore does not match current configuration in database.  Needed "
-								+ numNosqlShards + ", Found " + dbBenchmarkInfo.getNumnosqlshards()
-								+ ". Make sure that correct data is loaded.");
-			}
-			if (!dbBenchmarkInfo.getNumnosqlreplicas().equals(Long.valueOf(numNosqlReplicas))) {
-				throw new RuntimeException(
-						"Number of replicas in NoSQL datastore does not match current configuration in database.  Needed "
-								+ numNosqlReplicas + ", Found "
-								+ dbBenchmarkInfo.getNumnosqlreplicas()
-								+ ". Make sure that correct data is loaded.");
-			}
 		} finally {
 			imageStore.stopServiceThreads();
 		}
@@ -199,7 +170,7 @@ public class DBPrep {
 		 * Make sure that NoSQL store is loaded at correctly
 		 */
 		logger.debug("Checking whether NoSQL Data-Store has benchmark info");
-		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = nosqlBenchmarkInfoRepository.findAll();
+		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = (List<NosqlBenchmarkInfo>) nosqlBenchmarkInfoRepository.findAll();
 		if ((nosqlBenchmarkInfoList == null) || (nosqlBenchmarkInfoList.size() < 1)) {
 			imageStore.stopServiceThreads();
 			throw new RuntimeException(
@@ -214,22 +185,6 @@ public class DBPrep {
 			throw new RuntimeException(
 					"MaxUsers supported by NoSQL datastore does not match desired number of users   Users =  "
 							+ users + ", Found " + infoMaxUsers
-							+ ". Make sure that correct data is loaded.");
-		}
-		
-		if (!nosqlBenchmarkInfo.getNumShards().equals(numNosqlShards)) {
-			imageStore.stopServiceThreads();
-			throw new RuntimeException(
-					"Number of shards in NoSQL datastore does not match current configuration.  Needed "
-							+ numNosqlShards + ", Found " + nosqlBenchmarkInfo.getNumShards()
-							+ ". Make sure that correct data is loaded.");
-		}
-
-		if (!nosqlBenchmarkInfo.getNumReplicas().equals(numNosqlReplicas)) {
-			imageStore.stopServiceThreads();
-			throw new RuntimeException(
-					"Number of replicas in NoSQL datastore does not match current configuration.  Needed "
-							+ numNosqlReplicas + ", Found " + nosqlBenchmarkInfo.getNumReplicas()
 							+ ". Make sure that correct data is loaded.");
 		}
 
@@ -277,7 +232,7 @@ public class DBPrep {
 		if (cliCmd.hasOption("c")) {
 			logger.info("Benchmark is loaded correctly. Exiting cleanly.");
 			imageStore.stopServiceThreads();
-			return;
+			System.exit(0);
 		}
 
 		/*
@@ -285,12 +240,6 @@ public class DBPrep {
 		 */
 		logger.debug("Clearing non-preloaded images");
 		imageStore.clearNonpreloadedImages();
-
-		/*
-		 * Clear out the bidCompletionDelay table
-		 */
-		logger.info("Clear out the bidCompletionDelay table\n");
-		bidCompletionDelayDao.deleteAll();
 
 		/*
 		 * Reset the data on all auctions that could be current in a run and
@@ -390,5 +339,6 @@ public class DBPrep {
 
 		fixedTimeOffsetDao.deleteAll();
 
+		System.exit(0);
 	}
 }

@@ -55,10 +55,6 @@ sub startDataManagerContainer {
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
 
-	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	my $nosqlServerRef = $nosqlServersRef->[0];
-	my $numNosqlShards = $nosqlServerRef->numNosqlShards;
-	my $numNosqlReplicas = $nosqlServerRef->numNosqlReplicas;
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
@@ -80,12 +76,6 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /APPINSTANCENUM:/ ) {
 			print FILEOUT "  APPINSTANCENUM: \"$appInstanceNum\"\n";
-		}
-		elsif ( $inline =~ /NUMNOSQLSHARDS:/ ) {
-			print FILEOUT "  NUMNOSQLSHARDS: \"$numNosqlShards\"\n";
-		}
-		elsif ( $inline =~ /NUMNOSQLREPLICAS:/ ) {
-			print FILEOUT "  NUMNOSQLREPLICAS: \"$numNosqlReplicas\"\n";
 		}
 		elsif ( $inline =~ /SPRINGPROFILESACTIVE:/ ) {
 			print FILEOUT "  SPRINGPROFILESACTIVE: \"$springProfilesActive\"\n";
@@ -231,15 +221,6 @@ sub prepareData {
 		return 0;
 	}
 
-#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-#	my $nosqlServerRef = $nosqlServersRef->[0];
-#	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-#		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $logHandle );
-#	}
-
 	# stop the auctiondatamanager container
 	$self->stopDataManagerContainer($logHandle);
 
@@ -266,247 +247,8 @@ sub pretouchData {
 		return 0;
 	};
 
-	my @pids            = ();
-	if ( $self->getParamValue('mongodbTouch') ) {
-
-		my $cmdString;
-		my $cmdout;
-		my $pid;
-		if ( $self->getParamValue('mongodbTouchFull') ) {
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imageFull collection to preload data and indexes\n";
-				$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imageFull.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionFullImages", $namespace);
-				print $logHandle $cmdout;
-				$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imageFull.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionFullImages", $namespace);
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-		}
-
-		if ( $self->getParamValue('mongodbTouchPreview') ) {
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				print $logHandle "Touching imagePreview collection to preload data and indexes\n";
-				$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imagePreview.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionPreviewImages", $namespace);
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-			$pid = fork();
-			if ( !defined $pid ) {
-				$console_logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imagePreview.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionPreviewImages", $namespace);
-				print $logHandle $cmdout;
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-		}
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			print $logHandle "Touching imageThumbnail collection to preload data and indexes\n";
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imageThumbnail.find({'imageid' : {\$gt : 0}}, {'image' : 0}).count()' auctionThumbnailImages", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo  --eval 'db.imageThumbnail.find({'_id' : {\$ne : 0}}, {'image' : 0}).count()' auctionThumbnailImages", $namespace);
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			print $logHandle "Touching imageInfo collection to preload data and indexes\n";
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imageInfo.find({'filepath' : {\$ne : \"\"}}).count()' imageInfo", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.imageInfo.find({'_id' : {\$ne : 0}}).count()' imageInfo", $namespace);
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			print $logHandle "Touching attendanceRecord collection to preload data and indexes\n";
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.attendanceRecord.find({'_id' : {\$ne : 0}}).count()' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'timestamp' : {\$gt:ISODate(\"2000-01-01\")}}).count()' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.attendanceRecord.find({'userId' : {\$gt : 0}, 'auctionId' : {\$gt: 0 }, 'state' :{\$ne : \"\"} }).count()' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.attendanceRecord.find({'auctionId' : {\$gt : 0}}).count()' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			print $logHandle "Touching bid collection to preload data and indexes\n";
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.bid.find({'_id' : {\$ne : 0}}).count()' bid", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-		$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, 'bidTime' : {\$gt:ISODate(\"2000-01-01\")}}).count()' bid", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.bid.find({'bidderId' : {\$gt : 0}, '_id' : {\$ne: 0 }}).count()' bid", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-
-		$pid = fork();
-		if ( !defined $pid ) {
-			$console_logger->error("Couldn't fork a process: $!");
-			exit(-1);
-		}
-		elsif ( $pid == 0 ) {
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'db.bid.find({'itemid' : {\$gt : 0}}).count()' bid", $namespace);
-			print $logHandle $cmdout;
-			exit;
-		}
-		else {
-			push @pids, $pid;
-		}
-	}
-
-	foreach my $pid (@pids) {
-		waitpid $pid, 0;
-	}
-
+	# ToDo: Pretouch cassandra here or in datamanager container
+	
 	$logger->debug( "pretouchData complete for workload ", $workloadNum );
 
 	close $logHandle;
@@ -575,15 +317,6 @@ sub loadData {
    	close $pipe;	
 	close $applog;
 	
-#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-#	my $nosqlServerRef = $nosqlServersRef->[0];
-#	if (   ( $nosqlServerRef->numNosqlReplicas > 0 )
-#		&& ( $nosqlServerRef->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $applog );
-#	}
-
 	close $applog;
 
 	# Now make sure that the data is really loaded properly
@@ -668,72 +401,8 @@ sub cleanData {
 		return 0;
 	}
 	
-#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-#	my $nosqlService = $nosqlServersRef->[0];
-#	if (   ( $nosqlService->numNosqlReplicas > 0 )
-#		&& ( $nosqlService->numNosqlShards == 0 ) )
-#	{
-#		$console_logger->info("Waiting for MongoDB Replicas to finish synchronizing.");
-#		waitForMongodbReplicaSync( $self, $logHandle );
-#	}
-
-	if ( $self->getParamValue('mongodbCompact') ) {
-
-		# Compact all mongodb collections
-			print $logHandle "Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum.\n";
-			$logger->debug(
-				"cleanData. Compacting MongoDB collections for appInstance $appInstanceNum of workload $workloadNum. "	);
-
-			$logger->debug(
-				"cleanData. Compacting attendanceRecord collection for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-
-			my $cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"attendanceRecord\" }))' attendanceRecord", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting bid collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"bid\" }))' bid", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageInfo collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageInfo\" }))' imageInfo", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageFull collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageFull\" }))' auctionFullImages", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imagePreview collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imagePreview\" }))' auctionPreviewImages", $namespace);
-			print $logHandle $cmdout;
-
-			$logger->debug(
-				"cleanData. Compacting imageThumbnail collection  for workload ",
-				$workloadNum, " appInstance ",
-				$appInstanceNum
-			);
-			$cmdout = $cluster->kubernetesExecOne("mongodb", "mongo --eval 'printjson(db.runCommand({ compact: \"imageThumbnail\" }))' auctionThumbnailImages", $namespace);
-			print $logHandle $cmdout;
-
-	}
+	# ToDo: Compact cassandra is not done by dataManager container
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 }
 
 __PACKAGE__->meta->make_immutable;

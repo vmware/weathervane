@@ -64,7 +64,6 @@ override 'stop' => sub {
 	my $cluster = $self->host;
 	
 	$cluster->kubernetesDeleteAllWithLabel("type=$serviceType", $self->namespace);
-	$cluster->kubernetesDeleteAllWithLabelAndResourceType("type=$serviceType", "configmap", $self->namespace);
 	close $log;
 };
 

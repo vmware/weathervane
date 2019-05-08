@@ -1,4 +1,4 @@
-FROM hrosenbe/weathervane-centos7:1.2.0
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY entrypoint.sh /entrypoint.sh

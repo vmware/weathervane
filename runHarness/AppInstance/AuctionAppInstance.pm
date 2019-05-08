@@ -203,7 +203,7 @@ override 'checkConfig' => sub {
 			next;
 		}
 		my $hostname = $host->name;
-		if ( $hostname ~~ @cassandraHosts ) ) {
+		if ( $hostname ~~ @cassandraHosts ) {
 			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: When using more than one nosqlServer (Cassandra) nodes, each must run on a different Docker host.");
 			return 0;
 		} else {

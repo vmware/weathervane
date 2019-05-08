@@ -6,11 +6,11 @@ use POSIX;
 my $clearBeforeStart = $ENV{'CLEARBEFORESTART'};
 my $seeds = $ENV{'CASSANDRA_SEEDS'};
 my $clusterName  = $ENV{'CASSANDRA_CLUSTER_NAME'};
-my $hostname = $ENV{'CASSANDRA_HOSTNAME'};
-if (!$hostname) {
-	$hostname = `hostname`;
-	chomp($hostname);
+my $hostname = `hostname`;
+if ($ENV{'CASSANDRA_USE_IP'}) {
+	$hostname = `hostname -i`;
 }
+chomp($hostname);
 
 print "configure cassandra. \n";
 

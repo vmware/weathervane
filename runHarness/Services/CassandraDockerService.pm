@@ -108,7 +108,7 @@ sub create {
 	}
 
 	my %envVarMap;
-	$envVarMap{"CASSANDRA_HOSTNAME"}     = $hostname;
+	$envVarMap{"CASSANDRA_USE_IP"}     = 1;
 	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
 	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 

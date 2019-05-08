@@ -595,9 +595,15 @@ sub dockerGetLogs {
 	$logger->debug("name = $name");
 	
 	my $dockerHostString  = $self->dockerHostString;
+	my $maxLogLines = $self->getParamValue('maxLogLines');
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
-		my $out = `$dockerHostString docker logs $name 2>&1`;
+		my $out;
+		if ($maxLogLines > 0) {
+			$out = `$dockerHostString docker logs --tail $maxLogLines $name 2>&1`;
+		} else {
+			$out = `$dockerHostString docker logs $name 2>&1`;
+		}
 		return $out;
 	}
 	return "";
@@ -688,11 +694,13 @@ sub dockerGetNetwork {
 
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
+	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;	
 	my $out;
 	if ($self->getParamValue('vicHost')) {
 		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name 2>&1`;			
 	} else {
+		$logger->debug("dockerGetIp: Getting ip address for container $name on host " . $self->name);
 		$out = `$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name 2>&1`;
 	}
 	chomp($out);
@@ -730,7 +738,7 @@ sub dockerExec {
 }
 
 sub dockerCopyTo {
-	my ( $self, $logFileHandle, $name, $sourceFile, $destFile ) = @_;
+	my ( $self, $name, $sourceFile, $destFile ) = @_;
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	
 	my $dockerHostString  = $self->dockerHostString;
@@ -738,9 +746,7 @@ sub dockerCopyTo {
 	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile 2>&1";
 	my $out = `$cmdString`;
 	$logger->debug("$cmdString");
-	print $logFileHandle "$cmdString\n";
 	$logger->debug("docker cp output: $out");
-	print $logFileHandle "$out\n";
 	
 	return $out;
 }

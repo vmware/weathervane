@@ -71,4 +71,8 @@ public interface AuctioneerTx {
 
 	HighBid makeForwardProgress(HighBid highBid);
 
+	void resetItems(Long auctionId);
+
+	void deleteHighbids(Long auctionId);
+
 }

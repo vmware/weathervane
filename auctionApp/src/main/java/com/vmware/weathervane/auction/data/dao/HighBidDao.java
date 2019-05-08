@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.data.dao;
 import java.util.Date;
 import java.util.List;
 
+import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Item;
 
@@ -52,5 +53,7 @@ public interface HighBidDao extends GenericDao<HighBid, Long> {
 	HighBid getActiveHighBid(Long auctionId);
 
 	List<HighBid> findByAuctionId(Long auctionId);
+
+	int deleteByAuction(Auction auction);
 
 }

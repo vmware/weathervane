@@ -54,9 +54,6 @@ sub startDataManagerContainer {
 	my $configDir = $self->getParamValue('configDir');
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
-	my $maxDuration = $self->getParamValue('maxDuration');
-	my $totalTime =
-	  $self->getParamValue('rampUp') + $self->getParamValue('steadyState') + $self->getParamValue('rampDown');
 
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	my $nosqlServerRef = $nosqlServersRef->[0];
@@ -92,9 +89,6 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /SPRINGPROFILESACTIVE:/ ) {
 			print FILEOUT "  SPRINGPROFILESACTIVE: \"$springProfilesActive\"\n";
-		}
-		elsif ( $inline =~ /MAXDURATION:/ ) {
-			print FILEOUT "  MAXDURATION: \"" . max( $maxDuration, $totalTime ) . "\"\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

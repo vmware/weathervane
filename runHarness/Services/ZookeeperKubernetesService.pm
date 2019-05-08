@@ -49,6 +49,14 @@ sub configure {
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
 	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
+	my $servers = "";
+	for (my $i = 0; $i < $numReplicas; $i++) {
+		my $serverNum = $i + 1;
+		$servers .= "server.${serverNum}=zookeeper-${i}.zookeeper:2888:3888";
+		if ($serverNum < $numReplicas) {
+			$servers .= ",";
+		}
+	}
 
 	open( FILEIN,  "$configDir/kubernetes/zookeeper.yaml" ) or die "$configDir/kubernetes/zookeeper.yaml: $!\n";
 	open( FILEOUT, ">/tmp/zookeeper-$namespace.yaml" )             or die "Can't open file /tmp/zookeeper-$namespace.yaml: $!\n";
@@ -68,6 +76,9 @@ sub configure {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		elsif ( $inline =~ /ZK_SERVERS:/ ) {
+			print FILEOUT "  ZK_SERVERS: \"$servers\"\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";

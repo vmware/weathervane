@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
@@ -50,17 +51,14 @@ import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade.ImageSize
 import com.vmware.weathervane.auction.data.model.AuctionMgmt;
 
 public class DBLoader {
+
 	private static String numThreadsDefault = "30";
 	private static String itemFileDefault = "items.json";
 	private static String creditLimitDefault = "1000000";
-	private static String maxDurationDefault = "0";
 	private static String maxUsersDefault = "120";
 	private static String numNosqlShardsDefault = "0";
 	private static String numNosqlReplicasDefault = "0";
 	private static String imageDirDefault = "images";
-
-	private static final double itemDuration = 8.5 * 60;
-	
 	private static List<Thread> threadList = new ArrayList<Thread>();
 
 	private static DbLoaderDao dbLoaderDao;
@@ -102,7 +100,6 @@ public class DBLoader {
 		Option e = new Option("e", "resetimages", false,
 				"If specified, reset (empty) the imageStore before loading images");
 		Option a = new Option("a", "message", true, "String to be included in messages from the dbLoader");
-		Option f = new Option("f", "maxduration", true, "Max duration in seconds to be supported by the data.");
 
 		Options cliOptions = new Options();
 		cliOptions.addOption(c);
@@ -117,7 +114,6 @@ public class DBLoader {
 		cliOptions.addOption(e);
 		cliOptions.addOption(b);
 		cliOptions.addOption(a);
-		cliOptions.addOption(f);
 
 		CommandLine cliCmd = null;
 		CommandLineParser cliParser = new PosixParser();
@@ -135,9 +131,6 @@ public class DBLoader {
 
 		String maxUsersString = cliCmd.getOptionValue('u', maxUsersDefault);
 		int maxUsers = Integer.valueOf(maxUsersString);
-
-		String maxDurationString = cliCmd.getOptionValue('f', maxDurationDefault);
-		long maxDuration = Long.valueOf(maxDurationString);
 
 		String numNosqlShardsString = cliCmd.getOptionValue('m', numNosqlShardsDefault);
 		int numNosqlShards = Integer.valueOf(numNosqlShardsString);
@@ -193,10 +186,6 @@ public class DBLoader {
 		theLoadParams = (DbLoadParams) context.getBean("perUserScale");
 		theLoadParams.setTotalUsers(maxUsers * theLoadParams.getUsersScaleFactor());
 		
-		if (maxDuration > 0) {
-			theLoadParams.setItemsPerCurrentAuction((int) Math.ceil(8 + (maxDuration / itemDuration)));
-		}
-		
 		/*
 		 * Compute the basic parameters for the LoadSpec sent to the
 		 * DBLoaderService
@@ -224,7 +213,6 @@ public class DBLoader {
 		theLoadSpec.setHistoryItemsPerAuction((int) Math.round(itemsPerAuction));
 		theLoadSpec.setFutureAuctionsPerDay(auctionsPerDay);
 		theLoadSpec.setFutureItemsPerAuction((int) Math.round(itemsPerAuction));
-		theLoadSpec.setItemsPerCurrentAuction(theLoadParams.getItemsPerCurrentAuction());
 		theLoadSpec.setMaxImagesPerCurrentItem(theLoadParams.getMaxImagesPerCurrentItem());
 		theLoadSpec.setMaxImagesPerFutureItem(theLoadParams.getMaxImagesPerFutureItem());
 		theLoadSpec.setMaxImagesPerHistoryItem(theLoadParams.getMaxImagesPerHistoryItem());
@@ -395,7 +383,8 @@ public class DBLoader {
 		logger.debug("numFutureItems = " + numFutureItems + ", workPerFutureItem = "
 				+ dbLoaderWorkEstimate.getFutureWork());
 
-		long numCurrentItems = numAuctions * theLoadSpec.getItemsPerCurrentAuction();
+		// 15 is the average number of items per current auction
+		long numCurrentItems = numAuctions * 15;
 		logger.debug("numCurrentItems = " + numCurrentItems + ", workPerCurrentItem = "
 				+ dbLoaderWorkEstimate.getCurrentWork());
 
@@ -686,7 +675,7 @@ public class DBLoader {
 		/*
 		 * Save information about this benchmark load in the data services
 		 */
-		dbLoaderDao.saveBenchmarkInfo(maxUsers, numNosqlShards, numNosqlReplicas, imageStoreType, maxDuration);
+		dbLoaderDao.saveBenchmarkInfo(maxUsers, numNosqlShards, numNosqlReplicas, imageStoreType);
 		
 		fixedTimeOffsetDao.deleteAll();
 

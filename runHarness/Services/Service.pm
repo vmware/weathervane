@@ -140,7 +140,7 @@ sub registerPortsWithHost {
 	
 	foreach my $key (keys %{$self->portMap}) {
 		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For service ", $self->getDockerName(), ", registering port $portNumber for key $key");
+		$logger->debug("For service ", $self->name, ", registering port $portNumber for key $key");
 		if ($portNumber) {
  			$self->host->registerPortNumber($portNumber, $self);
 		}				
@@ -153,7 +153,7 @@ sub unRegisterPortsWithHost {
 	
 	foreach my $key (keys %{$self->portMap}) {
 		my $portNumber = $self->portMap->{$key};
-		$logger->debug("For service ", $self->getDockerName(), ", unregistering port $portNumber for key $key");
+		$logger->debug("For service ", $self->name, ", unregistering port $portNumber for key $key");
 		if ($portNumber) {
  			$self->host->unRegisterPortNumber($portNumber);
 		}				
@@ -231,18 +231,18 @@ sub start {
 
 	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "Create " . $service->getDockerName() . "\n" );
+			$logger->debug( "Create " . $service->name . "\n" );
 			$service->create($logPath);
 		}
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Configure " . $service->getDockerName() . "\n" );
+		$logger->debug( "Configure " . $service->name . "\n" );
 		$service->configure( $logPath, $users, $suffix );
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Start " . $service->getDockerName() . "\n" );
+		$logger->debug( "Start " . $service->name . "\n" );
 		$service->startInstance($logPath);
 	}
 		
@@ -266,21 +266,21 @@ sub stop {
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "Stop " . $service->getDockerName() . "\n" );
+		$logger->debug( "Stop " . $service->name . "\n" );
 		$service->stopInstance( $logPath );
 	}
 
 	if ( $serviceType ~~ @$dockerServiceTypesRef ) {
 		foreach my $service (@$servicesRef) {
-			$logger->debug( "Remove " . $service->getDockerName() . "\n" );
+			$logger->debug( "Remove " . $service->name . "\n" );
 			$service->remove($logPath);
 		}
 	}
 
 	foreach my $service (@$servicesRef) {
-		$logger->debug( "CleanLogFiles " . $service->getDockerName() . "\n" );
+		$logger->debug( "CleanLogFiles " . $service->name . "\n" );
 		$service->cleanLogFiles();
-		$logger->debug( "CleanStatsFiles " . $service->getDockerName() . "\n" );
+		$logger->debug( "CleanStatsFiles " . $service->name . "\n" );
 		$service->cleanStatsFiles();
 	}
 	
@@ -342,12 +342,6 @@ sub isStopped {
 	return 1;
 }
 
-sub getDockerName {
-	my ($self) = @_;
-	
-	return $self->name;
-}
-
 sub getPort {
 	my ($self, $key) = @_;
 	return $self->portMap->{$key};
@@ -395,8 +389,9 @@ sub getHostnameForUsedService {
 	
 	if ($self->corunningDockerized($other)) 
 	{
-		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $other->host->dockerGetIp($other->name));
-		return $other->host->dockerGetIp($other->name);
+		my $ip = $other->host->dockerGetIp($other->name);
+		$logger->debug("getHostnameForUsedService: Corunning dockerized, returning " . $ip);
+		return $ip;
 	} else {
 		$logger->debug("getHostnameForUsedService: Not corunning dockerized, returning " . $other->host->name);
 		return $other->host->name;

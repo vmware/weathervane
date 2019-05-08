@@ -87,12 +87,6 @@ sub setWorkloadDriver {
 	$self->workloadDriver($driver);
 }
 
-sub getDockerName {
-	my ($self) = @_;
-	
-	return $self->name;
-}
-
 sub loadData {
 	die "Can only loadData for a concrete sub-class of DataManager";
 }

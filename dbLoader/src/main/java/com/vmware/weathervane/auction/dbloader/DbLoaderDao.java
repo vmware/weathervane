@@ -69,6 +69,9 @@ import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 public class DbLoaderDao {
 
 	private static final Logger logger = LoggerFactory.getLogger(DbLoaderDao.class);
+	private static Random random = new Random();
+	private static final int minItemsPerAuction = 10;
+	private static final int maxItemsPerAuction = 20;
 
 	@Inject
 	private AuctionDao auctionDao;
@@ -406,8 +409,8 @@ public class DbLoaderDao {
 		return imageSizes;
 	}
 
-	public void saveBenchmarkInfo(long maxUsers, int numNosqlShards, int numNosqlReplicas, 
-								String imageStoreType, Long maxDuration) {
+	public void saveBenchmarkInfo(long maxUsers, int numNosqlShards, 
+					int numNosqlReplicas, String imageStoreType) {
 
 		// Save the load info in the NoSQL Data store
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = new NosqlBenchmarkInfo();
@@ -423,7 +426,6 @@ public class DbLoaderDao {
 		dbBenchmarkInfo.setImagestoretype(imageStoreType);
 		dbBenchmarkInfo.setNumnosqlreplicas(new Long(numNosqlReplicas));
 		dbBenchmarkInfo.setNumnosqlshards(new Long(numNosqlShards));
-		dbBenchmarkInfo.setMaxduration(maxDuration);
 		dbBenchmarkInfoDao.save(dbBenchmarkInfo);
 
 		// Save the load info as a file in the image store
@@ -566,7 +568,12 @@ public class DbLoaderDao {
 		int numImages = dbLoadSpec.getMaxImagesPerCurrentItem();
 		ImageSize[] imageSizes = convertNumSizesToImageSizes(dbLoadSpec
 				.getNumImageSizesPerCurrentItem());
-		long numItems = dbLoadSpec.getItemsPerCurrentAuction();
+		/*
+		 *  The number of items per current auction is between 10 and 20. The
+		 *  number is randomized so that the auctions do not all run out of 
+		 *  items at the same time.
+		 */
+		long numItems = minItemsPerAuction + random.nextInt(maxItemsPerAuction - minItemsPerAuction + 1);
 
 		// Mock up some auctions
 		for (int i = 1; i <= numAuctions; i++) {

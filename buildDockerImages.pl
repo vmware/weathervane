@@ -256,6 +256,7 @@ if (!$private) {
 }
 
 foreach my $imageName (@imageNames) {
+	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;

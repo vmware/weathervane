@@ -65,12 +65,12 @@ sub parseConfigFile {
 			my $clusterConfigName = $clusterHashRef->{'kubernetesConfigFile'};
 			if (!$clusterConfigName) {
 				if ($clusterName) {
-					die "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName."										
+					die "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName.\n"										
 				} else {
-					die "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName."										
+					die "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName.\n"										
 				}
 			} elsif ((! -e $clusterConfigName) || (! -f $clusterConfigName)) {
-				die "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.";
+				die "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.\n";
 			}
 			push(@k8sConfigFiles, $clusterConfigName);
 		}
@@ -79,7 +79,7 @@ sub parseConfigFile {
 	# Get the dockernamespace
 	my $dockerNamespace = $paramConfig->{"dockerNamespace"};
 	if (!$dockerNamespace) {
-		die "You must specify the dockerNamespace parameter in configuration file $configFileName."										
+		die "You must specify the dockerNamespace parameter in configuration file $configFileName.\n"										
 	}
 	
 	my @return = (\@k8sConfigFiles, $dockerNamespace);
@@ -141,10 +141,10 @@ unless ( -e "./.accept-weathervane" ) {
 }
 
 if (!(-e $configFile)) {
-	die "The Weathervane configuration file $configFile does not exist.";
+	die "You must specify a valid configuration file using the configFile parameter.  The file $configFile does not exist.\n";
 }
 if (!(-f $configFile)) {
-	die "The Weathervane configuration file $configFile must not be a directory.";
+	die "The Weathervane configuration file $configFile must not be a directory.\n";
 }
 # If the configFile does not reference a file with an absolute path, 
 # then make it an absolute path relative to the local dir
@@ -163,7 +163,7 @@ if (!(-e $outputDir)) {
 	`mkdir -p $outputDir`;
 }
 if (!(-d $outputDir)) {
-	die "The Weathervane output directory $outputDir must be a directory.";
+	die "The Weathervane output directory $outputDir must be a directory.\n";
 }
 my $outputMountString = "-v $outputDir:/root/weathervane/output";
 
@@ -179,7 +179,7 @@ if ($tmpDir) {
 		`mkdir -p $tmpDir`;
 	}
 	if (!(-d $tmpDir)) {
-		die "The Weathervane tmp directory $tmpDir must be a directory.";
+		die "The Weathervane tmp directory $tmpDir must be a directory.\n";
 	}
 	$tmpMountString = "-v $tmpDir:/root/weathervane/tmpLog";
 }
@@ -224,7 +224,7 @@ my $dockerId = `$cmdString`;
 
 my $pipeString = "docker logs --follow weathervane |";
 my $pipePid = open my $driverPipe, "$pipeString"
-	  or die "Can't open docker logs pipe ($pipeString) : $!";
+	  or die "Can't open docker logs pipe ($pipeString) : $!\n";
 
 my $inline;
 while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {

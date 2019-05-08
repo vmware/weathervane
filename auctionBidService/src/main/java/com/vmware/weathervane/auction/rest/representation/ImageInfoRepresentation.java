@@ -56,10 +56,10 @@ public class ImageInfoRepresentation extends Representation implements Serializa
 		}
 
 		representation.setImagenum(theImageInfo.getImagenum());
-		representation.setId(theImageInfo.getId().toString());
+		representation.setId(theImageInfo.getKey().getImageId().toString());
 		representation.setImageFormat(theImageInfo.getFormat());
 		representation.setName(theImageInfo.getName());
-		representation.setItemId(theImageInfo.getEntityid());
+		representation.setItemId(theImageInfo.getKey().getEntityid());
 	}
 
 	/*
@@ -82,13 +82,12 @@ public class ImageInfoRepresentation extends Representation implements Serializa
 		}
 		
 		/*
-		 *  If the path to the image is empty, then create the REST url
-		 *  that the application will understand.
+		 *  Create the REST url that the application will understand.
 		 */
 		Map<String, String> replacements = new HashMap<String, String>();
 		// Link for READ image
-		replacements.put("itemId", Long.toString(theImageInfo.getEntityid()));
-		replacements.put("imageId", theImageInfo.getId().toString());
+		replacements.put("itemId", Long.toString(theImageInfo.getKey().getEntityid()));
+		replacements.put("imageId", theImageInfo.getKey().getImageId().toString());
 		itemImageLinks.put(RestAction.READ, replaceTokens(urlPath, replacements));
 
 		return itemImageLinks;

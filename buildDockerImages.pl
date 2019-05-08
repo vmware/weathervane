@@ -58,7 +58,7 @@ if (!$optionsSuccess) {
   die "Error for command line options.\n";
 }
 
-my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer mongodb nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
+my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer cassandra nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }

@@ -51,8 +51,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		mockitoVersion = "1.10.19"
 		postgreSQLJdbcVersion = "9.4.1212.jre7"
 		dbcpVersion = "1.4"
-		springDataMongoVersion = "1.10.9.RELEASE"
-		mongodbJavaDriverVersion = "3.2.1"
+		springDataCassandraVersion = "1.5.20.RELEASE"
 		javasimonVersion = "3.5.2"
 		curatorVersion = "2.11.0"
 		ehcacheVersion = "2.10.0"
@@ -73,8 +72,7 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		compile "org.springframework.security:spring-security-web:$orgSpringframeworkSecurityVersion"
 		compile "org.springframework.security:spring-security-taglibs:$orgSpringframeworkSecurityVersion"
 		compile "org.springframework.amqp:spring-rabbit:$orgSpringframeworkAmqpVersion"
-		compile "org.springframework.data:spring-data-mongodb:$springDataMongoVersion"
-		compile "org.mongodb:mongo-java-driver:$mongodbJavaDriverVersion"
+		compile "org.springframework.data:spring-data-cassandra:$springDataCassandraVersion"
 
 		compile "org.hibernate:hibernate-entitymanager:$orgHibernateVersion"
     	compile ("org.hibernate:hibernate-ehcache:$orgHibernateVersion") {
@@ -139,7 +137,8 @@ project(':auctionWeb') {
 		destinationDir = file("build/libs")
 	}
 	artifacts { archives tar }
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	     doLast{
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from tar.archivePath
@@ -152,6 +151,7 @@ project(':auctionWeb') {
 			into file("$rootDir/dist/")
 			rename ('auctionWeb-.*war', 'auctionWeb.war')			
 		}
+	    }
 	}
 	
 }
@@ -171,13 +171,15 @@ project(':auctionApp') {
 		testCompile "org.hamcrest:hamcrest-library:1.3"
 	}
 	
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	     doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from war.archivePath
 			into file("$rootDir/dist/")
 			rename ('auctionApp-.*war', 'auction.war')
 		}
+	    }
 	}			
 }
 
@@ -196,13 +198,15 @@ project(':auctionBidService') {
 		testCompile "org.hamcrest:hamcrest-library:1.3"
 	}
 	
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	     doLast{
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from war.archivePath
 			into file("$rootDir/dist/")
 			rename ('auctionBidService-.*war', 'auctionBidService.war')
 		}
+	    }
 	}			
 }
 
@@ -232,13 +236,15 @@ project(':auctionAppServerWarmer') {
 		}
 	}
 	
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	    doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from jar.archivePath
 			into file("$rootDir/dist/")
     		rename ('auctionAppServerWarmer-.*jar', 'auctionAppServerWarmer.jar')			 		
 		}
+	    }
 	}
 	
 }
@@ -260,7 +266,8 @@ project(':dbLoader') {
 		compile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
 	}
 	
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	   doLast {
 		copy {
 			into file("$rootDir/dist/dbLoaderLibs")
     		from configurations.runtime
@@ -270,6 +277,7 @@ project(':dbLoader') {
     		from jar.archivePath
     		rename ('dbLoader-.*jar', 'dbLoader.jar')			 		
 		}
+	   }
 	}
 		
 }
@@ -331,7 +339,8 @@ project(':workloadDriver') {
 		testCompile "junit:junit:$junitVersion"
 	}
 	
-	task release(dependsOn: build) << {
+	task release(dependsOn: build) {
+	     doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from jar.archivePath
@@ -349,13 +358,10 @@ project(':workloadDriver') {
 		copy {
 		   	into "$rootDir/dist/workloadDriverLibs"
     		from "$rootDir/workloadDriver/log4j.properties"
-		}	
+		}
+	    }
 	}
 		
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.11'
 }
 
 

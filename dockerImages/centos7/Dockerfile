@@ -1,5 +1,5 @@
 # centos 7 
-FROM centos:7.3.1611
+FROM centos:7.6.1810
 MAINTAINER Hal Rosenberg <hrosenbe@vmware.com>
 
 COPY sysctl.conf /etc/sysctl.conf

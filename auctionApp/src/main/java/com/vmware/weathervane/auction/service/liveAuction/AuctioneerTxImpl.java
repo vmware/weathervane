@@ -22,6 +22,7 @@ package com.vmware.weathervane.auction.service.liveAuction;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -240,11 +241,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setBidder(unsoldUser);
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
-		
-		/*
-		 * No persistent Bid entry for starting bids
-		 */
-		newHighBid.setBidId(null);		
+		newHighBid.setBidId(UUID.randomUUID());		
 		
 		nextItem.setHighbid(newHighBid);
 		
@@ -260,7 +257,6 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		
 		Calendar now = FixedOffsetCalendarFactory.getCalendar();
 		BidCompletionDelay delayRecord = new BidCompletionDelay();
-		delayRecord.setBidId(acceptedBid.getId());
 		delayRecord.setNumCompletedBids(numCompletedBids);
 		delayRecord.setTimestamp(now.getTime());
 		delayRecord.setBiddingState(acceptedBid.getBiddingState().name());
@@ -288,7 +284,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 
 		Long auctionId = theBid.getAuctionId();
 		Long itemId = theBid.getItemId();
-		Long bidderId = theBid.getBidderId();
+		Long bidderId = theBid.getKey().getBidderId();
 
 		/* 
 		 * Get the HighBid
@@ -301,9 +297,9 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		User theUser = userDao.get(bidderId);
 		if (theUser == null) {
 			logger.warn("PostNewBidTx: Attempt to post a bid for a nonexistant user with ID "
-					+ theBid.getBidderId());
+					+ theBid.getKey().getBidderId());
 			throw new InvalidStateException("Attempt to post a bid for a nonexistant user with ID "
-					+ theBid.getBidderId());
+					+ theBid.getKey().getBidderId());
 		}
 
 		// Determine the status of the new bid
@@ -325,10 +321,9 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 			curHighBid.setBidCount(curHighBid.getBidCount() + 1);
 			curHighBid.setAmount(theBid.getAmount());
 			curHighBid.setBidder(theUser);
-			curHighBid.setBidId(theBid.getId().toString());
+			curHighBid.setBidId(theBid.getId());
 			curHighBid.setState(HighBidState.OPEN);
-			curHighBid.setCurrentBidTime(theBid.getBidTime());
-
+			curHighBid.setCurrentBidTime(theBid.getKey().getBidTime());
 		}
 
 		return curHighBid;
@@ -449,12 +444,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setBidder(unsoldUser);
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
-		
-		
-		/*
-		 * No persistent Bid entry for starting bids
-		 */
-		newHighBid.setBidId(null);		
+		newHighBid.setBidId(UUID.randomUUID());		
 		
 		firstItem.setHighbid(newHighBid);
 		

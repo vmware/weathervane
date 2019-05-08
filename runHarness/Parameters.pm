@@ -2204,9 +2204,25 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"postgresqlDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"postgresqlLogVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlLogs",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"postgresqlLogVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "5GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2271,6 +2287,14 @@ $parameters{"mongodbDataStorageClass"} = {
 $parameters{"mongodbDataVolume"} = {
 	"type"      => "=s",
 	"default"   => "mongoData",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"mongodbDataVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "40GB",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

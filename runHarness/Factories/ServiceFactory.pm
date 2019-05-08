@@ -20,6 +20,7 @@ use Services::NginxDockerService;
 use Services::TomcatKubernetesService;
 use Services::TomcatDockerService;
 use Services::AuctionBidKubernetesService;
+use Services::AuctionBidDockerService;
 use Services::PostgresqlKubernetesService;
 use Services::PostgresqlDockerService;
 use Services::MongodbKubernetesService;
@@ -78,8 +79,10 @@ sub getServiceByType {
 				appInstance => $appInstance,
 				);
 		} else {
-			$console_logger->error("There is no Docker implementation for the AuctionBidServer, only Kubernetes");
-			exit(-1);
+				$service = AuctionBidDockerService->new(
+				paramHashRef => $paramHashRef,
+				appInstance => $appInstance,
+				);
 		}
 	}
 	elsif ( $serviceName eq "zookeeper" ) {

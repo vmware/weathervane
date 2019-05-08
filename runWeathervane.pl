@@ -39,36 +39,35 @@ GetOptions(	'accept!' => \$accept,
 my $wvCommandLineArgs = join(" ", @ARGV);
 
 sub usage {
-	print "runWeathervane.pl is used to run the Weathervane benchmark using the configuration specified in a configuration file.\n";
-	print "This script takes the following parameters:\n";
-	print "\tconfigFile: This is the configuration file used to control the Weathervane run.\n";
-	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
-	print "\t            the location of the file is assumed to be relative to the directory in which\n";
-	print "\t            this script was invoked.\n";
-	print "\t            For a description of the Weathervane configuration file, please see the \n";
-	print "\t            Weathervane User's Guide\n";
-	print "\t            default value: weathervane.config\n";
-	print "\toutputDir:  The directory in which to store the output from the Weathervane run.  You should\n";
-	print "\t            use the same directory for all runs. Output is only placed in this directory\n";
-	print "\t            at the end of a run.  The directory is created if it does not exist.\n";
-	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
-	print "\t            the location of the file is assumed to be relative to the directory in which\n";
-	print "\t            this script was invoked.\n";
-	print "\t            default value: output\n";
-	print "\ttmpDir:     The directory in which to store temporary output created during the run.\n";
-	print "\t            This information can be helpful when troubleshooting runs which do not complete\n";
-	print "\t            properly.  The directory is created if it does not exist.\n";
-	print "\t            If this parameter is not a fully-qualified file name starting with a \\ then\n";
-	print "\t            the location of the file is assumed to be relative to the directory in which\n";
-	print "\t            this script was invoked.\n";
-	print "\t            default value: None.  If no value is specified the temporary files are stored\n";
-	print "\t                           inside the Weathervane container.\n";
-	print "\accept:      Accepts the terms of the Weathervane license.  Useful when running this script\n";
-	print "\t            from another script.  Only needs to be specified on the first run in a given \n";
-	print "\t            directory.\n";
-	print "\t            default value: None.  If no value is specified the user is prompted to accept the\n";
-	print "\t                           license terms.\n";
-	print "\thelp:       Displays this text.\n";
+	print "\nThis script is used to run the Weathervane benchmark using the configuration specified in a configuration file.\n";
+	print "It script takes the following parameters:\n";
+	print "configFile: This is the configuration file used to control the Weathervane run.\n";
+	print "            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "            the location of the file is assumed to be relative to the directory in which\n";
+	print "            this script was invoked.\n";
+	print "            For a description of the Weathervane configuration file, please see the \n";
+	print "            Weathervane User's Guide\n";
+	print "            default value: weathervane.config\n";
+	print "outputDir:  The directory in which to store the output from the Weathervane run.  You should\n";
+	print "            use the same directory for all runs. Output is only placed in this directory\n";
+	print "            at the end of a run.  The directory is created if it does not exist.\n";
+	print "            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "            the location of the file is assumed to be relative to the directory in which\n";
+	print "            this script was invoked.\n";
+	print "            default value: output\n";
+	print "tmpDir:     The directory in which to store temporary output created during the run.\n";
+	print "            This information can be helpful when troubleshooting runs which do not complete\n";
+	print "            properly.  The directory is created if it does not exist.\n";
+	print "            If this parameter is not a fully-qualified file name starting with a \\ then\n";
+	print "            the location of the file is assumed to be relative to the directory in which\n";
+	print "            this script was invoked.\n";
+	print "            default value: None.  If no value is specified the temporary files are stored\n";
+	print "                           inside the Weathervane container.\n";
+	print "accept:     Accepts the terms of the Weathervane license.  Useful when running this script\n";
+	print "            from another script.  Only needs to be specified on the first run in a given directory.\n";
+	print "            default value: None.  If no value is specified the user is prompted to accept the\n";
+	print "                           license terms.\n";
+	print "help:       Displays this text.\n";
 }
 
 sub parseConfigFile {

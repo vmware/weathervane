@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
-import com.vmware.weathervane.auction.data.repository.ImageInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageInfoRepository;
 
 /**
  * 
@@ -45,7 +45,7 @@ public class ImageInfoCacheFacade {
 	public List<ImageInfo> getImageInfos(String entityType, Long entityId) {
 		setImageInfoMisses(getImageInfoMisses() + 1);
 		logger.info("getImageInfos entityType = " + entityType + ", entityId = " + entityId);
-		return imageInfoRepository.findByEntitytypeAndEntityid(entityType, entityId);
+		return imageInfoRepository.findByKeyEntityid(entityId);
 	}
 
 

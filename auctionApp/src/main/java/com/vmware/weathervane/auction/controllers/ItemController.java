@@ -23,6 +23,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -414,7 +415,7 @@ public class ItemController extends BaseController {
 	}
 	
 	@RequestMapping(value = "/{itemId}/image/{imageId}", method = RequestMethod.GET)
-	public HttpEntity<byte[]> getImageForItem(@PathVariable long itemId, @PathVariable String imageId,
+	public HttpEntity<byte[]> getImageForItem(@PathVariable long itemId, @PathVariable UUID imageId,
 			@RequestParam(value = "size", required = false) ImageStoreFacade.ImageSize size) throws IOException {
 		logger.debug("getImageForItem, itemId = " + itemId + ", imageId = " + imageId + ", size = " + size);
 
@@ -445,7 +446,7 @@ public class ItemController extends BaseController {
 	}
 
 	@RequestMapping(value = "/{itemId}/image/{imageId}/cacheable", method = RequestMethod.GET)
-	public HttpEntity<byte[]> getImageForItemCacheable(@PathVariable long itemId, @PathVariable String imageId,
+	public HttpEntity<byte[]> getImageForItemCacheable(@PathVariable long itemId, @PathVariable UUID imageId,
 			@RequestParam(value = "size", required = false) ImageStoreFacade.ImageSize size) throws IOException {
 		logger.debug("getImageForItem, itemId = " + itemId + ", imageId = " + imageId + ", size = " + size);
 

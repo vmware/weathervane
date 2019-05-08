@@ -28,22 +28,11 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 override 'initialize' => sub {
 	my ($self) = @_;
 
 	super();
 };
-
-sub setMongosDocker {
-	my ( $self, $mongosDockerName ) = @_;
-	$self->mongosDocker($mongosDockerName);
-}
 
 override 'create' => sub {
 	my ( $self, $logPath ) = @_;

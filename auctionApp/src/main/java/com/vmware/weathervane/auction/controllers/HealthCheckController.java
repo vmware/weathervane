@@ -17,6 +17,7 @@ package com.vmware.weathervane.auction.controllers;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -73,7 +74,7 @@ public class HealthCheckController extends BaseController {
 	 */
 	@PostConstruct
 	private void initializeObjectMapper() throws JsonParseException, JsonMappingException, IOException {
-		BidRepresentation aBid = objectMapper.readValue("{\"id\": \"unused\"}", BidRepresentation.class);
+		BidRepresentation aBid = objectMapper.readValue("{\"id\": \"" + UUID.randomUUID() + "\"}", BidRepresentation.class);
 		String jsonString = objectMapper.writeValueAsString(aBid);
 		logger.debug("Initialized BidRepresentation de/serializer: " + jsonString );
 		
@@ -81,7 +82,7 @@ public class HealthCheckController extends BaseController {
 		jsonString = objectMapper.writeValueAsString(anItem);
 		logger.debug("Initialized ItemRepresentation de/serializer: " + jsonString );
 		
-		AttendanceRecordRepresentation aRecord = objectMapper.readValue("{\"id\": \"unused\"}", AttendanceRecordRepresentation.class);
+		AttendanceRecordRepresentation aRecord = objectMapper.readValue("{\"auctionName\": \"unused\"}", AttendanceRecordRepresentation.class);
 		jsonString = objectMapper.writeValueAsString(aRecord);
 		logger.debug("Initialized AttendanceRecordRepresentation de/serializer: " + jsonString );
 		
@@ -102,13 +103,13 @@ public class HealthCheckController extends BaseController {
 		logger.debug("Initialized LoginResponse de/serializer: " + jsonString );
 
 		CollectionRepresentation<AttendanceRecordRepresentation>  aRecordCollection 
-			= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"unused\"}]}", 
+			= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"auctionName\": \"unused\"}]}", 
 					new TypeReference<CollectionRepresentation<AttendanceRecordRepresentation>>() { });
 		jsonString = objectMapper.writeValueAsString(aRecordCollection);
 		logger.debug("Initialized CollectionRepresentation<AttendanceRecordRepresentation> de/serializer: " + jsonString );
 		
 		CollectionRepresentation<BidRepresentation>  aBidCollection 
-		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"unused\"}]}", 
+		= objectMapper.readValue("{\"page\" : 1, \"results\" : [{\"id\": \"" + UUID.randomUUID() + "\"}]}", 
 				new TypeReference<CollectionRepresentation<BidRepresentation>>() { });
 		jsonString = objectMapper.writeValueAsString(aBidCollection);
 		logger.debug("Initialized CollectionRepresentation<BidRepresentation> de/serializer: " + jsonString );

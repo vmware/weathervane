@@ -22,7 +22,6 @@ fi
 
 pid="$!"
 
-
 if [ ! -e "/fifo" ]; then
 	mkfifo /fifo || exit
 fi

@@ -18,6 +18,7 @@ package com.vmware.weathervane.auction.service;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import com.vmware.weathervane.auction.data.imageStore.ImageQueueFullException;
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
@@ -47,11 +48,11 @@ public interface ItemService {
 
 	public ImageInfoRepresentation addImageForItem(Long itemId, byte[] imageBytes, String imageName) throws IOException, ImageQueueFullException;
 	
-	byte[] getThumbnailImageForItem(long itemId, String itemImageId);
+	byte[] getThumbnailImageForItem(long itemId, UUID itemImageId);
 
-	byte[] getPreviewImageForItem(long itemId, String itemImageId);
+	byte[] getPreviewImageForItem(long itemId, UUID itemImageId);
 
-	byte[] getFullImageForItem(long itemId, String itemImageId);
+	byte[] getFullImageForItem(long itemId, UUID itemImageId);
 
 	long getPreviewMisses();
 
@@ -59,7 +60,7 @@ public interface ItemService {
 
 	long getFullMisses();
 
-	byte[] getThumbnailImageForItemCacheable(long itemId, String itemImageId);
+	byte[] getThumbnailImageForItemCacheable(long itemId, UUID itemImageId);
 
 	List<ImageInfo> getImageInfosForItem(Long itemId);
 

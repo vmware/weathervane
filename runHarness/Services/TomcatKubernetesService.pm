@@ -28,12 +28,6 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'KubernetesService';
 
-has 'mongosDocker' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "",
-);
-
 override 'initialize' => sub {
 	my ($self) = @_;
 

@@ -190,7 +190,7 @@ if (dockerExists("weathervane")) {
 
 my $resultsFile = "$pwd/weathervaneResults.csv";
 
-my $retRef = parseConfigFiles($configFile);
+my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];
 my $dockerNamespace = $retRef->[1];
 

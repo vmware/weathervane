@@ -71,13 +71,6 @@ override 'start' => sub {
 	);
 
 	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
-
-	my $seeds = "";
-	foreach my $service (@$servicesRef) {
-		$seeds .= $self->host->name . ",";
-	}
-	chop($seeds);
-	
 	foreach my $service (@$servicesRef) {
 		$logger->debug( "Start " . $service->name . "\n" );
 		$service->create($logPath, $seeds);
@@ -86,7 +79,7 @@ override 'start' => sub {
 };
 
 sub create {
-	my ( $self, $logPath, $seeds ) = @_;
+	my ( $self, $logPath ) = @_;
 
 	my $name             = $self->name;
 	my $hostname         = $self->host->name;
@@ -107,10 +100,21 @@ sub create {
 		$volumeMap{"/data"} = $self->getParamValue('cassandraDataVolume');
 	}
 
+	my $servicesRef = $self->appInstance->getAllServicesByType($serviceType);
+
+	my $seeds = "";
+	foreach my $service (@$servicesRef) {
+		my $serviceHostname = $service->host->name;
+		if (!($serviceHostname eq $hostname)) {
+			$seeds .= $serviceHostname . ",";
+		}
+	}
+	chop($seeds);
+
 	my %envVarMap;
 	$envVarMap{"CASSANDRA_USE_IP"}     = 1;
 	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
-	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
+	$envVarMap{"CASSANDRA_DOCKER_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
 													. "i" . $self->appInstance->instanceNum;
 	 	

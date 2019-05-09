@@ -10,9 +10,9 @@ COPY rabbitmqadmin  /usr/local/bin/rabbitmqadmin
 RUN chmod +x /entrypoint.sh && \
 	chmod +x /usr/local/bin/rabbitmqadmin && \
 	chmod 600 /var/lib/rabbitmq/.erlang.cookie && \
-    rpm --import https://www.rabbitmq.com/rabbitmq-release-signing-key.asc && \
+    rpm --import https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc && \
 	yum install -y erlang && \
-    yum install -y https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.4/rabbitmq-server-3.7.4-1.el7.noarch.rpm && \
+    yum install -y https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.14/rabbitmq-server-3.7.14-1.el7.noarch.rpm && \
 	rabbitmq-plugins enable rabbitmq_management && \
   	yum -y clean all 
 

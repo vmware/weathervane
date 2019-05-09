@@ -104,15 +104,34 @@ sub createKubernetesCluster {
 	return $cluster;
 }
 
+# This method is used to create the DockerHost when a host is 
+# specified for a service but has not been previously created.
+sub createDockerHostFromName {
+	my ($hostname, $paramsHashRef, $runProcedureParamHashRef, $runProcedure, $nameToComputeResourceHashRef) = @_;
+	my $console_logger = get_logger("Console");
+	
+	my @instancesList = ({ "name" => $hostname,});
+    my $hostsParamHashRefs =
+  		Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, \@instancesList, "dockerHosts" );
+  	my $hostParamHashRef;
+  	if ($#{$hostsParamHashRefs >= 0}) {
+  		$hostParamHashRef = $hostsParamHashRefs->[0];
+  	} else {
+  		die("Error when trying to create internal structures for host $hostname\n");
+  	}
+
+	return createDockerHost($hostParamHashRef, $runProcedure, $nameToComputeResourceHashRef);
+}
+
 sub getAppInstanceHostOrCluster {
-	my ($instanceParamHashRef, $nameToComputeResourceHashRef) = @_;
+	my ($appInstanceParamHashRef, $nameToComputeResourceHashRef, $paramsHashRef, $runProcedureParamHashRef, $runProcedure) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane");
 
 	# Get the values for appInstanceHost and appInstanceCluster.
 	# There should not be values for both.
-	my $appInstanceHostname = $instanceParamHashRef->{"appInstanceHost"};
-	my $appInstanceClustername = $instanceParamHashRef->{"appInstanceCluster"};
+	my $appInstanceHostname = $appInstanceParamHashRef->{"appInstanceHost"};
+	my $appInstanceClustername = $appInstanceParamHashRef->{"appInstanceCluster"};
 	if ($appInstanceHostname && $appInstanceClustername) {
 		  $console_logger->error("Both appInstanceHost and appInstanceCluster were specified for an appInstance. You must specify only one.");
 		  exit(-1);
@@ -120,9 +139,9 @@ sub getAppInstanceHostOrCluster {
 	
 	if ($appInstanceHostname) {
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
-		  # ToDo: If the dockerHost was not specified then we should just create it with defaults
-		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but no DockerHost with that name was defined.");
-		  exit(-1);
+		  $logger->debug("Creating dockerHost $appInstanceHostname specified in appInstanceHost but not in dockerHosts.");
+		  return createDockerHostFromName($appInstanceHostname, $paramsHashRef, 
+		  		$runProcedureParamHashRef, $runProcedure, $nameToComputeResourceHashRef);
 		}
 		my $appInstanceHost = $nameToComputeResourceHashRef->{$appInstanceHostname};
 		if ((ref $appInstanceHost) eq "KubernetesCluster") {
@@ -149,7 +168,9 @@ sub getAppInstanceHostOrCluster {
 
 # Get the host to use for an Instance (driver, dataManager, service, etc) 
 sub getComputeResourceForInstance {
-	my ($instanceParamHashRef, $instanceNum, $serviceType, $nameToComputeResourceHashRef, $appInstanceHostOrCluster) = @_;
+	my ($instanceParamHashRef, $instanceNum, $serviceType, 
+		$nameToComputeResourceHashRef, $appInstanceHostOrCluster,
+		$paramsHashRef, $runProcedureParamHashRef, $runProcedure) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane");
 	
@@ -175,9 +196,9 @@ sub getComputeResourceForInstance {
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  # ToDo: If the dockerHost was not specified then we should just create it with defaults
-		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost with that name was defined.");
-		  exit(-1);
+		  $logger->debug("Creating dockerHost $hostname specified in ${serviceType}Hosts but not in dockerHosts.");
+		  return createDockerHostFromName($hostname, $paramsHashRef, 
+		  		$runProcedureParamHashRef, $runProcedure, $nameToComputeResourceHashRef);
 		}
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selected $hostname from ${serviceType}Hosts");
 		my $host = $nameToComputeResourceHashRef->{$hostname};
@@ -687,7 +708,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# Create the primary workload driver
-	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash, "");
+	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", 
+					\%nameToComputeResourceHash, "", 
+					$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
@@ -714,7 +737,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
-		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, "driver", \%nameToComputeResourceHash, "");
+		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, 
+												"driver", \%nameToComputeResourceHash, "",
+												$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
@@ -736,7 +761,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
 		}
-		my $appInstanceHostOrCluster = getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash);
+		my $appInstanceHostOrCluster = 
+			getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash, 
+										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
 		$appInstance->instanceNum($appInstanceNum);
 		$appInstance->workload($workload);
@@ -797,7 +824,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {
 				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
 				# Create the ComputeResource for the service
-				$host = getComputeResourceForInstance( $svcInstanceParamHashRef, $svcNum, $serviceType, \%nameToComputeResourceHash, $appInstanceHostOrCluster);
+				$host = getComputeResourceForInstance( $svcInstanceParamHashRef, $svcNum, 
+										$serviceType, \%nameToComputeResourceHash, $appInstanceHostOrCluster,
+											$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 				my $service =
 				  ServiceFactory->getServiceByType( $svcInstanceParamHashRef, $serviceType, $numScvInstances, $appInstance, $host );
 				$service->instanceNum($svcNum);
@@ -829,7 +858,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 	
 		
-		$host = getComputeResourceForInstance( $dataManagerParamHashRef, 1, "dataManager", \%nameToComputeResourceHash, $appInstanceHostOrCluster);
+		$host = getComputeResourceForInstance( $dataManagerParamHashRef, 1, "dataManager", 
+								\%nameToComputeResourceHash, $appInstanceHostOrCluster, 
+									$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $dataManager = DataManagerFactory->getDataManager( $dataManagerParamHashRef, $appInstance, $host );
 		$appInstance->setDataManager($dataManager);
 		$dataManager->setAppInstance($appInstance);

@@ -69,6 +69,7 @@ override 'create' => sub {
 	my $tomcatCatalinaBase = $self->getParamValue('bidServiceCatalinaBase');
 	my $maxIdle = ceil($self->getParamValue('auctionBidServerJdbcConnections') / 2);
 	my $nodeNum = $self->instanceNum;
+	my $users = $self->appInstance->getUsers();
 	my $maxConnections =
 	  ceil( $self->getParamValue('frontendConnectionMultiplier') *
 		  $users /

@@ -82,6 +82,23 @@ override 'create' => sub {
 	}
 	$envVarMap{'APPSERVERS'} = $appServersString;
 	
+	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
+	if ($numAuctionBidServers > 0) {
+		my $bidServersString = "";
+		my $bidServersRef  =$self->appInstance->getAllServicesByType('auctionBidServer');
+		my $cnt = 1;
+		foreach my $bidServer (@$bidServersRef) {
+			my $bidHostname = $self->getHostnameForUsedService($bidServer);
+			my $bidServerPort = $self->getPortNumberForUsedService($bidServer, "http");
+			$bidServersString .= "$bidHostname:$bidServerPort";
+			if ($cnt != (scalar @{ $bidServersRef }) ) {
+				$bidServersString .= ",";
+			}
+			$cnt++;
+		}
+		$envVarMap{'BIDSERVERS'} = $bidServersString;
+	}
+	
 	# Create the container
 	my %portMap;
 	my $directMap = 0;

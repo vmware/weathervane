@@ -114,7 +114,7 @@ sub createDockerHostFromName {
     my $hostsParamHashRefs =
   		Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, \@instancesList, "dockerHosts" );
   	my $hostParamHashRef;
-  	if ($#{$hostsParamHashRefs >= 0}) {
+  	if (@$hostsParamHashRefs) {
   		$hostParamHashRef = $hostsParamHashRefs->[0];
   	} else {
   		die("Error when trying to create internal structures for host $hostname\n");

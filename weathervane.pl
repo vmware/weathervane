@@ -129,6 +129,10 @@ sub getComputeResourceForInstance {
 		  exit(-1);
 		}
 		$appInstanceHost = $nameToComputeResourceHashRef->{$appInstanceHostname};
+		if ((ref $appInstanceHost) eq "KubernetesCluster") {
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but that host is a KubernetesCluster.");
+		  exit(-1);			
+		}
 	}
 	if ($appInstanceClustername) {
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceClustername} ) {
@@ -136,6 +140,10 @@ sub getComputeResourceForInstance {
 		  exit(-1);
 		}
 		$appInstanceCluster = $nameToComputeResourceHashRef->{$appInstanceClustername};
+		if ((ref $appInstanceCluster) eq "DockerHost") {
+		  $console_logger->error("Hostname $appInstanceClustername was specified for appInstanceCluster, but that host is a DockerHost.");
+		  exit(-1);			
+		}
 	}
 
 	# If the xxxServerHosts was defined for this serviceType, then use 
@@ -159,8 +167,14 @@ sub getComputeResourceForInstance {
 		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost with that name was defined.");
 		  exit(-1);
 		}
-		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selected $hostname from ${serviceType}Hosts");		
-		return $nameToComputeResourceHashRef->{$hostname};		
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selected $hostname from ${serviceType}Hosts");
+		my $host = $nameToComputeResourceHashRef->{$hostname};
+		if ((ref $host) eq "KubernetesCluster") {
+		  $console_logger->error("Hostname $hostname was specified for instance $instanceNum of type $serviceType, but that host is a KubernetesCluster.");
+		  exit(-1);			
+		}
+				
+		return $host;		
 	}
 	
 	# At this point we should use the value of appInstanceHost or appInstanceCluster.  

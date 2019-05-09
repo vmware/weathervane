@@ -145,19 +145,10 @@ sub dockerStopAndRemove {
 	my $dockerHostString  = $self->dockerHostString;
 	
 	if ($self->dockerExists($logFileHandle, $name)) {
-	print $logFileHandle "dockerStopAndRemove $name exists on" . $self->name .  "\n";
-		$logger->debug("name = $name, exists");
-		if ($self->dockerIsRunning($logFileHandle, $name)) {
-			print $logFileHandle "dockerStopAndRemove $name is running on" . $self->name .  "\n";
-			$logger->debug("name = $name, isRunning.  Stopping.");
-			my $out = `$dockerHostString docker stop $name`;
-			print $logFileHandle "$dockerHostString docker stop $name\n";
-			print $logFileHandle "$out\n";
-		}
-	
-		$logger->debug("name = $name, Removing.");
-		my $out = `$dockerHostString docker rm -f $name 2>&1`;
-		print $logFileHandle "$dockerHostString docker rm -f $name\n";
+		print $logFileHandle "dockerStopAndRemove $name exists on" . $self->name .  "\n";
+		$logger->debug("name = $name, exists, removing");
+		my $out = `$dockerHostString docker rm -vf $name 2>&1`;
+		print $logFileHandle "$dockerHostString docker rm -vf $name\n";
 		print $logFileHandle "$out\n";
 		$logger->debug("name = $name, Result of remove: $out");
 		print $logFileHandle "name = $name, Result of remove: $out\n";

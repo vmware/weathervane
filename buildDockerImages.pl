@@ -58,7 +58,7 @@ if (!$optionsSuccess) {
   die "Error for command line options.\n";
 }
 
-my @imageNames = qw(centos7 auctiondatamanager auctionworkloaddriver auctionappserverwarmer cassandra nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
+my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer cassandra nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -213,15 +213,13 @@ runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctiondatamanager
 
 # run harness
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/dist");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
 runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
 runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
-runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runharness/weathervane.pl");
 runAndLog($fileout, "cp ./version.txt ./dockerImages/runharness/version.txt");
 runAndLog($fileout, "cp -r ./runHarness ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "cp -r ./dist ./dockerImages/runharness/dist");
+runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runHarness/weathervane.pl");
 runAndLog($fileout, "cp -r ./configFiles ./dockerImages/runharness/configFiles");
 runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 
@@ -258,6 +256,7 @@ if (!$private) {
 }
 
 foreach my $imageName (@imageNames) {
+	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
@@ -289,7 +288,6 @@ runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverL
 runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
 runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/dist");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
 runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
 runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");

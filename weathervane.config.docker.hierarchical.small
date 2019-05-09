@@ -1,8 +1,5 @@
 {
-  # This is a temporary version of a docker config file.
-  # All app services run on a single host
-  # We can't use the fixed config sizes because the auctionBidServer does
-  # not run in Docker-only yet.
+
   "dockerNamespace" : "hrosenbe",
   "dockerHosts" : [
     { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
@@ -24,29 +21,12 @@
   "appInstances": [
     {
       "appInstanceHost" : "auctionAppHost",
-      "configurationSize": "custom",
-      "webServers" : [ {} ],
-      "webServerCpus" : "1",
-  	  "appServers" : [ {}, {}, {}, ],
-      "appServerCpus" : "1",
-  	  "auctionBidServers" : [],
-      "auctionBidServerCpus" : "1",
-  	  "msgServers" : [ {} ],
-      "msgServerCpus" : "1",
-      "coordinationServers" : [ {}, {}, {} ],
-      "fileServers" : [],
-      "nosqlServers" : [ {} ],
-      "nosqlServerCpus" : "1",
-      "dbServers" : [ {} ],
+      "configurationSize": "small",
 
       # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and cassandraData
       "postgresqlUseNamedVolumes" : true,
       "cassandraUseNamedVolumes" : true,
 
-      "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer",
-      "auctionBidServerJvmOpts" : "-Xmx6G -Xms6G -XX:+AlwaysPreTouch -XX:+PreserveFramePointer -XX:+UseG1GC",
-      "numAuctioneerThreads" : 4,
-    
     },
   ],
   

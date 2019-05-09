@@ -1,18 +1,5 @@
 {
   "dockerNamespace" : "hrosenbe",
-  "dockerHosts" : [
-    { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
-    { "name" : "AuctionDriver3" }, { "name" : "AuctionDriver4" }, 
-    { "name" : "AuctionDriver5" }, { "name" : "AuctionDriver6" }, 
-    { "name" : "AuctionDriver7" }, { "name" : "AuctionDriver8" }, 
-    { "name" : "AuctionApp1", }, { "name" : "AuctionApp2", },  
-    { "name" : "AuctionBid1", }, { "name" : "AuctionBid2", }, 
-    { "name" : "AuctionWeb1", }, 
-    { "name" : "AuctionCs1", }, { "name" : "AuctionCs2", }, { "name" : "AuctionCs3", }, 
-    { "name" : "AuctionMsg1", }, 
-    { "name" : "AuctionDb1", }, 
-    { "name" : "AuctionNosql1", }, 
-  ],
   
   "numDrivers": 8,
   "driverHosts" : [

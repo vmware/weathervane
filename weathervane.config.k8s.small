@@ -22,6 +22,7 @@
     "AuctionDriver5", "AuctionDriver6",
     "AuctionDriver7", "AuctionDriver8",
   ],
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
 
   "numAppInstances" : 1,
   "configurationSize": "small",

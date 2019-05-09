@@ -33,120 +33,30 @@ sub runAndLog {
 	close CMD;
 }
 
-sub setOS {
-
-	if ( -e "/etc/centos-release" ) {
-		my $release = `cat /etc/centos-release`;
-		if ( $release =~ /release 7/ ) {
-			return "centos7";
-		}
-		else {
-			die "The only distribution currently supported by this script is Centos 7/\n";
-		}
-	}
-	else {
-		die "The only distribution currently supported by this script is Centos 7/\n";
-	}
-}
-
-sub setServiceManager {
-	my ($os) = @_;
-
-	if ( $os eq "centos6" ) {
-		return "init";
-	}
-	elsif ( $os eq "centos7" ) {
-		return "systemd";
-	}
-	else {
-		die "Unsupported OS $os\n";
-	}
-}
-
-sub forceLicenseAccept {
-	open( my $fileout, "/root/weathervane/Notice.txt" ) or die "Can't open file /root/weathervane/Notice.txt: $!\n";
-	while (my $inline = <$fileout>) {
-		print $inline;
-	}
-	
-	print "Do you accept these terms and conditions (yes/no)? ";
-	my $answer = <STDIN>;
-	chomp($answer);
-	$answer = lc($answer);
-	while (($answer ne "yes") && ($answer ne "no")) {
-		print "Please answer yes or no: ";
-		$answer = <STDIN>;
-		chomp($answer);
-		$answer = lc($answer);
-	}
-	if ($answer eq "yes") {
-		open (my $file, ">/root/weathervane/.accept-autosetup") or die "Can't create file .accept-autosetup: $!\n";
-		close $file;
-	} else {
-		exit -1;		
-	}
-}
-
-unless (-e "/root/weathervane/.accept-autosetup") {
-	forceLicenseAccept();
-}
-
 my $cmdout;
 my $fileout;
 open( $fileout, ">autoSetup.log" ) or die "Can't open file autoSetup.log for writing: $!\n";
 
-my $os             = setOS();
-
-my $serviceManager = setServiceManager($os);
-
-print "Performing autoSetup for a $os host.\n";
-print $fileout "Performing autoSetup for a $os host.\n";
-runAndLog( $fileout, "setenforce 0" );
-
-print "Building Weathervane executables\n";
-runAndLog( $fileout, "./gradlew clean release" );
-
-runAndLog( $fileout, "yum install -y wget" );
-runAndLog( $fileout, "yum install -y curl" );
-runAndLog( $fileout, "yum install -y lynx" );
-
-print "Setting up various configuration files.  See autoSetup.log for details\n";
-print $fileout "Setting up various configuration files.  See autoSetup.log for details\n";
-runAndLog( $fileout, "cp configFiles/host/$os/sysctl.conf /etc/" );
-runAndLog( $fileout, "cp configFiles/host/$os/config /etc/selinux/" );
-runAndLog( $fileout, "cp configFiles/host/$os/login /etc/pam.d/login" );
-runAndLog( $fileout, "cp configFiles/host/$os/limits.conf /etc/security/limits.conf" );
-runAndLog( $fileout, "cp configFiles/host/$os/bashrc /root/.bashrc" );
-
 print "Installing Perl Modules\n";
 print $fileout "Installing Perl Modules\n";
 runAndLog( $fileout, "yum install -y perl-App-cpanminus" );
-runAndLog( $fileout, "cpanm YAML" );
-runAndLog( $fileout, "cpanm Config::Simple" );
-runAndLog( $fileout, "cpanm String::Util" );
-runAndLog( $fileout, "cpanm Statistics::Descriptive" );
-runAndLog( $fileout, "cpanm Moose" );
-runAndLog( $fileout, "service network restart" );
-runAndLog( $fileout, "cpanm MooseX::Storage" );
-runAndLog( $fileout, "cpanm Tie::IxHash" );
-runAndLog( $fileout, "cpanm MooseX::ClassAttribute" );
-runAndLog( $fileout, "cpanm MooseX::Types" );
-runAndLog( $fileout, "cpanm JSON" );
-runAndLog( $fileout, "cpanm Switch" );
-runAndLog( $fileout, "cpanm Log::Log4perl" );
-runAndLog( $fileout, "cpanm Log::Dispatch::File" );
-runAndLog( $fileout, "cpanm LWP" );
-runAndLog( $fileout, "service network restart" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org YAML" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Config::Simple" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org String::Util" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Statistics::Descriptive" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Moose" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org MooseX::Storage" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Tie::IxHash" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org MooseX::ClassAttribute" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org MooseX::Types" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org JSON" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Switch" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Log::Log4perl" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org Log::Dispatch::File" );
+runAndLog( $fileout, "cpanm -n --mirror http://cpan.cpantesters.org LWP" );
 
 close $fileout;
 
 print "AutoSetup Complete.\n";
-print "You still need to perform the following steps:\n";
-print "    - Reboot this VM.\n";
-print "    - Disable the sceensaver if you are running with a desktop manager.\n";
-print "    - Before cloning this VM, edit the file /etc/resolv.conf so\n";
-print "      that the IP address on the nameserver line is that of your primary driver.\n";
-print "    - Clone this VM as appropriate for your deployment\n";
-print "    - On the primary driver, edit the Weathervane configuration file as needed.\n";
 
 1;

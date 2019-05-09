@@ -38,5 +38,4 @@ RUN yum install -y perl-App-cpanminus && \
 	cpanm -n --mirror http://cpan.cpantesters.org Log::Dispatch::File && \
 	cpanm -n --mirror http://cpan.cpantesters.org LWP 
 
-
 ENTRYPOINT ["perl", "/root/weathervane/weathervane.pl"]

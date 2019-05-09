@@ -509,13 +509,6 @@ $parameters{"name"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"hostname"} = {
-	"type"      => "=s",
-	"default"   => "",
-	"parent"    => "",
-	"usageText" => "",
-	"showUsage" => 0,
-};
 
 $parameters{"runManager"} = {
 	"type"      => "hash",
@@ -612,6 +605,13 @@ $parameters{"driverHosts"} = {
 	"showUsage" => 0,
 };
 $parameters{"appInstanceHost"} = {
+	"type"      => "=s",
+	"default"   => {},
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appInstanceCluster"} = {
 	"type"      => "=s",
 	"default"   => {},
 	"parent"    => "appInstance",

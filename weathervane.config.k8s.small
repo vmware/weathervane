@@ -25,7 +25,7 @@
 
   "numAppInstances" : 1,
   "configurationSize": "small",
-  "appInstanceHost" : "appHost",
+  "appInstanceCluster" : "appHost",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",
   "postgresqlLogStorageClass" : "fast",

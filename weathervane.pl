@@ -109,68 +109,71 @@ sub getComputeResourceForInstance {
 	my ($instanceParamHashRef, $instanceNum, $serviceType, $nameToComputeResourceHashRef) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger = get_logger("Weathervane");
-
-	# Get the value of appInstanceHostName.  If it is defined and is a KubernetesCluster, then
-	# it is an error if the user specified either a hostname or xxxServerHosts
+	
+	# Get the values for appInstanceHost and appInstanceCluster.
+	# There should not be values for both.
 	my $appInstanceHostname = $instanceParamHashRef->{"appInstanceHost"};
+	my $appInstanceClustername = $instanceParamHashRef->{"appInstanceCluster"};
+	if ($appInstanceHostname && $appInstanceClustername) {
+		  $console_logger->error("Both appInstanceHost and appInstanceCluster were specified for an appInstance. You must specify only one.");
+		  exit(-1);
+	}
+	
+	# If appInstanceCluster is defined, then it is an error if the user specified either a hostname or xxxServerHosts
 	my $appInstanceHost = 0;
-	my $appInstanceK8s = 0;
+	my $appInstanceCluster = 0;
 	if ($appInstanceHostname) {
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
-		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but no DockerHost or KubernetesCluster with that name was defined.");
+		  # ToDo: If the dockerHost was not specified then we should just create it with defaults
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but no DockerHost with that name was defined.");
 		  exit(-1);
 		}
 		$appInstanceHost = $nameToComputeResourceHashRef->{$appInstanceHostname};
-		$appInstanceK8s = (ref $appInstanceHost) eq "KubernetesCluster";
 	}
-
-	# If the instance defines a hostname, then we must use that to find the host.
-	if ($instanceParamHashRef->{"hostname"}) {
-		my $hostname = $instanceParamHashRef->{"hostname"};
-		if ($appInstanceK8s) {
-		  $console_logger->error("Cannot specify a hostname for instance $instanceNum of type $serviceType when a KubernetesCluster is defined in appInstanceHost.\n" .
-		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
-		  exit(-1);			
-		}
-		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance $instanceNum of type $serviceType specified hostname $hostname, but no DockerHost or KubernetesCluster with that name was defined.");
+	if ($appInstanceClustername) {
+		if ( !exists $nameToComputeResourceHashRef->{$appInstanceClustername} ) {
+		  $console_logger->error("Cluster $appInstanceClustername was specified for appInstanceCluster, but no KubernetesCluster with that name was defined.");
 		  exit(-1);
 		}
-		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning host using user-specified hostname $hostname");
-		return $nameToComputeResourceHashRef->{$hostname};
+		$appInstanceCluster = $nameToComputeResourceHashRef->{$appInstanceClustername};
 	}
-	
+
 	# If the xxxServerHosts was defined for this serviceType, then use 
 	# the right host from that list as determined by the instanceNum.
 	# The assignment of host to instance wraps if the instanceNum is greater
 	# than the number of host names specified.
 	if ($instanceParamHashRef->{"${serviceType}Hosts"} && ($#{$instanceParamHashRef->{"${serviceType}Hosts"}} >= 0)) {
+		if ($appInstanceCluster) {
+		  $console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when appInstanceCluster is specified.\n" .
+		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
+		  exit(-1);			
+		}
+
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selecting host from ${serviceType}Hosts");
 		my $hostListRef = $instanceParamHashRef->{"${serviceType}Hosts"};
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
-		if ($appInstanceK8s) {
-		  $console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when a KubernetesCluster is defined in appInstanceHost.\n" .
-		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
-		  exit(-1);			
-		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
-		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost or KubernetesCluster with that name was defined.");
+		  # ToDo: If the dockerHost was not specified then we should just create it with defaults
+		  $console_logger->error("Instance $instanceNum of type $serviceType was assigned hostname $hostname from ${serviceType}Hosts, but no DockerHost with that name was defined.");
 		  exit(-1);
 		}
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selected $hostname from ${serviceType}Hosts");		
 		return $nameToComputeResourceHashRef->{$hostname};		
 	}
 	
-	# At this point we should use the value of appInstanceHost.  If it is not defined, then there is an error.
+	# At this point we should use the value of appInstanceHost or appInstanceCluster.  
+	# If neither is defined, then there is an error.
 	if ($appInstanceHost) {
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning appInstanceHost $appInstanceHostname");		
 		return $appInstanceHost;		
+	} elsif ($appInstanceCluster) {
+		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum returning appInstanceCluster $appInstanceClustername");		
+		return $appInstanceCluster;		
 	} else {
 		  $console_logger->error("Instance $instanceNum of type $serviceType does not have a hostname defined.\n" . 
-		     "You must specify the hostname by defining either appInstanceHost or ${serviceType}Hosts.\n" .
-		     "If using a custom configurationSize, you can also specify the host name using the hostname parameter for this instance");
+		     "You must specify the hostname by defining appInstanceCluster, appInstanceHost, or ${serviceType}Hosts.\n");
 		  exit(-1);	
 	}
 }

@@ -740,7 +740,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
 		$appInstance->instanceNum($appInstanceNum);
 		$appInstance->workload($workload);
-		$appInstance->host($appInstanceHost);
+		$appInstance->host($appInstanceHostOrCluster);
 		$appInstance->initialize();
 		push @appInstances, $appInstance;
 

@@ -1,4 +1,4 @@
-FROM namespace/weathervane-centos7:version
+FROM hrosenbe/weathervane-centos7:2.0.0
 MAINTAINER hrosenbe@vmware.com
 
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
@@ -23,20 +23,20 @@ RUN yum install -y perl-App-cpanminus && \
 	yum install -y kubectl && \
 	chmod -R 600 /root/.ssh && \
 	chmod +x /root/weathervane/weathervane.pl && \
-	cpanm YAML && \
-	cpanm Config::Simple && \
-	cpanm String::Util && \
-	cpanm Statistics::Descriptive && \
-	cpanm Moose && \
-	cpanm MooseX::Storage && \
-	cpanm Tie::IxHash && \
-	cpanm MooseX::ClassAttribute && \
-	cpanm MooseX::Types && \
-	cpanm JSON && \
-	cpanm Switch && \
-	cpanm Log::Log4perl && \
-	cpanm Log::Dispatch::File && \
-	cpanm LWP 
+	cpanm -n --mirror http://cpan.cpantesters.org YAML && \
+	cpanm -n --mirror http://cpan.cpantesters.org Config::Simple && \
+	cpanm -n --mirror http://cpan.cpantesters.org String::Util && \
+	cpanm -n --mirror http://cpan.cpantesters.org Statistics::Descriptive && \
+	cpanm -n --mirror http://cpan.cpantesters.org Moose && \
+	cpanm -n --mirror http://cpan.cpantesters.org MooseX::Storage && \
+	cpanm -n --mirror http://cpan.cpantesters.org Tie::IxHash && \
+	cpanm -n --mirror http://cpan.cpantesters.org MooseX::ClassAttribute && \
+	cpanm -n --mirror http://cpan.cpantesters.org MooseX::Types && \
+	cpanm -n --mirror http://cpan.cpantesters.org JSON && \
+	cpanm -n --mirror http://cpan.cpantesters.org Switch && \
+	cpanm -n --mirror http://cpan.cpantesters.org Log::Log4perl && \
+	cpanm -n --mirror http://cpan.cpantesters.org Log::Dispatch::File && \
+	cpanm -n --mirror http://cpan.cpantesters.org LWP 
 
 
 ENTRYPOINT ["perl", "/root/weathervane/weathervane.pl"]

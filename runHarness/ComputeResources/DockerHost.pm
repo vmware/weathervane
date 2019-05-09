@@ -75,7 +75,7 @@ sub dockerExists {
 	
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps -a");
 	if ($cmdFailed) {
-		die "dockerExists docker ps failed: $cmdFailed";
+		$logger->error("dockerExists docker ps failed: $cmdFailed");
 	}
 	print $logFileHandle "$dockerHostString docker ps -a\n";
 	print $logFileHandle "$out\n";
@@ -104,7 +104,7 @@ sub dockerIsRunning {
 	
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps");
 	if ($cmdFailed) {
-		die "dockerIsRunning docker ps failed: $cmdFailed";
+		$logger->error("dockerIsRunning docker ps failed: $cmdFailed");
 	}
 	if ($logFileHandle) {
 		print $logFileHandle "$dockerHostString docker ps\n";
@@ -140,7 +140,7 @@ sub dockerStop {
 	if ($self->dockerIsRunning($logFileHandle, $name)) {
 		my ($cmdFailed, $out) = runCmd("$dockerHostString docker stop -t 60 $name");
 		if ($cmdFailed) {
-			die "dockerStop docker stop failed: $cmdFailed";
+			$logger->error("dockerStop docker stop failed: $cmdFailed");
 		}
 		print $logFileHandle "$dockerHostString docker stop $name\n";
 		print $logFileHandle "$out\n";
@@ -160,7 +160,7 @@ sub dockerStopAndRemove {
 		$logger->debug("name = $name, exists, removing");
 		my ($cmdFailed, $out) = runCmd("$dockerHostString docker rm -vf $name");
 		if ($cmdFailed) {
-			die "dockerStopAndRemove failed: $cmdFailed";
+			$logger->error("dockerStopAndRemove failed: $cmdFailed");
 		}
 		print $logFileHandle "$dockerHostString docker rm -vf $name\n";
 		print $logFileHandle "$out\n";
@@ -180,7 +180,7 @@ sub dockerStart {
 	if (!$self->dockerIsRunning($logFileHandle, $name)) {
 		my ($cmdFailed, $out) = runCmd("$dockerHostString docker start $name");
 		if ($cmdFailed) {
-			die "dockerStart docker start failed: $cmdFailed";
+			$logger->error("dockerStart docker start failed: $cmdFailed");
 		}
 		print $logFileHandle "$dockerHostString docker start $name\n";
 		print $logFileHandle "$out\n";
@@ -205,7 +205,7 @@ sub dockerNetIsHostOrExternal {
 
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker network ls");
 	if ($cmdFailed) {
-		die "dockerNetIsHostOrExternal failed: $cmdFailed";
+		$logger->error("dockerNetIsHostOrExternal failed: $cmdFailed");
 	}
 	$logger->debug("output of docker network ls: $out");
 	my @lines = split /\n/, $out;	
@@ -228,12 +228,13 @@ sub dockerNetIsHostOrExternal {
 
 sub dockerPort {
 	my ( $self, $name) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my %portMap;
 
 	my $dockerHostString  = $self->dockerHostString;
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker port $name");
 	if ($cmdFailed) {
-		die "dockerPort failed: $cmdFailed";
+		$logger->error("dockerPort failed: $cmdFailed");
 	}
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
@@ -254,7 +255,7 @@ sub dockerKill {
 	
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker kill --signal $signal $name");
 	if ($cmdFailed) {
-		die "dockerKill failed: $cmdFailed";
+		$logger->error("dockerKill failed: $cmdFailed");
 	}
 	print $logFileHandle "$dockerHostString docker kill --signal $signal $name\n";
 	print $logFileHandle "$out\n";
@@ -274,7 +275,7 @@ sub dockerPull {
 
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker pull $namespace/$imageName:$version");
 	if ($cmdFailed) {
-		die "dockerPull failed: $cmdFailed";
+		$logger->error("dockerPull failed: $cmdFailed");
 	}
 	print $logFileHandle "$dockerHostString docker pull $namespace/$imageName:$version\n";
 	print $logFileHandle "$out\n";
@@ -392,7 +393,7 @@ sub dockerRun {
 	my $out;
 	($cmdFailed, $out) = runCmd($cmdString);
 	if ($cmdFailed) {
-		die "dockerRun docker run failed: $cmdFailed";
+		$logger->error("dockerRun docker run failed: $cmdFailed");
 	}
 	print $logFileHandle "$cmdString\n";
 	print $logFileHandle "$out\n";
@@ -406,7 +407,7 @@ sub dockerRun {
 	
 	($cmdFailed, $out) = runCmd("$dockerHostString docker port $name");
 	if ($cmdFailed) {
-		die "dockerRun docker port failed: $cmdFailed";
+		$logger->error("dockerRun docker port failed: $cmdFailed");
 	}
 	print $logFileHandle "$dockerHostString docker port $name\n";
 	print $logFileHandle "$out\n";
@@ -437,12 +438,12 @@ sub dockerGetLogs {
 		if ($maxLogLines > 0) {
 			($cmdFailed, $out) = runCmd("$dockerHostString docker logs --tail $maxLogLines $name");
 			if ($cmdFailed) {
-				die "dockerGetLogs with tail failed: $cmdFailed";
+				$logger->error("dockerGetLogs with tail failed: $cmdFailed");
 			}
 		} else {
 			($cmdFailed, $out) = runCmd("$dockerHostString docker logs $name");
 			if ($cmdFailed) {
-				die "dockerGetLogs failed: $cmdFailed";
+				$logger->error("dockerGetLogs failed: $cmdFailed");
 			}
 		}
 		return $out;
@@ -460,7 +461,7 @@ sub dockerFollowLogs {
 	if ($self->dockerExists($logFileHandle, $name)) {
 		my ($cmdFailed, $out) = runCmd("$dockerHostString docker logs --follow $name > $outFile");
 		if ($cmdFailed) {
-			die "dockerFollowLogs failed: $cmdFailed";
+			$logger->error("dockerFollowLogs failed: $cmdFailed");
 		}
 		return $out;
 	}
@@ -476,7 +477,7 @@ sub dockerVolumeExists {
 	my $cmd = "$dockerHostString docker volume ls -q";
 	my ($cmdFailed, $out) = runCmd($cmd);
 	if ($cmdFailed) {
-		die "dockerVolumeExists failed: $cmdFailed";
+		$logger->error("dockerVolumeExists failed: $cmdFailed");
 	}
 	my @lines = split /\n/, $out;
 	foreach my $line (@lines) {
@@ -499,13 +500,13 @@ sub dockerGetIp {
 	if ($self->getParamValue('vicHost')) {
 		($cmdFailed, $out) = runCmd("$dockerHostString docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}' $name");
 		if ($cmdFailed) {
-			die "dockerGetIp failed vicHost: $cmdFailed";
+			$logger->error("dockerGetIp failed vicHost: $cmdFailed");
 		}
 	} else {
 		$logger->debug("dockerGetIp: Getting ip address for container $name on host " . $self->name);
 		($cmdFailed, $out) = runCmd("$dockerHostString docker inspect --format '{{ .NetworkSettings.IPAddress }}' $name");
 		if ($cmdFailed) {
-			die "dockerGetIp failed: $cmdFailed";
+			$logger->error("dockerGetIp failed: $cmdFailed");
 		}
 	}
 	chomp($out);
@@ -522,7 +523,7 @@ sub dockerExec {
 		
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker exec $name $commandString");
 	if ($cmdFailed) {
-		die "dockerExec failed: $cmdFailed";
+		$logger->error("dockerExec failed: $cmdFailed");
 	}
 	$logger->debug("$dockerHostString docker exec $name $commandString");
 	print $logFileHandle "$dockerHostString docker exec $name $commandString\n";
@@ -538,7 +539,7 @@ sub dockerCopyTo {
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerCopyTo serviceName = $name");
 	if ( $sourceFile =~ /\*/ ) {
-		die "dockerCopyTo error, docker cp does not support wildcards: $sourceFile";
+		$logger->error("dockerCopyTo error, docker cp does not support wildcards: $sourceFile");
 	}
 	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile";
 	my ($cmdFailed, $out) = runCmd($cmdString);
@@ -557,7 +558,7 @@ sub dockerCopyFrom {
 	my $dockerHostString  = $self->dockerHostString;
 	$logger->debug("dockerCopyFrom serviceName = $name");
 	if ( $sourceFile =~ /\*/ ) {
-		die "dockerCopyFrom error, docker cp does not support wildcards: $sourceFile";
+		$logger->error("dockerCopyFrom error, docker cp does not support wildcards: $sourceFile");
 	}
 	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile";
 	my ($cmdFailed, $out) = runCmd($cmdString);

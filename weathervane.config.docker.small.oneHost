@@ -8,18 +8,10 @@
     "AuctionDriver5", "AuctionDriver6", 
     "AuctionDriver7", "AuctionDriver8",
   ],
-  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
 
   "numAppInstances" : 1,
   "configurationSize": "small",
-  "dataManagerHosts" : [ "AuctionDb1", ],
-  "webServerHosts" : [ "AuctionWeb1", ],
-  "auctionBidServerHosts" : [ "AuctionBid1", "AuctionBid2", ],
-  "appServerHosts" : [ "AuctionApp1", "AuctionApp2", ],
-  "msgServerHosts" : [ "AuctionMsg1", ],
-  "coordinationServerHosts" : [ "AuctionCs1", "AuctionCs2", "AuctionCs3", ],
-  "nosqlServerHosts" : [ "AuctionNosql1", ],
-  "dbServerHosts" : [ "AuctionDb1", ],
+  "appInstanceHost" : "appHost",
 
   # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and cassandraData
   "postgresqlUseNamedVolumes" : true,

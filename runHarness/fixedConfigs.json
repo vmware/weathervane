@@ -5,13 +5,13 @@
   
   "numWebServers" : 1,
   "webServerCpus" : "100m",
-  "webServerMem"  : "2Gi",
+  "webServerMem"  : "1Gi",
   "webServerImpl" : "nginx",
 
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "100m",
-  "auctionBidServerMem" : "2Gi",
-  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "auctionBidServerMem" : "700Mi",
+  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 20,
   "auctionBidServerJdbcConnections" : 21,
   "numClientUpdateThreads" : 2,
@@ -19,8 +19,8 @@
   
   "numAppServers" : 1,
   "appServerCpus" : "100m",
-  "appServerMem" : "2Gi",
-  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
+  "appServerMem" : "700Mi",
+  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,
   "numAuctioneerThreads" : 1,  
@@ -28,12 +28,12 @@
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "100m",
-  "coordinationServerMem" : "2Gi",
+  "coordinationServerMem" : "500Mi",
   "coordinationServerImpl" : "zookeeper",
   
   "numMsgServers" : 1, 
   "msgServerCpus" : "100m",
-  "msgServerMem" : "2Gi",
+  "msgServerMem" : "500Mi",
   "msgServerImpl" : "rabbitmq",
 
   "numDbServers" : 1, 
@@ -48,7 +48,6 @@
   "nosqlServerMem" : "2Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "5Gi",
-  
 },
 
 "small" : {

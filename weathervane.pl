@@ -751,6 +751,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$workloadDriver->addSecondary($secondary);
 	}
 
+	# Now that the configuration of the workloadDriver is complete, ask it to check whether the
+	# configuration is valid for its workload type
+	if ( !$workloadDriver->checkConfig() ) {
+		$console_logger->error(
+			"The configuration of the workload drivers is invalid for workload type $workloadImpl");
+		exit(-1);
+	}
+
 	# Create the appInstances and add them to the workload
 	my @appInstances;
 	my $appInstanceNum = 1;    # Count appInstances so that each gets a unique suffix

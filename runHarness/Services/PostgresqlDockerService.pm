@@ -148,9 +148,6 @@ sub startInstance {
 		# For bridged networking, ports get assigned at start time
 		$self->portMap->{ $self->getImpl() } = $portMapRef->{ $self->internalPortMap->{ $self->getImpl() } };
 	}
-	if (!$self->clearBeforeStart) {
-		$self->doVacuum($applog);
-	}
 	
 	close $applog;
 }
@@ -200,25 +197,6 @@ sub clearDataAfterStart {
 	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
 
 	close $applog;
-
-}
-
-sub doVacuum {
-	my ( $self, $fileout ) = @_;
-	my $logger = get_logger("Weathervane::Services::PostgresqlService");
-	my $name        = $self->name;
-
-	$logger->debug("psql -U auction  -t -q --command=\"vacuum analyze;\"\n");	
-	print $fileout "psql -U auction  -t -q --command=\"vacuum analyze;\"\n";
-	my $cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"vacuum analyze;\"");
-	$logger->debug($cmdout);
-	print $fileout $cmdout;
-
-	$logger->debug("psql -U auction  -t -q --command=\"checkpoint;\"\n");
-	print $fileout "psql -U auction  -t -q --command=\"checkpoint;\"\n";
-	$cmdout = $self->host->dockerExec($fileout, $name, "psql -U auction  -t -q --command=\"checkpoint;\"");
-	$logger->debug($cmdout);
-	print $fileout $cmdout;
 
 }
 

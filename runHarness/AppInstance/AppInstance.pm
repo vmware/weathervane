@@ -1268,7 +1268,7 @@ sub cleanLogFiles {
 }
 
 sub startStatsCollection {
-	my ($self)         = @_;
+	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
@@ -1288,7 +1288,7 @@ sub startStatsCollection {
 	foreach my $serviceType (@$serviceTypes) {
 		my $servicesRef = $self->getAllServicesByType($serviceType);
 		foreach my $service (@$servicesRef) {
-			$service->startStatsCollection( $intervalLengthSec, $numIntervals );
+			$service->startStatsCollection( $intervalLengthSec, $numIntervals, $tmpDir );
 		}
 	}
 }

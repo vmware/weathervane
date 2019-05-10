@@ -26,7 +26,7 @@ BEGIN {
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3
 	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-	  callMethodOnObjectsParamListParallel1);
+	  callMethodOnObjectsParamListParallel1 runCmd);
 }
 
 sub createDebugLogger {
@@ -368,6 +368,59 @@ sub callMethodOnObjects1 {
 
 	foreach my $object (@$objectsRef) {
 			$object->$method($param1);
+	}
+}
+
+sub runCmd {
+	#returns two values (cmdFailed, cmdOutput)
+	# cmdFailed ("" if success, $logOutput(cmd $output and not "") if failed)
+	# cmdOutput (cmd $output if success, cmd $output if failed)
+
+	my ($cmd) = @_;
+	my $logger = get_logger("Weathervane");
+
+	# Do some sanity/safety checks before running commands.
+	#check for unexpanded variable
+	if ( $cmd =~ /\$/ ) {
+		#add some special case exceptions
+		if ( $cmd =~ /mongo\s+\-\-eval.*\{\s*\$/ ) {
+			#mong eval
+		} elsif ( $cmd =~ /\"\$\(echo/ ) {
+			#kubernetes zookeeper ruok check
+		} else {
+			die "runCmd error, command possibly contains unexpanded variable: $cmd";
+		}
+	}
+	#check for unexpected paths off /
+	if ( $cmd =~ / \// ) {
+		#add some special case exceptions
+		if ( $cmd =~ / \/tmp\// || $cmd =~ /\/weathervane/ ) {
+		} elsif ( $cmd =~ /docker exec \w+ perl \// ) {
+		} elsif ( $cmd =~ /docker exec \w+ \/\w+\.sh/ ) {
+		} elsif ( $cmd =~ /kubectl exec .* \-\- perl \// ) {
+		} elsif ( $cmd =~ /kubectl exec .* \-\- \// ) {
+		} elsif ( $cmd =~ /-o \/dev\/null/ ) {
+		} else {
+			die "runCmd error, command references /: $cmd";
+		}
+	}
+
+	my $output = `$cmd 2>&1`;
+	my $exitStatus = $?;
+	my $failed = $exitStatus >> 8;
+	my $logOutput = $output;
+	if ($failed) {
+		if (!(length $output)) {
+			$logOutput = "(failure with no output)";
+		}
+		$logger->debug("runCmd Failure ($cmd): $logOutput");
+		return ($logOutput, $output);
+	} else {
+		if (!(length $output)) {
+			$logOutput = "(no output)";
+		}
+		$logger->debug("runCmd Success ($cmd): $logOutput");
+		return ("", $output);
 	}
 }
 

@@ -46,6 +46,7 @@ use Factories::AppInstanceFactory;
 use Parameters
   qw(getParamDefault getParamType getParamKeys getParamValue setParamValue mergeParameters usage fullUsage);
 use StderrToLogerror;
+use Utils qw(runCmd);
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
@@ -248,7 +249,8 @@ foreach my $key (@$keysRef) {
 	}
 	push @paramStrings, $key . $type;
 }
-GetOptions( \%paramCommandLine, @paramStrings );
+GetOptions( \%paramCommandLine, @paramStrings )
+or die("Error in command line options.\n");
 
 # Check for a request for the help text
 if ( exists $paramCommandLine{'help'} ) {
@@ -300,7 +302,7 @@ my $paramConfig = $json->decode($paramJson);
 # Make sure that all of the parameters read from the config file are valid
 foreach my $key ( keys %$paramConfig ) {
 	if ( !( $key ~~ @validParams ) ) {
-		die "Parameter $key in configuration file $configFileName is not a valid parameter";
+		die "Parameter $key in configuration file $configFileName is not a valid parameter.\n";
 	}
 }
 
@@ -356,7 +358,10 @@ if ( $resultsFileDir eq "" ) {
 else {
 	$resultsFileDir = $weathervaneHome . "/" . $resultsFileDir;
 	if ( !( -e $resultsFileDir ) ) {
-		`mkdir -p $resultsFileDir`;
+		my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $resultsFileDir");
+		if ($cmdFailed) {
+			die "resultFileDir mkdir failed: $cmdFailed\n";
+		}
 	}
 }
 setParamValue( $paramsHashRef,  'resultsFileDir', $resultsFileDir );
@@ -375,7 +380,10 @@ setParamValue( $paramsHashRef,  'gcviewerDir', $gcviewerDir );
 
 # Make sure required directories exist
 if ( !( -e $outputDir ) ) {
-	`mkdir -p $outputDir`;
+	my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $outputDir");
+	if ($cmdFailed) {
+		die "outputDir mkdir failed: $cmdFailed\n";
+	}
 }
 
 # Get the sequence number of the next run
@@ -406,11 +414,17 @@ else {
 }
 
 # Copy the version file into the output directory
-`cp $weathervaneHome/version.txt $tmpDir/version.txt`;
+my ($cmdFailed, $cmdOutput) = runCmd("cp $weathervaneHome/version.txt $tmpDir/version.txt");
+if ($cmdFailed) {
+	die "version cp failed: $cmdFailed\n";
+}
 
 # Save the original config file and processed command line parameters
 my $saveConfigFile = $tmpDir . "/" . basename($configFileName) . ".save";
-`cp $configFileName $saveConfigFile`;
+my ($cmdFailed, $cmdOutput) = runCmd("cp $configFileName $saveConfigFile");
+if ($cmdFailed) {
+	die "config cp failed: $cmdFailed\n";
+}
 open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
 print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
 close PARAMCOMMANDLINEFILE;
@@ -918,7 +932,12 @@ $console_logger->info( "Running Weathervane with "
 	  . $runManager->runProcedure->name
 	  . " RunProcedure.\n" );
 $runManager->start();
-
 my $resultsDir = "$outputDir/$seqnum";
-`mkdir -p $resultsDir`;
-`mv $tmpDir/* $resultsDir/.`;
+my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $resultsDir");
+if ($cmdFailed) {
+	die "resultDir mkdir failed: $cmdFailed\n";
+}
+my ($cmdFailed, $cmdOutput) = runCmd("mv $tmpDir/* $resultsDir/.");
+if ($cmdFailed) {
+	die "tmpDir mv failed: $cmdFailed\n";
+}

@@ -1,7 +1,7 @@
 {
   "runStrategy" : "findMaxSingleRun",
 
-  "dockerNamespace" : "hrosenbe",
+  "dockerNamespace" : "yourRepository",
   "dockerHosts" : [
     { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
     { "name" : "AuctionDriver3" }, { "name" : "AuctionDriver4" }, 

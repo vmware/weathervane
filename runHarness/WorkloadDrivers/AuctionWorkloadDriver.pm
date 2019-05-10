@@ -170,6 +170,7 @@ override 'addSecondary' => sub {
 	my ( $self, $secondary ) = @_;
 	my $console_logger = get_logger("Console");
 
+	#ToDo: Add test for running on same docker host
 	push @{ $self->secondaries }, $secondary;
 
 };

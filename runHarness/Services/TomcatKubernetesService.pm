@@ -46,7 +46,7 @@ sub configure {
 	my $serviceParamsHashRef =
 	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
 
-	my $numCpus = $self->getParamValue( $serviceType . "Cpus" );
+	my $numCpus = ceil($self->getParamValue( $serviceType . "Cpus" ));
 	my $threads            = $self->getParamValue('appServerThreads') * $numCpus;
 	my $connections        = $self->getParamValue('appServerJdbcConnections') * $numCpus;
 	my $tomcatCatalinaBase = $self->getParamValue('tomcatCatalinaBase');

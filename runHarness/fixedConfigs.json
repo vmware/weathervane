@@ -1,7 +1,7 @@
 {
  
 "micro" : {
-  "maxUsers" : 1000,
+  "maxUsers" : 2000,
   
   "numWebServers" : 1,
   "webServerCpus" : "100m",
@@ -18,8 +18,8 @@
   "auctionBidServerImpl" : "auctionbidservice",
   
   "numAppServers" : 1,
-  "appServerCpus" : "100m",
-  "appServerMem" : "700Mi",
+  "appServerCpus" : "250m",
+  "appServerMem" : "1000Mi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,

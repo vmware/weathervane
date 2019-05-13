@@ -170,9 +170,49 @@ override 'addSecondary' => sub {
 	my ( $self, $secondary ) = @_;
 	my $console_logger = get_logger("Console");
 
+	#ToDo: Add test for running on same docker host
 	push @{ $self->secondaries }, $secondary;
 
 };
+
+sub checkConfig {
+	my ($self) = @_;
+	my $console_logger = get_logger("Console");
+	my $workloadNum    = $self->workload->instanceNum;
+	
+	# Validate the the CPU and Mem sizings are in valid Kubernetes format
+	my @drivers =  @{ $self->secondaries };
+	push @drivers, $self;
+	foreach my $driver (@drivers) {
+		# A K8S CPU limit should be either a real number (e.g. 1.5), which
+		# is legal docker notation, or an integer followed an "m" to indicate a millicpu
+		my $cpus = $driver->getParamValue("driverCpus");
+		if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
+			$console_logger->error("Workload $workloadNum: $cpus is not a valid value for driverCpus.");
+			$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
+		} elsif ($cpus =~ /^(\d+)m$/) {
+			# Convert all CPU specifications to numbers
+			$cpus = ($1 * 1.0) / 1000.0;
+			$driver->setParamValue("driverCpus", $cpus);
+		}
+
+		# K8s Memory limits are an integer followed by an optional suffix.
+		# The legal suffixes in K8s are:
+		#  * E, P, T, G, M, K (powers of 10)
+		#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
+		my $mem = $driver->getParamValue("driverMem");
+		if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
+			$console_logger->error("Workload $workloadNum: $mem is not a valid value for driverMem.");
+			$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
+						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+			return 0;			
+		}
+	}
+
+	return 1;
+}
 
 sub setPortNumbers {
 	my ($self) = @_;

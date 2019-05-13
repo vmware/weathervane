@@ -190,7 +190,7 @@ sub getConfigFiles {
 
 override 'startStatsCollection' => sub {
 	my ( $self ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
 	$logger->debug("startStatsCollection");
 
@@ -203,14 +203,14 @@ override 'stopStatsCollection' => sub {
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
 	$logger->debug("stopStatsCollection");
 	# Get interesting views on the pg_stats table
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $cluster = $self->host;
 	
 };
 
 override 'getStatsFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
-	my $hostname         = $self->host->hostName;
+	my $hostname         = $self->host->name;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("getStatsFiles");
 

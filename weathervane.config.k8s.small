@@ -1,7 +1,7 @@
 {
   "runStrategy" : "findMaxSingleRun",
 
-  "dockerNamespace" : "hrosenbe",
+  "dockerNamespace" : "yourRepository",
   "dockerHosts" : [
     { "name" : "AuctionDriver1" }, { "name" : "AuctionDriver2" }, 
     { "name" : "AuctionDriver3" }, { "name" : "AuctionDriver4" }, 
@@ -26,7 +26,7 @@
 
   "numAppInstances" : 1,
   "configurationSize": "small",
-  "appInstanceHost" : "appHost",
+  "appInstanceCluster" : "appHost",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",
   "postgresqlLogStorageClass" : "fast",

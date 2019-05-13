@@ -193,12 +193,12 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		Item nextItem = null;
 		try {
 			nextItem = auctionDao.getNextUnsoldItem(currentAuction);
-			System.out.println("startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
+			logger.debug("startNextItem: found nextItem " + nextItem.getId() + " for auction " + currentAuction.getId());
 		} catch (EmptyResultDataAccessException ex) {
 			/*
 			 * There are no more items. Return null.
 			 */
-			System.out.println("startNextItem:  auction " + currentAuction.getId() + " is complete.  Return null so that can restart");
+			logger.debug("startNextItem:  auction " + currentAuction.getId() + " is complete.  Return null so that can restart");
 			return null;
 		} catch (NonUniqueResultException ex) {
 			throw new RuntimeException(

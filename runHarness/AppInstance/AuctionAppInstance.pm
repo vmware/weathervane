@@ -169,28 +169,34 @@ override 'checkConfig' => sub {
 	# Validate the the CPU and Mem sizings are in valid Kubernetes format
 	my $workloadImpl    = $self->getParamValue('workloadImpl');
 	my $serviceTypesRef = $WeathervaneTypes::dockerServiceTypes{$workloadImpl};
-	push @$serviceTypesRef, "driver";
 	foreach my $serviceType (@$serviceTypesRef) {
-		# A K8S CPU limit should be either a real number (e.g. 1.5), which
-		# is legal docker notation, or an integer followed an "m" to indicate a millicpu
-		my $cpus = $self->getParamValue($serviceType . "Cpus");
-		if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
-			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $cpus is not a valid value for ${serviceType}Cpus.");
-			$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
-						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
-			return 0;			
-		}
+		my $servicesRef = $self->getAllServicesByType($serviceType);
+		foreach my $service (@$servicesRef) {
+			# A K8S CPU limit should be either a real number (e.g. 1.5), which
+			# is legal docker notation, or an integer followed an "m" to indicate a millicpu
+			my $cpus = $service->getParamValue($serviceType . "Cpus");
+			if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $cpus is not a valid value for ${serviceType}Cpus.");
+				$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
+							"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+				return 0;			
+			} elsif ($cpus =~ /^(\d+)m$/) {
+				# Convert all CPU specifications to numbers
+				$cpus = ($1 * 1.0) / 1000.0;
+				$service->setParamValue($serviceType . "Cpus", $cpus);
+			}
 
-		# K8s Memory limits are an integer followed by an optional suffix.
-		# The legal suffixes in K8s are:
-		#  * E, P, T, G, M, K (powers of 10)
-		#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
-		my $mem = $self->getParamValue($serviceType . "Mem");
-		if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
-			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $mem is not a valid value for ${serviceType}Mem.");
-			$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
-						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
-			return 0;			
+			# K8s Memory limits are an integer followed by an optional suffix.
+			# The legal suffixes in K8s are:
+			#  * E, P, T, G, M, K (powers of 10)
+			#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
+			my $mem = $service->getParamValue($serviceType . "Mem");
+			if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $mem is not a valid value for ${serviceType}Mem.");
+				$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
+							"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
+				return 0;			
+			}
 		}
 	}
 

@@ -23,20 +23,19 @@ RUN yum install -y perl-App-cpanminus && \
 	yum install -y kubectl && \
 	chmod -R 600 /root/.ssh && \
 	chmod +x /root/weathervane/weathervane.pl && \
-	cpanm -n --mirror http://cpan.cpantesters.org YAML && \
-	cpanm -n --mirror http://cpan.cpantesters.org Config::Simple && \
-	cpanm -n --mirror http://cpan.cpantesters.org String::Util && \
-	cpanm -n --mirror http://cpan.cpantesters.org Statistics::Descriptive && \
-	cpanm -n --mirror http://cpan.cpantesters.org Moose && \
-	cpanm -n --mirror http://cpan.cpantesters.org MooseX::Storage && \
-	cpanm -n --mirror http://cpan.cpantesters.org Tie::IxHash && \
-	cpanm -n --mirror http://cpan.cpantesters.org MooseX::ClassAttribute && \
-	cpanm -n --mirror http://cpan.cpantesters.org MooseX::Types && \
-	cpanm -n --mirror http://cpan.cpantesters.org JSON && \
-	cpanm -n --mirror http://cpan.cpantesters.org Switch && \
-	cpanm -n --mirror http://cpan.cpantesters.org Log::Log4perl && \
-	cpanm -n --mirror http://cpan.cpantesters.org Log::Dispatch::File && \
-	cpanm -n --mirror http://cpan.cpantesters.org LWP 
-
+	cpanm -n YAML && \
+	cpanm -n Config::Simple && \
+	cpanm -n String::Util && \
+	cpanm -n Statistics::Descriptive && \
+	cpanm -n Moose && \
+	cpanm -n MooseX::Storage && \
+	cpanm -n Tie::IxHash && \
+	cpanm -n MooseX::ClassAttribute && \
+	cpanm -n MooseX::Types && \
+	cpanm -n JSON && \
+	cpanm -n Switch && \
+	cpanm -n Log::Log4perl && \
+	cpanm -n Log::Dispatch::File && \
+	cpanm -n LWP 
 
 ENTRYPOINT ["perl", "/root/weathervane/weathervane.pl"]

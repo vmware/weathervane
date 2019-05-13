@@ -49,7 +49,7 @@
   "nosqlServerCpus" : "100m",
   "nosqlServerMem" : "2Gi",
   "nosqlServerImpl" : "cassandra",
-  "cassandraDataVolumeSize" : "5Gi",
+  "cassandraDataVolumeSize" : "10Gi",
 },
 
 "small" : {

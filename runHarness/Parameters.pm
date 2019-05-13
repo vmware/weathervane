@@ -1834,6 +1834,22 @@ $parameters{"appServerJvmOpts"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"appServerWarmerThreadsPerServer"} = {
+	"type"      => "=i",
+	"default"   => 1,
+	"parent"    => "appServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"appServerWarmerIterations"} = {
+	"type"      => "=i",
+	"default"   => 500,
+	"parent"    => "appServer",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"auctionBidServerThreads"} = {
 	"type"      => "=i",
 	"default"   => 48,

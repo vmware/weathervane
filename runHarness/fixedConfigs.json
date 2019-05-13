@@ -25,6 +25,8 @@
   "appServerJdbcConnections" : 21,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 50,
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "100m",
@@ -75,6 +77,8 @@
   "appServerJdbcConnections" : 101,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 500,
 
   "numCoordinationServers" : 3, 
   "coordinationServerCpus" : "500m",

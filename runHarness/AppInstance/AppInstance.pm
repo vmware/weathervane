@@ -939,10 +939,7 @@ sub isUp {
 				if ( ( $retriesRemaining == 0 ) && !$isUp ) {
 
 					# no more retries so give an error
-					my $hostname = $service->host->clusterName;
-					if (!$hostname) {
-						$hostname = $service->host->name;
-					}
+					my $hostname = $service->host->name;
 					$console_logger->error( "Couldn't start $serviceType "
 						  . $service->getImpl() . " on "
 						  . $hostname

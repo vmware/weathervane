@@ -96,6 +96,14 @@ sub setWorkload {
 	$self->workload($workload);
 }
 
+sub checkConfig {
+	my ($self) = @_;
+	my $console_logger = get_logger("Console");
+	$console_logger->error("Called checkConfig on an abstract instance of WorkloadDriver");
+
+	return 0;
+}
+
 sub addSecondary {
 	
 }

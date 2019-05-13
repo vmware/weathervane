@@ -87,10 +87,10 @@ sub configure {
 			print FILEOUT "  WARMER_JVMOPTS: \"$warmerJvmOpts\"\n";
 		}
 		elsif ( $inline =~ /WARMER_THREADS_PER_SERVER:/ ) {
-			print FILEOUT "  WARMER_THREADS_PER_SERVER: \" . $self->getParamValue('appServerWarmerThreadsPerServer') . "\"\n";
+			print FILEOUT "  WARMER_THREADS_PER_SERVER: \"" . $self->getParamValue('appServerWarmerThreadsPerServer') . "\"\n";
 		}
 		elsif ( $inline =~ /WARMER_ITERATIONS/ ) {
-			print FILEOUT "  WARMER_ITERATIONS: \" . $self->getParamValue('appServerWarmerIterations') . "\"\n";
+			print FILEOUT "  WARMER_ITERATIONS: \"" . $self->getParamValue('appServerWarmerIterations') . "\"\n";
 		}
 		elsif ( $inline =~ /TOMCAT_THREADS:/ ) {
 			print FILEOUT "  TOMCAT_THREADS: \"$threads\"\n";

@@ -1,7 +1,7 @@
 {
   "dockerNamespace" : "yourRepository",
   
-  "numDrivers": 8,
+  "numDrivers": 1,
   "driverHosts" : [
     "AuctionDriver1", 
   ],

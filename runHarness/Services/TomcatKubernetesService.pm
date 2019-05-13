@@ -83,8 +83,14 @@ sub configure {
 		if ( $inline =~ /TOMCAT_JVMOPTS:/ ) {
 			print FILEOUT "  TOMCAT_JVMOPTS: \"$completeJVMOpts\"\n";
 		}
-		elsif ( $inline =~ /TOMCAT_WARMER_JVMOPTS:/ ) {
-			print FILEOUT "  TOMCAT_WARMER_JVMOPTS: \"$warmerJvmOpts\"\n";
+		elsif ( $inline =~ /WARMER_JVMOPTS:/ ) {
+			print FILEOUT "  WARMER_JVMOPTS: \"$warmerJvmOpts\"\n";
+		}
+		elsif ( $inline =~ /WARMER_THREADS_PER_SERVER:/ ) {
+			print FILEOUT "  WARMER_THREADS_PER_SERVER: \" . $self->getParamValue('appServerWarmerThreadsPerServer') . "\"\n";
+		}
+		elsif ( $inline =~ /WARMER_ITERATIONS/ ) {
+			print FILEOUT "  WARMER_ITERATIONS: \" . $self->getParamValue('appServerWarmerIterations') . "\"\n";
 		}
 		elsif ( $inline =~ /TOMCAT_THREADS:/ ) {
 			print FILEOUT "  TOMCAT_THREADS: \"$threads\"\n";

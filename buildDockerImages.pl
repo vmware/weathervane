@@ -28,15 +28,17 @@ sub usage {
 	print "a Docker Hub account or a private registry.\n";
     print " Options:\n";
     print "     --help :         Print this help and exit.\n";
-    print "     --username:      The username for the Docker Hub account.\n";
+    print "     --username:      The username for the repository (Docker Hub account or private repository).\n";
     print "                      This must be provided if --private is not used.\n";
-    print "     --password:      (optional) The password for the Docker Hub account.\n";
-    print "                      If not provided, will be prompted.\n";
+    print "                      For a private repository, this must be provided if a login is required\n";
+    print "                      to authenticate to the repository.\n";
+    print "     --password:      (optional) The password for the username (Docker Hub account or private repository).\n";
+    print "                      If username is specified and this is not provided, you will be prompted.\n";
     print "     --private :      Use a private Docker registry \n";
     print "     --host :         This is the hostname or IP address for the private registry.\n";
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
-    print "                      This must be provided if --private is used.\n";
+    print "                      This is only used with --private.\n";
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
 
@@ -115,6 +117,10 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker build failed with exitValue $exitValue, check $logFile.\n";
+		if ($imageName ne "centos7") {		
+			cleanupDockerfile("./dockerImages/$imageName");
+		}
+		cleanupAfterBuild($fileout);
 		exit;
 	}
 
@@ -122,6 +128,10 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker push failed with exitValue $exitValue, check $logFile.\n";
+		if ($imageName ne "centos7") {		
+			cleanupDockerfile("./dockerImages/$imageName");
+		}
+		cleanupAfterBuild($fileout);
 		exit;
 	}
 
@@ -131,14 +141,86 @@ sub buildImage {
 	
 }
 
+sub setupForBuild {
+	my ($fileout) = @_;
+
+	#nginx
+	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+	runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
+	runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
+	runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
+	# appServerWarmer
+	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
+	runAndLog($fileout, "cp ./dist/auctionAppServerWarmer.jar ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
+	# tomcat
+	runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+	runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+	runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction");
+	runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb");
+	runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
+	runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
+	runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction/");
+	runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
+	runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
+	runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
+	# auctionBidService
+	runAndLog($fileout, "rm -rf ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
+	runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
+	runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction");
+	runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction.war");
+	runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction/auction.war");
+	runAndLog($fileout, "cd ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction; jar xf auction.war; rm -f auction.war");
+	# workload driver
+	runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+	runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+	runAndLog($fileout, "cp ./dist/workloadDriver.jar ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+	runAndLog($fileout, "cp -r ./dist/workloadDriverLibs ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+	# data manager
+	runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+	runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+	runAndLog($fileout, "cp ./dist/dbLoader.jar ./dockerImages/auctiondatamanager/dbLoader.jar");
+	runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctiondatamanager/dbLoaderLibs");
+	# run harness
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
+	runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
+	runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+	runAndLog($fileout, "cp ./version.txt ./dockerImages/runharness/version.txt");
+	runAndLog($fileout, "cp -r ./runHarness ./dockerImages/runharness/runHarness");
+	runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runHarness/weathervane.pl");
+	runAndLog($fileout, "cp -r ./configFiles ./dockerImages/runharness/configFiles");
+	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");	
+}
+
+sub cleanupAfterBuild {
+	my ($fileout) = @_;
+	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
+	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
+	runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
+	runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-bid/webapps");
+	runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
+	runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
+	runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
+	runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
+	runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
+	runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
+	runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+}
+
 my $namespace;
 if ($private) {
-	if (($host eq "") || ($port==0)) {
-		print "When using a private repository, you must specify both the host and port parameters.\n";
+	if ($host eq "") {
+		print "When using a private repository, you must specify the host parameter.\n";
 		usage();
 		exit;
 	}
-	$namespace = "$host:$port";
+	$namespace = $host;
+	if ($port) {
+		$namespace .= ":$port";
+	}
 } else {
 	if ($username eq "") {
 			print "When using Docker Hub, you must specify the username parameter.\n";
@@ -171,58 +253,7 @@ if ($exitValue) {
 # Get the latest executables into the appropriate directories for the Docker images
 print "Setting up the Docker images.\n";
 print $fileout "Setting up the Docker images.\n";
-#nginx
-runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
-runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
-runAndLog($fileout, "cp ./dist/auctionWeb.tgz ./dockerImages/nginx/html/");
-runAndLog($fileout, "cd ./dockerImages/nginx/html; tar zxf auctionWeb.tgz; rm -f auctionWeb.tgz");
-
-# appServerWarmer
-runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
-runAndLog($fileout, "cp ./dist/auctionAppServerWarmer.jar ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
-# tomcat
-runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction");
-runAndLog($fileout, "mkdir ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb");
-runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
-runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/");
-runAndLog($fileout, "cp ./dist/auction.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction/");
-runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auction; jar xf auction.war; rm -f auction.war");
-runAndLog($fileout, "cp ./dist/auctionWeb.war ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb/");
-runAndLog($fileout, "cd ./dockerImages/tomcat/apache-tomcat-auction1/webapps/auctionWeb; jar xf auctionWeb.war; rm -f auctionWeb.war");
-# auctionBidService
-runAndLog($fileout, "rm -rf ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps");
-runAndLog($fileout, "mkdir ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction");
-runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction.war");
-runAndLog($fileout, "cp ./dist/auctionBidService.war ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction/auction.war");
-runAndLog($fileout, "cd ./dockerImages/auctionbidservice/apache-tomcat-bid/webapps/auction; jar xf auction.war; rm -f auction.war");
-
-# workload driver
-runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
-runAndLog($fileout, "cp ./dist/workloadDriver.jar ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
-runAndLog($fileout, "cp -r ./dist/workloadDriverLibs ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
-
-# data manager
-runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
-runAndLog($fileout, "cp ./dist/dbLoader.jar ./dockerImages/auctiondatamanager/dbLoader.jar");
-runAndLog($fileout, "cp -r ./dist/dbLoaderLibs ./dockerImages/auctiondatamanager/dbLoaderLibs");
-
-# run harness
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
-runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
-runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
-runAndLog($fileout, "cp ./version.txt ./dockerImages/runharness/version.txt");
-runAndLog($fileout, "cp -r ./runHarness ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runHarness/weathervane.pl");
-runAndLog($fileout, "cp -r ./configFiles ./dockerImages/runharness/configFiles");
-runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
-
+setupForBuild($fileout);
 
 my $version = `cat version.txt`;
 chomp($version);
@@ -230,10 +261,14 @@ chomp($version);
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
 
-if (!$private) {
+if (!$private || $username) {
+	my $hostString = "Docker Hub";
+	if ($private) {
+		$hostString = $host;
+	}
 	if (!(length $password > 0)) {
 		Term::ReadKey::ReadMode('noecho');
-		print "Enter Docker Hub password for $username:";
+		print "Enter $hostString password for $username:";
 		$password = Term::ReadKey::ReadLine(0);
 		Term::ReadKey::ReadMode('restore');
 		print "\n";
@@ -244,16 +279,17 @@ if (!$private) {
 		die "Error, no password input.\n";
 	}
 
-	print "Logging into Docker Hub.\n";
-	print $fileout "Logging into Docker Hub.\n";
-	my $cmd = "docker login -u $username -p $password";
+	print "Logging into $hostString\n";
+	print $fileout "Logging into $hostString\n";
+	my $cmd = "docker login -u=$username -p=$password $host";
 	my $response = `$cmd 2>&1`;
+	print $fileout "result: $response\n";
 	if ($response =~ /unauthorized/) {
-		print "Could not log into Docker Hub with the supplied username and password.\n";
+		print "Could not login to $hostString with the supplied username and password.\n";
+		cleanupAfterBuild($fileout);
 		exit;
 	}
-	print $fileout "result: $response\n";
-}
+} 
 
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
@@ -279,19 +315,7 @@ foreach my $imageName (@imageNames) {
 
 # Clean up
 print $fileout "Cleaning up.\n";
-runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
-runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");
-runAndLog($fileout, "rm -rf ./dockerImages/auctionBidService/apache-tomcat-bid/webapps");
-runAndLog($fileout, "rm -f ./dockerImages/auctionworkloaddriver/workloadDriver.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/auctionworkloaddriver/workloadDriverLibs");
-runAndLog($fileout, "rm -f ./dockerImages/auctiondatamanager/dbLoader.jar");
-runAndLog($fileout, "rm -rf ./dockerImages/auctiondatamanager/dbLoaderLibs");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/runHarness");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/configFiles");
-runAndLog($fileout, "rm -rf ./dockerImages/runharness/workloadConfiguration");
-runAndLog($fileout, "rm -f ./dockerImages/runharness/weathervane.pl");
-runAndLog($fileout, "rm -f ./dockerImages/runharness/version.txt");
+cleanupAfterBuild($fileout);
 
 print "Done.\n";
 print $fileout "Done.\n";

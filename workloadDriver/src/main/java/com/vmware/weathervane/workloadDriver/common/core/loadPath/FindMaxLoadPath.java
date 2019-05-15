@@ -203,10 +203,20 @@ public class FindMaxLoadPath extends LoadPath {
 
 			return moveToFindFirstMax();
 		}
-
+		
 		curUsers += initialRampRateStep;
+		long nextIntervalDuration = initialRampIntervalSec;
+		/*
+		 *  If number of users is less than 1000, then double the
+		 *  interval duration to lessen the effect of outliers
+		 *  due to the small number of users.
+		 */
+		if (curUsers < 1000) {
+			nextIntervalDuration *= 2;
+		}
+		
 		nextInterval.setUsers(curUsers);
-		nextInterval.setDuration(initialRampIntervalSec);
+		nextInterval.setDuration(nextIntervalDuration);
 		nextInterval.setName("InitialRamp-" + intervalNum);
 
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);

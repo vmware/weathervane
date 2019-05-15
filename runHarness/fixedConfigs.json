@@ -1,7 +1,7 @@
 {
  
 "micro" : {
-  "maxUsers" : 1000,
+  "maxUsers" : 2000,
   
   "numWebServers" : 1,
   "webServerCpus" : "100m",
@@ -18,13 +18,15 @@
   "auctionBidServerImpl" : "auctionbidservice",
   
   "numAppServers" : 1,
-  "appServerCpus" : "100m",
-  "appServerMem" : "700Mi",
+  "appServerCpus" : "250m",
+  "appServerMem" : "1000Mi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 50,
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "100m",
@@ -47,7 +49,7 @@
   "nosqlServerCpus" : "100m",
   "nosqlServerMem" : "2Gi",
   "nosqlServerImpl" : "cassandra",
-  "cassandraDataVolumeSize" : "5Gi",
+  "cassandraDataVolumeSize" : "10Gi",
 },
 
 "small" : {
@@ -75,6 +77,8 @@
   "appServerJdbcConnections" : 101,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 500,
 
   "numCoordinationServers" : 3, 
   "coordinationServerCpus" : "500m",

@@ -1,12 +1,13 @@
 {
+  "description" : "docker, small, hostPerService, 6Driver",
+ 
   "dockerNamespace" : "yourRepository",
   
-  "numDrivers": 8,
+  "numDrivers": 6,
   "driverHosts" : [
     "AuctionDriver1", "AuctionDriver2", 
     "AuctionDriver3", "AuctionDriver4", 
     "AuctionDriver5", "AuctionDriver6", 
-    "AuctionDriver7", "AuctionDriver8",
   ],
   "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
 

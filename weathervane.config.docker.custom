@@ -1,5 +1,7 @@
 {
 
+  "description" : "docker, custom",
+
   "dockerNamespace" : "yourRepository",
   "dockerHosts" : [
     { "name" : "AuctionDriver1", "dockerPort" : 2376, "dockerNet" : "host" }, 

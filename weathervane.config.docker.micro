@@ -1,4 +1,6 @@
 {
+  "description" : "docker, micro, hostPerService, 1Driver",
+
   "dockerNamespace" : "yourRepository",
   
   "numDrivers": 1,

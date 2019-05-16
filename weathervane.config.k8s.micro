@@ -1,4 +1,6 @@
 {
+  "description" : "k8s, micro, 1Driver, fastSC",
+
   "runStrategy" : "findMaxSingleRun",
 
   "dockerNamespace" : "yourRepository",

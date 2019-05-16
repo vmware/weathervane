@@ -1,4 +1,6 @@
 {
+  "description" : "docker, small, 1host, 6Driver",
+
   "dockerNamespace" : "yourRepository",
   
   "numDrivers": 6,

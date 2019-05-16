@@ -10,8 +10,9 @@
   "configurationSize": "micro",
   "appInstanceHost" : "appHost",
 
-  # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and cassandraData
-  "postgresqlUseNamedVolumes" : true,
-  "cassandraUseNamedVolumes" : true,
+  # If you set these to true, you need to pre-create the docker 
+  # named volumes postgresqlData, postgresqlLogs, and cassandraData
+  "postgresqlUseNamedVolumes" : false,
+  "cassandraUseNamedVolumes" : false,
 
 }

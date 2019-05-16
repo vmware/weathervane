@@ -1,20 +1,20 @@
 {
   "dockerNamespace" : "yourRepository",
   
-  "numDrivers": 8,
+  "numDrivers": 6,
   "driverHosts" : [
     "AuctionDriver1", "AuctionDriver2", 
     "AuctionDriver3", "AuctionDriver4", 
     "AuctionDriver5", "AuctionDriver6", 
-    "AuctionDriver7", "AuctionDriver8",
   ],
 
   "numAppInstances" : 1,
   "configurationSize": "small",
   "appInstanceHost" : "appHost",
 
-  # Need to pre-create the docker named volumes postgresqlData, postgresqlLogs, and cassandraData
-  "postgresqlUseNamedVolumes" : true,
-  "cassandraUseNamedVolumes" : true,
+  # If you set these to true, you need to pre-create the docker 
+  # named volumes postgresqlData, postgresqlLogs, and cassandraData
+  "postgresqlUseNamedVolumes" : false,
+  "cassandraUseNamedVolumes" : false,
 
 }

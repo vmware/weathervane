@@ -9,16 +9,14 @@
     },
   ],
 
-  "numDrivers": 6,
+  "numDrivers": 1,
   "driverHosts" : [
-    "AuctionDriver1", "AuctionDriver2", 
-    "AuctionDriver3", "AuctionDriver4", 
-    "AuctionDriver5", "AuctionDriver6",
+    "AuctionDriver1", 
   ],
-  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+  "driverJvmOpts" : "-Xmx2G -Xms2g -XX:+AlwaysPreTouch",
 
   "numAppInstances" : 1,
-  "configurationSize": "small",
+  "configurationSize": "micro",
   "appInstanceCluster" : "appHost",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",

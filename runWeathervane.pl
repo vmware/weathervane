@@ -39,7 +39,7 @@ GetOptions(	'accept!' => \$accept,
 my $wvCommandLineArgs = join(" ", @ARGV);
 
 sub usage {
-    print "Usage: ./runWeathervane.pl [options] [-- parameters]";
+    print "Usage: ./runWeathervane.pl [options] [-- parameters]\n";
 	print "\nThis script is used to run the Weathervane benchmark using the configuration specified in a configuration file.\n";
 	print "It takes the following options:\n";
 	print "--configFile: This specifies the configuration file used to control the Weathervane run.\n";

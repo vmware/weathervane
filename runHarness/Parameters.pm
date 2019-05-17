@@ -2494,7 +2494,7 @@ $parameters{"proportionTolerance"} = {
 
 $parameters{"statsInterval"} = {
 	"type"      => "=i",
-	"default"   => 10,
+	"default"   => 30,
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 0,

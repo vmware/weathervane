@@ -6,7 +6,6 @@ COPY weathervane.pl /root/weathervane/weathervane.pl
 COPY runHarness /root/weathervane/runHarness
 COPY workloadConfiguration /root/weathervane/workloadConfiguration
 COPY configFiles /root/weathervane/configFiles
-COPY ssh /root/.ssh
 COPY Notice.txt /root/weathervane/Notice.txt
 COPY version.txt /root/weathervane/version.txt
 

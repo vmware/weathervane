@@ -39,8 +39,9 @@ GetOptions(	'accept!' => \$accept,
 my $wvCommandLineArgs = join(" ", @ARGV);
 
 sub usage {
+    print "Usage: ./runWeathervane.pl [options] [-- parameters]";
 	print "\nThis script is used to run the Weathervane benchmark using the configuration specified in a configuration file.\n";
-	print "It takes the following parameters:\n";
+	print "It takes the following options:\n";
 	print "--configFile: This specifies the configuration file used to control the Weathervane run.\n";
 	print "              If this parameter is not a fully-qualified file name starting with a \/ then\n";
 	print "              the location of the file is assumed to be relative to the directory in which\n";
@@ -68,6 +69,10 @@ sub usage {
 	print "              default value: None.  If no value is specified the user is prompted to accept the\n";
 	print "                             license terms.\n";
 	print "--help:       Displays this text.\n";
+	print "\n";
+	print "To pass command-line parameters to the Weathervane run harness, enter them following two dashes\n";
+	print "after the options.  For example, to stop the services from a previous run you would use:\n";
+	print "./runWeathervane.pl --configFile=weathervane.config -- --stop\n";
 }
 
 sub parseConfigFile {

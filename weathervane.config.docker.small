@@ -1,5 +1,7 @@
 {
   "description" : "docker, small, hostPerService, 6Driver",
+
+  "runStrategy" : "findMaxSingleRun",
  
   "dockerNamespace" : "yourRepository",
   

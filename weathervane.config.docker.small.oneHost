@@ -1,6 +1,8 @@
 {
   "description" : "docker, small, 1host, 6Driver",
 
+  "runStrategy" : "findMaxSingleRun",
+
   "dockerNamespace" : "yourRepository",
   
   "numDrivers": 6,

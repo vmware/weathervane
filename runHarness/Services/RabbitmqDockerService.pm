@@ -61,12 +61,24 @@ override 'create' => sub {
 	# The default create doesn't map any volumes
 	my %volumeMap;
 	
-	# The default create doesn't create any environment variables
 	my %envVarMap;
 	$envVarMap{"RABBITMQ_NODE_PORT"} = $self->internalPortMap->{$self->getImpl()};
 	$envVarMap{"RABBITMQ_DIST_PORT"} = $self->internalPortMap->{'dist'};
-	
-	
+
+	my $memString = $self->getParamValue('msgServerMem');
+	$logger->debug("msgServerMem is set to $memString.");
+	$memString =~ /(\d+)\s*(\w+)/;
+	my $totalMemory = $1;
+	my $totalMemoryUnit = $2;
+	if (lc($totalMemoryUnit) eq "gi") {
+		$totalMemoryUnit = "GB";
+	} elsif (lc($totalMemoryUnit) eq "mi") {
+		$totalMemoryUnit = "MB";
+	} elsif (lc($totalMemoryUnit) eq "ki") {
+		$totalMemoryUnit = "kB";
+	}
+	$envVarMap{"RABBITMQ_MEMORY"} = $self->internalPortMap->{$totalMemory$totalMemoryUnit};
+		
 	# Create the container
 	my %portMap;
 	my $directMap = 0;

@@ -29,9 +29,9 @@ hostname="$(hostname)"
 echo "NODENAME=rabbit@${hostname}"
 echo "NODENAME=rabbit@${hostname}" > /etc/rabbitmq/rabbitmq-env.conf
 printf "total_memory_available_override_value = ${RABBITMQ_MEMORY}\n"
-printf "total_memory_available_override_value = ${RABBITMQ_MEMORY}\n" > /etc/rabbitmq/rabbitmq.conf
+printf "total_memory_available_override_value = ${RABBITMQ_MEMORY}\n" >> /etc/rabbitmq/rabbitmq.conf
 printf "vm_memory_high_watermark.relative = 0.8\n"
-printf "vm_memory_high_watermark.relative = 0.8\n" > /etc/rabbitmq/rabbitmq.conf
+printf "vm_memory_high_watermark.relative = 0.8\n" >> /etc/rabbitmq/rabbitmq.conf
 
 if [ $# -gt 0 ]; then
 	eval "$* &"

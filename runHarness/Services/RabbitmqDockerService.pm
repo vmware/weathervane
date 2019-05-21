@@ -77,7 +77,7 @@ override 'create' => sub {
 	} elsif (lc($totalMemoryUnit) eq "ki") {
 		$totalMemoryUnit = "kB";
 	}
-	$envVarMap{"RABBITMQ_MEMORY"} = $self->internalPortMap->{$totalMemory$totalMemoryUnit};
+	$envVarMap{"RABBITMQ_MEMORY"} = "$totalMemory$totalMemoryUnit";
 		
 	# Create the container
 	my %portMap;

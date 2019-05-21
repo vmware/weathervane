@@ -48,6 +48,7 @@ override 'initialize' => sub {
 
 override 'create' => sub {
 	my ($self, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 	
 	my $name = $self->name;
 	my $hostname         = $self->host->name;

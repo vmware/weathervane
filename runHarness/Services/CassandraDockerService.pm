@@ -117,6 +117,9 @@ sub create {
 	$envVarMap{"CASSANDRA_DOCKER_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
 													. "i" . $self->appInstance->instanceNum;
+	$envVarMap{"CASSANDRA_MEMORY"} = $self->getParamValue('nosqlServerMem');
+	$envVarMap{"CASSANDRA_CPUS"} = $self->getParamValue('nosqlServerCpus');
+
 	# Create the container
 	my %portMap;
 	my $directMap = 1;

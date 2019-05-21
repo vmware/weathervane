@@ -92,6 +92,12 @@ sub configure {
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {
 			print FILEOUT "  CASSANDRA_CLUSTER_NAME: \"$namespace\"\n";
 		}
+		elsif ( $inline =~ /CASSANDRA_MEMORY:/ ) {
+			print FILEOUT "  CASSANDRA_MEMORY: \"" . $self->getParamValue('nosqlServerMem') ."\"\n";
+		}
+		elsif ( $inline =~ /CASSANDRA_CPUS:/ ) {
+			print FILEOUT "  CASSANDRA_CPUS: \"" . $self->getParamValue('nosqlServerCpus') ."\"\n";
+		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numServers\n";
 		}

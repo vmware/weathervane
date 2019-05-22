@@ -172,6 +172,7 @@ sub configureAfterIsUpSingleRabbitMQ {
 
 sub configureAfterIsUpClusteredRabbitMQ {
 	my ( $self, $applog ) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 
 	my $hostname         = $self->host->name;
 	my $name = $self->name;
@@ -410,6 +411,8 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
+
 	my $hostname         = $self->host->name;
 	my $name = $self->name;
 

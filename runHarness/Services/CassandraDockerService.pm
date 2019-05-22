@@ -179,7 +179,10 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From Cassandra\n";
 
-	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	if ($cmdFailed) {
+		$logger->error("Error clearing old data as part of the data loading process.  Error = $cmdFailed");	
+	}
 
 	close $applog;
 
@@ -187,9 +190,8 @@ sub clearDataAfterStart {
 
 sub isUp {
 	my ( $self, $fileout ) = @_;
-	$self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
+	my ($cmdFailed, $out) = $self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
+	if ($cmdFailed) {
 		return 0;
 	} else {
 		return 1;

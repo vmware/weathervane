@@ -194,7 +194,10 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From PortgreSQL\n";
 
-	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	if ($cmdFailed) {
+		$logger->error("Error clearing old data as part of the data loading process.  Error = $cmdFailed");	
+	}
 
 	close $applog;
 
@@ -267,7 +270,10 @@ sub stopStatsCollection {
 	my $applog;
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Getting end of steady-state stats from PortgreSQL\n";
-	$self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");	
+	}
 
 	close $applog;
 
@@ -287,7 +293,10 @@ sub startStatsCollection {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 
 	print $applog "Getting start of steady-state stats from PortgreSQL\n";
-	$self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "perl /dumpStats.pl");
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");	
+	}
 
 	close $applog;
 }
@@ -400,7 +409,10 @@ sub getMaxLoadedUsers {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	my $maxUsers = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
+	my ($cmdFailed, $maxUsers) =  = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
+	if ($cmdFailed) {
+		$logger->error("Error Getting maxLoadedUsers from PostgreSQL.  Error = $cmdFailed");
+	}
 	chomp($maxUsers);
 	$maxUsers += 0;
 	

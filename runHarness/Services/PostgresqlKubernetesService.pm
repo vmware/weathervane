@@ -242,13 +242,13 @@ override 'startStatsCollection' => sub {
 	if ($cmdFailed) {
 		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
 	}
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
+	($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
 	if ($cmdFailed) {
 		$logger->error("Error resetting PostgreSQL stats.  Error = $cmdFailed");
 	}
 
 	open( STATS, ">/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
-	my ($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
 	if ($cmdFailed) {
 		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
 	}

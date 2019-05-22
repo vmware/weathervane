@@ -392,6 +392,7 @@ sub getStatsSummary {
 # Get the max number of users loaded in the database
 sub getMaxLoadedUsers {
 	my ($self) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	
 	my $cluster = $self->host;
 	my $impl = $self->getImpl();

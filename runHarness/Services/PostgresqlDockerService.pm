@@ -259,6 +259,8 @@ sub configure {
 
 sub stopStatsCollection {
 	my ($self)      = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
+
 	my $hostname    = $self->host->name;
 	my $name        = $self->name;
 	my $serviceType = $self->getParamValue('serviceType');
@@ -281,6 +283,8 @@ sub stopStatsCollection {
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
+
 	my $hostname    = $self->host->name;
 	my $name        = $self->name;
 	my $serviceType = $self->getParamValue('serviceType');
@@ -402,6 +406,8 @@ sub getStatsSummary {
 # Get the max number of users loaded in the database
 sub getMaxLoadedUsers {
 	my ($self) = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
+
 	my $logName          = "/dev/null";
 	my $name        = $self->name;
 

@@ -200,8 +200,15 @@ override 'checkConfig' => sub {
 		}
 	}
 
-	# If Cassandra is running on Docker, make sure that each node is running on a different host
 	my $nosqlServersRef = $self->getAllServicesByType("nosqlServer");
+	# If running on Docker hosts, only one cassandra node is supported
+	my $firstNosqlServer =  $nosqlServersRef->[0];
+	if (((ref $firstNosqlServer) eq "DockerHost") && ($numNosqlServers > 1)) {
+		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: When running on Docker hosts, only one Cassandra node can be used per appInstance.");
+		return 0;
+	}
+	
+	# If Cassandra is running on Docker, make sure that each node is running on a different host
 	my @cassandraHosts;
 	foreach my $nosqlServer (@$nosqlServersRef) {
 		my $host = $nosqlServer->host;

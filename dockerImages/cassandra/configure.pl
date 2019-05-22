@@ -2,6 +2,7 @@
 
 use strict;
 use POSIX;
+use List::Util qw[min max];
 
 my $clearBeforeStart = $ENV{'CLEARBEFORESTART'};
 my $seeds = $ENV{'CASSANDRA_SEEDS'};

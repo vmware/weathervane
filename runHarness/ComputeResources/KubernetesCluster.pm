@@ -198,7 +198,7 @@ sub kubernetesExecOne {
 	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesExecOne exec failed: $cmdFailed");
+		$logger->info("kubernetesExecOne exec failed: $cmdFailed");
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");

@@ -57,6 +57,9 @@ sub clearDataAfterStart {
 	print $applog "Clearing Data From PostgreSQL\n";
 
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
+	if ($cmdFailed) {
+		$logger->error("Error clearing old data as part of the data loading process.  Error = $cmdFailed");
+	}
 	close $applog;
 
 }
@@ -236,14 +239,31 @@ override 'startStatsCollection' => sub {
 	my $cluster = $self->host;
 	# Reset the stats tables
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select pg_stat_reset();'", $self->namespace );
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	}
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
+	if ($cmdFailed) {
+		$logger->error("Error resetting PostgreSQL stats.  Error = $cmdFailed");
+	}
 
 	open( STATS, ">/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
 	my ($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	}
 	print STATS "After rampUp, max items sold per auction = $cmdout";
+
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select min(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	}
 	print STATS "After rampUp, min items sold per auction = $cmdout";
+
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select avg(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	}
 	print STATS "After rampUp, avg items sold per auction = $cmdout";
 	close STATS;
 
@@ -260,38 +280,84 @@ override 'stopStatsCollection' => sub {
 	open( STATS, ">/tmp/postgresql_stats_$hostname.txt" ) or die "Error opening /tmp/postgresql_stats_$hostname.txt:$!";
 	
 	my ($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_activity;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 	
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_bgwriter;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_database;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_database_conflicts;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_user_tables;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_statio_user_tables;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_stat_user_indexes;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select * from pg_statio_user_indexes;'", $self->namespace );
-	print STATS "$cmdout\n";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "$cmdout\n";
+	}
 
 	close STATS;
 
 	open( STATS, ">>/tmp/postgresql_itemsSold_$hostname.txt" ) or die "Error opening /tmp/postgresql_itemsSold_$hostname.txt:$!";
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select max(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
-	print STATS "After rampUp, max items sold per auction = $cmdout";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "After rampUp, max items sold per auction = $cmdout";
+	}
+
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select min(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
-	print STATS "After rampUp, min items sold per auction = $cmdout";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "After rampUp, max items sold per auction = $cmdout";
+	}
+
 	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\" select avg(cnt) from (select count(i.id) as cnt from auction a join item i on a.id=i.auction_id where a.activated=true and i.state='SOLD' group by a.id) as cnt;\\\"", $self->namespace );
-	print STATS "After rampUp, avg items sold per auction = $cmdout";
+	if ($cmdFailed) {
+		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
+	} else {
+		print STATS "After rampUp, avg items sold per auction = $cmdout";
+	}
 	close STATS;
 
 };
@@ -330,6 +396,9 @@ sub getMaxLoadedUsers {
 	my $cluster = $self->host;
 	my $impl = $self->getImpl();
 	my ($cmdFailed, $maxUsers) = $cluster->kubernetesExecOne($impl, "sudo -u postgres psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"", $self->namespace);
+	if ($cmdFailed) {
+		$logger->error("Error Getting maxLoadedUsers from PostgreSQL.  Error = $cmdFailed");
+	}
 	chomp($maxUsers);
 	$maxUsers += 0;
 	

@@ -238,11 +238,11 @@ override 'startStatsCollection' => sub {
 
 	my $cluster = $self->host;
 	# Reset the stats tables
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select pg_stat_reset();'", $self->namespace );
+	my ($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command='select pg_stat_reset();'", $self->namespace );
 	if ($cmdFailed) {
 		$logger->error("Error collecting PostgreSQL stats.  Error = $cmdFailed");
 	}
-	($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
+	($cmdFailed, $cmdout) = $cluster->kubernetesExecOne ($self->getImpl(), "psql -U auction --command=\\\"select pg_stat_reset_shared('bgwriter');'\\\"", $self->namespace );
 	if ($cmdFailed) {
 		$logger->error("Error resetting PostgreSQL stats.  Error = $cmdFailed");
 	}

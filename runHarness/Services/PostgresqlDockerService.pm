@@ -415,7 +415,7 @@ sub getMaxLoadedUsers {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	my ($cmdFailed, $maxUsers) =  = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
+	my ($cmdFailed, $maxUsers) = $self->host->dockerExec($applog, $name, "psql -U auction  -t -q --command=\"select maxusers from dbbenchmarkinfo;\"");
 	if ($cmdFailed) {
 		$logger->error("Error Getting maxLoadedUsers from PostgreSQL.  Error = $cmdFailed");
 	}

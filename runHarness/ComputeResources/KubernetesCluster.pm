@@ -203,7 +203,7 @@ sub kubernetesExecOne {
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
 	
-	return $outString;
+	return ($cmdFailed, $outString);
 	
 }
 
@@ -557,13 +557,13 @@ sub kubernetesTopPodAllNamespaces {
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --heapster-scheme=https --all-namespaces";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
-				$logger->error("kubernetesTopPodAllNamespaces top pod failed: $cmdFailed");
+				$logger->info("kubernetesTopPodAllNamespaces top pod failed: $cmdFailed");
 			}
 			my $time;
 			$cmd = "date +%H:%M";
 			($cmdFailed, $time) = runCmd($cmd);
 			if ($cmdFailed) {
-				$logger->error("kubernetesTopPodAllNamespacse date failed: $cmdFailed");
+				$logger->info("kubernetesTopPodAllNamespacse date failed: $cmdFailed");
 			}
 			chomp($time);
 			print FILE "$time\n";
@@ -607,13 +607,13 @@ sub kubernetesTopNode {
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node --heapster-scheme=https";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
-				$logger->error("kubernetesTopNode top node failed: $cmdFailed");
+				$logger->info("kubernetesTopNode top node failed: $cmdFailed");
 			}
 			my $time;
 			$cmd = "date +%H:%M";
 			($cmdFailed, $time) = runCmd($cmd);
 			if ($cmdFailed) {
-				$logger->error("kubernetesTopNode date failed: $cmdFailed");
+				$logger->info("kubernetesTopNode date failed: $cmdFailed");
 			}
 			chomp($time);
 			print FILE "$time\n";

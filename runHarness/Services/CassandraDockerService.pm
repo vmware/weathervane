@@ -114,9 +114,9 @@ sub create {
 	my %envVarMap;
 	$envVarMap{"CASSANDRA_USE_IP"}     = 1;
 	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
-	$envVarMap{"CASSANDRA_DOCKER_SEEDS"} = $seeds;
+	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
-													. "i" . $self->appInstance->instanceNum;
+												. "i" . $self->appInstance->instanceNum;
 	$envVarMap{"CASSANDRA_MEMORY"} = $self->getParamValue('nosqlServerMem');
 	$envVarMap{"CASSANDRA_CPUS"} = $self->getParamValue('nosqlServerCpus');
 
@@ -187,7 +187,13 @@ sub clearDataAfterStart {
 
 sub isUp {
 	my ( $self, $fileout ) = @_;
-	return $self->isRunning($fileout);
+	$self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
+	my $exitValue=$? >> 8;
+	if ($exitValue) {
+		return 0;
+	} else {
+		return 1;
+	}
 
 }
 

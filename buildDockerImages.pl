@@ -297,13 +297,7 @@ foreach my $imageName (@imageNames) {
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
 	
-	if ($imageName eq "zookeeper") {
-		# Figure out the latest version of Zookeeper
-		my $zookeeperGet = `curl -s http://www.us.apache.org/dist/zookeeper/stable/`;
-		$zookeeperGet =~ />zookeeper-(\d+\.\d+\.\d+)\.tar\.gz</;
-		my $zookeeperVers = $1;
-		push @buildArgs, "ZOOKEEPER_VERSION=$zookeeperVers";
-	} elsif (($imageName eq "tomcat") || ($imageName eq "auctionbidservice")) {
+	if (($imageName eq "tomcat") || ($imageName eq "auctionbidservice")) {
 		my $tomcat8get = `curl -s http://www.us.apache.org/dist/tomcat/tomcat-8/`;
 		$tomcat8get =~ />v8\.5\.(\d+)\//;
 		my $tomcat8vers = $1;

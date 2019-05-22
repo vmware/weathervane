@@ -48,6 +48,7 @@ override 'initialize' => sub {
 
 override 'create' => sub {
 	my ($self, $logPath)            = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 	
 	my $name = $self->name;
 	my $hostname         = $self->host->name;
@@ -77,7 +78,7 @@ override 'create' => sub {
 	} elsif (lc($totalMemoryUnit) eq "ki") {
 		$totalMemoryUnit = "kB";
 	}
-	$envVarMap{"RABBITMQ_MEMORY"} = $self->internalPortMap->{$totalMemory$totalMemoryUnit};
+	$envVarMap{"RABBITMQ_MEMORY"} = "$totalMemory$totalMemoryUnit";
 		
 	# Create the container
 	my %portMap;

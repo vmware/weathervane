@@ -6,15 +6,13 @@ COPY configure.pl /configure.pl
 COPY waitForNodes.pl /waitForNodes.pl
 COPY zoo.cfg /root/zookeeper/conf/zoo.cfg
 
-ARG ZOOKEEPER_VERSION=3.4.10
-
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \
 	yum install -y nc && \
-	curl -s http://www.us.apache.org/dist/zookeeper/stable/zookeeper-${ZOOKEEPER_VERSION}.tar.gz -o zookeeper-${ZOOKEEPER_VERSION}.tar.gz && \
-    tar zxf zookeeper-${ZOOKEEPER_VERSION}.tar.gz && rm -r zookeeper-${ZOOKEEPER_VERSION}.tar.gz && \
-    mv zookeeper-${ZOOKEEPER_VERSION} /opt/zookeeper-${ZOOKEEPER_VERSION} && \
-	ln -s /opt/zookeeper-${ZOOKEEPER_VERSION} /opt/zookeeper && \
+	curl -s https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz -o zookeeper-3.4.14.tar.gz && \
+    tar zxf zookeeper-3.4.14.tar.gz && rm -r zookeeper-3.4.14.tar.gz && \
+    mv zookeeper-3.4.14 /opt/zookeeper-3.4.14 && \
+	ln -s /opt/zookeeper-3.4.14 /opt/zookeeper && \
 	mkdir /mnt/zookeeper && \
     chmod +x /entrypoint.sh
 

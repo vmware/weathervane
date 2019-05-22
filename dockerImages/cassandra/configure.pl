@@ -75,7 +75,7 @@ close FILEOUT;
 # In the weathervane config file, memory limits are specified using Kubernetes 
 # notation.  Were we convert these to MB for use in jvm.options
 sub convertK8sMemStringToMB {
-	my ( $self, $k8sMemString ) = @_;
+	my ( $k8sMemString ) = @_;
 	# Both K8s and Docker Memory limits are an integer followed by an optional suffix.
 	# The legal suffixes in K8s are:
 	#  * E, P, T, G, M, K (powers of 10)

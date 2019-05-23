@@ -11,7 +11,7 @@
   "numAuctionBidServers" : 0,
   
   "numAppServers" : 1,
-  "appServerCpus" : "200m",
+  "appServerCpus" : "150m",
   "appServerMem" : "1000Mi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,

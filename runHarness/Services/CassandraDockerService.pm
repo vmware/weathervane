@@ -196,7 +196,6 @@ sub isUp {
 	} else {
 		return 1;
 	}
-
 }
 
 sub isRunning {

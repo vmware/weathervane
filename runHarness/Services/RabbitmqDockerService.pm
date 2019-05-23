@@ -269,13 +269,13 @@ sub configureAfterIsUpClusteredRabbitMQ {
 
 sub isUp {
 	my ( $self, $fileout ) = @_;
-	
-	if ( !$self->isRunning($fileout) ) {
+	my ( $self, $fileout ) = @_;
+	my ($cmdFailed, $out) = $self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
+	if ($cmdFailed) {
 		return 0;
-	}
-	
-	return 1;
-	
+	} else {
+		return 1;
+	}	
 }
 
 

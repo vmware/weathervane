@@ -523,14 +523,14 @@ sub dockerExec {
 		
 	my ($cmdFailed, $out) = runCmd("$dockerHostString docker exec $name $commandString");
 	if ($cmdFailed) {
-		$logger->error("dockerExec failed: $cmdFailed");
+		$logger->info("dockerExec failed: $cmdFailed");
 	}
 	$logger->debug("$dockerHostString docker exec $name $commandString");
 	print $logFileHandle "$dockerHostString docker exec $name $commandString\n";
 	$logger->debug("docker exec output: $out");
 	print $logFileHandle "$out\n";
 	
-	return $out;
+	return ($cmdFailed, $out);
 }
 
 sub dockerCopyTo {

@@ -678,7 +678,7 @@ sub startServices {
 			}
 		}
 		# Don't return until all services are ready
-		$self->isRunningAndUpDataServices($serviceTier, $logFile);
+		$self->isRunningAndUpServices($serviceTier, $logFile);
 	}
 	close $logFile;
 	
@@ -735,7 +735,7 @@ sub stopDataManager {
 	close $logFile;
 }
 
-sub isRunningAndUpDataServices {
+sub isRunningAndUpServices {
 	my ( $self, $serviceTier, $logFile ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $console_logger = get_logger("Console");

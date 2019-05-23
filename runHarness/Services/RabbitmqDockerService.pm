@@ -428,10 +428,6 @@ sub getConfigFiles {
 
 
 	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "sh -c \"rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt\"");
-	if ($cmdFailed) {
-		$logger->error("Error RabbitMQ configuration report.  Error = $cmdFailed");	
-	}
-
 	$self->host->dockerCopyFrom($applog, $name, "/tmp/${hostname}_rabbitmqctl_report.txt", "$logpath/.");
 	close $applog;
 	

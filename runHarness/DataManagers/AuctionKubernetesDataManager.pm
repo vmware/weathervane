@@ -54,6 +54,8 @@ sub startDataManagerContainer {
 	my $configDir = $self->getParamValue('configDir');
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
+	my $heap = $self->getParamValue('dbLoaderHeap');
+	my $threads = $self->getParamValue('dbLoaderThreads');
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
@@ -73,6 +75,12 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /WORKLOADNUM:/ ) {
 			print FILEOUT "  WORKLOADNUM: \"$workloadNum\"\n";
+		}
+		elsif ( $inline =~ /HEAP:/ ) {
+			print FILEOUT "  HEAP: \"$heap\"\n";
+		}
+		elsif ( $inline =~ /THREADS:/ ) {
+			print FILEOUT "  THREADS: \"$threads\"\n";
 		}
 		elsif ( $inline =~ /APPINSTANCENUM:/ ) {
 			print FILEOUT "  APPINSTANCENUM: \"$appInstanceNum\"\n";

@@ -71,7 +71,6 @@ kind: Service
 metadata:
   name: rabbitmq
 spec:
-  type: NodePort
   ports:
   - port: 5672
     name: nodeport

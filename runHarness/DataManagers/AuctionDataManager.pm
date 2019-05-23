@@ -61,12 +61,16 @@ sub startDataManagerContainer {
 	my $name        = $self->name;
 	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
+	my $heap = $self->getParamValue('dbLoaderHeap');
+	my $threads = $self->getParamValue('dbLoaderThreads');
 	my %envVarMap;
 	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
 	$envVarMap{"USERS"} = $users;	
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
+	$envVarMap{"HEAP"} = $heap;	
+	$envVarMap{"THREADS"} = $threads;	
 	
 	my $cassandraContactpoints = "";
 	my $nosqlServicesRef = $self->appInstance->getAllServicesByType("nosqlServer");

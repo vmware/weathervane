@@ -82,7 +82,7 @@ metadata:
     type: webServer
     impl: nginx
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
   - port: 80
     name: httpport

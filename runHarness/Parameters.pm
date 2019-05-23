@@ -684,6 +684,7 @@ $parameters{"nosqlServerHosts"} = {
 };
 
 
+
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -880,6 +881,14 @@ $parameters{"auctionBidServers"} = {
 	"isa"       => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 0,
+};
+
+$parameters{"useLoadBalancer"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "appInstance",
+	"usageText" => "If true, applications will use LoadBalancer Services for ingress.",
+	"showUsage" => 1,
 };
 
 $parameters{"help"} = {

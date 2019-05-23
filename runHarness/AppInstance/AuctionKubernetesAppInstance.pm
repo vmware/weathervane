@@ -153,18 +153,24 @@ override 'getEdgeAddrsRef' => sub {
 	
 	my $wwwIpAddrsRef = [];
 	
-	# Get the IP addresses of the nginx-ingress in this appInstance's namespace
-	my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-	if ($#{$ipAddrsRef} < 0) {
-		$logger->error("There are no IP addresses for the Kubernetes nodes");
-		exit 1;
-	}
+	if ($self->getParamValue('useLoadBalancer')) {
+		my $ip = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
+		push @$wwwIpAddrsRef, [$ip, 80, 443];							
+	} else {
+		# Using NodePort service for ingress
+		# Get the IP addresses of the nginx-ingress in this appInstance's namespace
+		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+		if ($#{$ipAddrsRef} < 0) {
+			$logger->error("There are no IP addresses for the Kubernetes nodes");
+			exit 1;
+		}
 	
-	my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
-	my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
+		my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
+		my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
 	
-	foreach my $ipAddr (@$ipAddrsRef) {
-		push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
+		foreach my $ipAddr (@$ipAddrsRef) {
+			push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
+		}
 	}
 	return $wwwIpAddrsRef;
 };

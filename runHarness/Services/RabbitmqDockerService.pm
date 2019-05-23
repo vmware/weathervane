@@ -172,6 +172,7 @@ sub configureAfterIsUpSingleRabbitMQ {
 
 sub configureAfterIsUpClusteredRabbitMQ {
 	my ( $self, $applog ) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
 
 	my $hostname         = $self->host->name;
 	my $name = $self->name;
@@ -195,15 +196,30 @@ sub configureAfterIsUpClusteredRabbitMQ {
 
 		# This is the first node.  Just configure it normally.
 		# create the auction user and vhost	
-		$self->host->dockerExec($applog, $name, "rabbitmqctl add_user auction auction");
+		my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl add_user auction auction");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
+		
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl set_user_tags auction administrator");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
 
-		$self->host->dockerExec($applog, $name, "rabbitmqctl set_user_tags auction administrator");
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl add_vhost auction");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
 
-		$self->host->dockerExec($applog, $name, "rabbitmqctl add_vhost auction");
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl set_policy -p auction ha-all \".*\" '{\"ha-mode\":\"all\", \"ha-sync-mode\":\"automatic\"}'");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
 
-		$self->host->dockerExec($applog, $name, "rabbitmqctl set_policy -p auction ha-all \".*\" '{\"ha-mode\":\"all\", \"ha-sync-mode\":\"automatic\"}'");
-
-		$self->host->dockerExec($applog, $name, "rabbitmqctl set_permissions -p auction auction \".*\" \".*\" \".*\"");
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl set_permissions -p auction auction \".*\" \".*\" \".*\"");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
 		
 	}
 	else {
@@ -221,9 +237,20 @@ sub configureAfterIsUpClusteredRabbitMQ {
 		  . " In RabbitmqService::configureAfterIsUpClusteredRabbitMQ on $hostname: Joining cluster on $clusterHostname\n";
 
 		# Join it to the cluster
-		$self->host->dockerExec($applog, $name, "rabbitmqctl stop_app");
-		$self->host->dockerExec($applog, $name, "rabbitmqctl join_cluster rabbit\@$clusterHostname");
-		$self->host->dockerExec($applog, $name, "rabbitmqctl start_app");
+		my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl stop_app");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
+
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl join_cluster rabbit\@$clusterHostname");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
+
+		($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "rabbitmqctl start_app");
+		if ($cmdFailed) {
+			$logger->error("Error configuring RabbitMQ.  Error = $cmdFailed");	
+		}
 
 	}
 
@@ -242,13 +269,12 @@ sub configureAfterIsUpClusteredRabbitMQ {
 
 sub isUp {
 	my ( $self, $fileout ) = @_;
-	
-	if ( !$self->isRunning($fileout) ) {
+	my ($cmdFailed, $out) = $self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
+	if ($cmdFailed) {
 		return 0;
-	}
-	
-	return 1;
-	
+	} else {
+		return 1;
+	}	
 }
 
 
@@ -384,6 +410,8 @@ sub parseLogFiles {
 
 sub getConfigFiles {
 	my ( $self, $destinationPath ) = @_;
+	my $logger = get_logger("Weathervane::Services::RabbitmqDockerService");
+
 	my $hostname         = $self->host->name;
 	my $name = $self->name;
 
@@ -398,8 +426,7 @@ sub getConfigFiles {
 	  || die "Error opening /$logName:$!";
 
 
-	$self->host->dockerExec($applog, $name, "sh -c \"rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt\"");
-
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "sh -c \"rabbitmqctl report > /tmp/${hostname}_rabbitmqctl_report.txt\"");
 	$self->host->dockerCopyFrom($applog, $name, "/tmp/${hostname}_rabbitmqctl_report.txt", "$logpath/.");
 	close $applog;
 	

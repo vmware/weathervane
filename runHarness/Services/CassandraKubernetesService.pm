@@ -63,7 +63,10 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From Cassandra\n";
 
-	$cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne($self->getImpl(), "/clearAfterStart.sh", $self->namespace);
+	if ($cmdFailed) {
+		$logger->error("Error clearing old data as part of the data loading process.  Error = $cmdFailed");
+	}
 	close $applog;
 
 }
@@ -91,6 +94,12 @@ sub configure {
 		}
 		elsif ( $inline =~ /CASSANDRA_CLUSTER_NAME:/ ) {
 			print FILEOUT "  CASSANDRA_CLUSTER_NAME: \"$namespace\"\n";
+		}
+		elsif ( $inline =~ /CASSANDRA_MEMORY:/ ) {
+			print FILEOUT "  CASSANDRA_MEMORY: \"" . $self->getParamValue('nosqlServerMem') ."\"\n";
+		}
+		elsif ( $inline =~ /CASSANDRA_CPUS:/ ) {
+			print FILEOUT "  CASSANDRA_CPUS: \"" . $self->getParamValue('nosqlServerCpus') ."\"\n";
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numServers\n";
@@ -157,9 +166,8 @@ sub configure {
 override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
-	$cluster->kubernetesExecOne ($self->getImpl(), "perl /isUp.pl", $self->namespace );
-	my $exitValue=$? >> 8;
-	if ($exitValue) {
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne ($self->getImpl(), "perl /isUp.pl", $self->namespace );
+	if ($cmdFailed) {
 		return 0;
 	} else {
 		return 1;

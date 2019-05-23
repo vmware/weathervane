@@ -129,7 +129,7 @@ override 'startServices' => sub {
 		}
 		
 		# Don't return until all services are ready
-		$self->isRunningAndUpDataServices($serviceTier, $logFile);
+		$self->isRunningAndUpServices($serviceTier, $logFile);
 	}
 	
 	close $logFile;

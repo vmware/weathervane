@@ -11,6 +11,8 @@ data:
   CLEARBEFORESTART: "0"
   CASSANDRA_SEEDS: "cassandra-0.cassandra.default.svc.cluster.local"
   CASSANDRA_CLUSTER_NAME: "Auction"
+  CASSANDRA_MEMORY: "16Gi"
+  CASSANDRA_CPUS: "1"
 ---
 apiVersion: apps/v1
 kind: StatefulSet

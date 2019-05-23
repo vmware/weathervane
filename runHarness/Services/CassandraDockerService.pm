@@ -114,9 +114,12 @@ sub create {
 	my %envVarMap;
 	$envVarMap{"CASSANDRA_USE_IP"}     = 1;
 	$envVarMap{"CLEARBEFORESTART"}     = $self->clearBeforeStart;
-	$envVarMap{"CASSANDRA_DOCKER_SEEDS"} = $seeds;
+	$envVarMap{"CASSANDRA_SEEDS"} = $seeds;
 	$envVarMap{"CASSANDRA_CLUSTER_NAME"} = "auctionw" . $self->appInstance->workload->instanceNum 
-													. "i" . $self->appInstance->instanceNum;
+												. "i" . $self->appInstance->instanceNum;
+	$envVarMap{"CASSANDRA_MEMORY"} = $self->getParamValue('nosqlServerMem');
+	$envVarMap{"CASSANDRA_CPUS"} = $self->getParamValue('nosqlServerCpus');
+
 	# Create the container
 	my %portMap;
 	my $directMap = 1;
@@ -176,7 +179,10 @@ sub clearDataAfterStart {
 	open( $applog, ">$logName" ) or die "Error opening $logName:$!";
 	print $applog "Clearing Data From Cassandra\n";
 
-	$self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	my ($cmdFailed, $out) = $self->host->dockerExec($applog, $name, "/clearAfterStart.sh");
+	if ($cmdFailed) {
+		$logger->error("Error clearing old data as part of the data loading process.  Error = $cmdFailed");	
+	}
 
 	close $applog;
 
@@ -184,8 +190,12 @@ sub clearDataAfterStart {
 
 sub isUp {
 	my ( $self, $fileout ) = @_;
-	return $self->isRunning($fileout);
-
+	my ($cmdFailed, $out) = $self->host->dockerExec($fileout, $self->name, "perl /isUp.pl");
+	if ($cmdFailed) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 sub isRunning {

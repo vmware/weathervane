@@ -171,6 +171,7 @@ override 'addSecondary' => sub {
 };
 
 sub getControllerURL {
+	my ( $self ) = @_;
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
 	return "http://${hostname}:$port";
@@ -318,7 +319,10 @@ sub printLoadPath {
 
 sub getHosts {
 	my ( $self ) = @_;
+	my $logger =
+	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my @hosts;
+	my $secondariesRef = $self->secondaries;
 	push @hosts, $self->host->name;
 	foreach my $secondary (@$secondariesRef) {
 		$logger->debug("getHosts adding host " . $secondary->host->name);

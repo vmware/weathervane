@@ -16,6 +16,7 @@ package WorkloadDriverFactory;
 use Moose;
 use MooseX::Storage;
 use WorkloadDrivers::AuctionWorkloadDriver;
+use WorkloadDrivers::AuctionKubernetesWorkloadDriver;
 use Parameters qw(getParamValue);
 use WeathervaneTypes;
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
@@ -37,7 +38,9 @@ sub getWorkloadDriver {
 	my $workloadDriver;
 	if ( $workloadType eq "auction" ) {
 		if ($hostType eq "KubernetesCluster") {
-			die "Kubernetes workload drivers are not yet supported";
+			$workloadDriver = AuctionKubernetesWorkloadDriver->new(
+				paramHashRef => $workloadDriverHashRef
+			);
 		} else {
 			$workloadDriver = AuctionWorkloadDriver->new(
 				paramHashRef => $workloadDriverHashRef

@@ -19,12 +19,18 @@ data:
   POSTGRESEFFECTIVECACHESIZEPCT: "0.65"
   POSTGRESMAXCONNECTIONS: "2000"
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql
 spec:
   serviceName: postgresql
+  selector:
+    matchLabels:
+      app: auction
+      tier: data
+      type: dbServer
+      impl: postgresql
   replicas: 1
   template:
     metadata:
@@ -51,6 +57,10 @@ spec:
         - containerPort: 5432
           name: postgresqlport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
         livenessProbe:
           exec:
             command:
@@ -99,6 +109,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgresql
+  labels:
+    app: auction
+    tier: data
+    type: dbServer
+    impl: postgresql
 spec:
   clusterIP: None
   ports:

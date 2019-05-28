@@ -316,7 +316,7 @@ sub getEdgeAddrsRef {
 	my $edgeHostsRef = [];
 	my $edgeService  = $self->getEdgeService();
 	my $edgeServices = $self->getAllServicesByType($edgeService);
-	$logger->debug("configure for workload $workloadNum, edgeService is $edgeService");
+	$logger->debug("getEdgeAddrsRef");
 	foreach my $service (@$edgeServices) {
 		push @$edgeHostsRef, [$service->host->name, $service->portMap->{"http"}, $service->portMap->{"https"}];
 	}

@@ -21,12 +21,18 @@ data:
   TOMCAT_HTTP_PORT: "8080"
   TOMCAT_DB_PORT: "5432"
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auctionbidservice
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: auction
+      tier: backend
+      type: auctionBidServer
+      impl: auctionbidservice
   template:
     metadata:
       name: auctionbidservice
@@ -50,6 +56,10 @@ spec:
         - containerPort: 8443
           name: httpsport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
         livenessProbe:
           exec:
             command:
@@ -79,6 +89,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: auctionbidservice
+  labels:
+    app: auction
+    tier: backend
+    type: auctionBidServer
+    impl: auctionbidservice
 spec:
   type: NodePort
   ports:

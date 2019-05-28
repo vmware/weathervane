@@ -203,6 +203,16 @@ public class RunController {
 		return new ResponseEntity<ActiveUsersResponse>(response, status);
 	}
 
+	@RequestMapping(value="/up", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> isDriverUp(@PathVariable String runName) {
+		logger.debug("isDriverUp");
+		IsStartedResponse response = new IsStartedResponse();
+		HttpStatus status = HttpStatus.OK;
+		response.setIsStarted(true);
+
+		return new ResponseEntity<IsStartedResponse>(response, status);
+	}
+
 	@RequestMapping(value="/{runName}/up", method = RequestMethod.GET)
 	public HttpEntity<IsStartedResponse> isUp(@PathVariable String runName) {
 		logger.debug("isUp for run " + runName);

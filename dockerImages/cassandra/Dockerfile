@@ -5,6 +5,7 @@ COPY cassandra.repo /etc/yum.repos.d/cassandra.repo
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl    
 COPY isUp.pl /isUp.pl    
+COPY cqlsh.in /cqlsh.in
 COPY clearAfterStart.sh /clearAfterStart.sh   
 COPY cassandra-init.sh /cassandra-init.sh    
 COPY auction_cassandra.cql /auction_cassandra.cql

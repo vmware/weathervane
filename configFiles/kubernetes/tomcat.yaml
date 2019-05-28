@@ -24,12 +24,18 @@ data:
   WARMER_THREADS_PER_SERVER: "1"
   WARMER_ITERATIONS: "500"
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tomcat
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: auction
+      tier: backend
+      type: appServer
+      impl: tomcat
   template:
     metadata:
       name: tomcat
@@ -56,9 +62,6 @@ spec:
         resources:
           requests:
             cpu: 1
-            memory: 8Gi
-          limits:
-            cpu: 2
             memory: 8Gi
         livenessProbe:
           exec:
@@ -94,9 +97,6 @@ spec:
           requests:
             cpu: 100m
             memory: 500Mi
-          limits:
-            cpu: 250m
-            memory: 1Gi
         livenessProbe:
           exec:
             command:
@@ -126,6 +126,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tomcat
+  labels:
+    app: auction
+    tier: backend
+    type: appServer
+    impl: tomcat
 spec:
   ports:
   - port: 8080

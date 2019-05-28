@@ -84,6 +84,8 @@ sub configure {
 			my $useLoadbalancer = $self->getParamValue('useLoadBalancer');
 			if (!$useLoadbalancer) {
 				print FILEOUT "${1}type: NodePort\n";				
+			} else {
+				print FILEOUT $inline;		
 			}
 		}
 		elsif ( $inline =~ /(\s+)cpu:/ ) {

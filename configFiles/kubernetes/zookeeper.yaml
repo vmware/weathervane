@@ -14,12 +14,18 @@ data:
   ZK_SERVERS: "server.1=zookeeper-0.zookeeper:2888:3888,server.2=zookeeper-1.zookeeper:2888:3888,server.3=zookeeper-2.zookeeper:2888:3888"
   ZK_ID: "0"
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: zookeeper
 spec:
   serviceName: zookeeper
+  selector:
+    matchLabels:
+      app: auction
+      tier: backend
+      type: coordinationServer
+      impl: zookeeper
   replicas: 3
   template:
     metadata:
@@ -47,11 +53,20 @@ spec:
         - containerPort: 3888
           name: electionport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: zookeeper
+  labels:
+    app: auction
+    tier: backend
+    type: coordinationServer
+    impl: zookeeper
 spec:
   clusterIP: None
   ports:

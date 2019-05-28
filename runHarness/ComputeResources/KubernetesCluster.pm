@@ -263,14 +263,14 @@ sub kubernetesApply {
 }
 
 sub kubernetesGetLbIP {
-	my ( $self, $name, $namespace ) = @_;
+	my ( $self, $svcName, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesGetLbIP ");
+	$logger->debug("kubernetesGetLbIP for $svcName");
 
 	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get svc $name --namespace=$namespace -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get svc $svcName --namespace=$namespace -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetLbIP failed: $cmdFailed");
@@ -278,7 +278,7 @@ sub kubernetesGetLbIP {
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
 	
-	return $cmd;
+	return ($cmdFailed, $outString);
 }
 
 sub kubernetesGetNodeIPs {

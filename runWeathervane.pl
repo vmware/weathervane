@@ -275,7 +275,7 @@ if (dockerExists("weathervane")) {
 # make sure the docker image is up-to-date
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
-my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane " 
+my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString " 
 		. "$outputMountString $tmpMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";

@@ -57,6 +57,10 @@ spec:
           name: jmx
         - containerPort: 9042
           name: cql
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
         securityContext:
           capabilities:
             add:

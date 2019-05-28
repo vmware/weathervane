@@ -70,7 +70,7 @@ override 'redeploy' => sub {
 };
 
 override 'getControllerURL' => sub {
-	return $controllerUrl;
+	return $self->controllerUrl;
 };
 
 sub getHosts {
@@ -86,7 +86,6 @@ sub getStatsHost {
 sub killOld {
 	my ($self, $setupLogDir)           = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("killOld");
 	my $cluster = $self->host;

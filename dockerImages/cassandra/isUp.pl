@@ -9,10 +9,9 @@ chomp($ip);
 open my $cmd, '-|', 'nodetool status';
 while (my $line = <$cmd>) {
 	if ($line =~ /^UN\s+$ip/) {
-		sleep 10;
-		open my $cmd2, '-|', 'nodetool status';
+		open my $cmd2, '-|', "cqlsh $ip -f cqlsh.in";
 		while (my $line2 = <$cmd2>) {
-			if ($line2 =~ /^UN\s+$ip/) {
+			if ($line2 =~ /system_schema/) {
 				close $cmd;
 				close $cmd2;
 				exit 0;

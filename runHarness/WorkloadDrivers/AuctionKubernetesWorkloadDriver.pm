@@ -70,6 +70,7 @@ override 'redeploy' => sub {
 };
 
 override 'getControllerURL' => sub {
+	my ( $self ) = @_;
 	return $self->controllerUrl;
 };
 

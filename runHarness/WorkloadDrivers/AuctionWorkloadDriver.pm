@@ -170,13 +170,6 @@ override 'addSecondary' => sub {
 
 };
 
-sub getControllerURL {
-	my ( $self ) = @_;
-	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->name;
-	return "http://${hostname}:$port";
-}
-
 sub checkConfig {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
@@ -315,6 +308,13 @@ sub printLoadPath {
 		}
 	} while ( $self->getParamValue('repeatUserLoadPath') );
 
+}
+
+sub getControllerURL {
+	my ( $self ) = @_;
+	my $port = $self->portMap->{'http'};
+	my $hostname = $self->host->name;
+	return "http://${hostname}:$port";
 }
 
 sub getHosts {
@@ -1296,7 +1296,7 @@ sub isUp {
 	$ua->agent("Weathervane/0.95 ");
 
 	my $controllerUrl = $self->getControllerURL();
-	my $url = "http://$controllerUrl/run/$runName/up";
+	my $url = "$controllerUrl/run/$runName/up";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 

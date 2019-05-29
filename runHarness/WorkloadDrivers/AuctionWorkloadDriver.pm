@@ -660,7 +660,7 @@ sub clearResults {
 sub startDrivers {
 	my ( $self, $logDir, $suffix, $logHandle) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $driver->workload->instanceNum;
+	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("Starting workload driver containers");
 
 	# Start the driver on all of the secondaries
@@ -767,7 +767,7 @@ sub startAuctionWorkloadDriverContainer {
 }
 
 sub stopDrivers {
-	my ( $self ) = @_;
+	my ( $self, $logHandle) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$logger->debug("Stopping workload driver containers");
 
@@ -1274,7 +1274,7 @@ sub stopRun {
 		return 0;
 	}
 				
-	$self->stopDrivers();
+	$self->stopDrivers($logHandle);
 
 	close $logHandle;
 	return 1;

@@ -156,9 +156,9 @@ has 'suffix' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
-	
-	$self->name("auction");
-
+	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $instanceNum = $self->instanceNum;
+	$self->name("driverW${workloadNum}I${instanceNum}");
 };
 
 override 'addSecondary' => sub {
@@ -328,6 +328,7 @@ sub getHosts {
 		$logger->debug("getHosts adding host " . $secondary->host->name);
 		push @hosts, $secondary->host->name;
 	}
+	return \@hosts;
 }
 
 sub getStatsHost {

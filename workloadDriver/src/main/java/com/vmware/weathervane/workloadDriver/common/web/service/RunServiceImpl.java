@@ -38,6 +38,7 @@ import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitialized
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 
 @Service
@@ -124,7 +125,6 @@ public class RunServiceImpl implements RunService {
 
 			}
 		}
-
 	}
 
 	@Override
@@ -209,8 +209,27 @@ public class RunServiceImpl implements RunService {
 
 	@Override
 	public boolean isUp(String runName) {
-		return true;
+		// Determine whether all hosts in run runName are up
+		Run theRun = runs.get(runName);
+		if (theRun.getHosts() == null) {
+			logger.debug("isUp: Run " + runName + " does not have any hosts defined.");
+			return true;
+		}
+		for (String hostname : theRun.getHosts()) {
+			HttpHeaders requestHeaders = new HttpHeaders();
 
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+			String url = "http://" + hostname + ":" + theRun.getPortNumber() + "/driver/up";
+			ResponseEntity<IsStartedResponse> responseEntity = restTemplate.getForEntity(url, IsStartedResponse.class);
+
+			IsStartedResponse response = responseEntity.getBody();
+			if ((responseEntity.getStatusCode() != HttpStatus.OK) || !response.getIsStarted()) {
+				logger.debug("Host " + hostname + " is not up.");			
+				return false;
+			}
+			logger.debug("Host " + hostname + " is up.");			
+		}
+		return true;
 	}
 
 	@Override

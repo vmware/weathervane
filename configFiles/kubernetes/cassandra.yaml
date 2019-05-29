@@ -61,10 +61,6 @@ spec:
           requests:
             cpu: 1
             memory: 8Gi
-        securityContext:
-          capabilities:
-            add:
-              - IPC_LOCK
         lifecycle:
           preStop:
             exec:

@@ -31,6 +31,7 @@ import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.web.service.DriverService;
 
@@ -185,5 +186,15 @@ public class DriverController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
+
+	@RequestMapping(value="/up", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> isDriverUp(@PathVariable String runName) {
+		logger.debug("isDriverUp");
+		IsStartedResponse response = new IsStartedResponse();
+		HttpStatus status = HttpStatus.OK;
+		response.setIsStarted(true);
+
+		return new ResponseEntity<IsStartedResponse>(response, status);
+	}
 
 }

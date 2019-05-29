@@ -657,6 +657,38 @@ sub clearResults {
 	$self->proportion(   {} );
 }
 
+sub startDrivers {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("Starting workload driver containers");
+
+	# Start the driver on all of the secondaries
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		my $pid              = fork();
+		if ( $pid == 0 ) {
+			my $hostname = $secondary->host->name;
+			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
+			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
+			my $secondaryName        = $secondary->name;
+			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
+			exit;
+		}
+	}
+
+	# start the primary
+	my $pid = fork();
+	if ( $pid == 0 ) {
+		$logger->debug("Starting primary driver for workload $workloadNum");
+		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
+		my $name        = $self->name;
+		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
+		exit;
+	}
+
+	$logger->debug("Sleeping for 30 sec to let primary driver start");
+	sleep 30;	
+}
 
 sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;
@@ -733,6 +765,19 @@ sub startAuctionWorkloadDriverContainer {
 	);
 }
 
+sub stopDrivers {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("Stopping workload driver containers");
+
+	# Now stop and remove all of the driver containers
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		$self->stopAuctionWorkloadDriverContainer($logHandle, $secondary);
+	}
+	$self->stopAuctionWorkloadDriverContainer($logHandle, $self);
+}
+
 sub stopAuctionWorkloadDriverContainer {
 	my ( $self, $applog, $driver ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -758,56 +803,24 @@ sub initializeRun {
 		return 0;
 	};
 
+    $self->startDrivers();
+
 	# Create a list of all of the workloadDriver nodes including the primary
 	my $driversRef     = [];
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
 		push @$driversRef, $secondary;
-		$secondary->setPortNumber($port);
 	}
 	push @$driversRef, $self;
-
-	# Start the driver on all of the secondaries
-	foreach my $secondary (@$secondariesRef) {
-		my $pid              = fork();
-		if ( $pid == 0 ) {
-			my $hostname = $secondary->host->name;
-			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
-			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName        = $secondary->name;
-			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
-			exit;
-		}
-	}
-
-	# start the primary
-	my $pid              = fork();
-	if ( $pid == 0 ) {
-		$logger->debug("Starting primary driver for workload $workloadNum");
-		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
-		my $name        = $self->name;
-		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
-		exit;
-	}
-
-	$logger->debug("Sleeping for 30 sec to let primary driver start");
-	sleep 30;
 
 	# Now keep checking whether the workload driver nodes are up
 	my $allUp      = 1;
 	my $retryCount = 0;
 	do {
-		$allUp = 1;
-		foreach my $driver (@$driversRef) {
-			my $isUp = $driver->isUp();
-			$logger->debug( "For driver "
-				  . $driver->host->name
+		$allUp = $self->isUp();
+		$logger->debug( "For driver "
+				  . $self->host->name
 				  . " isUp returned $isUp" );
-			if ( !$isUp ) {
-				$allUp = 0;
-			}
-		}
-
 		$retryCount++;
 		if ( !$allUp ) {
 			sleep 24;
@@ -1260,10 +1273,7 @@ sub stopRun {
 		return 0;
 	}
 				
-	# Now stop and remove all of the driver containers
-	foreach my $driver (@$driversRef) {
-		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
-	}
+	$self->stopDrivers();
 
 	close $logHandle;
 	return 1;
@@ -1277,8 +1287,6 @@ sub isUp {
 	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->name;
-	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -1286,7 +1294,8 @@ sub isUp {
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/0.95 ");
 
-	my $url = "http://$hostname:$port/run/$runName/up";
+	my $controllerUrl = $self->getControllerURL();
+	my $url = "http://$controllerUrl/run/$runName/up";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 

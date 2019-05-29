@@ -77,12 +77,12 @@ override 'getControllerURL' => sub {
 override 'getHosts' => sub {
 	my ( $self ) = @_;
 	
-}
+};
 
 override 'getStatsHost' => sub {
 	my ( $self ) = @_;
 	
-}
+};
 
 sub killOld {
 	my ($self, $setupLogDir)           = @_;
@@ -97,12 +97,12 @@ sub killOld {
 override 'startDrivers' => sub {
 	my ( $self ) = @_;
 	
-}
+};
 
 override 'stopDrivers' => sub {
 	my ( $self ) = @_;
 	
-}
+};
 
 sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;

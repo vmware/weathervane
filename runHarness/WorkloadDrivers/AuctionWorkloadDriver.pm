@@ -156,7 +156,7 @@ has 'suffix' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
-	my $workloadNum = $self->appInstance->workload->instanceNum;
+	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
 	$self->name("driverW${workloadNum}I${instanceNum}");
 };

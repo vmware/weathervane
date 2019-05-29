@@ -658,8 +658,9 @@ sub clearResults {
 }
 
 sub startDrivers {
-	my ( $self ) = @_;
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $workloadNum    = $driver->workload->instanceNum;
 	$logger->debug("Starting workload driver containers");
 
 	# Start the driver on all of the secondaries
@@ -670,7 +671,7 @@ sub startDrivers {
 			my $hostname = $secondary->host->name;
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
 			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName        = $secondary->name;
+			my $secondaryName  = $secondary->name;
 			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
 			exit;
 		}
@@ -803,7 +804,7 @@ sub initializeRun {
 		return 0;
 	};
 
-    $self->startDrivers();
+    $self->startDrivers($logDir, $suffix, $logHandle);
 
 	# Create a list of all of the workloadDriver nodes including the primary
 	my $driversRef     = [];
@@ -814,20 +815,20 @@ sub initializeRun {
 	push @$driversRef, $self;
 
 	# Now keep checking whether the workload driver nodes are up
-	my $allUp      = 1;
+	my $isUp      = 1;
 	my $retryCount = 0;
 	do {
-		$allUp = $self->isUp();
+		$isUp = $self->isUp();
 		$logger->debug( "For driver "
 				  . $self->host->name
 				  . " isUp returned $isUp" );
 		$retryCount++;
-		if ( !$allUp ) {
+		if ( !$isUp ) {
 			sleep 24;
 		}
-	} while ( ( !$allUp ) && ( $retryCount < 10 ) );
+	} while ( ( !$isUp ) && ( $retryCount < 10 ) );
 
-	if ( !$allUp ) {
+	if ( !$isUp ) {
 		$console_logger->warn(
 "The workload driver nodes for workload $workloadNum did not start within 4 minutes. Exiting"
 		);

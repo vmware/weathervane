@@ -292,7 +292,7 @@ sub loadData {
 
 	$logger->debug("Exec-ing perl /loadData.pl");
 	print $applog "Exec-ing perl /loadData.pl\n";
-	my $kubernetesConfigFile = $cluster->getParamValue('kubernetesConfigFile');
+	my $kubernetesConfigFile = $cluster->getParamValue('kubeconfigFile');
 	# Get the list of pods
 	my $cmd;
 	my $outString;	

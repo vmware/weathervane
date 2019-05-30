@@ -574,13 +574,28 @@ $parameters{"kubernetesClusters"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"kubernetesConfigFile"} = {
+$parameters{"kubeconfigFile"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "~/.kube/config",
 	"parent"    => "kubernetesCluster",
 	"usageText" => "This is the location of the kubectl config file for a kubernetes cluster",
 	"showUsage" => 1,
 };
+$parameters{"kubeconfigContext"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the context to use from within the kubeconfig file.",
+	"showUsage" => 1,
+};
+$parameters{"useLoadBalancer"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If true, applications will use LoadBalancer Services for ingress on this cluster.",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerHost"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -881,14 +896,6 @@ $parameters{"auctionBidServers"} = {
 	"isa"       => "auctionBidServer",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-$parameters{"useLoadBalancer"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "appInstance",
-	"usageText" => "If true, applications will use LoadBalancer Services for ingress.",
-	"showUsage" => 1,
 };
 
 $parameters{"help"} = {

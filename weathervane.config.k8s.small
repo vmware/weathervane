@@ -7,7 +7,9 @@
   "kubernetesClusters" : [ 
     { 
       "name" : "appHost", 
-      "kubernetesConfigFile" : "/root/.kube/config",
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "",
+      "useLoadBalancer" : true,
     },
   ],
 

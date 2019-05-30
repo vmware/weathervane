@@ -69,10 +69,15 @@ sub kubernetesGetPods {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetPods in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
-
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+	
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pod --namespace=$namespace -o wide";
+	$cmd = "kubectl get pod --namespace=$namespace -o wide --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetPods failed: $cmdFailed");
@@ -87,10 +92,15 @@ sub kubernetesDeleteAll {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDeleteAll with resourceType $resourceType in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl delete $resourceType --all --namespace=$namespace";
+	$cmd = "kubectl delete $resourceType --all --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAll failed: $cmdFailed");
@@ -105,19 +115,24 @@ sub kubernetesDeleteAllWithLabel {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDeleteAllWithLabel with label $selector in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete all --selector=$selector --namespace=$namespace";
+	$cmd = "kubectl delete all --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete all failed: $cmdFailed");
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete configmap --selector=$selector --namespace=$namespace";
+	$cmd = "kubectl delete configmap --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete configmap failed: $cmdFailed");
@@ -132,10 +147,15 @@ sub kubernetesDeleteAllWithLabelAndResourceType {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDeleteAllWithLabelAndResourceType with resourceType $resourceType, label $selector in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete $resourceType --selector=$selector --namespace=$namespace";
+	$cmd = "kubectl delete $resourceType --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabelAndResourceType failed: $cmdFailed");
@@ -150,10 +170,15 @@ sub kubernetesDelete {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDelete resourceName $resourceName of type $resourceType in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl delete $resourceType $resourceName --namespace=$namespace";
+	$cmd = "kubectl delete $resourceType $resourceName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		if ( !($outString =~ /NotFound/) ) {
@@ -173,13 +198,18 @@ sub kubernetesExecOne {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesExecOne exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	# Get the list of pods
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesExecOne get pod failed: $cmdFailed");
@@ -195,7 +225,7 @@ sub kubernetesExecOne {
 	# Get the name of the first pod
 	my $podName = $names[0];
 	
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString";
+	$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->info("kubernetesExecOne exec failed: $cmdFailed");
@@ -215,13 +245,18 @@ sub kubernetesExecAll {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesExecAll exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	# Get the list of pods
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesExecAll get pod failed: $cmdFailed");
@@ -235,7 +270,7 @@ sub kubernetesExecAll {
 	}
 	
 	foreach my $podName (@names) { 	
-		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString";
+		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName --kubeconfig=$kubeconfigFile $contextString -- $commandString";
 		($cmdFailed, $outString) = runCmd($cmd);
 		if ($cmdFailed) {
 			$logger->error("kubernetesExecAll exec failed: $cmdFailed");
@@ -250,10 +285,15 @@ sub kubernetesApply {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesApply apply file $fileName in namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl apply -f $fileName --namespace=$namespace";
+	$cmd = "kubectl apply -f $fileName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesApply failed: $cmdFailed");
@@ -267,10 +307,15 @@ sub kubernetesGetLbIP {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetLbIP for $svcName");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get svc $svcName --namespace=$namespace -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
+	$cmd = "kubectl get svc $svcName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetLbIP failed: $cmdFailed");
@@ -286,10 +331,15 @@ sub kubernetesGetNodeIPs {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetNodeIPs ");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get node  -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
@@ -310,10 +360,15 @@ sub kubernetesGetNodePortForPortNumber {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetNodePortForPortNumber LabelString $labelString, port $portNumber, namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get service --selector=$labelString -o=jsonpath='{range .items[*]}{.spec.ports[*].port}{\",\"}{.spec.ports[*].nodePort}{\"\\n\"}{end}' --namespace=$namespace";
+	$cmd = "kubectl get service --selector=$labelString -o=jsonpath='{range .items[*]}{.spec.ports[*].port}{\",\"}{.spec.ports[*].nodePort}{\"\\n\"}{end}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodePortForPortNumber failed: $cmdFailed");
@@ -359,10 +414,15 @@ sub kubernetesGetSizeForPVC {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetSizeForPVC pvcName kubernetesGetSizeForPVC, namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pvc $pvcName -o=jsonpath='{.spec.resources.requests.storage}' --namespace=$namespace";
+	$cmd = "kubectl get pvc $pvcName -o=jsonpath='{.spec.resources.requests.storage}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetSizeForPVC failed: $cmdFailed");
@@ -385,10 +445,15 @@ sub kubernetesAreAllPodRunningWithNum {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesAreAllPodRunningWithNum podLabelString $podLabelString, namespace $namespace, num $num");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace";
+	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
@@ -424,12 +489,17 @@ sub kubernetesAreAllPodUpWithNum {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesAreAllPodUpWithNum exec $commandString for serviceTypeImpl $serviceTypeImpl, namespace $namespace, findString $findString, num $num");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
 	my $outString;	
 	my $cmdFailed;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesAreAllPodUpWithNum get pod failed: $cmdFailed");
@@ -449,7 +519,7 @@ sub kubernetesAreAllPodUpWithNum {
 	}
 	
 	foreach my $podName (@names) { 	
-		$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl exec -c $serviceTypeImpl --namespace=$namespace $podName -- $commandString";
+		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
 		($cmdFailed, $outString) = runCmd($cmd);
 		$logger->debug("Command: $cmd");
 		$logger->debug("Output: $outString");
@@ -471,10 +541,15 @@ sub kubernetesDoPodsExist {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesDoPodsExist podLabelString $podLabelString, namespace $namespace");
 
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	my $cmd;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace";
+	$cmd = "kubectl get pod --selector=$podLabelString -o=jsonpath='{.items[*].status.phase}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDoPodsExist failed: $cmdFailed");
@@ -497,13 +572,18 @@ sub kubernetesGetLogs {
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
 	
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	# Get the list of pods
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetLogs get pod failed: $cmdFailed");
@@ -520,9 +600,9 @@ sub kubernetesGetLogs {
 
 	foreach my $podName (@names) {
 		if ($maxLogLines > 0) {
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs --tail $maxLogLines -c $serviceTypeImpl --namespace=$namespace $podName";
+			$cmd = "kubectl logs --tail $maxLogLines -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName";
 		} else {
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl logs -c $serviceTypeImpl --namespace=$namespace $podName";
+			$cmd = "kubectl logs -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName";
 		}
 		($cmdFailed, $outString) = runCmd($cmd);
 		if ($cmdFailed) {
@@ -555,7 +635,12 @@ sub kubernetesTopPodAllNamespaces {
 	}
 	$self->kubectlTopPodRunning(1);
 	
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	# Fork a process to run in the background
 	my $pid = fork();
@@ -572,7 +657,7 @@ sub kubernetesTopPodAllNamespaces {
 	 		my $cmd;
 			my $outString;
 			my $cmdFailed;
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --heapster-scheme=https --all-namespaces";
+			$cmd = "kubectl top pod --heapster-scheme=https --all-namespaces --kubeconfig=$kubeconfigFile $contextString";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
 				$logger->info("kubernetesTopPodAllNamespaces top pod failed: $cmdFailed");
@@ -605,7 +690,12 @@ sub kubernetesTopNode {
 	}
 	$self->kubectlTopNodeRunning(1);
 	
-	my $kubernetesConfigFile = $self->getParamValue('kubernetesConfigFile');
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
 
 	# Fork a process to run in the background
 	my $pid = fork();
@@ -622,7 +712,7 @@ sub kubernetesTopNode {
 	 		my $cmd;
 			my $outString;
 			my $cmdFailed;
-			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node --heapster-scheme=https";
+			$cmd = "kubectl top node --heapster-scheme=https --kubeconfig=$kubeconfigFile $contextString";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
 				$logger->info("kubernetesTopNode top node failed: $cmdFailed");

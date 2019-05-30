@@ -931,6 +931,7 @@ sub initializeRun {
 	}
 	else {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
+		$logger->debug( "Response unsucessful.  Content: " . $res->content );
 		return 0;
 	}
 

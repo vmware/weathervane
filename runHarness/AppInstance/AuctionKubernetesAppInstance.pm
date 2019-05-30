@@ -164,6 +164,9 @@ override 'getEdgeAddrsRef' => sub {
 		  	if ($cmdFailed)	{
 		  		$logger->error("Error getting IP for frontend loadbalancer: error = $cmdFailed");
 		  	}
+		  	if (!$ip) {
+		  		sleep 10;
+		  	}
 			$logger->debug("Called kubernetesGetLbIP: got $ip");
 		}
 		push @$wwwIpAddrsRef, [$ip, 80, 443];							

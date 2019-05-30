@@ -1312,7 +1312,7 @@ sub isUp {
 	$ua->agent("Weathervane/0.95 ");
 
 	my $controllerUrl = $self->getControllerURL();
-	my $url = "$controllerUrl/run/$runName/up";
+	my $url = "$controllerUrl/run/up";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 

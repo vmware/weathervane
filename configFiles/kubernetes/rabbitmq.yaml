@@ -16,6 +16,11 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: rabbitmq
+  labels:
+    app: auction
+    tier: backend
+    type: msgServer
+    impl: rabbitmq
 spec:
   replicas: 1
   template:

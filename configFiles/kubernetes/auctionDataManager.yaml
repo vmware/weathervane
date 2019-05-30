@@ -18,6 +18,10 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: auctiondatamanager
+  labels:
+    app: auction
+    tier: dataManager
+    impl: auctiondatamanager
 spec:
   replicas: 1
   template:

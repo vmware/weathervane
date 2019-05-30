@@ -81,7 +81,7 @@ sub configure {
 			}
 		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
-			my $useLoadbalancer = $self->getParamValue('useLoadBalancer');
+			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
 			if (!$useLoadbalancer) {
 				print FILEOUT "${1}type: NodePort\n";				
 			} else {

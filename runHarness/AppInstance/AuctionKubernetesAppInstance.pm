@@ -153,8 +153,8 @@ override 'getEdgeAddrsRef' => sub {
 	
 	my $wwwIpAddrsRef = [];
 	
-	$logger->debug("getEdgeAddrsRef: useLoadBalancer = " . $self->getParamValue('useLoadBalancer'));
-	if ($self->getParamValue('useLoadBalancer')) {
+	$logger->debug("getEdgeAddrsRef: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
+	if ($cluster->getParamValue('useLoadBalancer')) {
 		my $ip = "";
 		# Wait for ip to be provisioned
 		# ToDo: Need a timeout here.

@@ -131,6 +131,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tomcat
+  labels:
+    app: auction
+    tier: backend
+    type: appServer
+    impl: tomcat
 spec:
   type: NodePort
   ports:

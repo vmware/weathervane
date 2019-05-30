@@ -189,7 +189,7 @@ public class DriverController {
 
 
 	@RequestMapping(value="/up", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isDriverUp(@PathVariable String runName) {
+	public HttpEntity<IsStartedResponse> isDriverUp() {
 		logger.debug("isDriverUp");
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;

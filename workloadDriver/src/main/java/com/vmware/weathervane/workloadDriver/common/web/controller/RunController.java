@@ -39,6 +39,7 @@ import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersRe
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.PortMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 import com.vmware.weathervane.workloadDriver.common.web.service.RunService;
 
@@ -235,11 +236,11 @@ public class RunController {
 	}
 
 	@RequestMapping(value="/port", method = RequestMethod.POST)
-	public HttpEntity<BasicResponse> setPort(@RequestBody Integer portNumber) {
+	public HttpEntity<BasicResponse> setPort(@RequestBody PortMessage portMessage) {
 		logger.debug("setPort");
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
-		runService.setPortNumber(portNumber);
+		runService.setPortNumber(portMessage.getPort());
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 

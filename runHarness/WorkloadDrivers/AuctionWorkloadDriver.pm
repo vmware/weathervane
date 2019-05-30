@@ -830,7 +830,7 @@ sub initializeRun {
 		);
 		return 0;
 	} else {
-		$logger->debug("All workload drivers are up.");
+		$logger->debug("The workload controller is up.");
 	}
 
 	my $json = JSON->new;
@@ -861,7 +861,9 @@ sub initializeRun {
 		return 0;
 	}
 	
-	$runContent = $json->encode($self->portMap->{'http'});
+	my %portHash;
+	$portHash{"port"} = $self->portMap->{'http'};
+	$runContent = $json->encode(\%portHash);
 	$url = $baseUrl . "/port";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
@@ -872,7 +874,7 @@ sub initializeRun {
 	$logger->debug(
 		"Response status line: " . $res->status_line . " for url " . $url );
 	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
+		$logger->debug( "Response sucessful.  " . $res->content );
 	}
 	else {
 		$console_logger->warn("Could not send port message to workload controller. Exiting");

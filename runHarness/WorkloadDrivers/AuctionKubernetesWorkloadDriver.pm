@@ -46,11 +46,6 @@ has 'namespace' => (
 	isa => 'Str',
 );
 
-has 'controllerUrl' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 has 'imagePullPolicy' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -71,12 +66,51 @@ override 'redeploy' => sub {
 
 override 'getControllerURL' => sub {
 	my ( $self ) = @_;
-	return $self->controllerUrl;
+	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $cluster = $self->host;
+	
+	my $hostname;
+	my $port;
+	$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
+	if ($cluster->getParamValue('useLoadBalancer')) {
+		# Wait for ip to be provisioned
+		# ToDo: Need a timeout here.
+		my $ip = "";
+		while (!$ip) {
+			my $cmdFailed;
+		  	($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
+		  	if ($cmdFailed)	{
+		  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+		  	}
+		  	if (!$ip) {
+		  		sleep 10;
+		  	}
+			$logger->debug("Called kubernetesGetLbIP: got $ip");
+		}
+        $hostname = $ip;
+	    $port = $self->portMap->{'http'};
+	} else {
+		# Using NodePort service for ingress
+		# Get the IP addresses of the nodes 
+		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+		if ($#{$ipAddrsRef} < 0) {
+			$logger->error("There are no IP addresses for the Kubernetes nodes");
+			exit 1;
+		}
+		$hostname = $ipAddrsRef->[0];
+		$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", $self->portMap->{'http'}, $self->namespace);
+	}
+	return "http://${hostname}:$port";
 };
 
 override 'getHosts' => sub {
 	my ( $self ) = @_;
-	
+	my $numDrivers = $#{$self->secondaries} + 2;
+	my @hosts;
+	for (my $i = 0; $i < $numDrivers; $i++) {
+		push @hosts, "wklddriver-$i";
+	}
+	return \@hosts;
 };
 
 override 'getStatsHost' => sub {

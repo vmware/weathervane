@@ -703,8 +703,6 @@ sub startAuctionWorkloadDriverContainer {
 	my $driverHttpThreads                   = $driver->getParamValue('driverHttpThreads');
 	my $maxConnPerUser                      = $driver->getParamValue('driverMaxConnPerUser');
 
-	my $port = $driver->portMap->{'http'};
-
 	my $driverJvmOpts           = $driver->getParamValue('driverJvmOpts');
 	if ( $driver->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
@@ -720,6 +718,7 @@ sub startAuctionWorkloadDriverContainer {
 		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
 	}
 	my %envVarMap;
+	my $port = $self->portMap->{'http'};
 	$envVarMap{"PORT"} = $port;	
 	$envVarMap{"JVMOPTS"} = "\"$driverJvmOpts\"";	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
@@ -727,7 +726,7 @@ sub startAuctionWorkloadDriverContainer {
 	# Start the  auctionworkloaddriver container
 	my %volumeMap;
 	my %portMap;
-	$portMap{$port} = $self->portMap->{'http'};
+	$portMap{$port} = $port;
 	
 	my $directMap = 1;
 	my $cmd        = "";

@@ -206,7 +206,7 @@ public class RunController {
 	}
 
 	@RequestMapping(value="/driversUp", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> areDriversUp(@PathVariable String runName) {
+	public HttpEntity<IsStartedResponse> areDriversUp() {
 		logger.debug("areDriversUp");
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
@@ -216,8 +216,8 @@ public class RunController {
 	}
 
 	@RequestMapping(value="/up", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isUp(@PathVariable String runName) {
-		logger.debug("isUp for run " + runName);
+	public HttpEntity<IsStartedResponse> isUp() {
+		logger.debug("isUp");
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
 		response.setIsStarted(true);

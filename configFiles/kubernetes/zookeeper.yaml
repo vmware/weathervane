@@ -18,6 +18,11 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: zookeeper
+  labels:
+    app: auction
+    tier: backend
+    type: coordinationServer
+    impl: zookeeper
 spec:
   serviceName: zookeeper
   selector:

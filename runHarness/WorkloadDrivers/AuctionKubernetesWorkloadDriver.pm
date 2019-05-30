@@ -115,7 +115,7 @@ override 'getHosts' => sub {
 
 override 'getStatsHost' => sub {
 	my ( $self ) = @_;
-	
+	return "wkldcontroller";
 };
 
 sub killOld {

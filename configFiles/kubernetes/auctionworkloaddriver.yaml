@@ -15,6 +15,10 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: wklddriver
+  labels:
+    app: auction
+    tier: driver
+    type: node
 spec:
   serviceName: wklddriver
   selector:

@@ -22,6 +22,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
+  labels:
+    app: auction
+    tier: backend
+    type: webServer
+    impl: nginx
 spec:
   replicas: 1
   selector:

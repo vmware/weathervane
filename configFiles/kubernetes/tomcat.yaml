@@ -28,6 +28,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tomcat
+  labels:
+    app: auction
+    tier: backend
+    type: appServer
+    impl: tomcat
 spec:
   replicas: 1
   selector:

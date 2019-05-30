@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
@@ -195,6 +196,17 @@ public class DriverController {
 		response.setIsStarted(true);
 
 		return new ResponseEntity<IsStartedResponse>(response, status);
+	}
+
+	@RequestMapping(value="/behaviorSpec", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> addBehaviorSpec(@RequestBody BehaviorSpec theSpec) {
+		logger.debug("addBehaviorSpec: " + theSpec.getName());
+		BasicResponse response = new BasicResponse();
+		HttpStatus status = HttpStatus.OK;
+		
+		BehaviorSpec.addBehaviorSpec(theSpec.getName(), theSpec);
+
+		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
 }

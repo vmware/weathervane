@@ -16,6 +16,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.web.controller;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Run;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitializedException;
@@ -203,24 +205,42 @@ public class RunController {
 		return new ResponseEntity<ActiveUsersResponse>(response, status);
 	}
 
+	@RequestMapping(value="/driversUp", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> areDriversUp(@PathVariable String runName) {
+		logger.debug("areDriversUp");
+		IsStartedResponse response = new IsStartedResponse();
+		HttpStatus status = HttpStatus.OK;
+		response.setIsStarted(runService.areDriversUp());
+
+		return new ResponseEntity<IsStartedResponse>(response, status);
+	}
+
 	@RequestMapping(value="/up", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isDriverUp(@PathVariable String runName) {
-		logger.debug("isDriverUp");
+	public HttpEntity<IsStartedResponse> isUp(@PathVariable String runName) {
+		logger.debug("isUp for run " + runName);
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
 		response.setIsStarted(true);
 
 		return new ResponseEntity<IsStartedResponse>(response, status);
 	}
-
-	@RequestMapping(value="/{runName}/up", method = RequestMethod.GET)
-	public HttpEntity<IsStartedResponse> isUp(@PathVariable String runName) {
-		logger.debug("isUp for run " + runName);
-		IsStartedResponse response = new IsStartedResponse();
+	
+	@RequestMapping(value="/hosts", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> setHosts(@RequestBody List<String> hosts) {
+		logger.debug("setHosts");
+		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
-		response.setIsStarted(runService.isUp(runName));
+		runService.setHosts(hosts);
+		return new ResponseEntity<BasicResponse>(response, status);
+	}
 
-		return new ResponseEntity<IsStartedResponse>(response, status);
+	@RequestMapping(value="/port", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> setPort(@RequestBody Integer portNumber) {
+		logger.debug("setPort");
+		BasicResponse response = new BasicResponse();
+		HttpStatus status = HttpStatus.OK;
+		runService.setPortNumber(portNumber);
+		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
 	@RequestMapping(value="/{runName}/workload/{workloadName}/users", method = RequestMethod.POST)
@@ -249,5 +269,15 @@ public class RunController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
+	@RequestMapping(value="/behaviorSpec", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> addBehaviorSpec(@RequestBody BehaviorSpec theSpec) {
+		logger.debug("addBehaviorSpec: " + theSpec.getName());
+		BasicResponse response = new BasicResponse();
+		HttpStatus status = HttpStatus.OK;
+		
+		runService.addBehaviorSpec(theSpec);
+
+		return new ResponseEntity<BasicResponse>(response, status);
+	}
 
 }

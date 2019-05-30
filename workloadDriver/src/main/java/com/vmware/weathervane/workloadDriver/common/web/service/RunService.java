@@ -16,7 +16,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.web.service;
 
 import java.net.UnknownHostException;
+import java.util.List;
 
+import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Run;
 import com.vmware.weathervane.workloadDriver.common.exceptions.DuplicateRunException;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
@@ -35,8 +37,6 @@ public interface RunService {
 
 	boolean isStarted(String runName);
 
-	boolean isUp(String runName);
-
 	void shutdown(String runName);
 	
 	void changeActiveUsers(String runName, String workloadName, long numUsers) throws TooManyUsersException;
@@ -46,5 +46,15 @@ public interface RunService {
 	Run getRun(String runName);
 
 	RunStateResponse getRunState(String runName);
+
+	Boolean isUp();
+
+	Boolean areDriversUp();
+
+	void setHosts(List<String> hosts);
+
+	void setPortNumber(Integer portNumber);
+
+	Boolean addBehaviorSpec(BehaviorSpec theSpec);
 
 }

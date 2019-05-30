@@ -87,8 +87,8 @@ sub createKubernetesCluster {
 		exit(-1);
 	} 
 	my $clusterName = $clusterParamHashRef->{'name'};
-	if ( ( !exists $clusterParamHashRef->{'kubernetesConfigFile'} ) || ( !defined $clusterParamHashRef->{'kubernetesConfigFile'} ) ) {
-		$console_logger->error("KubernetesCluster $clusterName does not have a kubernetesConfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
+	if ( ( !exists $clusterParamHashRef->{'kubeconfigFile'} ) || ( !defined $clusterParamHashRef->{'kubeconfigFile'} ) ) {
+		$console_logger->error("KubernetesCluster $clusterName does not have a kubeconfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
 		exit(-1);
 	}	
 	if ( exists $nameToComputeResourceHashRef->{$clusterName} ) {

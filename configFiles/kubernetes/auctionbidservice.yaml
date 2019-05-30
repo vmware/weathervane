@@ -25,6 +25,11 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: auctionbidservice
+  labels:
+    app: auction
+    tier: backend
+    type: auctionBidServer
+    impl: auctionbidservice
 spec:
   replicas: 1
   template:

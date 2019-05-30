@@ -382,7 +382,14 @@ sub adjustUsersForFindMax {
 			}
 		}
 
-		$self->users( $users + $curRateStep );
+		my $maxUsers = $self->getParamValue('maxUsers');
+		my $newVal = $users + $curRateStep;
+		if ($newVal > $maxUsers) {
+			$newVal = $maxUsers;
+			$curRateStep = $maxUsers - $users;
+		}
+
+		$self->users( $newVal );
 		$self->curRateStep($curRateStep);
 
 	}
@@ -438,29 +445,42 @@ sub foundMax {
 
 	if ($passed) {
 
-		# At a maximum if can't run another run, even at minimum
-		# step size, at a number of users lower than the current
-		# minFail
-		while ( ( $users + $curRateStep ) >= $minFail ) {
-			$curRateStep = ceil( $curRateStep / 2 );
-			if ( $curRateStep < $minRateStep ) {
-				$curRateStep = $minRateStep;
-				last;
-			}
-		}
-
-		if ( ( $users + $curRateStep ) >= $minFail ) {
-
-			# Already failed at one step increase
+		my $maxUsers = $self->getParamValue('maxUsers');
+		if ($users == $maxUsers) {
 			$console_logger->info(
 				"Workload ",
 				$self->workload->instanceNum,
 				", appInstance ",
 				$self->instanceNum,
-				": At maximum of $users"
+				": At maximum number of loaded db users $users"
 			);
 			$foundMax = 1;
+		} else {
 
+			# At a maximum if can't run another run, even at minimum
+			# step size, at a number of users lower than the current
+			# minFail
+			while ( ( $users + $curRateStep ) >= $minFail ) {
+				$curRateStep = ceil( $curRateStep / 2 );
+				if ( $curRateStep < $minRateStep ) {
+					$curRateStep = $minRateStep;
+					last;
+				}
+			}
+
+			if ( ( $users + $curRateStep ) >= $minFail ) {
+
+				# Already failed at one step increase
+				$console_logger->info(
+					"Workload ",
+					$self->workload->instanceNum,
+					", appInstance ",
+					$self->instanceNum,
+					": At maximum of $users"
+				);
+				$foundMax = 1;
+
+			}
 		}
 
 	}

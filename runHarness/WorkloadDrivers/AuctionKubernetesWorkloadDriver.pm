@@ -271,8 +271,8 @@ override 'startDrivers' => sub {
 	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);
 
 	$logger->debug("Starting Workload Driver");
-	$self->configureWkldController();
-	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);	
+	$self->configureWkldDriver();
+	$cluster->kubernetesApply("/tmp/auctionworkloaddriver-${namespace}.yaml", $namespace);	
 	
 };
 

@@ -2,6 +2,8 @@
  
 "micro" : {
   "maxUsers" : 1000,
+  "numDrivers" : 1,
+  "driverJvmOpts" : "-Xmx2G -Xms2g -XX:+AlwaysPreTouch",
   
   "numWebServers" : 1,
   "webServerCpus" : "200m",
@@ -48,6 +50,8 @@
 
 "small" : {
   "maxUsers" : 20000,
+  "numDrivers" : 6,
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
 
   "numWebServers" : 1,
   "webServerCpus" : "2",

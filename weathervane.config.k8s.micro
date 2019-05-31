@@ -6,22 +6,26 @@
   "dockerNamespace" : "yourRepository",
   "kubernetesClusters" : [ 
     { 
-      "name" : "appHost", 
+      "name" : "appCluster", 
       "kubeconfigFile" : "/root/.kube/config",
-      "kubeconfigContext" : "",
+      "kubeconfigContext" : "cluster-context-1",
+      "useLoadBalancer" : true,
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "cluster-context-2",
       "useLoadBalancer" : true,
     },
   ],
 
   "numDrivers": 1,
-  "driverHosts" : [
-    "AuctionDriver1", 
-  ],
+  "driverCluster" : "driverCluster",
   "driverJvmOpts" : "-Xmx2G -Xms2g -XX:+AlwaysPreTouch",
 
   "numAppInstances" : 1,
   "configurationSize": "micro",
-  "appInstanceCluster" : "appHost",
+  "appInstanceCluster" : "appCluster",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",
   "postgresqlLogStorageClass" : "fast",

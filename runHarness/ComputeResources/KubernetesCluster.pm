@@ -64,6 +64,28 @@ override 'registerService' => sub {
 
 };
 
+sub kubernetesCreateNamespace {
+	my ( $self, $namespaceName ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesCreateNamespace: namespace $namespaceName");
+
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+	
+	my $cmd;
+	$cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+}
+
 sub kubernetesGetPods {
 	my ( $self, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

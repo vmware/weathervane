@@ -680,6 +680,20 @@ $console_logger->info("Run Configuration has $numWorkloads workloads.");
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
+	# Overwrite the workload's parameters with those specified by the configuration size.
+	my $configSize = $workloadParamHashRef->{'configurationSize'};
+	if ($configSize ne "custom") {
+		my @configKeys = keys $fixedConfigs;
+		if (!($configSize ~~ @configKeys)) {
+			$console_logger->error("Error: For workload " . $workloadNum 
+				.  " configurationSize " . $configSize . " does not exist.");
+		}
+		my $config = $fixedConfigs->{$configSize};
+		foreach my $key (keys %$config) {
+			$workloadParamHashRef->{$key} = $config->{$key};
+		}
+	}
+
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
@@ -742,6 +756,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# The first driver is the primary driver.  The others are secondaries
 	my $driverNum = 1;
 	my $primaryDriverParamHashRef = shift @$driversParamHashRefs;
+	
 	if ( $logger->is_debug() ) {
 		my $tmp = $json->encode($primaryDriverParamHashRef);
 		$logger->debug( "For workload $workloadNum, the primary driver instance paramHashRef is:\n" . $tmp );

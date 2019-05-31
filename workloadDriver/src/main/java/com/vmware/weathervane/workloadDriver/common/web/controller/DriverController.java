@@ -200,7 +200,7 @@ public class DriverController {
 
 	@RequestMapping(value="/behaviorSpec", method = RequestMethod.POST)
 	public HttpEntity<BasicResponse> addBehaviorSpec(@RequestBody BehaviorSpec theSpec) {
-		logger.debug("addBehaviorSpec: " + theSpec.getName());
+		logger.debug("addBehaviorSpec: " + theSpec.toString());
 		BasicResponse response = new BasicResponse();
 		HttpStatus status = HttpStatus.OK;
 		

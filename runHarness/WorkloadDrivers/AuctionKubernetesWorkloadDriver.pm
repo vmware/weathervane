@@ -118,46 +118,27 @@ override 'getStatsHost' => sub {
 	return "wkldcontroller";
 };
 
-sub killOld {
+override 'killOld' => sub {
 	my ($self, $setupLogDir)           = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("killOld");
-	my $cluster = $self->host;
-	my $selector = "app=auction,tier=driver";
-	$cluster->kubernetesDeleteAllWithLabel($selector, $self->namespace);
-}
-
-override 'startDrivers' => sub {
-	my ( $self ) = @_;
-	
+	$self->stopDrivers();
 };
 
-override 'stopDrivers' => sub {
+sub configureWkldController {
 	my ( $self ) = @_;
-	
-};
-
-sub startAuctionWorkloadDriverContainer {
-	my ( $self, $driver, $applog ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum    = $driver->workload->instanceNum;
-	my $name        = $driver->name;
-		
-	$driver->host->dockerStopAndRemove( $applog, $name );
+	$logger->debug("Configure Workload Controller");
+	my $namespace = $self->namespace;	
+	my $configDir        = $self->getParamValue('configDir');
+	my $workloadNum    = $self->workload->instanceNum;
 
 	# Calculate the values for the environment variables used by the auctiondatamanager container
-	my $weathervaneWorkloadHome = $driver->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $driver->getParamValue('workloadProfileDir');
-
-	my $driverThreads                       = $driver->getParamValue('driverThreads');
-	my $driverHttpThreads                   = $driver->getParamValue('driverHttpThreads');
-	my $maxConnPerUser                      = $driver->getParamValue('driverMaxConnPerUser');
-
-	my $port = $driver->portMap->{'http'};
-
-	my $driverJvmOpts           = $driver->getParamValue('driverJvmOpts');
-	if ( $driver->getParamValue('logLevel') >= 3 ) {
+	my $driverThreads                       = $self->getParamValue('driverThreads');
+	my $driverHttpThreads                   = $self->getParamValue('driverHttpThreads');
+	my $maxConnPerUser                      = $self->getParamValue('driverMaxConnPerUser');
+	my $driverJvmOpts           = $self->getParamValue('driverControllerJvmOpts');
+	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
 	}
 
@@ -170,192 +151,136 @@ sub startAuctionWorkloadDriverContainer {
 	if ( $driverThreads > 0 ) {
 		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
 	}
-	my %envVarMap;
-	$envVarMap{"PORT"} = $port;	
-	$envVarMap{"JVMOPTS"} = "\"$driverJvmOpts\"";	
-	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
-	
-	# Start the  auctionworkloaddriver container
-	my %volumeMap;
-	my %portMap;
-	my $directMap = 0;
-	my $cmd        = "";
-	my $entryPoint = "";
-	my $dockerConfigHashRef = {};	
-	$dockerConfigHashRef->{'net'} = "host";
 
-	my $numCpus = $driver->getParamValue('driverCpus');
-	my $mem = $driver->getParamValue('driverMem');
-	if ($numCpus) {
-		$dockerConfigHashRef->{'cpus'} = $numCpus;
+	open( FILEIN,  "$configDir/kubernetes/auctionworkloadcontroller.yaml" ) or die "$configDir/kubernetes/auctionworkloadcontroller.yaml: $!\n";
+	open( FILEOUT, ">/tmp/auctionworkloadcontroller-$namespace.yaml" )             or die "Can't open file /tmp/auctionworkloadcontroller-$namespace.yaml: $!\n";	
+	while ( my $inline = <FILEIN> ) {
+
+		if ( $inline =~ /(\s+)PORT:/ ) {
+			print FILEOUT "${1}PORT: \"" . $self->portMap->{'http'} . "\"\n";
+		}
+		elsif ( $inline =~ /(\s+)JVMOPTS:/ ) {
+			print FILEOUT "${1}JVMOPTS: \"$driverJvmOpts\"\n";
+		}
+		elsif ( $inline =~ /(\s+)WORKLOADNUM:/ ) {
+			print FILEOUT "${1}WORKLOADNUM: \"$workloadNum\"\n";
+		}
+		elsif ( $inline =~ /(\s+)cpu:/ ) {
+			print FILEOUT "${1}cpu: " . $self->getParamValue('driverControllerCpus') . "\n";
+		}
+		elsif ( $inline =~ /(\s+)memory:/ ) {
+			print FILEOUT "${1}memory: " . $self->getParamValue('driverControllerMem') . "\n";
+		}
+		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
+			print FILEOUT "${1}imagePullPolicy: " . $self->imagePullPolicy . "\n";
+		}
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
+			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
+			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
+			if (!$useLoadbalancer) {
+				print FILEOUT "${1}type: NodePort\n";				
+			} else {
+				print FILEOUT $inline;		
+			}
+		}
+		else {
+			print FILEOUT $inline;
+		}
 	}
-	if ($driver->getParamValue('dockerCpuShares')) {
-		$dockerConfigHashRef->{'cpu-shares'} = $driver->getParamValue('dockerCpuShares');
-	} 
-	if ($driver->getParamValue('dockerCpuSetCpus') ne "unset") {
-		$dockerConfigHashRef->{'cpuset-cpus'} = $driver->getParamValue('dockerCpuSetCpus');		
-	}
-	if ($driver->getParamValue('dockerCpuSetMems') ne "unset") {
-		$dockerConfigHashRef->{'cpuset-mems'} = $driver->getParamValue('dockerCpuSetMems');
-	}
-	if ($mem) {
-		$dockerConfigHashRef->{'memory'} = $mem;
-	}
-	if ($driver->getParamValue('dockerMemorySwap')) {
-		$dockerConfigHashRef->{'memory-swap'} = $driver->getParamValue('dockerMemorySwap');
-	}	
-	$driver->host->dockerRun(
-		$applog, $name,
-		"auctionworkloaddriver", $directMap, \%portMap, \%volumeMap, \%envVarMap, $dockerConfigHashRef,
-		$entryPoint, $cmd, 1
-	);
+	close FILEIN;
+	close FILEOUT;
 }
 
-sub stopAuctionWorkloadDriverContainer {
-	my ( $self, $applog, $driver ) = @_;
+sub configureWkldDriver {
+	my ( $self ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $name        = $driver->name;
+	$logger->debug("Configure Workload Driver");
+	my $namespace = $self->namespace;	
+	my $configDir        = $self->getParamValue('configDir');
+	my $workloadNum    = $self->workload->instanceNum;
 
-	$driver->host->dockerStopAndRemove( $applog, $name );
-
-}
-
-sub stopRun {
-	my ( $self, $runNum, $logDir, $suffix ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-
-	my $workloadNum             = $self->workload->instanceNum;
-	my $runName                 = "runW${workloadNum}";
-	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->name;
-
-	my $logName = "$logDir/StopRun$suffix.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
-
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-	}
-	push @$driversRef, $self;
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-	
-	
-	# Now send the shutdown message
-	my $url      = "http://$hostname:$port/run/$runName/shutdown";
-	$logger->debug("Sending POST to $url");
-	my $req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	my $runContent = "{}";
-	$req->content($runContent);
-
-	my $res = $ua->request($req);
-	$logger->debug( "Response status line: "
-		  . $res->status_line
-		  . " for url "
-		  . $url );
-	if ( $res->is_success ) {
-		$logger->debug(
-			"Response sucessful.  Content: " . $res->content );
-	}	
-	else {
-		$console_logger->warn(
-			"Could not send shutdown message to workload driver node on $hostname. Exiting"
-		);
-		return 0;
-	}
-				
-	# Now stop and remove all of the driver containers
-	foreach my $driver (@$driversRef) {
-		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
+	# Calculate the values for the environment variables used by the auctiondatamanager container
+	my $driverThreads                       = $self->getParamValue('driverThreads');
+	my $driverHttpThreads                   = $self->getParamValue('driverHttpThreads');
+	my $maxConnPerUser                      = $self->getParamValue('driverMaxConnPerUser');
+	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
+	if ( $self->getParamValue('logLevel') >= 3 ) {
+		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
 	}
 
-	close $logHandle;
-	return 1;
+	if ( $maxConnPerUser > 0 ) {
+		$driverJvmOpts .= " -DMAXCONNPERUSER=" . $maxConnPerUser;
+	}
+	if ( $driverHttpThreads > 0 ) {
+		$driverJvmOpts .= " -DNUMHTTPPOOLTHREADS=" . $driverHttpThreads . " ";
+	}
+	if ( $driverThreads > 0 ) {
+		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
+	}
 
-}
+	open( FILEIN,  "$configDir/kubernetes/auctionworkloaddriver.yaml" ) or die "$configDir/kubernetes/auctionworkloaddriver.yaml: $!\n";
+	open( FILEOUT, ">/tmp/auctionworkloaddriver-$namespace.yaml" )             or die "Can't open file /tmp/auctionworkloaddriver-$namespace.yaml: $!\n";	
+	while ( my $inline = <FILEIN> ) {
 
-sub isUp {
-	my ($self) = @_;
-	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->workload->instanceNum;
-	my $runName     = "runW${workloadNum}";
-
-	my $hostname = $self->host->name;
-	my $port     = $self->portMap->{'http'};
-	my $json     = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/0.95 ");
-
-	my $url = "http://$hostname:$port/run/$runName/up";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-
-	my $res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		my $jsonResponse = $json->decode( $res->content );
-
-		if ( $jsonResponse->{"isStarted"} ) {
-			return 1;
+		if ( $inline =~ /(\s+)PORT:/ ) {
+			print FILEOUT "${1}PORT: \"" . $self->portMap->{'http'} . "\"\n";
+		}
+		elsif ( $inline =~ /(\s+)JVMOPTS:/ ) {
+			print FILEOUT "${1}JVMOPTS: \"$driverJvmOpts\"\n";
+		}
+		elsif ( $inline =~ /(\s+)WORKLOADNUM:/ ) {
+			print FILEOUT "${1}WORKLOADNUM: \"$workloadNum\"\n";
+		}
+		elsif ( $inline =~ /(\s+)cpu:/ ) {
+			print FILEOUT "${1}cpu: " . $self->getParamValue('driverCpus') . "\n";
+		}
+		elsif ( $inline =~ /(\s+)memory:/ ) {
+			print FILEOUT "${1}memory: " . $self->getParamValue('driverMem') . "\n";
+		}
+		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
+			print FILEOUT "${1}imagePullPolicy: " . $self->imagePullPolicy . "\n";
+		}
+		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
+			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
+			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		else {
+			print FILEOUT $inline;
 		}
 	}
-	return 0;
-
+	close FILEIN;
+	close FILEOUT;
 }
 
-sub isStarted {
-	my ($self) = @_;
-	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+override 'startDrivers' => sub {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $cluster = $self->host;
+	my $namespace = $self->namespace;
+	
+	$logger->debug("Starting Workload Controller");
+	$self->configureWkldController();
+	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);
+	
+	$logger->debug("Starting Workload Driver");
+	$self->configureWkldController();
+	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);	
+	
+};
 
-	my $workloadNum = $self->workload->instanceNum;
-	my $runName     = "runW${workloadNum}";
-
-	my $hostname = $self->host->name;
-	my $port     = $self->portMap->{'http'};
-	my $json     = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/0.95 ");
-
-	my $url = "http://$hostname:$port/run/$runName/start";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-
-	my $res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		my $jsonResponse = $json->decode( $res->content );
-
-		if ( $jsonResponse->{"isStarted"} ) {
-			return 1;
-		}
-	}
-	return 0;
-
-}
+override 'stopDrivers' => sub {
+	my ( $self ) = @_;
+	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("stopDrivers");
+	my $cluster = $self->host;
+	my $selector = "app=auction,tier=driver";
+	$cluster->kubernetesDeleteAllWithLabel($selector, $self->namespace);
+};
 
 sub getStatsFiles {
 	my ( $self, $baseDestinationPath ) = @_;
@@ -394,309 +319,17 @@ sub getStatsFiles {
 
 }
 
-sub getNumActiveUsers {
+override 'getNumActiveUsers' => sub {
 	my ($self) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->workload->instanceNum;
-	my $runName     = "runW${workloadNum}";
+};
 
-	my %appInstanceToUsersHash;
-
-	my $ua = LWP::UserAgent->new;
-
-	$ua->timeout(300);
-	$ua->agent("Weathervane/1.0");
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	# Get the number of users on the primary driver
-	my $hostname = $self->host->name;
-	my $port     = $self->portMap->{'http'};
-
-	my $url = "http://$hostname:$port/run/$runName/users";
-	$logger->debug("Sending get to $url");
-
-	my $req = HTTP::Request->new( GET => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-
-	my $res = $ua->request($req);
-	$logger->debug( "Response status line: " . $res->status_line );
-	my $contentHashRef = $json->decode( $res->content );
-	$logger->debug( "Response content:\n" . $res->content );
-	my $workloadActiveUsersRef = $contentHashRef->{'workloadActiveUsers'};
-	foreach my $appInstance ( keys %$workloadActiveUsersRef ) {
-		my $numUsers = $workloadActiveUsersRef->{$appInstance};
-		$logger->debug(
-"For workloadDriver host $hostname, appInstance $appInstance has $numUsers active users."
-		);
-		$appInstanceToUsersHash{$appInstance} = $numUsers;
-	}
-
-	# get the number of users on each secondary driver
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		$hostname = $secondary->host->name;
-		$port     = $secondary->portMap->{'http'};
-
-		$url = "http://$hostname:$port/run/$runName/users";
-		$logger->debug("Sending get to $url");
-
-		$req = HTTP::Request->new( GET => $url );
-		$req->content_type('application/json');
-		$req->header( Accept => "application/json" );
-
-		$res = $ua->request($req);
-		$logger->debug( "Response status line: " . $res->status_line );
-		$contentHashRef = $json->decode( $res->content );
-		$logger->debug( "Response content:\n" . $res->content );
-		my $workloadActiveUsersRef = $contentHashRef->{'workloadActiveUsers'};
-		foreach my $appInstance ( keys %$workloadActiveUsersRef ) {
-			my $numUsers = $workloadActiveUsersRef->{$appInstance};
-			$logger->debug(
-"For workloadDriver host $hostname, appInstance $appInstance has $numUsers active users."
-			);
-			$appInstanceToUsersHash{$appInstance} =
-			  $appInstanceToUsersHash{$appInstance} + $numUsers;
-		}
-
-	}
-
-	return \%appInstanceToUsersHash;
-}
-
-sub setNumActiveUsers {
+override 'setNumActiveUsers' => sub {
 	my ( $self, $appInstanceName, $numUsers ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum = $self->workload->instanceNum;
-	my $runName     = "runW${workloadNum}";
-
-	my %appInstanceToUsersHash;
-
-	my $ua = LWP::UserAgent->new;
-
-	$ua->timeout(300);
-	$ua->agent("Weathervane/1.0");
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	# Need to divide the number of users across the number of workload
-	# driver nodes.
-	my $secondariesRef = $self->secondaries;
-	my @workloadDrivers;
-	push @workloadDrivers, $self;
-	push @workloadDrivers, @$secondariesRef;
-
-	my $driverNum = 0;
-	foreach my $driver (@workloadDrivers) {
-		my $users =
-		  $self->adjustUsersForLoadInterval( $numUsers, $driverNum,
-			$#workloadDrivers + 1 );
-		my $hostname = $driver->host->name;
-		my $port     = $driver->portMap->{'http'};
-		my $url =
-		  "http://$hostname:$port/run/$runName/workload/$appInstanceName/users";
-		$logger->debug("Sending POST to $url");
-
-		my $changeMessageContent = {};
-		$changeMessageContent->{"numUsers"} = $users;
-		my $content = $json->encode($changeMessageContent);
-
-		$logger->debug("Content = $content");
-		my $req = HTTP::Request->new( POST => $url );
-		$req->content_type('application/json');
-		$req->header( Accept => "application/json" );
-		$req->content($content);
-
-		my $res = $ua->request($req);
-		$logger->debug( "Response status line: " . $res->status_line );
-		my $contentHashRef = $json->decode( $res->content );
-		$logger->debug( "Response content:\n" . $res->content );
-
-		$driverNum++;
-	}
-
-}
-
-sub parseStats {
-	my ( $self, $tmpDir ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-	my $workloadNum             = $self->workload->instanceNum;
-	my $runName                 = "runW${workloadNum}";
-	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->name;
-
-	if ($self->resultsValid) {
-		return 1;
-	}
-
-	my $anyUsedLoadPath = 0;
-	my $appInstancesRef = $self->workload->appInstancesRef;
-	foreach my $appInstance (@$appInstancesRef) {
-		my $userLoadPath = $appInstance->getLoadPath();
-		if ( $#$userLoadPath >= 0 ) {
-			$anyUsedLoadPath = 1;
-		}
-	}
-	
-	my @operations = @{ $self->operations };
-
-	# Initialize the counters used for the csv output
-	for ( my $opCounter = 0 ; $opCounter <= $#operations ; $opCounter++ ) {
-		$self->proportion->{ $operations[$opCounter] } = 0;
-		$self->successes->{ $operations[$opCounter] }  = 0;
-		$self->failures->{ $operations[$opCounter] }   = 0;
-		$self->rtAvg->{ $operations[$opCounter] }      = 0;
-		$self->pctPassRT->{ $operations[$opCounter] }  = 0;
-	}	
-	
-	my $numAppInstances = $#$appInstancesRef + 1;
-	my $suffix          = $self->workload->suffix;
-	
-	# Get the final stats summary from the workload driver
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-	my $url = "http://$hostname:$port/run/$runName/state";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-	my $res = $ua->request($req);
-	my $runStatus;
-	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$runStatus = $json->decode( $res->content );			
-	} else {
-		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
-		return 0;
-	}
-
-	$logger->debug("parseStats: Parsing stats");
-	
-	my $workloadStati = $runStatus->{"workloadStati"};
-	foreach my $workloadStatus (@$workloadStati) {
-		# For each appinstance, get the statsRollup for the max passing loadInterval
-		my $appInstanceName = $workloadStatus->{"name"};
-		$appInstanceName =~ /appInstance(\d+)/;
-		my $appInstanceNum = $1;
-		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
-		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
-		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
-		my $passed = $workloadStatus->{"passed"};
-		$logger->debug("parseStats: Found workloadStatus for workload " . $appInstanceName 
-					. ", appInstanceNum = " . $appInstanceNum);
-		
-		my $maxPassStatsSummary = "";
-		for my $statsSummary (@$statsSummaries) {
-			if ($statsSummary->{"intervalName"} eq $maxPassIntervalName) {
-				$maxPassStatsSummary = $statsSummary;
-			}
-		}
-		
-		if (!$maxPassStatsSummary) {
-			$console_logger->warn("Could not find the max passing interval for appInstance " + $appInstanceName);
-			next;
-		}
-		
-		$self->maxPassUsers->{$appInstanceNum} = $maxPassUsers;
-		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
-		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
-		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};
-		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
-		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
-		
-		open( RESULTFILE, "$tmpDir/run$suffix.log" )
-		  or die "Can't open $tmpDir/run$suffix.log: $!";
-
-		while ( my $inline = <RESULTFILE> ) {
-	
-			if ( $inline =~ /Summary Statistics for workload appInstance${appInstanceNum}\s*$/ )
-			{
-
-				# This is the section with the operation response-time data
-				# for appInstance $1
-				while ( $inline = <RESULTFILE> ) {
-
-					if ( $inline =~ /Interval:\s$maxPassIntervalName/ ) {
-
-						# parse the steadystate results for appInstance $1
-						while ( $inline = <RESULTFILE> ) {
-							if ( $inline =~ /\|\s+Name/ ) {
-
-								# Now can parse the per-operation stats
-								while ( $inline = <RESULTFILE> ) {
-									if ( $inline =~ /^\s*$/ ) {
-										last;
-									}
-									elsif ( $inline =~
-/\|\s*(\w+)\|[^\|]*\|\s*(true|false)\|\s*(true|false)\|[^\|]*\|\s*(\d+\.\d+)\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|\s*(\d+\.\d+)\|\s*(\d+\.\d+)\|\s*(\d+)\|\s*(\d+)\|/
-									  )
-									{
-
-										my $operation = $1;
-										my $opPassRT  = $2;
-										my $opPassMix = $3;
-
-										$self->rtAvg->{"$operation-$appInstanceNum"}
-										  = $4;
-										$self->proportion->{
-											"$operation-$appInstanceNum"} = $5;
-										$self->pctPassRT->{
-											"$operation-$appInstanceNum"} = $6;
-
-										$self->successes->{
-											"$operation-$appInstanceNum"} = $7;
-										$self->failures->{
-											"$operation-$appInstanceNum"} = $8;
-
-										if ( $opPassRT eq "false" ) {
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation"
-											);
-										}
-										if (   ( $opPassMix eq "false" )
-											&& ( $anyUsedLoadPath == 0 ) )
-										{
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation"
-											);
-										}
-
-									}
-								}
-							}
-							if ( $inline =~ /^\s*$/ ) {
-								last;
-							}
-						}
-					}
-				}
-			}
-		}
-		close RESULTFILE;
-		
-		my $resultString = "passed at $maxPassUsers";
-		if (!$passed) {
-			$resultString = "failed";
-		}
-		
-		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
-		
-	}
-	
-	$self->resultsValid(1);
-	return 1;
-
-}
+};
 
 __PACKAGE__->meta->make_immutable;
 

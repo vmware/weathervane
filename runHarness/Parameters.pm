@@ -1625,6 +1625,14 @@ $parameters{"useThinkTime"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"driverControllerJvmOpts"} = {
+	"type"      => "=s",
+	"default"   => "-Xmx2g -Xms2g -XX:+AlwaysPreTouch",
+	"parent"    => "workloadDriver",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"driverJvmOpts"} = {
 	"type"      => "=s",
 	"default"   => "-Xmx6g -Xms6g -XX:+AlwaysPreTouch",
@@ -1700,6 +1708,22 @@ $parameters{"driverCpus"} = {
 $parameters{"driverMem"} = {
 	"type"      => "=s",
 	"default"   => "7Gi",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverControllerCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverControllerMem"} = {
+	"type"      => "=s",
+	"default"   => "2Gi",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

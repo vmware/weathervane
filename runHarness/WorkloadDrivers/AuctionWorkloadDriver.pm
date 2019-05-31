@@ -696,9 +696,6 @@ sub startAuctionWorkloadDriverContainer {
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
 	# Calculate the values for the environment variables used by the auctiondatamanager container
-	my $weathervaneWorkloadHome = $driver->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $driver->getParamValue('workloadProfileDir');
-
 	my $driverThreads                       = $driver->getParamValue('driverThreads');
 	my $driverHttpThreads                   = $driver->getParamValue('driverHttpThreads');
 	my $maxConnPerUser                      = $driver->getParamValue('driverMaxConnPerUser');
@@ -800,14 +797,6 @@ sub initializeRun {
 	};
 
     $self->startDrivers($logDir, $suffix, $logHandle);
-
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-	}
-	push @$driversRef, $self;
 
 	# Now keep checking whether the workload controller is up
 	my $isUp      = 1;
@@ -1000,8 +989,6 @@ sub startRun {
 	$self->clearResults();
 
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
-	my $weathervaneWorkloadHome = $self->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
@@ -1177,6 +1164,7 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
+			$logger->debug("Content: " . $res->content);
 			$endRunStatus = $json->decode( $res->content );			
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
@@ -1252,14 +1240,6 @@ sub stopRun {
 		return 0;
 	};
 
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-	}
-	push @$driversRef, $self;
-
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -1296,7 +1276,6 @@ sub stopRun {
 
 	close $logHandle;
 	return 1;
-
 }
 
 sub isUp {
@@ -1329,7 +1308,6 @@ sub isUp {
 		}
 	}
 	return 0;
-
 }
 
 sub areDriversUp {

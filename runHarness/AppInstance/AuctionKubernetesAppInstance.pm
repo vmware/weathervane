@@ -86,21 +86,7 @@ override 'startServices' => sub {
 	my $namespace = $self->namespace;
 	my $cluster = $self->host;
 	# Create the namespace and the namespace-wide resources
-	my $configDir        = $self->getParamValue('configDir');
-	open( FILEIN,  "$configDir/kubernetes/namespace.yaml" ) or die "$configDir/kubernetes/namespace.yaml: $!\n";
-	open( FILEOUT, ">/tmp/namespace-$namespace.yaml" )             or die "Can't open file /tmp/namespace-$namespace.yaml: $!\n";
-	
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /\s\sname:/ ) {
-			print FILEOUT "  name: $namespace\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-	$cluster->kubernetesApply("/tmp/namespace-$namespace.yaml", $self->namespace);
+	$cluster->kubernetesCreateNamespace($namespace);
 	
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",

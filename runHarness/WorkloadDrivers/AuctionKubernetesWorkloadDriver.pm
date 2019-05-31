@@ -263,6 +263,9 @@ override 'startDrivers' => sub {
 	my $cluster = $self->host;
 	my $namespace = $self->namespace;
 	
+	# Create the namespace and the namespace-wide resources
+	$cluster->kubernetesCreateNamespace($namespace);
+	
 	$logger->debug("Starting Workload Controller");
 	$self->configureWkldController();
 	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);

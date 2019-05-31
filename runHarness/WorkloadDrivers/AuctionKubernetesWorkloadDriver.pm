@@ -108,7 +108,7 @@ override 'getHosts' => sub {
 	my $numDrivers = $#{$self->secondaries} + 2;
 	my @hosts;
 	for (my $i = 0; $i < $numDrivers; $i++) {
-		push @hosts, "wklddriver-$i";
+		push @hosts, "wklddriver-${i}.wklddriver";
 	}
 	return \@hosts;
 };

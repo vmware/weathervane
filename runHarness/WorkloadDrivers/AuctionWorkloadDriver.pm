@@ -1265,7 +1265,7 @@ sub stopRun {
 	
 	
 	# Now send the shutdown message
-	my $url      = "http://$hostname:$port/run/$runName/shutdown";
+	my $url      = $self->getControllerURL() . "/run/$runName/shutdown";
 	$logger->debug("Sending POST to $url");
 	my $req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
@@ -1377,7 +1377,7 @@ sub isStarted {
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/0.95 ");
 
-	my $url = "http://$hostname:$port/run/$runName/start";
+	my $url = $self->getControllerURL() . "/run/$runName/start";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 
@@ -1914,7 +1914,7 @@ sub getNumActiveUsers {
 	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 
-	my $url = "http://$hostname:$port/run/$runName/users";
+	my $url = $self->getControllerURL() . "/run/$runName/users";
 	$logger->debug("Sending get to $url");
 
 	my $req = HTTP::Request->new( GET => $url );
@@ -1940,7 +1940,7 @@ sub getNumActiveUsers {
 		$hostname = $secondary->host->name;
 		$port     = $secondary->portMap->{'http'};
 
-		$url = "http://$hostname:$port/run/$runName/users";
+		$url = $self->getControllerURL() . "/run/$runName/users";
 		$logger->debug("Sending get to $url");
 
 		$req = HTTP::Request->new( GET => $url );
@@ -1999,7 +1999,7 @@ sub setNumActiveUsers {
 		my $hostname = $driver->host->name;
 		my $port     = $driver->portMap->{'http'};
 		my $url =
-		  "http://$hostname:$port/run/$runName/workload/$appInstanceName/users";
+		  $self->getControllerURL() . "/run/$runName/workload/$appInstanceName/users";
 		$logger->debug("Sending POST to $url");
 
 		my $changeMessageContent = {};
@@ -2093,7 +2093,7 @@ sub parseStats {
 	$json = $json->pretty(1);
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/1.0 ");
-	my $url = "http://$hostname:$port/run/$runName/state";
+	my $url = $self->getControllerURL() . "/run/$runName/state";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 	my $res = $ua->request($req);

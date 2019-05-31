@@ -164,7 +164,29 @@ sub getAppInstanceHostOrCluster {
 	} else {
 		return "";
 	}
-	
+}
+
+sub getDriverCluster {
+	my ($driverParamHashRef, $nameToComputeResourceHashRef, $paramsHashRef, $runProcedureParamHashRef, $runProcedure) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger = get_logger("Weathervane");
+
+	# Get the value for driverCluster.
+	my $driverClustername = $driverParamHashRef->{"driverCluster"};
+    if ($driverClustername) {
+		if ( !exists $nameToComputeResourceHashRef->{$driverClustername} ) {
+		  $console_logger->error("Cluster $driverClustername was specified for driverCluster, but no KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		my $driverCluster = $nameToComputeResourceHashRef->{$driverClustername};
+		if ((ref $driverCluster) eq "DockerHost") {
+		  $console_logger->error("Hostname $driverClustername was specified for driverCluster, but that host is a DockerHost.");
+		  exit(-1);			
+		}
+		return $driverCluster;
+	} else {
+		return "";
+	}
 }
 
 # Get the host to use for an Instance (driver, dataManager, service, etc) 
@@ -177,7 +199,7 @@ sub getComputeResourceForInstance {
 	
 	my $appInstanceK8s = "";
 	if ($appInstanceHostOrCluster) {
-		$appInstanceK8s= (ref $appInstanceHostOrCluster) eq "KubernetesCluster";
+		$appInstanceK8s = (ref $appInstanceHostOrCluster) eq "KubernetesCluster";
 	}
 
 	# If the xxxServerHosts was defined for this serviceType, then use 
@@ -186,9 +208,13 @@ sub getComputeResourceForInstance {
 	# than the number of host names specified.
 	if ($instanceParamHashRef->{"${serviceType}Hosts"} && ($#{$instanceParamHashRef->{"${serviceType}Hosts"}} >= 0)) {
 		if ($appInstanceK8s) {
-		  $console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when appInstanceCluster is specified.\n" .
-		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
-		  exit(-1);			
+			if ($serviceType eq "driver") {
+		  		$console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when driverCluster is specified.");
+			} else {
+		  		$console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when appInstanceCluster is specified.\n" .
+		  							"When running on Kubernetes, all services for an appInstance must run on the same cluster.");				
+			}
+		  	exit(-1);			
 		}
 
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selecting host from ${serviceType}Hosts");
@@ -722,8 +748,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	# Create the primary workload driver
+	my $driverCluster = getDriverCluster($primaryDriverParamHashRef, \%nameToComputeResourceHash, 
+										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", 
-					\%nameToComputeResourceHash, "", 
+					\%nameToComputeResourceHash, $driverCluster, 
 					$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
 	$workloadDriver->host($host);
@@ -752,7 +780,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
 		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, 
-												"driver", \%nameToComputeResourceHash, "",
+												"driver", \%nameToComputeResourceHash, $driverCluster,
 												$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
 		$secondary->host($host);

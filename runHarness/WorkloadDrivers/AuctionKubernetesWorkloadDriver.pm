@@ -17,7 +17,7 @@ use Moose;
 use MooseX::Storage;
 use MooseX::ClassAttribute;
 
-use WorkloadDrivers::AuctionWorkloadDriver;
+use WorkloadDrivers::AuctionKubernetesWorkloadDriver;
 use AppInstance::AppInstance;
 use Parameters qw(getParamValue setParamValue);
 use WeathervaneTypes;
@@ -66,7 +66,7 @@ override 'redeploy' => sub {
 
 override 'getControllerURL' => sub {
 	my ( $self ) = @_;
-	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	my $cluster = $self->host;
 	
 	my $hostname;
@@ -120,14 +120,14 @@ override 'getStatsHost' => sub {
 
 override 'killOld' => sub {
 	my ($self, $setupLogDir)           = @_;
-	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("killOld");
 	$self->stopDrivers();
 };
 
 sub configureWkldController {
 	my ( $self ) = @_;
-	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("Configure Workload Controller");
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
@@ -197,7 +197,7 @@ sub configureWkldController {
 
 sub configureWkldDriver {
 	my ( $self ) = @_;
-	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("Configure Workload Driver");
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
@@ -258,36 +258,49 @@ sub configureWkldDriver {
 }
 
 override 'startDrivers' => sub {
-	my ( $self ) = @_;
-	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	my $cluster = $self->host;
 	my $namespace = $self->namespace;
 	
 	$logger->debug("Starting Workload Controller");
 	$self->configureWkldController();
 	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);
-	
+
 	$logger->debug("Starting Workload Driver");
 	$self->configureWkldController();
 	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);	
 	
 };
 
+override 'followLogs' => sub {
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
+	my $cluster = $self->host;
+	my $namespace = $self->namespace;
+	
+	my $pid              = fork();
+	if ( $pid == 0 ) {
+		$cluster->kubernetesFollowLogsFirstPod("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "$logDir/run$suffix.log" );
+		exit;
+	}	
+};
+
 override 'stopDrivers' => sub {
-	my ( $self ) = @_;
-	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my ( $self, $logHandle) = @_;
+	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("stopDrivers");
 	my $cluster = $self->host;
 	my $selector = "app=auction,tier=driver";
 	$cluster->kubernetesDeleteAllWithLabel($selector, $self->namespace);
 };
 
-sub getStatsFiles {
+override 'getStatsFiles' => sub {
 	my ( $self, $baseDestinationPath ) = @_;
 	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
 	my $workloadNum      = $self->workload->instanceNum;
-	my $name               = $self->name;
+	my $namespace             = $self->namespace;
 		
 	if ( !( -e $destinationPath ) ) {
 		`mkdir -p $destinationPath`;
@@ -295,40 +308,24 @@ sub getStatsFiles {
 		return;
 	}
 
-	my $logName = "$destinationPath/GetStatsFilesWorkloadDriver-$hostname-$name.log";
-
-	my $applog;
-	open( $applog, ">$logName" )
-	  || die "Error opening /$logName:$!";
-
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1.csv", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1-allSamples.csv", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/." );
-	$self->host->dockerCopyFrom( $applog, $name, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/." );
-
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		my $secHostname     = $secondary->host->name;
-		$destinationPath = $baseDestinationPath . "/" . $secHostname;
-		`mkdir -p $destinationPath 2>&1`;
-		$name     = $secondary->name;
-		$secondary->host->dockerCopyFrom( $applog, $name, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
-	}
-
-}
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1.csv", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-allSamples.csv", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/." );
+};
 
 override 'getNumActiveUsers' => sub {
 	my ($self) = @_;
 	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	  get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 };
 
 override 'setNumActiveUsers' => sub {
 	my ( $self, $appInstanceName, $numUsers ) = @_;
 	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	  get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 };
 
 __PACKAGE__->meta->make_immutable;

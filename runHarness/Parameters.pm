@@ -619,6 +619,13 @@ $parameters{"driverHosts"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+$parameters{"driverCluster"} = {
+	"type"      => "=s",
+	"default"   => {},
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
 $parameters{"appInstanceHost"} = {
 	"type"      => "=s",
 	"default"   => {},

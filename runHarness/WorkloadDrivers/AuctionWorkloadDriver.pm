@@ -653,6 +653,28 @@ sub clearResults {
 	$self->proportion(   {} );
 }
 
+sub followLogs {
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		my $pid              = fork();
+		if ( $pid == 0 ) {
+			my $hostname = $secondary->host->name;
+			my $secondaryName  = $secondary->name;
+			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
+			exit;
+		}
+	}
+
+	# start the primary
+	my $pid = fork();
+	if ( $pid == 0 ) {
+		my $name        = $self->name;
+		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
+		exit;
+	}	
+}
+
 sub startDrivers {
 	my ( $self, $logDir, $suffix, $logHandle) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -667,21 +689,13 @@ sub startDrivers {
 			my $hostname = $secondary->host->name;
 			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
 			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName  = $secondary->name;
-			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
 			exit;
 		}
 	}
 
 	# start the primary
-	my $pid = fork();
-	if ( $pid == 0 ) {
-		$logger->debug("Starting primary driver for workload $workloadNum");
-		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
-		my $name        = $self->name;
-		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
-		exit;
-	}
+	$logger->debug("Starting primary driver for workload $workloadNum");
+	$self->startAuctionWorkloadDriverContainer($self, $logHandle);
 
 	$logger->debug("Sleeping for 30 sec to let primary driver start");
 	sleep 30;	
@@ -820,6 +834,9 @@ sub initializeRun {
 	} else {
 		$logger->debug("The workload controller is up.");
 	}
+
+	# Start following the driver logs
+    $self->followLogs($logDir, $suffix, $logHandle);
 
 	my $json = JSON->new;
 	$json = $json->relaxed(1);

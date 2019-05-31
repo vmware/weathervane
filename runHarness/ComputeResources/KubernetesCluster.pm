@@ -566,6 +566,46 @@ sub kubernetesDoPodsExist {
 	return 1;
 }
 
+sub kubernetesCopyFromFirst {
+	my ( $self, $podLabelString, $containerName, $namespace, $sourceFile, $destFile ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
+	
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;
+	my $cmdFailed;
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=$podLabelString --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesGetLogs get pod failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesCopyFromFirst: There are no pods with label $podLabelString in namespace $namespace");
+		exit(-1);
+	}
+	
+	my $podName = $names[0];
+	$cmd = "kubectl cp -c $containerName  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName:$sourceFile $destFile";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesFollowLogs logs failed: $cmdFailed");
+	}
+	
+	return 1;
+}
+
 sub kubernetesGetLogs {
 	my ( $self, $podLabelString, $serviceTypeImpl, $namespace, $destinationPath ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
@@ -621,7 +661,45 @@ sub kubernetesGetLogs {
 
 	}
 	
-	return 0;
+	return 1;
+}
+
+sub kubernetesFollowLogsFirstPod {
+	my ( $self, $podLabelString, $containerName, $namespace, $outFile ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesFollowLogs podLabelString $podLabelString, namespace $namespace");
+	
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;
+	my $cmdFailed;
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=$podLabelString --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesFollowLogs get pod failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesFollowLogs: There are no pods with label $podLabelString in namespace $namespace");
+		exit(-1);
+	}
+	
+	my $podName = $names[0];
+	$cmd = "kubectl logs -c $containerName --follow --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName > $outFile";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesFollowLogs logs failed: $cmdFailed");
+	}
 }
 
 sub kubernetesTopPodAllNamespaces {

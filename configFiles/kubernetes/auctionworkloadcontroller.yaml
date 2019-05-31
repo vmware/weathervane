@@ -55,7 +55,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - 'jps | grep -Eq jar'
+            - 'jps | grep -Eq JarLauncher'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -67,7 +67,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - 'curl -s http://127.0.0.1:7500/run/up | grep -Eq true'
+            - 'curl -s http://127.0.0.1:7500/driver/up | grep -Eq true'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10

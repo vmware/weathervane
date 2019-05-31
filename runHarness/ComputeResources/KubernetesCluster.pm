@@ -75,10 +75,26 @@ sub kubernetesCreateNamespace {
 	if ($context) {
 	  $contextString = "--context=$context";	
 	}
-	
+
+	# First check if the namespace already exists
 	my $cmd;
-	$cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
+	$cmd = "kubectl get namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
 	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @lines = split /\n/, $outString;
+	foreach my $line (@lines) {
+		if ($line =~ /^$namespaceName/) {
+			# namespace already exists
+			return;
+		}	
+	}
+	
+	$cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
+	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
 	}

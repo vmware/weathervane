@@ -690,7 +690,21 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 		my $config = $fixedConfigs->{$configSize};
 		foreach my $key (keys %$config) {
-			$workloadParamHashRef->{$key} = $config->{$key};
+			if ($key eq "numDrivers") {
+				# If the user set the number of driver, then use that value.
+				# Otherwise the number of drivers is the number in the
+				# fixed config times the number of appInstances
+				if (!$workloadParamHashRef->{"numDrivers"} && !$workloadParamHashRef->{"drivers"}) {
+					my $numAppInstances = $workloadParamHashRef->{"numAppInstances"};
+					if (!$numAppInstances) {
+						my $instancesListRef = $workloadParamHashRef->{"appInstances"};
+						$numAppInstances = $#{$instancesListRef} + 1;					
+					}
+					$workloadParamHashRef->{$key} = $config->{$key} * $numAppInstances;
+				}
+			} else {
+				$workloadParamHashRef->{$key} = $config->{$key};
+			}
 		}
 	}
 

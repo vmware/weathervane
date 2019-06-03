@@ -13,7 +13,7 @@
   "numAuctionBidServers" : 0,
   
   "numAppServers" : 1,
-  "appServerCpus" : "250m",
+  "appServerCpus" : "400m",
   "appServerMem" : "1000Mi",
   "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
@@ -22,7 +22,7 @@
   "numClientUpdateThreads" : 2,
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
-  "appServerWarmerIterations" : 5,
+  "appServerWarmerIterations" : 50,
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "200m",

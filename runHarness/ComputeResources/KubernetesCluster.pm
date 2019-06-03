@@ -80,9 +80,6 @@ sub kubernetesCreateNamespace {
 	my $cmd;
 	$cmd = "kubectl get namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
 	my ($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
-	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
 	my @lines = split /\n/, $outString;

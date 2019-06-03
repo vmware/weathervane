@@ -51,8 +51,8 @@ import com.vmware.weathervane.auction.representation.UserRepresentation;
 public class WarmerServiceImpl implements WarmerService {
 	private static final Logger logger = LoggerFactory.getLogger(WarmerServiceImpl.class);
 
-	public static final int WARMER_THREADS_PER_APPSERVER = Integer.getInteger("WARMER_THREADS_PER_SERVER", 1);
-	public static final int WARMER_ITERATIONS = Integer.getInteger("WARMER_ITERATIONS", 500);
+	public static final int WARMER_THREADS_PER_APPSERVER = Integer.getInteger("THREADSPERSERVER", 1);
+	public static final int WARMER_ITERATIONS = Integer.getInteger("ITERATIONS", 500);
 
 	private List<Thread> warmupThreads = new ArrayList<Thread>();
 

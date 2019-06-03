@@ -133,7 +133,7 @@ public class FindMaxLoadPath extends LoadPath {
 				executorService);
 		
 		this.maxUsers = workload.getMaxUsers();
-		this.initialRampRateStep = maxUsers / 20;
+		this.initialRampRateStep = maxUsers / 10;
 
 	}
 

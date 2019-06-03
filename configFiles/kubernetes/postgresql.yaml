@@ -72,7 +72,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - /usr/pgsql-9.3/bin/pg_isready -h postgresql -p 5432
+            - /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -84,7 +84,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - /usr/pgsql-9.3/bin/pg_isready -h postgresql -p 5432
+            - /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10

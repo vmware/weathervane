@@ -170,7 +170,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 		/*
 		 * If this is not the first interval then we need to select the number of users
-		 * based on the results of the previous interval
+		 * based on the results of the previous interval.
 		 */
 		boolean prevIntervalPassed = true;
 		if (intervalNum != 1) {
@@ -185,10 +185,15 @@ public class FindMaxLoadPath extends LoadPath {
 			// For initial ramp, only interested in response-time
 			if (rollup != null) {
 				/*
-				 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
-				 * is not used in initialRamp
+				 * We always pass the first interval as well to avoid warmup issues
 				 */
-				prevIntervalPassed = rollup.isIntervalPassedRT();
+				if (intervalNum != 2) {
+					/*
+					 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
+					 * is not used in initialRamp
+					 */
+					prevIntervalPassed = rollup.isIntervalPassedRT();
+				}
 				getIntervalStatsSummaries().add(rollup);
 			}
 			logger.debug("getNextInitialRampInterval: Interval " + intervalNum + " prevIntervalPassed = "

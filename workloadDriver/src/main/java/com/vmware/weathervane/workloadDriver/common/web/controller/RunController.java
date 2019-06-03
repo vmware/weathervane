@@ -211,8 +211,12 @@ public class RunController {
 		logger.debug("areDriversUp");
 		IsStartedResponse response = new IsStartedResponse();
 		HttpStatus status = HttpStatus.OK;
-		response.setIsStarted(runService.areDriversUp());
-
+		try {
+			response.setIsStarted(runService.areDriversUp());
+		} catch (Exception ex) {
+			// This will happen if the remote drivers aren't up yet
+			response.setIsStarted(false);
+		}
 		return new ResponseEntity<IsStartedResponse>(response, status);
 	}
 

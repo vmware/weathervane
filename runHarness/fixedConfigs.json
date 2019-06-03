@@ -22,7 +22,7 @@
   "numClientUpdateThreads" : 2,
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
-  "appServerWarmerIterations" : 50,
+  "appServerWarmerIterations" : 5,
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "200m",

@@ -15,7 +15,7 @@
   "numAppServers" : 1,
   "appServerCpus" : "400m",
   "appServerMem" : "1000Mi",
-  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
+  "appServerJvmOpts" : "-Xmx750M -Xms750M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 20,
   "appServerJdbcConnections" : 21,
   "numAuctioneerThreads" : 1,  

@@ -311,13 +311,6 @@ override 'getServiceConfigParameters' => sub {
 
 override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	$logger->debug(
-		"redeploy for workload ", $self->workload->instanceNum,
-		", appInstance ",         $self->instanceNum
-	);
-
-	$self->imagePullPolicy("Always");
 };
 
 override 'getHostStatsSummary' => sub {

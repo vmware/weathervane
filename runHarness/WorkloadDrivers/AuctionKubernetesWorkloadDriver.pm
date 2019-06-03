@@ -46,12 +46,6 @@ has 'namespace' => (
 	isa => 'Str',
 );
 
-has 'imagePullPolicy' => (
-	is      => 'rw',
-	isa     => 'Str',
-	default => "IfNotPresent",
-);
-
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
@@ -61,7 +55,6 @@ override 'initialize' => sub {
 
 override 'redeploy' => sub {
 	my ( $self, $logfile, $hostsRef ) = @_;
-	$self->imagePullPolicy("Always");
 };
 
 override 'getControllerURL' => sub {
@@ -132,7 +125,7 @@ sub configureWkldController {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 	my $workloadNum    = $self->workload->instanceNum;
-
+		
 	# Calculate the values for the environment variables used by the auctiondatamanager container
 	my $driverThreads                       = $self->getParamValue('driverThreads');
 	my $driverHttpThreads                   = $self->getParamValue('driverHttpThreads');
@@ -172,7 +165,11 @@ sub configureWkldController {
 			print FILEOUT "${1}memory: " . $self->getParamValue('driverControllerMem') . "\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
-			print FILEOUT "${1}imagePullPolicy: " . $self->imagePullPolicy . "\n";
+			if ($self->getParamValue('redeploy')) {
+				print FILEOUT "${1}imagePullPolicy: Always\n";			
+			} else {
+				print FILEOUT "${1}imagePullPolicy: IfNotPresent\n";				
+			}
 		}
 		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
@@ -243,7 +240,11 @@ sub configureWkldDriver {
 			print FILEOUT "${1}memory: " . $self->getParamValue('driverMem') . "\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
-			print FILEOUT "${1}imagePullPolicy: " . $self->imagePullPolicy . "\n";
+			if ($self->getParamValue('redeploy')) {
+				print FILEOUT "${1}imagePullPolicy: Always\n";			
+			} else {
+				print FILEOUT "${1}imagePullPolicy: IfNotPresent\n";				
+			}
 		}
 		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');

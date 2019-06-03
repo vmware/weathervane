@@ -201,6 +201,7 @@ sub configureWkldDriver {
 	$logger->debug("Configure Workload Driver");
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
+	my $numDrivers        = $self->getParamValue('numDrivers');
 	my $workloadNum    = $self->workload->instanceNum;
 
 	# Calculate the values for the environment variables used by the auctiondatamanager container
@@ -248,6 +249,9 @@ sub configureWkldDriver {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+		}
+		elsif ( $inline =~ /replicas:/ ) {
+			print FILEOUT "  replicas: $numDrivers\n";
 		}
 		else {
 			print FILEOUT $inline;

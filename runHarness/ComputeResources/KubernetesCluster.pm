@@ -460,7 +460,8 @@ sub kubernetesGetSizeForPVC {
 	$cmd = "kubectl get pvc $pvcName -o=jsonpath='{.spec.resources.requests.storage}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesGetSizeForPVC failed: $cmdFailed");
+		$logger->info("kubernetesGetSizeForPVC failed: $cmdFailed");
+		return "";
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");

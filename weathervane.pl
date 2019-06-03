@@ -694,7 +694,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				# If the user set the number of driver, then use that value.
 				# Otherwise the number of drivers is the number in the
 				# fixed config times the number of appInstances
-				if (!$workloadParamHashRef->{"numDrivers"} && !$workloadParamHashRef->{"drivers"}) {
+				if (!$workloadParamHashRef->{"numDrivers"} && ($#{$workloadParamHashRef->{"drivers"}} < 0)) {
 					my $numAppInstances = $workloadParamHashRef->{"numAppInstances"};
 					if (!$numAppInstances) {
 						my $instancesListRef = $workloadParamHashRef->{"appInstances"};

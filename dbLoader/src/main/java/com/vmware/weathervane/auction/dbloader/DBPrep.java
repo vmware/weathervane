@@ -142,8 +142,8 @@ public class DBPrep {
 		List<DbBenchmarkInfo> dbBenchmarkInfoList = dbBenchmarkInfoDao.getAll();
 		if ((dbBenchmarkInfoList == null) || (dbBenchmarkInfoList.size() < 1)) {
 			imageStore.stopServiceThreads();
-			throw new RuntimeException(
-					"Cannot find benchmarkInfo in database.  Make sure that data is preloaded.");
+			logger.warn("Cannot find benchmarkInfo in database.  Make sure that data is preloaded.");
+			System.exit(1);
 		}
 
 		DbBenchmarkInfo dbBenchmarkInfo = dbBenchmarkInfoList.get(0);
@@ -151,16 +151,18 @@ public class DBPrep {
 		try {
 			long infoMaxUsers = dbBenchmarkInfo.getMaxusers();
 			if (infoMaxUsers < users) {
-				throw new RuntimeException(
+				logger.warn(
 						"MaxUsers supported by database does not match desired number of users   Users =  "
 								+ users + ", Found " + infoMaxUsers
 								+ ". Make sure that correct data is loaded.");
+				System.exit(1);				
 			}
 			if (!dbBenchmarkInfo.getImagestoretype().equals(imageStoreType)) {
-				throw new RuntimeException(
+				logger.warn(
 						"ImageStoreType in database does not match desired type. Needed "
 								+ imageStoreType + ", Found " + dbBenchmarkInfo.getImagestoretype()
 								+ ", Make sure that correct data is loaded.");
+				System.exit(1);
 			}
 		} finally {
 			imageStore.stopServiceThreads();
@@ -173,8 +175,9 @@ public class DBPrep {
 		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = (List<NosqlBenchmarkInfo>) nosqlBenchmarkInfoRepository.findAll();
 		if ((nosqlBenchmarkInfoList == null) || (nosqlBenchmarkInfoList.size() < 1)) {
 			imageStore.stopServiceThreads();
-			throw new RuntimeException(
+			logger.warn(
 					"Cannot find benchmarkInfo in NoSQL store.  Make sure that data is preloaded.");
+			System.exit(1);
 		}
 
 		NosqlBenchmarkInfo nosqlBenchmarkInfo = nosqlBenchmarkInfoList.get(0);
@@ -182,18 +185,20 @@ public class DBPrep {
 		long infoMaxUsers = nosqlBenchmarkInfo.getMaxusers();
 		if (infoMaxUsers < users) {
 			imageStore.stopServiceThreads();
-			throw new RuntimeException(
+			logger.warn(
 					"MaxUsers supported by NoSQL datastore does not match desired number of users   Users =  "
 							+ users + ", Found " + infoMaxUsers
 							+ ". Make sure that correct data is loaded.");
+			System.exit(1);
 		}
 
 		if (!nosqlBenchmarkInfo.getImageStoreType().equals(imageStoreType)) {
 			imageStore.stopServiceThreads();
-			throw new RuntimeException(
+			logger.warn(
 					"ImageStoreType in database does not match desired type. Needed "
 							+ imageStoreType + ", Found " + nosqlBenchmarkInfo.getImageStoreType()
 							+ ", Make sure that correct data is loaded.");
+			System.exit(1);
 		}
 
 		/*
@@ -205,27 +210,31 @@ public class DBPrep {
 			infoMaxUsers = imageStoreBenchmarkInfo.getMaxusers();
 			if (infoMaxUsers < users) {
 				imageStore.stopServiceThreads();
-				throw new RuntimeException(
+				logger.warn(
 						"MaxUsers supported by imageStore does not match desired number of users   Users =  "
 								+ users + ", Found " + infoMaxUsers
 								+ ". Make sure that correct data is loaded.");
+				System.exit(1);
 			}
 			if (!imageStoreBenchmarkInfo.getImageStoreType().equals(imageStoreType)) {
 				imageStore.stopServiceThreads();
-				throw new RuntimeException(
+				logger.warn(
 						"ImageStoreType in imageStore does not match desired type. Needed "
 								+ imageStoreType + ", Found "
 								+ imageStoreBenchmarkInfo.getImageStoreType()
 								+ ", Make sure that correct data is loaded.");
+				System.exit(1);
 			}
 
 		} catch (NoBenchmarkInfoException e) {
 			imageStore.stopServiceThreads();
-			throw new RuntimeException(
+			logger.warn(
 					"No benchmark info stored in imageStore.  Make sure that correct data is loaded.");
+			System.exit(1);
 		} catch (NoBenchmarkInfoNeededException e) {
 			// Some imageStore types always have the proper load
 			logger.info("Got a NoBenchmarkInfoNeededException exception from the imageStore.  Continuing");
+			System.exit(1);
 		}
 
 		// If only wanted to check for loaded data, then return here

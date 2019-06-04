@@ -167,12 +167,12 @@ public class ClientBidUpdater {
 			/*
 			 * Want to ignore high bids for an item whose bidcount is lower that the current
 			 * high bid. Have a special cases to allow lower bid count for items that were
-			 * sold without receiving any bids and are being put back up for auction.
+			 * sold without receiving any bids and are being put back up for auction, as well as
+			 * for items that were previously sold but are being put back up for auction.
 			 */
 			if ((curHighBid != null) 
 					&& (newHighBid.getLastBidCount() <= curHighBid.getLastBidCount())
 					&& !(curHighBid.getBiddingState().equals(BiddingState.SOLD) 
-							&& (curHighBid.getLastBidCount() == 3)
 							&& (newHighBid.getLastBidCount() == 1))
 					&& !(curHighBid.getBiddingState().equals(BiddingState.LASTCALL) 
 							&& (curHighBid.getLastBidCount() == 2)
@@ -224,7 +224,7 @@ public class ClientBidUpdater {
 					&& newHighBid.getItemId().equals(_currentItemId)
 					&& !newHighBid.getLastBidCount().equals(3)) {
 				/*
-				 * If this the item is SOLD, then clear out the currentItemRepresentation to
+				 * If this item is SOLD, then clear out the currentItemRepresentation to
 				 * force a refresh of the current item for getCurrentItem.
 				 * The lastBidCount==3 test is to handle the reuseUnsold special-case where
 				 * an item is sold with no bids and is immediately put back up for auction.

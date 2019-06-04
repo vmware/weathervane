@@ -822,13 +822,13 @@ sub initializeRun {
 				  . " isUp returned $isUp" );
 		$retryCount++;
 		if ( !$isUp ) {
-			sleep 24;
+			sleep 30;
 		}
-	} while ( ( !$isUp ) && ( $retryCount < 10 ) );
+	} while ( ( !$isUp ) && ( $retryCount < 20 ) );
 
 	if ( !$isUp ) {
 		$console_logger->warn(
-"The workload controller for workload $workloadNum did not start within 4 minutes. Exiting"
+"The workload controller for workload $workloadNum did not start within 10 minutes. Exiting"
 		);
 		return 0;
 	} else {
@@ -896,13 +896,13 @@ sub initializeRun {
 				  . " isUp returned $isUp" );
 		$retryCount++;
 		if ( !$isUp ) {
-			sleep 24;
+			sleep 30;
 		}
-	} while ( ( !$isUp ) && ( $retryCount < 10 ) );
+	} while ( ( !$isUp ) && ( $retryCount < 20 ) );
 
 	if ( !$isUp ) {
 		$console_logger->warn(
-"The workload driver nodes for workload $workloadNum did not start within 4 minutes. Exiting"
+"The workload driver nodes for workload $workloadNum did not start within 10 minutes. Exiting"
 		);
 		return 0;
 	} else {

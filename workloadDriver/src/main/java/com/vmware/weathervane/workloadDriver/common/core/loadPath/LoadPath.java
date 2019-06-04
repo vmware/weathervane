@@ -59,6 +59,8 @@ public abstract class LoadPath implements Runnable {
 	private Boolean printIntervals;
 	private Boolean printCsv;
 
+	protected RampLoadInterval curStatusInterval;
+
 	@JsonIgnore
 	public abstract UniformLoadInterval getNextInterval();
 
@@ -113,6 +115,7 @@ public abstract class LoadPath implements Runnable {
 		this.statsHostName = statsHostName;
 		this.portNumber = portNumber;
 		this.restTemplate = restTemplate;
+		this.setCurStatusInterval(new RampLoadInterval());
 	}
 
 	public void start() {
@@ -438,6 +441,14 @@ public abstract class LoadPath implements Runnable {
 
 	public boolean isFinished() {
 		return finished;
+	}
+
+	public RampLoadInterval getCurStatusInterval() {
+		return curStatusInterval;
+	}
+
+	public void setCurStatusInterval(RampLoadInterval curStatusInterval) {
+		this.curStatusInterval = curStatusInterval;
 	}
 
 }

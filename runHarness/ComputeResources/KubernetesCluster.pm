@@ -27,21 +27,15 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Cluster';
 
-has 'stopKubectlTop' => (
-	is      => 'rw',
-	isa     => 'Bool',
-	default => 0,
-);
-
 has 'kubectlTopPodRunning' => (
 	is      => 'rw',
-	isa     => 'Bool',
+	isa     => 'Int',
 	default => 0,
 );
 
 has 'kubectlTopNodeRunning' => (
 	is      => 'rw',
-	isa     => 'Bool',
+	isa     => 'Int',
 	default => 0,
 );
 
@@ -549,9 +543,10 @@ sub kubernetesTopPodAllNamespaces {
 		open( FILE, ">$destinationPath/kubectl_top_pod-all-ns.txt" )
 			 or die "Couldn't open $destinationPath/kubectl_top_pod--all-ns.txt: $!";		
 		
-		# ToDo: Need a way to stop process at end of run
-		while (!$self->stopKubectlTop) {
-	 		my $cmd;
+		my $end;
+		local $SIG{HUP} = sub { $end = 1 };
+		until ($end) {
+			my $cmd;
 			my $outString;
 			my $cmdFailed;
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top pod --heapster-scheme=https --all-namespaces";
@@ -563,7 +558,7 @@ sub kubernetesTopPodAllNamespaces {
 			$cmd = "date +%H:%M";
 			($cmdFailed, $time) = runCmd($cmd);
 			if ($cmdFailed) {
-				$logger->info("kubernetesTopPodAllNamespacse date failed: $cmdFailed");
+				$logger->info("kubernetesTopPodAllNamespaces date failed: $cmdFailed");
 			}
 			chomp($time);
 			print FILE "$time\n";
@@ -571,8 +566,11 @@ sub kubernetesTopPodAllNamespaces {
 			sleep $intervalSec;
 		}
 		close FILE;
+		$logger->info("kubernetesTopPodAllNamespaces exit");
 		exit;
 	}
+	$self->kubectlTopPodRunning($pid);
+	$logger->info("kubernetesTopPod started pid $pid");
 
 }
 
@@ -598,10 +596,11 @@ sub kubernetesTopNode {
 
 		open( FILE, ">$destinationPath/kubectl_top_node.txt" )
 			 or die "Couldn't open $destinationPath/kubectl_top_node.txt: $!";		
-		
-		# ToDo: Need a way to stop process at end of run
-		while (!$self->stopKubectlTop) {
-	 		my $cmd;
+
+		my $end;
+		local $SIG{HUP} = sub { $end = 1 };
+		until ($end) {
+			my $cmd;
 			my $outString;
 			my $cmdFailed;
 			$cmd = "KUBECONFIG=$kubernetesConfigFile  kubectl top node --heapster-scheme=https";
@@ -620,11 +619,62 @@ sub kubernetesTopNode {
 			print FILE $outString;
 			sleep $intervalSec;
 		}
+		$logger->info("kubernetesTopNode exit");
 		close FILE;
 		exit;
 	}
+	$self->kubectlTopNodeRunning($pid);
+	$logger->info("kubernetesTopNode started pid $pid");
 
 }
+
+sub kubernetesStopTops {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	my $pidPod = $self->kubectlTopPodRunning;
+	my $pidNode = $self->kubectlTopNodeRunning;
+	$logger->debug("kubernetesStopTops pids Pod:$pidPod Node:$pidNode");
+
+	if ($pidPod > 1) {
+		$self->kubectlTopPodRunning(0);
+		$logger->debug("kubernetesStopTops TopPod SIG HUP to pid $pidPod");
+		kill HUP => $pidPod;
+		waitpid $pidPod, 0;
+		$logger->debug("kubernetesStopTops TopPod pid $pidPod stopped");
+	}
+
+	if ($pidNode > 1) {
+		$self->kubectlTopNodeRunning(0);
+		$logger->debug("kubernetesStopTops TopNode SIG HUP to pid $pidNode");
+		kill HUP => $pidNode;
+		waitpid $pidNode, 0;
+		$logger->debug("kubernetesStopTops TopNode pid $pidNode stopped");
+	}
+}
+
+override 'startStatsCollection' => sub {
+	my ( $self, $intervalLengthSec, $numIntervals, $tmpDir ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+
+	my $destinationDir = "$tmpDir/statistics/kubernetes";
+	my $cmd;
+	$cmd = "mkdir -p $destinationDir";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("startStatsCollection failed: $cmdFailed");
+		return;
+	}
+
+	$self->kubernetesTopPodAllNamespaces(15, $destinationDir);
+	$self->kubernetesTopNode(15, $destinationDir);
+};
+
+override 'stopStatsCollection' => sub {
+	my ( $self ) = @_;
+	$self->kubernetesStopTops();
+};
+
 
 __PACKAGE__->meta->make_immutable;
 

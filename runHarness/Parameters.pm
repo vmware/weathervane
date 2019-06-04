@@ -1634,7 +1634,7 @@ $parameters{"useThinkTime"} = {
 
 $parameters{"driverControllerJvmOpts"} = {
 	"type"      => "=s",
-	"default"   => "-Xmx2g -Xms2g -XX:+AlwaysPreTouch",
+	"default"   => "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
 	"parent"    => "workloadDriver",
 	"usageText" => "",
 	"showUsage" => 1,

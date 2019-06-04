@@ -6,7 +6,7 @@
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+AlwaysPreTouch",
   "driverCpus" : "500m",
   "driverMem" : "1500Mi",
-  "driverJvmOpts" : "-Xmx250M -Xms250M -XX:+AlwaysPreTouch",
+  "driverControllerJvmOpts" : "-Xmx250M -Xms250M -XX:+AlwaysPreTouch",
   "driverControllerCpus" : "100m",
   "driverControllerMem" : "500Mi",
   
@@ -65,7 +65,7 @@
   "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
   "driverCpus" : "2",
   "driverMem" : "6500Mi",
-  "driverJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
+  "driverControllerJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
   "driverControllerCpus" : "300m",
   "driverControllerMem" : "1500Mi",
 

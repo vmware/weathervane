@@ -402,11 +402,11 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampIntervals.addAll(generateRampIntervals("FINDFIRSTMAX-Ramp-" + intervalNum + "-", findFirstMaxRampIntervalSec, 15, prevCurUsers, curUsers));
+			rampIntervals.addAll(generateRampIntervals("FINDFIRSTMAX-RampTo-" + curUsers + "-", findFirstMaxRampIntervalSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
 			
-			curStatusInterval.setName("FINDFIRSTMAX-Ramp-" + intervalNum);
+			curStatusInterval.setName("FINDFIRSTMAX-RampTo-" + curUsers);
 			curStatusInterval.setStartUsers(prevCurUsers);
 			curStatusInterval.setEndUsers(curUsers);
 			curStatusInterval.setDuration(findFirstMaxRampIntervalSec);
@@ -430,7 +430,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * that INITIALRAMP ended on.
 				 */
 				nextInterval.setUsers(curUsers);
-				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
+				nextInterval.setName("FINDFIRSTMAX-Warmup-" + curUsers);
 				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
 				
 				curStatusInterval.setName(nextInterval.getName());
@@ -450,7 +450,7 @@ public class FindMaxLoadPath extends LoadPath {
 				logger.debug("getNextFindFirstMaxInterval warmup subinterval for interval " + intervalNum);
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
-				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
+				nextInterval.setName("FINDFIRSTMAX-Warmup-" + curUsers);
 
 				curStatusInterval.setName(nextInterval.getName());
 				curStatusInterval.setStartUsers(curUsers);
@@ -468,7 +468,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(findFirstMaxIntervalSec);
-			nextInterval.setName("FINDFIRSTMAX-" + intervalNum);
+			nextInterval.setName("FINDFIRSTMAX-" + curUsers);
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
@@ -523,11 +523,11 @@ public class FindMaxLoadPath extends LoadPath {
 			/*
 			 * Generate the intervals to ramp-up to the next curUsers
 			 */
-			rampIntervals.addAll(generateRampIntervals("VERIFYMAX-Ramp-" + intervalNum + "-", verifyMaxRampIntervalSec, 15, prevCurUsers, curUsers));
+			rampIntervals.addAll(generateRampIntervals("VERIFYMAX-RampTo-" + curUsers + "-", verifyMaxRampIntervalSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
 			
-			curStatusInterval.setName("VERIFYMAX-Ramp-" + intervalNum);
+			curStatusInterval.setName("VERIFYMAX-RampTo-" + curUsers);
 			curStatusInterval.setStartUsers(prevCurUsers);
 			curStatusInterval.setEndUsers(curUsers);
 			curStatusInterval.setDuration(verifyMaxRampIntervalSec);
@@ -540,7 +540,7 @@ public class FindMaxLoadPath extends LoadPath {
 				logger.debug("getNextVerifyMaxInterval warmup subinterval for interval " + intervalNum);
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(verifyMaxWarmupIntervalSec);
-				nextInterval.setName("VERIFYMAX-Warmup-" + intervalNum);
+				nextInterval.setName("VERIFYMAX-Warmup-" + curUsers);
 
 				curStatusInterval.setName(nextInterval.getName());
 				curStatusInterval.setStartUsers(curUsers);
@@ -557,7 +557,7 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(verifyMaxIntervalSec);
-			nextInterval.setName("VERIFYMAX-VERIFYFIRST-" + intervalNum);
+			nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 			nextSubInterval = SubInterval.VERIFYSUBSEQUENT;
 
 			curStatusInterval.setName(nextInterval.getName());
@@ -592,8 +592,7 @@ public class FindMaxLoadPath extends LoadPath {
 					// Test again at this interval
 					nextInterval.setUsers(curUsers);
 					nextInterval.setDuration(verifyMaxIntervalSec);
-					nextInterval.setName("VERIFYMAX-VERIFYSUBSEQUENT-PASSED" +
-							numVerifyMaxRepeatsPassed + "-" + intervalNum);
+					nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 
 					curStatusInterval.setName(nextInterval.getName());
 					curStatusInterval.setStartUsers(curUsers);

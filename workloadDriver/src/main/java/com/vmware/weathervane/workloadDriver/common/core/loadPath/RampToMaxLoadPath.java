@@ -65,6 +65,10 @@ public class RampToMaxLoadPath extends LoadPath {
 		return nextStatsInterval;
 	}
 
+	@Override
+	public RampLoadInterval getCurStatusInterval() {
+		return curStatusInterval;
+	}
 
 	public long getStartUsers() {
 		return startUsers;

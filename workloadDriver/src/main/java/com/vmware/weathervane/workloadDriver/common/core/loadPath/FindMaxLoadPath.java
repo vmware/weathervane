@@ -134,6 +134,14 @@ public class FindMaxLoadPath extends LoadPath {
 		
 		this.maxUsers = workload.getMaxUsers();
 		this.initialRampRateStep = maxUsers / 20;
+		
+		/*
+		 * Set up the curStatsInterval
+		 */
+		curStatusInterval.setName("InitialRamp-0");
+		curStatusInterval.setDuration(initialRampIntervalSec);
+		curStatusInterval.setStartUsers(0L);
+		curStatusInterval.setEndUsers(0L);
 
 	}
 
@@ -218,6 +226,10 @@ public class FindMaxLoadPath extends LoadPath {
 		nextInterval.setUsers(curUsers);
 		nextInterval.setDuration(nextIntervalDuration);
 		nextInterval.setName("InitialRamp-" + intervalNum);
+
+		curStatusInterval.setName(nextInterval.getName());
+		curStatusInterval.setStartUsers(curUsers);
+		curStatusInterval.setEndUsers(curUsers);
 
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);
 		return nextInterval;
@@ -389,6 +401,11 @@ public class FindMaxLoadPath extends LoadPath {
 			rampIntervals.addAll(generateRampIntervals("FINDFIRSTMAX-Ramp-" + intervalNum + "-", findFirstMaxRampIntervalSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
+			
+			curStatusInterval.setName("FINDFIRSTMAX-Ramp-" + intervalNum);
+			curStatusInterval.setStartUsers(prevCurUsers);
+			curStatusInterval.setEndUsers(curUsers);
+			curStatusInterval.setDuration(findFirstMaxRampIntervalSec);
 		} else if (nextSubInterval.equals(SubInterval.WARMUP)) {
 
 			if (intervalNum == 0) {
@@ -411,6 +428,12 @@ public class FindMaxLoadPath extends LoadPath {
 				nextInterval.setUsers(curUsers);
 				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
 				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
+				
+				curStatusInterval.setName(nextInterval.getName());
+				curStatusInterval.setStartUsers(curUsers);
+				curStatusInterval.setEndUsers(curUsers);
+				curStatusInterval.setDuration(findFirstMaxWarmupIntervalSec);
+				
 				nextSubInterval = SubInterval.DECISION;
 				logger.debug("getNextFindFirstMaxInterval first interval. returning interval: " + nextInterval);
 				return nextInterval;
@@ -424,6 +447,12 @@ public class FindMaxLoadPath extends LoadPath {
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(findFirstMaxWarmupIntervalSec);
 				nextInterval.setName("FINDFIRSTMAX-Warmup-" + intervalNum);
+
+				curStatusInterval.setName(nextInterval.getName());
+				curStatusInterval.setStartUsers(curUsers);
+				curStatusInterval.setEndUsers(curUsers);
+				curStatusInterval.setDuration(findFirstMaxWarmupIntervalSec);
+				
 				nextSubInterval = SubInterval.DECISION;
 			}
 		
@@ -436,6 +465,12 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setUsers(curUsers);
 			nextInterval.setDuration(findFirstMaxIntervalSec);
 			nextInterval.setName("FINDFIRSTMAX-" + intervalNum);
+
+			curStatusInterval.setName(nextInterval.getName());
+			curStatusInterval.setStartUsers(curUsers);
+			curStatusInterval.setEndUsers(curUsers);
+			curStatusInterval.setDuration(findFirstMaxIntervalSec);
+			
 			nextSubInterval = SubInterval.RAMP;
 		}
 
@@ -487,6 +522,11 @@ public class FindMaxLoadPath extends LoadPath {
 			rampIntervals.addAll(generateRampIntervals("VERIFYMAX-Ramp-" + intervalNum + "-", verifyMaxRampIntervalSec, 15, prevCurUsers, curUsers));
 			nextSubInterval = SubInterval.WARMUP;
 			nextInterval = rampIntervals.pop();
+			
+			curStatusInterval.setName("VERIFYMAX-Ramp-" + intervalNum);
+			curStatusInterval.setStartUsers(prevCurUsers);
+			curStatusInterval.setEndUsers(curUsers);
+			curStatusInterval.setDuration(verifyMaxRampIntervalSec);
 
 		} else  if (nextSubInterval.equals(SubInterval.WARMUP)) {			
 			if (!rampIntervals.isEmpty()) {
@@ -497,6 +537,12 @@ public class FindMaxLoadPath extends LoadPath {
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(verifyMaxWarmupIntervalSec);
 				nextInterval.setName("VERIFYMAX-Warmup-" + intervalNum);
+
+				curStatusInterval.setName(nextInterval.getName());
+				curStatusInterval.setStartUsers(curUsers);
+				curStatusInterval.setEndUsers(curUsers);
+				curStatusInterval.setDuration(verifyMaxWarmupIntervalSec);
+
 				nextSubInterval = SubInterval.VERIFYFIRST;
 			}
 		} else if (nextSubInterval.equals(SubInterval.VERIFYFIRST)) {	
@@ -510,6 +556,10 @@ public class FindMaxLoadPath extends LoadPath {
 			nextInterval.setName("VERIFYMAX-VERIFYFIRST-" + intervalNum);
 			nextSubInterval = SubInterval.VERIFYSUBSEQUENT;
 
+			curStatusInterval.setName(nextInterval.getName());
+			curStatusInterval.setStartUsers(curUsers);
+			curStatusInterval.setEndUsers(curUsers);
+			curStatusInterval.setDuration(verifyMaxIntervalSec);
 		} else if (nextSubInterval.equals(SubInterval.VERIFYSUBSEQUENT)) {
 			/*
 			 * Need to know whether the previous interval
@@ -540,6 +590,12 @@ public class FindMaxLoadPath extends LoadPath {
 					nextInterval.setDuration(verifyMaxIntervalSec);
 					nextInterval.setName("VERIFYMAX-VERIFYSUBSEQUENT-PASSED" +
 							numVerifyMaxRepeatsPassed + "-" + intervalNum);
+
+					curStatusInterval.setName(nextInterval.getName());
+					curStatusInterval.setStartUsers(curUsers);
+					curStatusInterval.setEndUsers(curUsers);
+					curStatusInterval.setDuration(verifyMaxIntervalSec);
+
 					nextSubInterval = SubInterval.VERIFYSUBSEQUENT;					
 				}
 			} else {
@@ -593,6 +649,11 @@ public class FindMaxLoadPath extends LoadPath {
 
 		logger.debug("getNextStatsInterval returning interval: " + curInterval);
 		return curInterval;
+	}
+
+	@Override
+	public RampLoadInterval getCurStatusInterval() {
+		return curStatusInterval;
 	}
 
 	public long getMaxUsers() {

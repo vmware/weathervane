@@ -229,7 +229,7 @@ public class FindMaxLoadPath extends LoadPath {
 		
 		nextInterval.setUsers(curUsers);
 		nextInterval.setDuration(nextIntervalDuration);
-		nextInterval.setName("InitialRamp-" + intervalNum);
+		nextInterval.setName("InitialRamp-" + curUsers);
 
 		curStatusInterval.setName(nextInterval.getName());
 		curStatusInterval.setStartUsers(curUsers);

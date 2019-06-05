@@ -1,7 +1,7 @@
 {
  
 "micro" : {
-  "maxUsers" : 2000,
+  "maxUsers" : 3000,
   "numDrivers" : 1,
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+AlwaysPreTouch",
   "driverCpus" : "500m",

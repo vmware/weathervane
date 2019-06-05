@@ -12,9 +12,11 @@ data:
   CASSANDRA_PORT: "9042"
   DBHOSTNAME: "postgresql"
   DBPORT: "5432"
+  HEAP: "4G"
+  THREADS: "8"
   SPRINGPROFILESACTIVE: "postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit" 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auctiondatamanager
@@ -24,6 +26,11 @@ metadata:
     impl: auctiondatamanager
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: auction
+      tier: dataManager
+      impl: auctiondatamanager
   template:
     metadata:
       name: auctiondatamanager
@@ -33,7 +40,7 @@ spec:
         impl: auctiondatamanager
     spec:
       containers:
-      - image: hrosenbe/weathervane-auctiondatamanager:1.2.0
+      - image: repository/weathervane-auctiondatamanager:1.2.0
         name: auctiondatamanager
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -46,3 +53,8 @@ spec:
         envFrom:
         - configMapRef:
             name: auctiondatamanager-config
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2200Mi
+            

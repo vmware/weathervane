@@ -41,13 +41,6 @@ use namespace::autoclean;
 
 extends 'WorkloadDriver';
 
-has '+name' => ( default => 'weathervane', );
-
-has 'description' => (
-	is  => 'ro',
-	isa => 'Str',
-);
-
 has 'secondaries' => (
 	is      => 'rw',
 	isa     => 'ArrayRef[WorkloadDriver]',
@@ -163,7 +156,9 @@ has 'suffix' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
-
+	my $workloadNum = $self->workload->instanceNum;
+	my $instanceNum = $self->instanceNum;
+	$self->name("driverW${workloadNum}I${instanceNum}");
 };
 
 override 'addSecondary' => sub {
@@ -315,6 +310,32 @@ sub printLoadPath {
 
 }
 
+sub getControllerURL {
+	my ( $self ) = @_;
+	my $port = $self->portMap->{'http'};
+	my $hostname = $self->host->name;
+	return "http://${hostname}:$port";
+}
+
+sub getHosts {
+	my ( $self ) = @_;
+	my $logger =
+	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my @hosts;
+	my $secondariesRef = $self->secondaries;
+	push @hosts, $self->host->name;
+	foreach my $secondary (@$secondariesRef) {
+		$logger->debug("getHosts adding host " . $secondary->host->name);
+		push @hosts, $secondary->host->name;
+	}
+	return \@hosts;
+}
+
+sub getStatsHost {
+	my ( $self ) = @_;
+	return $self->host->name
+}
+
 sub createRunConfigHash {
 	my ( $self, $appInstancesRef, $suffix ) = @_;
 	my $logger =
@@ -338,23 +359,14 @@ sub createRunConfigHash {
 		$behaviorSpecName = "auctionRevisedMainUser";
 	}
 
-	my $port = $self->portMap->{'http'};
 
 	$logger->debug("createRunConfigHash");
 	my $runRef = {};
 
 	$runRef->{"name"} = "runW${workloadNum}";
 
-	$runRef->{"statsHost"}          = $self->host->name;
-	$runRef->{"portNumber"}         = $port;
+	$runRef->{"statsHost"}          = $self->getStatsHost();
 	$runRef->{"statsOutputDirName"} = "/tmp";
-
-	$runRef->{"hosts"} = [];
-	push @{ $runRef->{"hosts"} }, $self->host->name;
-	foreach my $secondary (@$secondariesRef) {
-		$logger->debug("createRunConfigHash adding host " . $secondary->host->name);
-		push @{ $runRef->{"hosts"} }, $secondary->host->name;
-	}
 
 	$runRef->{"workloads"} = [];
 
@@ -641,6 +653,53 @@ sub clearResults {
 	$self->proportion(   {} );
 }
 
+sub followLogs {
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		my $pid              = fork();
+		if ( $pid == 0 ) {
+			my $hostname = $secondary->host->name;
+			my $secondaryName  = $secondary->name;
+			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
+			exit;
+		}
+	}
+
+	# start the primary
+	my $pid = fork();
+	if ( $pid == 0 ) {
+		my $name        = $self->name;
+		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
+		exit;
+	}	
+}
+
+sub startDrivers {
+	my ( $self, $logDir, $suffix, $logHandle) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $workloadNum    = $self->workload->instanceNum;
+	$logger->debug("Starting workload driver containers");
+
+	# Start the driver on all of the secondaries
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		my $pid              = fork();
+		if ( $pid == 0 ) {
+			my $hostname = $secondary->host->name;
+			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
+			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
+			exit;
+		}
+	}
+
+	# start the primary
+	$logger->debug("Starting primary driver for workload $workloadNum");
+	$self->startAuctionWorkloadDriverContainer($self, $logHandle);
+
+	$logger->debug("Sleeping for 30 sec to let primary driver start");
+	sleep 30;	
+}
 
 sub startAuctionWorkloadDriverContainer {
 	my ( $self, $driver, $applog ) = @_;
@@ -651,14 +710,9 @@ sub startAuctionWorkloadDriverContainer {
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
 	# Calculate the values for the environment variables used by the auctiondatamanager container
-	my $weathervaneWorkloadHome = $driver->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $driver->getParamValue('workloadProfileDir');
-
 	my $driverThreads                       = $driver->getParamValue('driverThreads');
 	my $driverHttpThreads                   = $driver->getParamValue('driverHttpThreads');
 	my $maxConnPerUser                      = $driver->getParamValue('driverMaxConnPerUser');
-
-	my $port = $driver->portMap->{'http'};
 
 	my $driverJvmOpts           = $driver->getParamValue('driverJvmOpts');
 	if ( $driver->getParamValue('logLevel') >= 3 ) {
@@ -675,6 +729,7 @@ sub startAuctionWorkloadDriverContainer {
 		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
 	}
 	my %envVarMap;
+	my $port = $self->portMap->{'http'};
 	$envVarMap{"PORT"} = $port;	
 	$envVarMap{"JVMOPTS"} = "\"$driverJvmOpts\"";	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
@@ -682,11 +737,13 @@ sub startAuctionWorkloadDriverContainer {
 	# Start the  auctionworkloaddriver container
 	my %volumeMap;
 	my %portMap;
-	my $directMap = 0;
+	$portMap{$port} = $port;
+	
+	my $directMap = 1;
 	my $cmd        = "";
 	my $entryPoint = "";
 	my $dockerConfigHashRef = {};	
-	$dockerConfigHashRef->{'net'} = "host";
+	$dockerConfigHashRef->{'net'} = "bridge";
 
 	my $numCpus = $driver->getParamValue('driverCpus');
 	my $mem = $driver->getParamValue('driverMem');
@@ -715,6 +772,19 @@ sub startAuctionWorkloadDriverContainer {
 	);
 }
 
+sub stopDrivers {
+	my ( $self, $logHandle) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("Stopping workload driver containers");
+
+	# Now stop and remove all of the driver containers
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		$self->stopAuctionWorkloadDriverContainer($logHandle, $secondary);
+	}
+	$self->stopAuctionWorkloadDriverContainer($logHandle, $self);
+}
+
 sub stopAuctionWorkloadDriverContainer {
 	my ( $self, $applog, $driver ) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
@@ -740,79 +810,106 @@ sub initializeRun {
 		return 0;
 	};
 
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-		$secondary->setPortNumber($port);
-	}
-	push @$driversRef, $self;
+    $self->startDrivers($logDir, $suffix, $logHandle);
 
-	# Start the driver on all of the secondaries
-	foreach my $secondary (@$secondariesRef) {
-		my $pid              = fork();
-		if ( $pid == 0 ) {
-			my $hostname = $secondary->host->name;
-			$logger->debug("Starting secondary driver for workload $workloadNum on $hostname");
-			$self->startAuctionWorkloadDriverContainer($secondary, $logHandle);
-			my $secondaryName        = $secondary->name;
-			$secondary->host->dockerFollowLogs($logHandle, $secondaryName, "$logDir/run_$hostname$suffix.log" );
-			exit;
-		}
-	}
-
-	# start the primary
-	my $pid              = fork();
-	if ( $pid == 0 ) {
-		$logger->debug("Starting primary driver for workload $workloadNum");
-		$self->startAuctionWorkloadDriverContainer($self, $logHandle);
-		my $name        = $self->name;
-		$self->host->dockerFollowLogs($logHandle, $name, "$logDir/run$suffix.log" );
-		exit;
-	}
-
-	$logger->debug("Sleeping for 30 sec to let primary driver start");
-	sleep 30;
-
-	# Now keep checking whether the workload driver nodes are up
-	my $allUp      = 1;
+	# Now keep checking whether the workload controller is up
+	my $isUp      = 1;
 	my $retryCount = 0;
 	do {
-		$allUp = 1;
-		foreach my $driver (@$driversRef) {
-			my $isUp = $driver->isUp();
-			$logger->debug( "For driver "
-				  . $driver->host->name
+		$isUp = $self->isUp();
+		$logger->debug( "For driver "
+				  . $self->host->name
 				  . " isUp returned $isUp" );
-			if ( !$isUp ) {
-				$allUp = 0;
-			}
-		}
-
 		$retryCount++;
-		if ( !$allUp ) {
-			sleep 24;
+		if ( !$isUp ) {
+			sleep 30;
 		}
-	} while ( ( !$allUp ) && ( $retryCount < 10 ) );
+	} while ( ( !$isUp ) && ( $retryCount < 20 ) );
 
-	if ( !$allUp ) {
+	if ( !$isUp ) {
 		$console_logger->warn(
-"The workload driver nodes for workload $workloadNum did not start within 4 minutes. Exiting"
+"The workload controller for workload $workloadNum did not start within 10 minutes. Exiting"
+		);
+		return 0;
+	} else {
+		$logger->debug("The workload controller is up.");
+	}
+
+	# Start following the driver logs
+    $self->followLogs($logDir, $suffix, $logHandle);
+
+	my $json = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+	my $ua = LWP::UserAgent->new;
+	$ua->agent("Weathervane/1.0 ");
+	my $req;
+	my $res;
+	my $baseUrl = $self->getControllerURL() . "/run";
+
+	# Send the hosts and port number to the controller
+	my $runContent = $json->encode($self->getHosts());
+	my $url = $baseUrl . "/hosts";
+	$logger->debug("Sending POST to $url");
+	$req = HTTP::Request->new( POST => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	$req->content($runContent);
+	$res = $ua->request($req);
+	$logger->debug(
+		"Response status line: " . $res->status_line . " for url " . $url );
+	if ( $res->is_success ) {
+		$logger->debug( "Response sucessful.  Content: " . $res->content );
+	}
+	else {
+		$console_logger->warn("Could not send hosts message to workload controller. Exiting");
+		return 0;
+	}
+	
+	my %portHash;
+	$portHash{"port"} = $self->portMap->{'http'};
+	$runContent = $json->encode(\%portHash);
+	$url = $baseUrl . "/port";
+	$logger->debug("Sending POST to $url");
+	$req = HTTP::Request->new( POST => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	$req->content($runContent);
+	$res = $ua->request($req);
+	$logger->debug(
+		"Response status line: " . $res->status_line . " for url " . $url );
+	if ( $res->is_success ) {
+		$logger->debug( "Response sucessful.  " . $res->content );
+	}
+	else {
+		$console_logger->warn("Could not send port message to workload controller. Exiting");
+		return 0;
+	}
+
+	# Now keep checking whether the workload drivers is up
+    $isUp      = 1;
+	$retryCount = 0;
+	do {
+		$isUp = $self->areDriversUp();
+		$logger->debug( "For driver "
+				  . $self->host->name
+				  . " isUp returned $isUp" );
+		$retryCount++;
+		if ( !$isUp ) {
+			sleep 30;
+		}
+	} while ( ( !$isUp ) && ( $retryCount < 20 ) );
+
+	if ( !$isUp ) {
+		$console_logger->warn(
+"The workload driver nodes for workload $workloadNum did not start within 10 minutes. Exiting"
 		);
 		return 0;
 	} else {
 		$logger->debug("All workload drivers are up.");
 	}
 
-	# Now send the run configuration to all of the drivers
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-
+	# Now send the run configuration to the controller
 	my $runRef =
 	  $self->createRunConfigHash( $self->workload->appInstancesRef, $suffix );
 
@@ -822,14 +919,9 @@ sub initializeRun {
 	print $configFile $json->encode($runRef) . "\n";
 	close $configFile;
 
-	my $runContent = $json->encode($runRef);
-
+	$runContent = $json->encode($runRef);
+	$url = $baseUrl . "/$runName";
 	$logger->debug("Run content for workload $workloadNum:\n$runContent\n");
-
-	my $req;
-	my $res;
-	my $hostname = $self->host->name;
-	my $url      = "http://$hostname:$port/run/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
@@ -843,13 +935,12 @@ sub initializeRun {
 		$logger->debug( "Response sucessful.  Content: " . $res->content );
 	}
 	else {
-		$console_logger->warn(
-"Could not send configuration message to workload driver node on $hostname. Exiting"
-		);
+		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
+		$logger->debug( "Response unsucessful.  Content: " . $res->content );
 		return 0;
 	}
 
-	# Send the behaviorSpecs to all of the drivers
+	# Send the behaviorSpecs to the controller
 	my $behaviorSpecDirName =
 	  "$tmpDir/configuration/workloadDriver/workload${workloadNum}";
 	my @behaviorSpecFiles = (
@@ -858,62 +949,46 @@ sub initializeRun {
 		'auction.followAuction.behavior.json'
 	);
 	foreach my $behaviorSpec (@behaviorSpecFiles) {
-
-		# Read the file
-		open( FILE, "$behaviorSpecDirName/$behaviorSpec" )
+      # Read the file
+	  open( FILE, "$behaviorSpecDirName/$behaviorSpec" )
 		  or die "Couldn't open $behaviorSpecDirName/$behaviorSpec: $!";
-		my $contents = "";
-		while ( my $inline = <FILE> ) {
-			$contents .= $inline;
-		}
-		close FILE;
+	  my $contents = "";
+	  while ( my $inline = <FILE> ) {
+	    $contents .= $inline;
+	  }
+      close FILE;
 
-		foreach my $driver (@$driversRef) {
-			my $hostname = $driver->host->name;
-			my $url      = "http://$hostname:$port/behaviorSpec";
-			$logger->debug("Sending POST to $url with contents:\n$contents");
-			$req = HTTP::Request->new( POST => $url );
-			$req->content_type('application/json');
-			$req->header( Accept => "application/json" );
-			$req->content($contents);
+	  $url      = $baseUrl . "/behaviorSpec";
+	  $logger->debug("Sending POST to $url with contents:\n$contents");
+	  $req = HTTP::Request->new( POST => $url );
+	  $req->content_type('application/json');
+	  $req->header( Accept => "application/json" );
+	  $req->content($contents);
 
-			$res = $ua->request($req);
-			$logger->debug( "Response status line: "
-				  . $res->status_line
-				  . " for url "
-				  . $url );
-			if ( $res->is_success ) {
-				$logger->debug(
-					"Response sucessful.  Content: " . $res->content );
-			}
-			else {
-				$console_logger->warn(
-"Could not send behaviorSpec message to workload driver node on $hostname. Exiting"
-				);
-				return 0;
-			}
-		}
+	  $res = $ua->request($req);
+	  $logger->debug( "Response status line: " . $res->status_line . " for url " . $url );
+	  if ( $res->is_success ) {
+	  	$logger->debug("Response sucessful.  Content: " . $res->content );
+	  }	else {
+		$console_logger->warn("Could not send behaviorSpec message to workload controller. Exiting");
+		return 0;
+	  }
 	}
 
 	# Now send the initialize message to the runService
-	$hostname = $self->host->name;
-	$url      = "http://$hostname:$port/run/$runName/initialize";
+	$url      = $baseUrl . "/$runName/initialize";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
 	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
+	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
 
 	if ( $res->is_success ) {
 		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
-		$console_logger->warn(
-"Could not send initialize message to workload driver node on $hostname. Exiting"
-		);
+	} else {
+		$console_logger->warn("Could not send initialize message to workload controller. Exiting");
 		return 0;
 	}
 
@@ -931,8 +1006,6 @@ sub startRun {
 	$self->clearResults();
 
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
-	my $weathervaneWorkloadHome = $self->getParamValue('workloadDriverDir');
-	my $workloadProfileHome     = $self->getParamValue('workloadProfileDir');
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
@@ -947,17 +1020,6 @@ sub startRun {
 		return 0;
 	};
 
-
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-	}
-	push @$driversRef, $self;
-
-	my $port = $self->portMap->{'http'};
-
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -970,8 +1032,7 @@ sub startRun {
 	my $runContent = "{}";
 	my $pid1       = fork();
 	if ( $pid1 == 0 ) {
-		my $hostname = $self->host->name;
-		my $url      = "http://$hostname:$port/run/$runName/start";
+		my $url      = $self->getControllerURL() . "/run/$runName/start";
 		$logger->debug("Sending POST to $url");
 		$req = HTTP::Request->new( POST => $url );
 		$req->content_type('application/json');
@@ -985,9 +1046,7 @@ sub startRun {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
 		}
 		else {
-			$console_logger->warn(
-"Could not send start message to workload driver node on $hostname. Exiting"
-			);
+			$console_logger->warn("Could not send start message to workload controller. Exiting");
 			return 0;
 		}
 		exit;
@@ -1002,8 +1061,7 @@ sub startRun {
 	$statsStartedMsg->{'timestamp'} = time;
 	my $statsStartedContent = $json->encode($statsStartedMsg);
 
-	my $hostname = $self->host->name;
-	my $url      = "http://$hostname:$port/stats/started/$runName";
+	my $url      = $self->getControllerURL() . "/stats/started/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
@@ -1017,9 +1075,7 @@ sub startRun {
 		$logger->debug( "Response sucessful.  Content: " . $res->content );
 	}
 	else {
-		$console_logger->warn(
-"Could not send stats/started message to workload driver node on $hostname. Exiting"
-		);
+		$console_logger->warn("Could not send stats/started message to workload controller. Exiting");
 		return 0;
 	}
 
@@ -1117,15 +1173,21 @@ sub startRun {
 	my $runCompleted = 0;
 	my $endRunStatus = "";
 	my $endRunStatusRaw = "";
+	$url = $self->getControllerURL() . "/run/$runName/state";
 	while (!$runCompleted) {
-		$url = "http://$hostname:$port/run/$runName/state";
 		$logger->debug("Sending get to $url");
 		$req = HTTP::Request->new( GET => $url );
 		$res = $ua->request($req);
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$endRunStatus = $json->decode( $res->content );			
+			$endRunStatus = $json->decode( $res->content );	
+			my $workloadStati = $endRunStatus->{'workloadStati'};
+			foreach my $workloadStatus (@$workloadStati) {
+				my $wkldName = $workloadStatus->{'name'};
+				my $curIntervalName = $workloadStatus->{'curInterval'}->{'name'};
+				$logger->debug("Workload $workloadNum, AppInstance: $wkldName: curInterval = $curIntervalName");
+			}		
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
 				$runCompleted = 1;
@@ -1155,7 +1217,7 @@ sub startRun {
 	my $statsCompleteMsg = {};
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $json->encode($statsCompleteMsg);
-	$url      = "http://$hostname:$port/stats/complete/$runName";
+	$url      = $self->getControllerURL() . "/stats/complete/$runName";
 	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
@@ -1171,9 +1233,7 @@ sub startRun {
 		$logger->debug("Response sucessful.  Content: " . $res->content );
 	}	
 	else {
-		$console_logger->warn(
-			"Could not send stats/complete message to workload driver node on $hostname. Exiting"
-		);
+		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
 		return 0;
 	}
 	close $logHandle;
@@ -1202,14 +1262,6 @@ sub stopRun {
 		return 0;
 	};
 
-	# Create a list of all of the workloadDriver nodes including the primary
-	my $driversRef     = [];
-	my $secondariesRef = $self->secondaries;
-	foreach my $secondary (@$secondariesRef) {
-		push @$driversRef, $secondary;
-	}
-	push @$driversRef, $self;
-
 	my $json = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -1218,7 +1270,7 @@ sub stopRun {
 	
 	
 	# Now send the shutdown message
-	my $url      = "http://$hostname:$port/run/$runName/shutdown";
+	my $url      = $self->getControllerURL() . "/run/$runName/shutdown";
 	$logger->debug("Sending POST to $url");
 	my $req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
@@ -1242,14 +1294,10 @@ sub stopRun {
 		return 0;
 	}
 				
-	# Now stop and remove all of the driver containers
-	foreach my $driver (@$driversRef) {
-		$self->stopAuctionWorkloadDriverContainer($logHandle, $driver);
-	}
+	$self->stopDrivers($logHandle);
 
 	close $logHandle;
 	return 1;
-
 }
 
 sub isUp {
@@ -1259,8 +1307,6 @@ sub isUp {
 	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $hostname = $self->host->name;
-	my $port     = $self->portMap->{'http'};
 	my $json     = JSON->new;
 	$json = $json->relaxed(1);
 	$json = $json->pretty(1);
@@ -1268,7 +1314,40 @@ sub isUp {
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/0.95 ");
 
-	my $url = "http://$hostname:$port/run/$runName/up";
+	my $controllerUrl = $self->getControllerURL();
+	my $url = "$controllerUrl/run/up";
+	$logger->debug("Sending get to $url");
+	my $req = HTTP::Request->new( GET => $url );
+
+	my $res = $ua->request($req);
+	$logger->debug(
+		"Response status line: " . $res->status_line . " for url " . $url );
+	if ( $res->is_success ) {
+		my $jsonResponse = $json->decode( $res->content );
+
+		if ( $jsonResponse->{"isStarted"} ) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+sub areDriversUp {
+	my ($self) = @_;
+	my $logger =
+	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	my $workloadNum = $self->workload->instanceNum;
+	my $runName     = "runW${workloadNum}";
+
+	my $json     = JSON->new;
+	$json = $json->relaxed(1);
+	$json = $json->pretty(1);
+
+	my $ua = LWP::UserAgent->new;
+	$ua->agent("Weathervane/0.95 ");
+
+	my $controllerUrl = $self->getControllerURL();
+	my $url = "$controllerUrl/run/driversUp";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 
@@ -1303,7 +1382,7 @@ sub isStarted {
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/0.95 ");
 
-	my $url = "http://$hostname:$port/run/$runName/start";
+	my $url = $self->getControllerURL() . "/run/$runName/start";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 
@@ -1840,7 +1919,7 @@ sub getNumActiveUsers {
 	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 
-	my $url = "http://$hostname:$port/run/$runName/users";
+	my $url = $self->getControllerURL() . "/run/$runName/users";
 	$logger->debug("Sending get to $url");
 
 	my $req = HTTP::Request->new( GET => $url );
@@ -1866,7 +1945,7 @@ sub getNumActiveUsers {
 		$hostname = $secondary->host->name;
 		$port     = $secondary->portMap->{'http'};
 
-		$url = "http://$hostname:$port/run/$runName/users";
+		$url = $self->getControllerURL() . "/run/$runName/users";
 		$logger->debug("Sending get to $url");
 
 		$req = HTTP::Request->new( GET => $url );
@@ -1925,7 +2004,7 @@ sub setNumActiveUsers {
 		my $hostname = $driver->host->name;
 		my $port     = $driver->portMap->{'http'};
 		my $url =
-		  "http://$hostname:$port/run/$runName/workload/$appInstanceName/users";
+		  $self->getControllerURL() . "/run/$runName/workload/$appInstanceName/users";
 		$logger->debug("Sending POST to $url");
 
 		my $changeMessageContent = {};
@@ -2019,7 +2098,7 @@ sub parseStats {
 	$json = $json->pretty(1);
 	my $ua = LWP::UserAgent->new;
 	$ua->agent("Weathervane/1.0 ");
-	my $url = "http://$hostname:$port/run/$runName/state";
+	my $url = $self->getControllerURL() . "/run/$runName/state";
 	$logger->debug("Sending get to $url");
 	my $req = HTTP::Request->new( GET => $url );
 	my $res = $ua->request($req);

@@ -86,21 +86,7 @@ override 'startServices' => sub {
 	my $namespace = $self->namespace;
 	my $cluster = $self->host;
 	# Create the namespace and the namespace-wide resources
-	my $configDir        = $self->getParamValue('configDir');
-	open( FILEIN,  "$configDir/kubernetes/namespace.yaml" ) or die "$configDir/kubernetes/namespace.yaml: $!\n";
-	open( FILEOUT, ">/tmp/namespace-$namespace.yaml" )             or die "Can't open file /tmp/namespace-$namespace.yaml: $!\n";
-	
-	while ( my $inline = <FILEIN> ) {
-		if ( $inline =~ /\s\sname:/ ) {
-			print FILEOUT "  name: $namespace\n";
-		}
-		else {
-			print FILEOUT $inline;
-		}
-	}
-	close FILEIN;
-	close FILEOUT;
-	$cluster->kubernetesApply("/tmp/namespace-$namespace.yaml", $self->namespace);
+	$cluster->kubernetesCreateNamespace($namespace);
 	
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
@@ -153,18 +139,39 @@ override 'getEdgeAddrsRef' => sub {
 	
 	my $wwwIpAddrsRef = [];
 	
-	# Get the IP addresses of the nginx-ingress in this appInstance's namespace
-	my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-	if ($#{$ipAddrsRef} < 0) {
-		$logger->error("There are no IP addresses for the Kubernetes nodes");
-		exit 1;
-	}
+	$logger->debug("getEdgeAddrsRef: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
+	if ($cluster->getParamValue('useLoadBalancer')) {
+		my $ip = "";
+		# Wait for ip to be provisioned
+		# ToDo: Need a timeout here.
+		while (!$ip) {
+			my $cmdFailed;
+		  	($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
+		  	if ($cmdFailed)	{
+		  		$logger->error("Error getting IP for frontend loadbalancer: error = $cmdFailed");
+		  	}
+		  	if (!$ip) {
+		  		sleep 10;
+		  	} else {
+				$logger->debug("Called kubernetesGetLbIP: got $ip");
+		  	}
+		}
+		push @$wwwIpAddrsRef, [$ip, 80, 443];							
+	} else {
+		# Using NodePort service for ingress
+		# Get the IP addresses of the nginx-ingress in this appInstance's namespace
+		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+		if ($#{$ipAddrsRef} < 0) {
+			$logger->error("There are no IP addresses for the Kubernetes nodes");
+			exit 1;
+		}
 	
-	my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
-	my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
+		my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
+		my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
 	
-	foreach my $ipAddr (@$ipAddrsRef) {
-		push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
+		foreach my $ipAddr (@$ipAddrsRef) {
+			push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
+		}
 	}
 	return $wwwIpAddrsRef;
 };
@@ -305,13 +312,6 @@ override 'getServiceConfigParameters' => sub {
 
 override 'redeploy' => sub {
 	my ( $self, $logfile ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
-	$logger->debug(
-		"redeploy for workload ", $self->workload->instanceNum,
-		", appInstance ",         $self->instanceNum
-	);
-
-	$self->imagePullPolicy("Always");
 };
 
 override 'getHostStatsSummary' => sub {

@@ -49,15 +49,24 @@ package com.vmware.weathervane.workloadDriver.common.core;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BehaviorSpec 
 {	
+	private static final Logger logger = LoggerFactory.getLogger(BehaviorSpec.class);
 	private static Map<String, BehaviorSpec> _behaviorSpecs = new HashMap<String, BehaviorSpec>();
 
 	public static BehaviorSpec addBehaviorSpec(String name, BehaviorSpec behaviorSpec) {
+		logger.debug("addBehaviorSpec: " + behaviorSpec.toString());
+		if (!behaviorSpec.isSelectionMixAvailable()) {
+			behaviorSpec.normalize();
+			behaviorSpec.createSelectionMatrix();
+		}
 		return _behaviorSpecs.put(name, behaviorSpec);
 	}
 	
@@ -219,11 +228,14 @@ public class BehaviorSpec
 		this.useResponseTime = useResponseTime;
 	}
 
+	public Double[][][] getTransitionMatrices() {
+		return transitionMatrices;
+		
+	}
 	public void setTransitionMatrices(Double[][][] transitionMatrices) {
 		this.transitionMatrices = transitionMatrices.clone();
 		this.normalize();
 		this.createSelectionMatrix();
-
 	}
 
 	public String[] getAsyncBehaviors() {
@@ -326,6 +338,30 @@ public class BehaviorSpec
 
 	public void setResponseTimeLimitsPercentile(Double[] responseTimeLimitsPercentile) {
 		this.responseTimeLimitsPercentile = responseTimeLimitsPercentile;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder out = new StringBuilder("BehaviorSpec: ");
+		out.append("name = " + name);
+		out.append(", initialState = " + initialState);
+		out.append(", maxNumAsyncBehaviors = " + maxNumAsyncBehaviors);
+		if (transitionChoosers != null) {
+			out.append(", numTransitionChoosers = " + transitionChoosers.length);
+		} else {
+			out.append(", transitionChoosers = null");
+		}
+		if (transitionMatrices != null) {
+			out.append(", numTransitionMatrices = " + transitionMatrices.length);
+		} else {
+			out.append(", transitionMatrices = null");
+		}
+		if (asyncBehaviors != null) {
+			out.append(", numAsyncBehaviors = " + asyncBehaviors.length);
+		} else {
+			out.append(", asyncBehaviors = null");
+		}
+		return out.toString();
 	}
 	
 }

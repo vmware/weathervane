@@ -1,68 +1,62 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rabbitmq-config
+  name: wklddriver-config
   labels:
     app: auction
-    tier: backend
-    type: msgServer
-    impl: rabbitmq
+    tier: driver
+    type: node
 data: 
-  RABBITMQ_NODE_PORT: "5672"
-  RABBITMQ_DIST_PORT: "25672"
-  RABBITMQ_MEMORY: "4GB"
+  PORT: "7500"
+  JVMOPTS: "-Xmx6g -Xms6g -XX:+AlwaysPreTouch"
+  WORKLOADNUM: "1"
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: rabbitmq
+  name: wklddriver
   labels:
     app: auction
-    tier: backend
-    type: msgServer
-    impl: rabbitmq
+    tier: driver
+    type: node
 spec:
-  replicas: 1
+  serviceName: wklddriver
   selector:
     matchLabels:
       app: auction
-      tier: backend
-      type: msgServer
-      impl: rabbitmq
+      tier: driver
+      type: node
+  replicas: 1
   template:
     metadata:
-      name: rabbitmq
+      name: wklddriver
       labels:
         app: auction
-        tier: backend
-        type: msgServer
-        impl: rabbitmq
+        tier: driver
+        type: node
     spec:
       containers:
-      - image: repository/weathervane-rabbitmq:1.2.0
-        name: rabbitmq
+      - image: repository/weathervane-auctionworkloaddriver:2.0.0
+        name: wklddriver
         imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
-            name: rabbitmq-config
+            name: wklddriver-config
         ports: 
-        - containerPort: 5672
-          name: nodeport
-          protocol: TCP
-        - containerPort: 25672
-          name: peerport
+        - containerPort: 7500
+          name: wklddriverport
           protocol: TCP
         resources:
           requests:
             cpu: 1
-            memory: 4Gi
+            memory: 6Gi
         livenessProbe:
           exec:
             command:
             - /bin/sh
             - -i
             - -c
-            - 'rabbitmqctl status'
+            - 'jps | grep -Eq JarLauncher'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -74,7 +68,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - 'rabbitmqctl list_vhosts | grep -Eq auction'
+            - 'curl -s http://127.0.0.1:7500/driver/up | grep -Eq true'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -84,20 +78,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq
+  name: wklddriver
   labels:
     app: auction
-    tier: backend
-    type: msgServer
-    impl: rabbitmq
+    tier: driver
+    type: node
 spec:
+  clusterIP: None
   ports:
-  - port: 5672
-    name: nodeport
-  - port: 25672
-    name: peerport
+  - port: 7500
+    name: wklddriverport
   selector:
     app: auction
-    tier: backend
-    type: msgServer
-    impl: rabbitmq
+    tier: driver
+    type: node

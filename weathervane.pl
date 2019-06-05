@@ -87,8 +87,8 @@ sub createKubernetesCluster {
 		exit(-1);
 	} 
 	my $clusterName = $clusterParamHashRef->{'name'};
-	if ( ( !exists $clusterParamHashRef->{'kubernetesConfigFile'} ) || ( !defined $clusterParamHashRef->{'kubernetesConfigFile'} ) ) {
-		$console_logger->error("KubernetesCluster $clusterName does not have a kubernetesConfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
+	if ( ( !exists $clusterParamHashRef->{'kubeconfigFile'} ) || ( !defined $clusterParamHashRef->{'kubeconfigFile'} ) ) {
+		$console_logger->error("KubernetesCluster $clusterName does not have a kubeconfigFile parameter.  This parameter points to the kubectl config file for the desired context.");
 		exit(-1);
 	}	
 	if ( exists $nameToComputeResourceHashRef->{$clusterName} ) {
@@ -164,7 +164,29 @@ sub getAppInstanceHostOrCluster {
 	} else {
 		return "";
 	}
-	
+}
+
+sub getDriverCluster {
+	my ($driverParamHashRef, $nameToComputeResourceHashRef, $paramsHashRef, $runProcedureParamHashRef, $runProcedure) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger = get_logger("Weathervane");
+
+	# Get the value for driverCluster.
+	my $driverClustername = $driverParamHashRef->{"driverCluster"};
+    if ($driverClustername) {
+		if ( !exists $nameToComputeResourceHashRef->{$driverClustername} ) {
+		  $console_logger->error("Cluster $driverClustername was specified for driverCluster, but no KubernetesCluster with that name was defined.");
+		  exit(-1);
+		}
+		my $driverCluster = $nameToComputeResourceHashRef->{$driverClustername};
+		if ((ref $driverCluster) eq "DockerHost") {
+		  $console_logger->error("Hostname $driverClustername was specified for driverCluster, but that host is a DockerHost.");
+		  exit(-1);			
+		}
+		return $driverCluster;
+	} else {
+		return "";
+	}
 }
 
 # Get the host to use for an Instance (driver, dataManager, service, etc) 
@@ -177,7 +199,7 @@ sub getComputeResourceForInstance {
 	
 	my $appInstanceK8s = "";
 	if ($appInstanceHostOrCluster) {
-		$appInstanceK8s= (ref $appInstanceHostOrCluster) eq "KubernetesCluster";
+		$appInstanceK8s = (ref $appInstanceHostOrCluster) eq "KubernetesCluster";
 	}
 
 	# If the xxxServerHosts was defined for this serviceType, then use 
@@ -186,9 +208,13 @@ sub getComputeResourceForInstance {
 	# than the number of host names specified.
 	if ($instanceParamHashRef->{"${serviceType}Hosts"} && ($#{$instanceParamHashRef->{"${serviceType}Hosts"}} >= 0)) {
 		if ($appInstanceK8s) {
-		  $console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when appInstanceCluster is specified.\n" .
-		  						"When running on Kubernetes, all services for an appInstance must run on the same cluster.");
-		  exit(-1);			
+			if ($serviceType eq "driver") {
+		  		$console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when driverCluster is specified.");
+			} else {
+		  		$console_logger->error("Cannot specify ${serviceType}Hosts for instances of type $serviceType when appInstanceCluster is specified.\n" .
+		  							"When running on Kubernetes, all services for an appInstance must run on the same cluster.");				
+			}
+		  	exit(-1);			
 		}
 
 		$logger->debug("getComputeResourceForinstance: For $serviceType instance $instanceNum selecting host from ${serviceType}Hosts");
@@ -654,6 +680,34 @@ $console_logger->info("Run Configuration has $numWorkloads workloads.");
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
+	# Overwrite the workload's parameters with those specified by the configuration size.
+	my $configSize = $workloadParamHashRef->{'configurationSize'};
+	if ($configSize ne "custom") {
+		my @configKeys = keys $fixedConfigs;
+		if (!($configSize ~~ @configKeys)) {
+			$console_logger->error("Error: For workload " . $workloadNum 
+				.  " configurationSize " . $configSize . " does not exist.");
+		}
+		my $config = $fixedConfigs->{$configSize};
+		foreach my $key (keys %$config) {
+			if ($key eq "numDrivers") {
+				# If the user set the number of driver, then use that value.
+				# Otherwise the number of drivers is the number in the
+				# fixed config times the number of appInstances
+				if (!$workloadParamHashRef->{"numDrivers"} && ($#{$workloadParamHashRef->{"drivers"}} < 0)) {
+					my $numAppInstances = $workloadParamHashRef->{"numAppInstances"};
+					if (!$numAppInstances) {
+						my $instancesListRef = $workloadParamHashRef->{"appInstances"};
+						$numAppInstances = $#{$instancesListRef} + 1;					
+					}
+					$workloadParamHashRef->{$key} = $config->{$key} * $numAppInstances;
+				}
+			} else {
+				$workloadParamHashRef->{$key} = $config->{$key};
+			}
+		}
+	}
+
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
@@ -716,14 +770,17 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# The first driver is the primary driver.  The others are secondaries
 	my $driverNum = 1;
 	my $primaryDriverParamHashRef = shift @$driversParamHashRefs;
+	
 	if ( $logger->is_debug() ) {
 		my $tmp = $json->encode($primaryDriverParamHashRef);
 		$logger->debug( "For workload $workloadNum, the primary driver instance paramHashRef is:\n" . $tmp );
 	}
 
 	# Create the primary workload driver
+	my $driverCluster = getDriverCluster($primaryDriverParamHashRef, \%nameToComputeResourceHash, 
+										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", 
-					\%nameToComputeResourceHash, "", 
+					\%nameToComputeResourceHash, $driverCluster, 
 					$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
 	$workloadDriver->host($host);
@@ -752,7 +809,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
 		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, 
-												"driver", \%nameToComputeResourceHash, "",
+												"driver", \%nameToComputeResourceHash, $driverCluster,
 												$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
 		$secondary->host($host);

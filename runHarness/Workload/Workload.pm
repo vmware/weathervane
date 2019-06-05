@@ -96,7 +96,13 @@ sub prepareData {
 
 sub prepareDataServices {
 	my ( $self, $setupLogDir ) = @_;
-	callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );
+	# If the driver is running on Kubernetes clusters, then
+	# we can do the prepare in parallel
+	if ((ref $self->primaryDriver->host) eq 'KubernetesCluster') {
+		callMethodOnObjectsParallel1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
+	} else {
+		callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
+	}
 }
 
 sub clearReloadDb {

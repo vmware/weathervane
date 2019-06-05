@@ -80,11 +80,19 @@ sub configure {
 				print FILEOUT "  BIDSERVERS: \"tomcat:8080\"\n";								
 			}
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('webServerCpus') . "\n";
+		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
+			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
+			if (!$useLoadbalancer) {
+				print FILEOUT "${1}type: NodePort\n";				
+			} else {
+				print FILEOUT $inline;		
+			}
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('webServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)cpu:/ ) {
+			print FILEOUT "${1}cpu: " . $self->getParamValue('webServerCpus') . "\n";
+		}
+		elsif ( $inline =~ /(\s+)memory:/ ) {
+			print FILEOUT "${1}memory: " . $self->getParamValue('webServerMem') . "\n";
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

@@ -17,6 +17,7 @@ package com.vmware.weathervane.workloadDriver.common.core;
 
 import java.util.List;
 
+import com.vmware.weathervane.workloadDriver.common.core.loadPath.RampLoadInterval;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 public class WorkloadStatus {
@@ -25,12 +26,14 @@ public class WorkloadStatus {
 
 	private Workload.WorkloadState state;
 
+	private RampLoadInterval curInterval;
+	
 	private String maxPassIntervalName;
 	
 	private long maxPassUsers;
 
 	private boolean passed;
-	
+
 	private List<StatsSummaryRollup> intervalStatsSummaries;
 	
 	public String getName() {
@@ -85,6 +88,14 @@ public class WorkloadStatus {
 
 	public void setIntervalStatsSummaries(List<StatsSummaryRollup> intervalStatsSummaries) {
 		this.intervalStatsSummaries = intervalStatsSummaries;
+	}
+
+	public RampLoadInterval getCurInterval() {
+		return curInterval;
+	}
+
+	public void setCurInterval(RampLoadInterval curInterval) {
+		this.curInterval = curInterval;
 	}
 
 }

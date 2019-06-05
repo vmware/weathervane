@@ -316,7 +316,7 @@ sub getEdgeAddrsRef {
 	my $edgeHostsRef = [];
 	my $edgeService  = $self->getEdgeService();
 	my $edgeServices = $self->getAllServicesByType($edgeService);
-	$logger->debug("configure for workload $workloadNum, edgeService is $edgeService");
+	$logger->debug("getEdgeAddrsRef");
 	foreach my $service (@$edgeServices) {
 		push @$edgeHostsRef, [$service->host->name, $service->portMap->{"http"}, $service->portMap->{"https"}];
 	}
@@ -766,7 +766,7 @@ sub isRunningAndUpServices {
 	# Make sure that all of the services are running and up (ready for requests)
 	$logger->debug(
 		"Checking that all $serviceTier services are running for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsRunning = $self->waitForServicesRunning($serviceTier, 15, 10, 15, $logFile);
+	my $allIsRunning = $self->waitForServicesRunning($serviceTier, 15, 20, 15, $logFile);
 	if ( !$allIsRunning ) {
 		$console_logger->error(
 			"Couldn't bring to running all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
@@ -774,7 +774,7 @@ sub isRunningAndUpServices {
 	}
 	$logger->debug(
 		"Checking that all $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsUp = $self->waitForServicesUp($serviceTier, 15, 12, 30, $logFile);
+	my $allIsUp = $self->waitForServicesUp($serviceTier, 15, 24, 30, $logFile);
 	if ( !$allIsUp ) {
 		$console_logger->error(
 			"Couldn't bring up all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );

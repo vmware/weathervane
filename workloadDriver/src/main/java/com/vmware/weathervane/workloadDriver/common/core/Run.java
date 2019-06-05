@@ -59,14 +59,16 @@ public class Run {
 	
 	private String statsHost;
 
-	private Integer portNumber = 7500;
-
-	private List<String> hosts;
-
 	private List<Workload> workloads;	
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
+	@JsonIgnore
+	private Integer portNumber = 7500;
+
+	@JsonIgnore
+	private List<String> hosts;
+
 	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
 	

@@ -45,7 +45,7 @@ spec:
         impl: nginx
     spec:
       containers:
-      - image: hrosenbe/weathervane-nginx:1.2.0
+      - image: repository/weathervane-nginx:1.2.0
         name: nginx
         imagePullPolicy: IfNotPresent
         envFrom:

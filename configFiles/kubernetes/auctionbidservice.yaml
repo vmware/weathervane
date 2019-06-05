@@ -48,7 +48,7 @@ spec:
         impl: auctionbidservice
     spec:
       containers:
-      - image: hrosenbe/weathervane-auctionbidservice:1.2.0
+      - image: repository/weathervane-auctionbidservice:1.2.0
         name: auctionbidservice
         imagePullPolicy: IfNotPresent
         envFrom:

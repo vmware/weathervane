@@ -42,7 +42,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: 1800
       containers:
-      - image: hrosenbe/weathervane-cassandra:1.2.0
+      - image: repository/weathervane-cassandra:1.2.0
         name: cassandra
         imagePullPolicy: IfNotPresent
         envFrom:

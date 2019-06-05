@@ -51,7 +51,7 @@ spec:
         impl: tomcat
     spec:
       containers:
-      - image: hrosenbe/weathervane-tomcat:1.2.0
+      - image: repository/weathervane-tomcat:1.2.0
         name: tomcat
         imagePullPolicy: IfNotPresent
         envFrom:
@@ -95,7 +95,7 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
-      - image: hrosenbe/weathervane-auctionappserverwarmer:1.2.0
+      - image: repository/weathervane-auctionappserverwarmer:1.2.0
         name: warmer
         imagePullPolicy: IfNotPresent
         envFrom:

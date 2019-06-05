@@ -42,7 +42,7 @@ spec:
         impl: zookeeper
     spec:
       containers:
-      - image: hrosenbe/weathervane-zookeeper:1.2.0
+      - image: repository/weathervane-zookeeper:1.2.0
         name: zookeeper
         imagePullPolicy: IfNotPresent
         envFrom:

@@ -35,7 +35,7 @@ spec:
         type: controller
     spec:
       containers:
-      - image: hrosenbe/weathervane-auctionworkloaddriver:2.0.0
+      - image: repository/weathervane-auctionworkloaddriver:2.0.0
         name: wkldcontroller
         imagePullPolicy: IfNotPresent
         envFrom:

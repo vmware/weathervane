@@ -36,7 +36,7 @@ spec:
         type: node
     spec:
       containers:
-      - image: hrosenbe/weathervane-auctionworkloaddriver:2.0.0
+      - image: repository/weathervane-auctionworkloaddriver:2.0.0
         name: wklddriver
         imagePullPolicy: IfNotPresent
         envFrom:

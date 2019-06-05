@@ -351,6 +351,7 @@ public abstract class Workload implements UserFactory {
 		WorkloadStatus status = new WorkloadStatus();
 		status.setName(name);
 		status.setState(state);
+		status.setCurInterval(loadPath.getCurStatusInterval());
 		status.setIntervalStatsSummaries(loadPath.getIntervalStatsSummaries());
 		
 		return status;

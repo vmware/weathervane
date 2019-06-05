@@ -193,7 +193,7 @@ public class IntervalLoadPath extends LoadPath {
 			nextInterval = uniformIntervals.get(nextIntervalIndex);
 			nextIntervalIndex++;
 		}
-
+		
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 
@@ -234,12 +234,29 @@ public class IntervalLoadPath extends LoadPath {
 			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex-1);			
 		} else {
 			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex);
+			
+
 			nextStatsIntervalIndex++;			
 		}
 		
-		
+		curStatusInterval.setName(nextStatsInterval.getName());
+		curStatusInterval.setDuration(nextStatsInterval.getDuration());
+		if (nextStatsInterval instanceof UniformLoadInterval) {
+			UniformLoadInterval uniformInterval = (UniformLoadInterval) nextStatsInterval;
+			curStatusInterval.setStartUsers(uniformInterval.getUsers());
+			curStatusInterval.setEndUsers(uniformInterval.getUsers());			
+		} else if (nextStatsInterval instanceof RampLoadInterval) {
+			RampLoadInterval rampInterval = (RampLoadInterval) nextStatsInterval;
+			curStatusInterval.setStartUsers(rampInterval.getStartUsers());
+			curStatusInterval.setEndUsers(rampInterval.getEndUsers());			
+		}
 		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
 		return nextStatsInterval;
+	}
+
+	@Override
+	public RampLoadInterval getCurStatusInterval() {
+		return getCurStatusInterval();
 	}
 
 	public final List<LoadInterval> getLoadIntervals() {

@@ -27,10 +27,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
+import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.web.service.DriverService;
 
@@ -185,5 +187,26 @@ public class DriverController {
 		return new ResponseEntity<BasicResponse>(response, status);
 	}
 
+
+	@RequestMapping(value="/up", method = RequestMethod.GET)
+	public HttpEntity<IsStartedResponse> isDriverUp() {
+		logger.debug("isDriverUp");
+		IsStartedResponse response = new IsStartedResponse();
+		HttpStatus status = HttpStatus.OK;
+		response.setIsStarted(true);
+
+		return new ResponseEntity<IsStartedResponse>(response, status);
+	}
+
+	@RequestMapping(value="/behaviorSpec", method = RequestMethod.POST)
+	public HttpEntity<BasicResponse> addBehaviorSpec(@RequestBody BehaviorSpec theSpec) {
+		logger.debug("addBehaviorSpec: " + theSpec.toString());
+		BasicResponse response = new BasicResponse();
+		HttpStatus status = HttpStatus.OK;
+		
+		BehaviorSpec.addBehaviorSpec(theSpec.getName(), theSpec);
+
+		return new ResponseEntity<BasicResponse>(response, status);
+	}
 
 }

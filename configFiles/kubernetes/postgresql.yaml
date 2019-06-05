@@ -19,7 +19,7 @@ data:
   POSTGRESEFFECTIVECACHESIZEPCT: "0.65"
   POSTGRESMAXCONNECTIONS: "2000"
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql
@@ -30,6 +30,12 @@ metadata:
     impl: postgresql
 spec:
   serviceName: postgresql
+  selector:
+    matchLabels:
+      app: auction
+      tier: data
+      type: dbServer
+      impl: postgresql
   replicas: 1
   template:
     metadata:
@@ -41,7 +47,7 @@ spec:
         impl: postgresql
     spec:
       containers:
-      - image: hrosenbe/weathervane-postgresql:1.2.0
+      - image: repository/weathervane-postgresql:1.2.0
         name: postgresql
         imagePullPolicy: IfNotPresent
         envFrom:
@@ -56,6 +62,10 @@ spec:
         - containerPort: 5432
           name: postgresqlport
           protocol: TCP
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
         livenessProbe:
           exec:
             command:

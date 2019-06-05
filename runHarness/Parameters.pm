@@ -574,13 +574,28 @@ $parameters{"kubernetesClusters"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
-$parameters{"kubernetesConfigFile"} = {
+$parameters{"kubeconfigFile"} = {
 	"type"      => "=s",
-	"default"   => "",
+	"default"   => "~/.kube/config",
 	"parent"    => "kubernetesCluster",
 	"usageText" => "This is the location of the kubectl config file for a kubernetes cluster",
 	"showUsage" => 1,
 };
+$parameters{"kubeconfigContext"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the context to use from within the kubeconfig file.",
+	"showUsage" => 1,
+};
+$parameters{"useLoadBalancer"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If true, applications will use LoadBalancer Services for ingress on this cluster.",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerHost"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -601,6 +616,13 @@ $parameters{"driverHosts"} = {
 	"default"   => [],
 	"parent"    => "workload",
 	"isa"       => "dockerHost",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"driverCluster"} = {
+	"type"      => "=s",
+	"default"   => {},
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -682,6 +704,7 @@ $parameters{"nosqlServerHosts"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+
 
 
 $parameters{"virtualInfrastructure"} = {
@@ -1609,6 +1632,14 @@ $parameters{"useThinkTime"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"driverControllerJvmOpts"} = {
+	"type"      => "=s",
+	"default"   => "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
+	"parent"    => "workloadDriver",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"driverJvmOpts"} = {
 	"type"      => "=s",
 	"default"   => "-Xmx6g -Xms6g -XX:+AlwaysPreTouch",
@@ -1684,6 +1715,22 @@ $parameters{"driverCpus"} = {
 $parameters{"driverMem"} = {
 	"type"      => "=s",
 	"default"   => "7Gi",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverControllerCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"driverControllerMem"} = {
+	"type"      => "=s",
+	"default"   => "2Gi",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

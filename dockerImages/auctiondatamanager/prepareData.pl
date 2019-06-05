@@ -28,8 +28,7 @@ $springProfilesActive .= ",dbprep";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 
-my $heap              = "4G";
-my $threads = 8;
+my $heap              = $ENV{'HEAP'};
 my $dbLoaderJavaOptions = "";
 
 my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLoaderClasspath" .

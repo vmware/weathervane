@@ -17,6 +17,7 @@ package com.vmware.weathervane.workloadDriver.common.web.service;
 
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.vmware.weathervane.workloadDriver.common.core.BehaviorSpec;
 import com.vmware.weathervane.workloadDriver.common.core.Run;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.core.Run.RunState;
@@ -38,6 +40,7 @@ import com.vmware.weathervane.workloadDriver.common.exceptions.RunNotInitialized
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
+import com.vmware.weathervane.workloadDriver.common.representation.IsStartedResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.RunStateResponse;
 
 @Service
@@ -47,6 +50,10 @@ public class RunServiceImpl implements RunService {
 	public static final RestTemplate restTemplate = new RestTemplate();
 
 	private Map<String, Run> runs = new HashMap<String, Run>();
+	
+	private List<String> hosts;
+
+	private Integer portNumber = 7500;
 
 	@Override
 	public Run getRun(String runName) throws RunNotInitializedException {
@@ -79,6 +86,8 @@ public class RunServiceImpl implements RunService {
 		if ((theRun.getState() == null) || (theRun.getState() != RunState.PENDING)) {
 			theRun.setState(RunState.PENDING);
 		}
+		theRun.setHosts(hosts);
+		theRun.setPortNumber(portNumber);
 		runs.put(runName, theRun);
 
 		/*
@@ -124,7 +133,6 @@ public class RunServiceImpl implements RunService {
 
 			}
 		}
-
 	}
 
 	@Override
@@ -208,9 +216,45 @@ public class RunServiceImpl implements RunService {
 	}
 
 	@Override
-	public boolean isUp(String runName) {
-		return true;
+	public Boolean areDriversUp() {
+		HttpHeaders requestHeaders = new HttpHeaders();
+		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+		for (String hostname : hosts) {
+			String url = "http://" + hostname + ":" + portNumber + "/driver/up";
+			ResponseEntity<IsStartedResponse> responseEntity = restTemplate.getForEntity(url, IsStartedResponse.class);
 
+			IsStartedResponse response = responseEntity.getBody();
+			if ((responseEntity.getStatusCode() != HttpStatus.OK) || !response.getIsStarted()) {
+				logger.debug("Host " + hostname + " is not up.");			
+				return false;
+			}
+			logger.debug("Host " + hostname + " is up.");			
+		}
+		return true;
+	}
+
+	@Override
+	public Boolean addBehaviorSpec(BehaviorSpec theSpec) {
+		boolean allSuceeeded = true;
+		HttpHeaders requestHeaders = new HttpHeaders();
+		HttpEntity<BehaviorSpec> specEntity = new HttpEntity<BehaviorSpec>(theSpec, requestHeaders);
+		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+		for (String hostname : hosts) {
+			String url = "http://" + hostname + ":" + portNumber + "/driver/behaviorSpec";
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, specEntity,
+					BasicResponse.class);
+
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload to " + url);
+				allSuceeeded = false;
+			}
+		}
+		return allSuceeeded;
+	}
+
+	@Override
+	public Boolean isUp() {
+		return true;
 	}
 
 	@Override
@@ -239,6 +283,24 @@ public class RunServiceImpl implements RunService {
 			throw new RunNotInitializedException("Run " + runName + " is not active.");
 		}
 
+	}
+
+	public List<String> getHosts() {
+		return hosts;
+	}
+
+	@Override
+	public void setHosts(List<String> hosts) {
+		this.hosts = hosts;
+	}
+
+	public Integer getPortNumber() {
+		return portNumber;
+	}
+
+	@Override
+	public void setPortNumber(Integer portNumber) {
+		this.portNumber = portNumber;
 	}
 
 }

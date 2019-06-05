@@ -153,6 +153,30 @@ public class FixedLoadPath extends LoadPath {
 		return nextStatsInterval;
 	}
 
+	@Override
+	public RampLoadInterval getCurStatusInterval() {
+		RampLoadInterval curInterval = new RampLoadInterval();
+		if ((nextStatsIntervalIndex == 0) ||  (nextStatsIntervalIndex == 1)) {
+			curInterval.setName("rampUp");
+			curInterval.setStartUsers(0L);
+			curInterval.setEndUsers(users);
+			curInterval.setDuration(rampUp);
+			curInterval.setTimeStep(timeStep);
+		} else if (nextStatsIntervalIndex == 2) {
+			curInterval.setName("steadyState");
+			curInterval.setStartUsers(users);
+			curInterval.setEndUsers(users);
+			curInterval.setDuration(steadyState);
+			curInterval.setTimeStep(timeStep);
+		} else {
+			curInterval.setName("rampDown");
+			curInterval.setStartUsers(users);
+			curInterval.setEndUsers(0L);
+			curInterval.setDuration(rampDown);
+			curInterval.setTimeStep(timeStep);
+		}
+		return curInterval;
+	}
 
 	public long getUsers() {
 		return users;
@@ -200,5 +224,4 @@ public class FixedLoadPath extends LoadPath {
 
 		return theStringBuilder.toString();
 	}
-
 }

@@ -1,27 +1,30 @@
 {
   "description" : "k8s, small, 6Driver, fastSC",
 
+  "configurationSize": "small",
+
   "runStrategy" : "findMaxSingleRun",
 
   "dockerNamespace" : "yourRepository",
   "kubernetesClusters" : [ 
     { 
-      "name" : "appHost", 
-      "kubernetesConfigFile" : "/root/.kube/config",
+      "name" : "appCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "cluster-context-1",
+      "useLoadBalancer" : true,
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "cluster-context-2",
+      "useLoadBalancer" : true,
     },
   ],
 
-  "numDrivers": 6,
-  "driverHosts" : [
-    "AuctionDriver1", "AuctionDriver2", 
-    "AuctionDriver3", "AuctionDriver4", 
-    "AuctionDriver5", "AuctionDriver6",
-  ],
-  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
+  "driverCluster" : "driverCluster",
 
   "numAppInstances" : 1,
-  "configurationSize": "small",
-  "appInstanceCluster" : "appHost",
+  "appInstanceCluster" : "appCluster",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",
   "postgresqlLogStorageClass" : "fast",

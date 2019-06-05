@@ -100,14 +100,14 @@ sub parseConfigFile {
 	if ($clusters) {
 		foreach my $clusterHashRef (@$clusters) {
 			my $clusterName = $clusterHashRef->{'name'};
-			my $clusterConfigName = $clusterHashRef->{'kubernetesConfigFile'};
+			my $clusterConfigName = $clusterHashRef->{'kubeconfigFile'};
 			if (!$clusterConfigName) {
 				if ($clusterName) {
-					print "KubernetesCluster $clusterName must have a kubernetesConfigFile definition in configuration file $configFileName.\n";
+					print "KubernetesCluster $clusterName must have a kubeconfigFile definition in configuration file $configFileName.\n";
 					usage();
 					exit 1;									
 				} else {
-					print "All kubernetesClusters must include name and kubernetesConfigFile definitions in configuration file $configFileName.\n";
+					print "All kubernetesClusters must include name and kubeconfigFile definitions in configuration file $configFileName.\n";
 					usage();
 					exit 1;									
 				}
@@ -275,7 +275,7 @@ if (dockerExists("weathervane")) {
 # make sure the docker image is up-to-date
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
-my $cmdString = "docker run --name weathervane --rm -d -w /root/weathervane " 
+my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString " 
 		. "$outputMountString $tmpMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";

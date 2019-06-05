@@ -24,7 +24,7 @@ data:
   WARMER_THREADS_PER_SERVER: "1"
   WARMER_ITERATIONS: "500"
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tomcat
@@ -35,6 +35,12 @@ metadata:
     impl: tomcat
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: auction
+      tier: backend
+      type: appServer
+      impl: tomcat
   template:
     metadata:
       name: tomcat
@@ -45,7 +51,7 @@ spec:
         impl: tomcat
     spec:
       containers:
-      - image: hrosenbe/weathervane-tomcat:1.2.0
+      - image: repository/weathervane-tomcat:1.2.0
         name: tomcat
         imagePullPolicy: IfNotPresent
         envFrom:
@@ -63,7 +69,7 @@ spec:
             cpu: 1
             memory: 8Gi
           limits:
-            cpu: 2
+            cpu: 1
             memory: 8Gi
         livenessProbe:
           exec:
@@ -89,7 +95,7 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
-      - image: hrosenbe/weathervane-auctionappserverwarmer:1.2.0
+      - image: repository/weathervane-auctionappserverwarmer:1.2.0
         name: warmer
         imagePullPolicy: IfNotPresent
         envFrom:
@@ -99,9 +105,6 @@ spec:
           requests:
             cpu: 100m
             memory: 500Mi
-          limits:
-            cpu: 250m
-            memory: 1Gi
         livenessProbe:
           exec:
             command:
@@ -137,7 +140,6 @@ metadata:
     type: appServer
     impl: tomcat
 spec:
-  type: NodePort
   ports:
   - port: 8080
     name: httpport

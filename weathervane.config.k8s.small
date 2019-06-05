@@ -1,6 +1,8 @@
 {
   "description" : "k8s, small, 6Driver, fastSC",
 
+  "configurationSize": "small",
+
   "runStrategy" : "findMaxSingleRun",
 
   "dockerNamespace" : "yourRepository",
@@ -19,12 +21,9 @@
     },
   ],
 
-  "numDrivers": 6,
   "driverCluster" : "driverCluster",
-  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
 
   "numAppInstances" : 1,
-  "configurationSize": "small",
   "appInstanceCluster" : "appCluster",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",

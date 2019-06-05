@@ -77,8 +77,9 @@ override 'getControllerURL' => sub {
 		  	}
 		  	if (!$ip) {
 		  		sleep 10;
+		  	} else {
+				$logger->debug("Called kubernetesGetLbIP: got $ip");
 		  	}
-			$logger->debug("Called kubernetesGetLbIP: got $ip");
 		}
         $hostname = $ip;
 	    $port = $self->portMap->{'http'};

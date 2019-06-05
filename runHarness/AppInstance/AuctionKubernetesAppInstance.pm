@@ -152,8 +152,9 @@ override 'getEdgeAddrsRef' => sub {
 		  	}
 		  	if (!$ip) {
 		  		sleep 10;
+		  	} else {
+				$logger->debug("Called kubernetesGetLbIP: got $ip");
 		  	}
-			$logger->debug("Called kubernetesGetLbIP: got $ip");
 		}
 		push @$wwwIpAddrsRef, [$ip, 80, 443];							
 	} else {

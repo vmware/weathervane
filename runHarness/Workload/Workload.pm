@@ -98,7 +98,7 @@ sub prepareDataServices {
 	my ( $self, $setupLogDir ) = @_;
 	# If the driver is running on Kubernetes clusters, then
 	# we can do the prepare in parallel
-	if ((ref $primaryDriver->host) eq 'KubernetesCluster') {
+	if ((ref $self->primaryDriver->host) eq 'KubernetesCluster') {
 		callMethodOnObjectsParallel1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
 	} else {
 		callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		

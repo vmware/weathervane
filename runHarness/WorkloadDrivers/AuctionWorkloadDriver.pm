@@ -1181,8 +1181,13 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$endRunStatus = $json->decode( $res->content );			
-			$logger->debug("curInterval: " . $endRunStatus->{'curInterval'});
+			$endRunStatus = $json->decode( $res->content );	
+			my $workloadStati = $endRunStatus->{'workloadStati'};
+			foreach my $workloadStatus (@$workloadStati) {
+				my $wkldName = $workloadStatus->{'name'};
+				my $curIntervalName = $workloadStatus->{'curInterval'}->{'name'};
+				$logger->debug("Workload $workloadNum, AppInstance: $wkldName: curInterval = $curIntervalName");
+			}		
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
 				$runCompleted = 1;

@@ -1,7 +1,7 @@
 {
  
 "micro" : {
-  "maxUsers" : 3000,
+  "maxUsers" : 2000,
   "numDrivers" : 1,
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+AlwaysPreTouch",
   "driverCpus" : "500m",
@@ -15,14 +15,7 @@
   "webServerMem"  : "1Gi",
   "webServerImpl" : "nginx",
 
-  "numAuctionBidServers" : 1,
-  "auctionBidServerCpus" : "200m",
-  "auctionBidServerMem" : "1Gi",
-  "auctionBidServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
-  "auctionBidServerThreads" : 20,
-  "auctionBidServerJdbcConnections" : 21,
-  "numClientUpdateThreads" : 2,
-  "auctionBidServerImpl" : "auctionbidservice",
+  "numAuctionBidServers" : 0,
   
   "numAppServers" : 1,
   "appServerCpus" : "400m",
@@ -34,6 +27,7 @@
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
   "appServerWarmerIterations" : 50,
+  "numClientUpdateThreads" : 2,
 
   "numCoordinationServers" : 1, 
   "coordinationServerCpus" : "200m",

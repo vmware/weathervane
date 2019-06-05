@@ -1181,7 +1181,7 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug("Content: " . $res->content);
+			$logger->debug("curInterval: " . $res->content->{'curInterval'});
 			$endRunStatus = $json->decode( $res->content );			
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;

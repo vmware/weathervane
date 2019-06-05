@@ -320,23 +320,12 @@ override 'getHostStatsSummary' => sub {
 
 override 'startStatsCollection' => sub {
 	my ( $self, $tmpDir ) = @_;
-	# start kubectl top
-	my $servicesRef = $self->getAllServicesByType('appServer');
-	my $service = $servicesRef->[0];
-	my $destinationDir = "$tmpDir/statistics/kubernetes";
-	`mkdir -p $destinationDir`;
-	$service->host->kubernetesTopPodAllNamespaces(15, $destinationDir);
-	$service->host->kubernetesTopNode(15, $destinationDir);
-
+	#overrides AppInstance startStatsCollection calls for all services
 };
 
 override 'stopStatsCollection' => sub {
 	my ( $self ) = @_;
-	# stop kubectl top
-	my $servicesRef = $self->getAllServicesByType('appServer');
-	my $service = $servicesRef->[0];
-	$service->host->stopKubectlTop(1);
-
+	#overrides AppInstance stopStatsCollection calls for all services
 };
 
 override 'getStatsFiles' => sub {

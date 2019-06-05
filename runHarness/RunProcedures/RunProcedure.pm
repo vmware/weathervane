@@ -166,7 +166,7 @@ sub runWorkloads {
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug("runWorkloads.  seqnum = $seqnum, tmpDir = $tmpDir");
 
-	my $pid = $self->followRunProgress();
+	my $pid = $self->followRunProgress($tmpDir);
 	$debug_logger->debug("runWorkloads.  followRunprogress has pid $pid");
 
 	my $success = callBooleanMethodOnObjectsParallel2( 'startRun', $self->workloadsRef, $seqnum, $tmpDir );
@@ -201,7 +201,7 @@ sub stopWorkloads {
 # beginning of steady-steady and stop the collection at the end of steady-state.
 #
 sub followRunProgress {
-	my ($self)         = @_;
+	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $rampUp         = $self->getParamValue('rampUp');
 	my $steadyState    = $self->getParamValue('steadyState');
@@ -229,7 +229,7 @@ sub followRunProgress {
 		}
 
 		sleep($rampUp);
-		$self->startStatsCollection();
+		$self->startStatsCollection($tmpDir);
 		sleep($steadyState);
 		$self->stopStatsCollection();
 		exit;
@@ -443,7 +443,7 @@ sub cleanupAfterFailure {
 }
 
 sub startStatsCollection {
-	my ($self)            = @_;
+	my ($self, $tmpDir)            = @_;
 	my $console_logger    = get_logger("Console");
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
 	my $steadyStateLength = $self->getParamValue('steadyState');
@@ -470,6 +470,12 @@ sub startStatsCollection {
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
 			$host->startStatsCollection( $intervalLengthSec, $numIntervals );
+		}
+
+		# Start collection on clusters.
+		my $clustersRef = $self->clustersRef;
+		foreach my $cluster (@$clustersRef) {
+			$cluster->startStatsCollection( $intervalLengthSec, $numIntervals, $tmpDir );
 		}
 	}
 
@@ -506,6 +512,12 @@ sub stopStatsCollection {
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
 			$host->stopStatsCollection();
+		}
+
+		# stop collection on clusters.
+		my $clustersRef = $self->clustersRef;
+		foreach my $cluster (@$clustersRef) {
+			$cluster->stopStatsCollection();
 		}
 	}
 

@@ -294,7 +294,21 @@ sub prepareDataServices {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$logger->debug("prepareDataServices with logDir $setupLogDir");
-	callMethodOnObjects1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );
+	
+	# If all of the drivers are running on Kubernetes clusters, then
+	# we can do the prepare in parallel
+	my $allK8s = 1;
+	foreach my $workloadRef (@{$self->workloadsRef}) {
+		my $primaryDriver = $workloadRef->primaryDriver;
+		if ((ref $primaryDriver->host) ne 'KubernetesCluster') {
+			$allK8s = 0;
+		}
+	}
+	if ($allK8s) {
+		callMethodOnObjectsParallel1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );		
+	} else {
+		callMethodOnObjects1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );
+	}
 }
 
 sub prepareData {

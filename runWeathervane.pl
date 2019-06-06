@@ -24,7 +24,7 @@ use JSON;
 
 my $accept = '';
 my $configFile = 'weathervane.config';
-my $version = '2.0.0';
+my $version = '2.0-dev-ed76bb5';
 my $outputDir = 'output';
 my $tmpDir = '';
 my $help = '';

@@ -577,9 +577,10 @@ if ($fullHelp) {
 	exit;
 }
 
-my $version = getParamValue( $paramsHashRef, "version" );
-if ($version) {
-	$console_logger->warn( "Weathervane Version " . $Parameters::version );
+my $version = `cat $weathervaneHome/version.txt`;
+$console_logger->warn( "Weathervane Version $version" );
+if (!getParamValue($paramsHashRef, "dockerWeathervaneVersion")) {	
+	setParamValue( $paramsHashRef, "dockerWeathervaneVersion",  $version );
 }
 
 $console_logger->info("Command-line parameters:");

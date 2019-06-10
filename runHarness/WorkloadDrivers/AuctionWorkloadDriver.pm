@@ -1190,6 +1190,7 @@ sub startRun {
 	my @lastIntervalNames;
 	my @statsRunning;
 
+	sleep 30; #initial sleep before getting state
 	while (!$runCompleted) {
 		$logger->debug("Sending get to $url");
 		$req = HTTP::Request->new( GET => $url );
@@ -1197,7 +1198,6 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug("Response content: " . $res->content );
 			$endRunStatus = $json->decode( $res->content );
 
 			my $workloadStati = $endRunStatus->{'workloadStati'};
@@ -1207,7 +1207,6 @@ sub startRun {
 				my $curIntervalName;
 				if ($curInterval) {
 					$curIntervalName = $curInterval->{'name'};
-					$logger->debug("Workload $workloadNum, AppInstance: $wkldName: curInterval = $curIntervalName");
 				}
 				if ($usingFindMaxLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;

@@ -914,7 +914,7 @@ $parameters{"interactive"} = {
 
 $parameters{"users"} = {
 	"type"    => "=s",
-	"default" => "1000",
+	"default" => "0",
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the number of simulated users to use for a run.\n\tThe number of simulated users is the primary metric of load for the Weathervane benchmark.",

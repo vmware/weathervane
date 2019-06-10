@@ -166,16 +166,38 @@ sub runWorkloads {
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug("runWorkloads.  seqnum = $seqnum, tmpDir = $tmpDir");
 
-	my $pid = $self->followRunProgress($tmpDir);
-	$debug_logger->debug("runWorkloads.  followRunprogress has pid $pid");
+	my $usingFindMaxLoadPathType = 0;
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		my $appInstancesRef = $workload->appInstancesRef;
+		foreach my $appInstance (@$appInstancesRef) {
+			my $loadPathType = $appInstance->getParamValue('loadPathType');
+			if ( $loadPathType eq "findmax" ) {
+				$usingFindMaxLoadPathType = 1;
+				last;
+			}
+		}
+	}
+
+	my $pid = 0;
+	if ($usingFindMaxLoadPathType) {
+		$self->startStatsCollection($tmpDir);
+	} else {
+		$pid = $self->followRunProgress($tmpDir, $usingFindMaxLoadPathType);
+		$debug_logger->debug("runWorkloads.  followRunprogress has pid $pid");
+	}
 
 	my $success = callBooleanMethodOnObjectsParallel2( 'startRun', $self->workloadsRef, $seqnum, $tmpDir );
-	if ( !$success ) {
+	if ( !$success && !$usingFindMaxLoadPathType ) {
 		$debug_logger->debug("runWorkloads initialize failed.  killing pid $pid");
 		kill 9, $pid;
 		return 0;
 	}
 	$debug_logger->debug("runWorkloads run suceeded.");
+
+	if ($usingFindMaxLoadPathType) {
+		$self->stopStatsCollection();
+	}
 
 	return $success;
 }
@@ -507,6 +529,7 @@ sub stopStatsCollection {
 	}
 
 	if ( $logLevel >= 2 ) {
+		$console_logger->info("Stopping performance statistics collection on hosts.\n");
 
 		# stops collection on hosts.
 		my $hostsRef = $self->hostsRef;

@@ -703,9 +703,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					}
 					$workloadParamHashRef->{$key} = $config->{$key} * $numAppInstances;
 				}
-			} elsif (($key eq "users") && !$workloadParamHashRef->{"users"}) {
-				$workloadParamHashRef->{$key} = $config->{$key};				
-			} else {
+			} elsif ($key ne "users") {
 				$workloadParamHashRef->{$key} = $config->{$key};
 			}
 		}

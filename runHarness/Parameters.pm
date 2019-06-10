@@ -488,17 +488,8 @@ sub getSingletonInstanceParamHashRef {
 
 }
 
-our $version = "2.0-dev-ed76bb5";
-
 # These variables contain the key names for the parameter hashes
 tie( our %parameters, 'Tie::IxHash' );
-$parameters{"version"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "",
-	"usageText" => "If present, the Weathervane run harness shows the version information at the start of the runs.",
-	"showUsage" => 1,
-};
 
 # All instances have a name.  Some are set from a parameter, while
 # others are generated.
@@ -923,7 +914,7 @@ $parameters{"interactive"} = {
 
 $parameters{"users"} = {
 	"type"    => "=s",
-	"default" => "1000",
+	"default" => "0",
 	"parent"  => "appInstance",
 	"usageText" =>
 "This is the number of simulated users to use for a run.\n\tThe number of simulated users is the primary metric of load for the Weathervane benchmark.",
@@ -1131,7 +1122,7 @@ $parameters{"stopStatsScript"} = {
 
 $parameters{"dockerWeathervaneVersion"} = {
 	"type"      => "=s",
-	"default"   => "2.0-dev-ed76bb5",
+	"default"   => "",
 	"parent"    => "",
 	"usageText" => "",
 	"showUsage" => 0,

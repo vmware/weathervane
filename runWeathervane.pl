@@ -20,18 +20,25 @@
 package Weathervane;
 use strict;
 use Getopt::Long;
-use JSON;
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 my $accept = '';
 my $configFile = 'weathervane.config';
-my $version = '2.0-dev-ed76bb5';
+my $version = '2.0.0';
 my $outputDir = 'output';
 my $tmpDir = '';
 my $help = '';
 
+if ((-e "./version.txt") && (-f "./version.txt")) {
+  $version = `cat ./version.txt`;
+  chomp($version);	
+} 
+my $defaultVersion = $version;
+
 GetOptions(	'accept!' => \$accept,
 			'configFile=s' => \$configFile,
 			'outputDir=s' => \$outputDir,
+			'version=s' => \$version,
 			'tmpDir=s' => \$tmpDir,
 			'help!' => \$help,
 		);
@@ -49,6 +56,9 @@ sub usage {
 	print "              For a description of the Weathervane configuration file, please see the \n";
 	print "              Weathervane User's Guide\n";
 	print "              default value: weathervane.config\n";
+	print "--version:    The version of Weathervane to use.  This will override the default version\n";
+	print "              number to use for the Weathervane container images.\n";
+	print "              default value: $defaultVersion\n";
 	print "--outputDir:  The directory in which to store the output from the Weathervane run.  You should\n";
 	print "              use the same directory for all runs. Output is only placed in this directory\n";
 	print "              at the end of a run.  The directory is created if it does not exist.\n";
@@ -80,48 +90,25 @@ sub parseConfigFile {
 	
 	# Read in the config file
 	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	$json = $json->max_depth(4096);
 
-	my $paramJson = "";
-	while (<CONFIGFILE>) {
-		$paramJson .= $_;
-	}
-	close CONFIGFILE;
-	my $paramConfig = $json->decode($paramJson);
-	
-	# Extract the path to any Kubernetes config files used for kubernetesClusters.  
-	# These files need to be mapped into the run harness container.
-	# Clusters will be a reference to a list of kubernetesCluster hashes
 	my @k8sConfigFiles;
-	my $clusters = $paramConfig->{"kubernetesClusters"};
-	if ($clusters) {
-		foreach my $clusterHashRef (@$clusters) {
-			my $clusterName = $clusterHashRef->{'name'};
-			my $clusterConfigName = $clusterHashRef->{'kubeconfigFile'};
-			if (!$clusterConfigName) {
-				if ($clusterName) {
-					print "KubernetesCluster $clusterName must have a kubeconfigFile definition in configuration file $configFileName.\n";
-					usage();
-					exit 1;									
-				} else {
-					print "All kubernetesClusters must include name and kubeconfigFile definitions in configuration file $configFileName.\n";
-					usage();
-					exit 1;									
-				}
-			} elsif ((! -e $clusterConfigName) || (! -f $clusterConfigName)) {
-				print "The kubernetesConfigFile $clusterConfigName must exist and be a regular file.\n";
+	my $dockerNamespace;
+	while (<CONFIGFILE>) {
+		if ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
+			if ((! -e $1) || (! -f $1)) {
+				print "The kubeconfigFile $1 must exist and be a regular file.\n";
 				usage();
 				exit 1;									
 			}
-			push(@k8sConfigFiles, $clusterConfigName);
+			if (!($1 ~~ @k8sConfigFiles)) {
+				push(@k8sConfigFiles, $1);
+			}
+		} elsif ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/) {
+			$dockerNamespace = $1;
 		}
 	}
-	
-	# Get the dockernamespace
-	my $dockerNamespace = $paramConfig->{"dockerNamespace"};
+	close CONFIGFILE;
+		
 	if (!$dockerNamespace) {
 		print "You must specify the dockerNamespace parameter in configuration file $configFileName.\n";
 		usage();

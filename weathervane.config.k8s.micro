@@ -3,7 +3,7 @@
 
   "configurationSize": "micro",
 
-  "runStrategy" : "findMaxSingleRun",
+  "runStrategy" : "fixed",
 
   "dockerNamespace" : "yourRepository",
   "kubernetesClusters" : [ 

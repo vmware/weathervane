@@ -1,6 +1,7 @@
 {
  
 "micro" : {
+  "users" : 200,
   "maxUsers" : 2000,
   "numDrivers" : 1,
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+AlwaysPreTouch",
@@ -54,6 +55,7 @@
 },
 
 "small" : {
+  "users" : 2000,
   "maxUsers" : 20000,
   "numDrivers" : 6,
   "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",

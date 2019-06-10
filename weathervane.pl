@@ -577,9 +577,10 @@ if ($fullHelp) {
 	exit;
 }
 
-my $version = getParamValue( $paramsHashRef, "version" );
-if ($version) {
-	$console_logger->warn( "Weathervane Version " . $Parameters::version );
+my $version = `cat $weathervaneHome/version.txt`;
+$console_logger->warn( "Weathervane Version $version" );
+if (!getParamValue($paramsHashRef, "dockerWeathervaneVersion")) {	
+	setParamValue( $paramsHashRef, "dockerWeathervaneVersion",  $version );
 }
 
 $console_logger->info("Command-line parameters:");
@@ -702,7 +703,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					}
 					$workloadParamHashRef->{$key} = $config->{$key} * $numAppInstances;
 				}
-			} else {
+			} elsif ($key ne "users") {
 				$workloadParamHashRef->{$key} = $config->{$key};
 			}
 		}
@@ -860,7 +861,9 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			}
 			my $config = $fixedConfigs->{$configSize};
 			foreach my $key (keys %$config) {
+			  if (($key ne "users") || !$appInstanceParamHashRef->{"users"}) {
 				$appInstanceParamHashRef->{$key} = $config->{$key};
+			  }
 			}
 		}
 		

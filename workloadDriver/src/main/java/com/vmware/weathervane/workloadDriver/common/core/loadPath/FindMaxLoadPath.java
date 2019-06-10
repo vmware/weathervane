@@ -234,6 +234,7 @@ public class FindMaxLoadPath extends LoadPath {
 		curStatusInterval.setName(nextInterval.getName());
 		curStatusInterval.setStartUsers(curUsers);
 		curStatusInterval.setEndUsers(curUsers);
+		curStatusInterval.setDuration(nextIntervalDuration);
 
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);
 		return nextInterval;

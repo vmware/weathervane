@@ -1079,6 +1079,16 @@ sub startRun {
 		return 0;
 	}
 
+	my $usingFindMaxLoadPathType = 0;
+	my $appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstance (@$appInstancesRef) {
+		my $loadPathType = $appInstance->getParamValue('loadPathType');
+		if ( $loadPathType eq "findmax" ) {
+			$usingFindMaxLoadPathType = 1;
+			last;
+		}
+	}
+
 	# Start a process to echo the log to the screen and start/stop the stats collection
 	my $pid = fork();
 	if ( !defined $pid ) {
@@ -1133,10 +1143,14 @@ sub startRun {
 					$nextIsHeader = 0;
 					my $runLengthMinutes = $totalTime / 60;
 					my $impl             = $self->getParamValue('workloadImpl');
-					$console_logger->info(
-	"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
-					);
-					$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
+
+					if (!$usingFindMaxLoadPathType) {
+						$console_logger->info(
+							"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
+						);
+						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
+					}
+
 				}
 			}
 		
@@ -1145,21 +1159,19 @@ sub startRun {
 				next;
 			} elsif ($inline =~ /^\|[^\d]*(\d+)\|/) {
 				my $curTime = $1;
-				
-				if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
 
-					$console_logger->info("Steady-State Started");
-
-					$startedSteadyState = 1;
-				
-					# Start collecting statistics on all hosts and services
-					$self->workload->startStatsCollection($tmpDir);
-				} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) { 
-
-					$console_logger->info("Steady-State Complete");
-					$startedRampDown = 1;
-					$self->workload->stopStatsCollection();
-				} 				
+				if (!$usingFindMaxLoadPathType) {
+					if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
+						$console_logger->info("Steady-State Started");
+						$startedSteadyState = 1;
+						# Start collecting statistics on all hosts and services
+						$self->workload->startStatsCollection($tmpDir);
+					} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) {
+						$console_logger->info("Steady-State Complete");
+						$startedRampDown = 1;
+						$self->workload->stopStatsCollection();
+					}
+				}
 			}
 		}
 		kill(9, $pipePid);
@@ -1174,6 +1186,11 @@ sub startRun {
 	my $endRunStatus = "";
 	my $endRunStatusRaw = "";
 	$url = $self->getControllerURL() . "/run/$runName/state";
+	my @curIntervalNames;
+	my @lastIntervalNames;
+	my @statsRunning;
+
+	sleep 30; #initial sleep before getting state
 	while (!$runCompleted) {
 		$logger->debug("Sending get to $url");
 		$req = HTTP::Request->new( GET => $url );
@@ -1181,12 +1198,74 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$endRunStatus = $json->decode( $res->content );	
+			$endRunStatus = $json->decode( $res->content );
+
 			my $workloadStati = $endRunStatus->{'workloadStati'};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
-				my $curIntervalName = $workloadStatus->{'curInterval'}->{'name'};
-				$logger->debug("Workload $workloadNum, AppInstance: $wkldName: curInterval = $curIntervalName");
+				my $curInterval = $workloadStatus->{'curInterval'};
+				my $curIntervalName;
+				if ($curInterval) {
+					$curIntervalName = $curInterval->{'name'};
+				}
+				if ($usingFindMaxLoadPathType) {
+					$wkldName =~ /appInstance(\d+)/;
+					my $appInstanceNum = $1;
+
+					if (defined $statsRunning[$appInstanceNum] && $statsRunning[$appInstanceNum]) {
+						$statsRunning[$appInstanceNum] = 0;
+						$console_logger->info("   [$wkldName] Stopping performance statistics on workload.");
+						$self->workload->stopStatsCollection($tmpDir);
+					}
+
+					my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
+					my $lastIndexStatsSummaries = $#$statsSummaries;
+					if ($lastIndexStatsSummaries >= 0) {
+						my $statsSummary = $statsSummaries->[$lastIndexStatsSummaries];
+						if (!(defined $lastIntervalNames[$appInstanceNum]) ||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
+							my $endIntervalName = $statsSummary->{"intervalName"};
+							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
+							my $metricsStr = "";
+							my $nameStr = $self->parseNameStr($endIntervalName);
+							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
+								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
+								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+								my $successStr;
+								if ($statsSummary->{"intervalPassed"}) {
+									$successStr = 'passed';
+								} else {
+									my $passRT;
+									my $passMix;
+									if ($statsSummary->{"intervalPassedRT"}) {
+										$passRT = 'passed:RT';
+									} else {
+										$passRT = 'failed:RT';
+									}
+									if ($statsSummary->{"intervalPassedMix"}) {
+										$passMix = 'passed:Mix';
+									} else {
+										$passMix = 'failed:Mix';
+									}
+									$successStr = "$passRT $passMix";
+								}
+								$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+							}
+							$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
+						}
+					}
+
+					if ($curInterval && (!(defined $curIntervalNames[$appInstanceNum]) ||  !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
+						$curIntervalNames[$appInstanceNum] = $curIntervalName;
+						my $nameStr = $self->parseNameStr($curIntervalName);
+						$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");
+
+						if ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
+							$statsRunning[$appInstanceNum] = 1;
+							$console_logger->info("   [$wkldName] Starting performance statistics on workload.");
+							$self->workload->startStatsCollection($tmpDir);
+						}
+					}
+				}
 			}		
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
@@ -1242,6 +1321,30 @@ sub startRun {
 	$console_logger->info("Workload $workloadNum: $impl finished");
 
 	return 1;
+}
+
+sub parseNameStr {
+	my ( $self, $str ) = @_;
+	my $nameStr;
+	if ($str =~ /InitialRamp\-(\d+)/) {
+		$nameStr = "initial ramp at $1 users";
+	} elsif ($str =~ /FINDFIRSTMAX\-Warmup\-(\d+)/) {
+		$nameStr = "finding maximum warmup at $1 users";
+	} elsif ($str =~ /FINDFIRSTMAX\-RampTo\-(\d+)/) {
+		$nameStr = "finding maximum ramp to $1 users";
+	} elsif ($str =~ /FINDFIRSTMAX\-(\d+)/) {
+		$nameStr = "finding maximum run at $1 users";
+	} elsif ($str =~ /VERIFYMAX\-RampTo\-(\d+)/) {
+		$nameStr = "verify maximum ramp to $1 users";
+	} elsif ($str =~ /VERIFYMAX\-Warmup\-(\d+)/) {
+		$nameStr = "verify maximum warmup at $1 users";
+	} elsif ($str =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
+		my $numRerun = $2 + 1;
+		$nameStr = "verify maximum run at $1 users rerun $numRerun";
+	} else {
+		$nameStr = $str;
+	}
+	return $nameStr;
 }
 
 sub stopRun {

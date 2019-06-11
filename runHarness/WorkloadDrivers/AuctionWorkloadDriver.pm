@@ -412,6 +412,7 @@ sub createRunConfigHash {
 			$loadPath->{"rampUp"}      = $rampUp;
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"exitOnFirstFailure"} = $self->getParamValue('exitOnFirstFailure');
 			$loadPath->{"rampDown"}    = $rampDown;
 			$loadPath->{"users"}       = $users;
 			$loadPath->{"timeStep"}    = 15;

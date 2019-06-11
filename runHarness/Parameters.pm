@@ -960,9 +960,16 @@ $parameters{"qosPeriodSec"} = {
 	"usageText" => "The length of a QoS period.",
 	"showUsage" => 0,
 };
+$parameters{"exitOnFirstFailure"} = {
+	"type"    => "!",
+	"default" => JSON::false,
+	"parent"  => "runProc",
+	"usageText" => "If set to true, fixed runStrategy will exit on first failing QoS period.",
+	"showUsage" => 0,
+};
 $parameters{"rampDown"} = {
 	"type"      => "=i",
-	"default"   => "60",
+	"default"   => "120",
 	"parent"    => "runProc",
 	"usageText" => "This is the length of the ramp-down period for the run.",
 	"showUsage" => 1,

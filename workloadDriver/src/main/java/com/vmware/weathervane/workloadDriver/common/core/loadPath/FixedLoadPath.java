@@ -36,11 +36,12 @@ public class FixedLoadPath extends LoadPath {
 
 	private long users;
 
-	private long rampUp;
+	private long rampUp = 300;
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
-	private long rampDown;
-
+	private long rampDown = 120;
+	private boolean exitOnFirstFailure = false;
+	
 	private long timeStep = 10L;
 
 	/*
@@ -66,6 +67,9 @@ public class FixedLoadPath extends LoadPath {
 	@JsonIgnore
 	private boolean passedQos = true;
 
+	@JsonIgnore
+	private String firstFailIntervalName = null;
+	
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined
 	 * the next load interval
@@ -127,6 +131,14 @@ public class FixedLoadPath extends LoadPath {
 					if (!prevIntervalPassed) {
 						// Run failed. 
 						passedQos = false;
+						if (firstFailIntervalName == null) {
+							firstFailIntervalName = "QOS-" + curPhaseInterval;
+						}
+						if (exitOnFirstFailure) {
+							curPhase = Phase.RAMPDOWN;
+							curPhaseInterval = 0;
+							return getNextInterval();
+						}
 					} 
 					getIntervalStatsSummaries().add(rollup);
 				} else {
@@ -178,7 +190,11 @@ public class FixedLoadPath extends LoadPath {
 				WorkloadStatus status = new WorkloadStatus();
 				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 				status.setMaxPassUsers(users);
-				status.setMaxPassIntervalName("QOS-1");
+				if (passedQos) {
+					status.setMaxPassIntervalName("QOS-1");
+				} else {
+					status.setMaxPassIntervalName(firstFailIntervalName);					
+				}
 				status.setPassed(passedQos);
 				workload.loadPathComplete(status);
 			}

@@ -226,7 +226,7 @@ sub followRunProgress {
 	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $rampUp         = $self->getParamValue('rampUp');
-	my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
+	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 
 	my $pid = fork();
 	if ( !defined $pid ) {
@@ -468,7 +468,7 @@ sub startStatsCollection {
 	my ($self, $tmpDir)            = @_;
 	my $console_logger    = get_logger("Console");
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
-	my $steadyStateLength = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
+	my $steadyStateLength = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $numIntervals = floor( $steadyStateLength / ( $intervalLengthSec * 1.0 ) );
 	my $logLevel     = $self->getParamValue('logLevel');
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -1123,7 +1123,7 @@ sub interactiveMode {
 #	my $console_logger = get_logger("Console");
 #	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
 #	my $rampUp         = $self->getParamValue('rampUp');
-#   my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
+#   my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 #	my $rampDown       = $self->getParamValue('rampDown');
 #	my $totalDuration  = $rampUp + $steadyState + $rampDown;
 #	my $endTime        = time() + $totalDuration;

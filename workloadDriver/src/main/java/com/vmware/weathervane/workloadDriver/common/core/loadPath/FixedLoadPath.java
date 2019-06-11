@@ -48,11 +48,10 @@ public class FixedLoadPath extends LoadPath {
 	 * - RAMPUP: Ramp up to users in timeStep intervals
 	 * - QOS: Use intervals of qosPeriodSec.  if any fail then the run fails.
 	 * - RAMPDOWN: End of run period used to avoid getting shut-down effects in QOS 
-	 * - POSTPASS: Periods of qosPeriodSec after RAMPDOWN which are returned if other workloads are still running.
-	 * - POSTFAIL: Periods of qosPeriodSec after RAMPDOWN which are returned if other workloads are still running.
+	 * - POSTRUN: Periods of qosPeriodSec after RAMPDOWN which are returned if other workloads are still running.
 	 */
 	private enum Phase {
-		RAMPUP, QOS, RAMPDOWN, POSTPASS, POSTFAIL
+		RAMPUP, QOS, RAMPDOWN, POSTRUN
 	};
 
 	@JsonIgnore
@@ -63,6 +62,9 @@ public class FixedLoadPath extends LoadPath {
 	
 	@JsonIgnore
 	private long curPhaseInterval = 0;
+	
+	@JsonIgnore
+	private boolean passedQos = true;
 
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined
@@ -88,12 +90,12 @@ public class FixedLoadPath extends LoadPath {
 		rampupIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
 		
 		curStatsInterval = new UniformLoadInterval();
-		curStatsInterval.setName("rampUp");
+		curStatsInterval.setName("RampUp");
 		curStatsInterval.setDuration(rampUp);
 		curStatsInterval.setUsers(users);
 		statsIntervalAvailable.release();
 
-		curStatusInterval.setName("rampUp");
+		curStatusInterval.setName("RampUp");
 		curStatusInterval.setDuration(rampUp);
 		curStatusInterval.setStartUsers(0L);
 		curStatusInterval.setEndUsers(users);
@@ -122,30 +124,20 @@ public class FixedLoadPath extends LoadPath {
 				StatsSummaryRollup rollup = fetchStatsSummaryRollup("QOS-" + curPhaseInterval);
 				if (rollup != null) {
 					prevIntervalPassed = rollup.isIntervalPassed();
+					if (!prevIntervalPassed) {
+						// Run failed. 
+						passedQos = false;
+					} 
 					getIntervalStatsSummaries().add(rollup);
 				} else {
 					logger.warn("Failed to get rollup for interval QOS-" + curPhaseInterval);
 				}
 			}
-			if (!prevIntervalPassed) {
-				// Run failed. 
-				WorkloadStatus status = new WorkloadStatus();
-				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
-				status.setMaxPassUsers(users);
-				status.setMaxPassIntervalName("QOS-" + curPhaseInterval);
-				status.setPassed(prevIntervalPassed);
-				workload.loadPathComplete(status);
-				curPhaseInterval = 0;
-				curPhase = Phase.POSTFAIL;
-				nextInterval = getNextInterval();
-			} else if (curPhaseInterval >= getNumQosPeriods()) {
+			
+			if (curPhaseInterval >= getNumQosPeriods()) {
 				// Last QOS period passed.  Move to rampDown
 				curPhase = Phase.RAMPDOWN;
 				curPhaseInterval = 0;
-				curStatsInterval.setName("rampDown");
-				curStatsInterval.setDuration(rampDown);
-				curStatsInterval.setUsers(users);
-				statsIntervalAvailable.release();
 				nextInterval = getNextInterval();
 			} else {
 				curPhaseInterval++;
@@ -168,26 +160,31 @@ public class FixedLoadPath extends LoadPath {
 			nextInterval.setDuration(rampDown);
 			nextInterval.setUsers(users);
 
+			curStatsInterval.setName("RampDown");
+			curStatsInterval.setDuration(rampDown);
+			curStatsInterval.setUsers(users);
+			statsIntervalAvailable.release();
+
 			curStatusInterval.setName("RampDown");
 			curStatusInterval.setDuration(rampDown);
 			curStatusInterval.setStartUsers(users);
 			curStatusInterval.setEndUsers(users);
 
 			curPhaseInterval = 0;
-			curPhase = Phase.POSTPASS;
-		} else if (Phase.POSTPASS.equals(curPhase)) {
+			curPhase = Phase.POSTRUN;
+		} else if (Phase.POSTRUN.equals(curPhase)) {
 			if (curPhaseInterval == 0) {
-				// Run passed. 
+				// Run finished
 				WorkloadStatus status = new WorkloadStatus();
 				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 				status.setMaxPassUsers(users);
 				status.setMaxPassIntervalName("QOS");
-				status.setPassed(true);
+				status.setPassed(passedQos);
 				workload.loadPathComplete(status);
 			}
 			curPhaseInterval++;
 			nextInterval = new UniformLoadInterval();
-			nextInterval.setName("postPass-" + curPhaseInterval);
+			nextInterval.setName("PostPass-" + curPhaseInterval);
 			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setUsers(users);
 
@@ -195,27 +192,7 @@ public class FixedLoadPath extends LoadPath {
 			curStatusInterval.setDuration(qosPeriodSec);
 			curStatusInterval.setStartUsers(users);
 			curStatusInterval.setEndUsers(users);
-		} else if (Phase.POSTFAIL.equals(curPhase)) {
-			if (curPhaseInterval == 0) {
-				// Run failed. 
-				WorkloadStatus status = new WorkloadStatus();
-				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
-				status.setMaxPassUsers(users);
-				status.setMaxPassIntervalName("QOS");
-				status.setPassed(false);
-				workload.loadPathComplete(status);
-			}
-			curPhaseInterval++;
-			nextInterval = new UniformLoadInterval();
-			nextInterval.setName("postFail-" + curPhaseInterval);
-			nextInterval.setDuration(getQosPeriodSec());
-			nextInterval.setUsers(users);
-
-			curStatusInterval.setName("PostFail-" + curPhaseInterval);
-			curStatusInterval.setDuration(qosPeriodSec);
-			curStatusInterval.setStartUsers(users);
-			curStatusInterval.setEndUsers(users);
-		}
+		} 
 		
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;

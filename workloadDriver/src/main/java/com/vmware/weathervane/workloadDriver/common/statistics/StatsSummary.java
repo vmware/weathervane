@@ -37,6 +37,7 @@ public class StatsSummary {
 	private static final Logger logger = LoggerFactory.getLogger(StatsSummary.class);
 
 	private String workloadName = null;
+	private List<Operation> operations = null;
 	private String targetName = null;
 	private String hostName = null;
 	private String statsIntervalSpecName = null;
@@ -62,6 +63,7 @@ public class StatsSummary {
 	public StatsSummary(String workloadName, List<Operation> operations, BehaviorSpec behaviorSpec,
 							String targetName, String hostname, String statsIntervalSpecName) {
 		this.workloadName = workloadName;
+		this.operations = operations;
 		this.targetName = targetName;
 		this.hostName = hostname;
 		this.statsIntervalSpecName = statsIntervalSpecName;
@@ -605,7 +607,11 @@ public class StatsSummary {
 		retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"
 				, "Time (Sec)", "Time (Sec)", "Time (Sec)", "Throughput", "Percentage", "Percent", "Ops", "Failures", "RT Failures"));
 		
-		for (String opName : opNameToStatsMap.keySet()) {
+		for (int index = 0; index < operations.size(); index++) {
+			String opName = operations.get(index).getOperationName();
+			if (!opNameToStatsMap.containsKey(opName)) {
+				continue;
+			}
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
 			if (opStatsSummary.getTotalNumOps()  > 0) {

@@ -1294,7 +1294,7 @@ sub startStatsCollection {
 	);
 
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
-	my $steadyStateLength = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
+	my $steadyStateLength = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $numIntervals      = floor( $steadyStateLength / ( $intervalLengthSec * 1.0 ) );
 
 	$console_logger->info("Starting performance statistics collection on application services.\n");

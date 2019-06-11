@@ -410,7 +410,8 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}        = 'fixed';
 			$loadPath->{"rampUp"}      = $rampUp;
-			$loadPath->{"steadyState"} = $steadyState;
+			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
+			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 			$loadPath->{"rampDown"}    = $rampDown;
 			$loadPath->{"users"}       = $users;
 			$loadPath->{"timeStep"}    = 15;
@@ -442,6 +443,8 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}          = "findmax";
 			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
+			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
+			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {
 			$logger->debug(

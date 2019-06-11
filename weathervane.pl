@@ -503,66 +503,6 @@ open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
 print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
 close PARAMCOMMANDLINEFILE;
 
-# set the run length parameters properly
-my $runLength   = getParamValue( $paramsHashRef, "runLength" );
-my $rampUp      = getParamValue( $paramsHashRef, "rampUp" );
-my $steadyState = getParamValue( $paramsHashRef, "steadyState" );
-my $rampDown    = getParamValue( $paramsHashRef, "rampDown" );
-
-if ( $rampUp eq "" ) {
-	if ( $runLength eq "short" ) {
-		$rampUp = 120;
-	}
-	elsif ( $runLength eq "medium" ) {
-		$rampUp = 720;
-	}
-	elsif ( $runLength eq "long" ) {
-		$rampUp = 720;
-	}
-	else {
-		print "runLength must be either short, medium, or long, not $runLength\n";
-		usage();
-		exit;
-	}
-}
-
-if ( $steadyState eq "" ) {
-	if ( $runLength eq "short" ) {
-		$steadyState = 180;
-	}
-	elsif ( $runLength eq "medium" ) {
-		$steadyState = 900;
-	}
-	elsif ( $runLength eq "long" ) {
-		$steadyState = 1800;
-	}
-	else {
-		print "runLength must be either short, medium, or long, not $runLength\n";
-		usage();
-		exit;
-	}
-}
-
-if ( $rampDown eq "" ) {
-	if ( $runLength eq "short" ) {
-		$rampDown = 60;
-	}
-	elsif ( $runLength eq "medium" ) {
-		$rampDown = 60;
-	}
-	elsif ( $runLength eq "long" ) {
-		$rampDown = 120;
-	}
-	else {
-		print "runLength must be either short, medium, or long, not $runLength\n";
-		usage();
-		exit;
-	}
-}
-setParamValue( $paramsHashRef, "rampUp",      $rampUp );
-setParamValue( $paramsHashRef, "steadyState", $steadyState );
-setParamValue( $paramsHashRef, "rampDown",    $rampDown );
-
 # Check for a request for the help text
 my $help = getParamValue( $paramsHashRef, "help" );
 if ($help) {

@@ -37,6 +37,9 @@ public class FindMaxLoadPath extends LoadPath {
 
 	private long maxUsers;
 
+	private final long numQosPeriods = 3;
+	private final long qosPeriodSec = 300;
+
 	/*
 	 * Phases in a findMax run: - INITIALRAMP: Use short intervals to ramp up until
 	 * response-times begin to fail - FINDFIRSTMAX: Use medium intervals to get an
@@ -107,17 +110,13 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long findFirstMaxRampIntervalSec = 120;
 	@JsonIgnore
 	private final long findFirstMaxWarmupIntervalSec = 180;
-	@JsonIgnore
-	private final long findFirstMaxIntervalSec = 300;
 
 	@JsonIgnore
 	private final long verifyMaxRampIntervalSec = 120;
 	@JsonIgnore
 	private final long verifyMaxWarmupIntervalSec = 180;
 	@JsonIgnore
-	private final long verifyMaxIntervalSec = 300;
-	@JsonIgnore
-	private final int numRequiredVerifyMaxRepeats = 2;
+	private long numRequiredVerifyMaxRepeats = 2;
 	
 	/*
 	 * Use a semaphore to prevent returning stats interval until we have determined
@@ -134,7 +133,7 @@ public class FindMaxLoadPath extends LoadPath {
 		
 		this.maxUsers = workload.getMaxUsers();
 		this.initialRampRateStep = maxUsers / 10;
-		
+		numRequiredVerifyMaxRepeats = numQosPeriods - 1;
 		/*
 		 * Set up the curStatsInterval
 		 */
@@ -310,7 +309,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * Can't step up beyond maxUsers, so just go to maxUsers. Reduce the curStep to
 				 * halfway between curUsers and maxUsers
 				 */
-				logger.debug("getNextFindFirstMaxInterval: Next interval would have passed maxUsers, using maxUsers");
+				logger.debug("getNextFindFirstMaxInterval: Next interval would have exceeded maxUsers, using maxUsers");
 				curRateStep = (maxUsers - curUsers) / 2;
 				curUsers = maxUsers;
 			} else if (prevIntervalPassed) {
@@ -375,7 +374,7 @@ public class FindMaxLoadPath extends LoadPath {
 				}
 				
 				/*
-				 * The next interval needs to be less than minFailUsers. May need to shrink the
+				 * The next interval needs to be greater than maxPassUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
 				while ((curUsers - nextRateStep) <= maxPassUsers) {
@@ -387,6 +386,11 @@ public class FindMaxLoadPath extends LoadPath {
 				}
 
 				if ((curUsers - nextRateStep) <= maxPassUsers) {
+					if (maxPassUsers == 0) {
+						// Never passed.  End the run.
+						loadPathComplete();
+					}
+					
 					/*
 					 * Can't get closer to maximum with the minRateStep. Go to the next phase.
 					 */
@@ -397,7 +401,6 @@ public class FindMaxLoadPath extends LoadPath {
 
 				curRateStep = nextRateStep;
 				curUsers -= curRateStep;
-
 			}
 
 			/*
@@ -468,13 +471,13 @@ public class FindMaxLoadPath extends LoadPath {
 			 * users for the previous interval, but with the non-warmup duration
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(findFirstMaxIntervalSec);
+			nextInterval.setDuration(qosPeriodSec);
 			nextInterval.setName("FINDFIRSTMAX-" + curUsers);
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(findFirstMaxIntervalSec);
+			curStatusInterval.setDuration(qosPeriodSec);
 			
 			nextSubInterval = SubInterval.RAMP;
 		}
@@ -557,14 +560,14 @@ public class FindMaxLoadPath extends LoadPath {
 			 * for this value of curUsers.  Run a sub-interval at curUsers.
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(verifyMaxIntervalSec);
+			nextInterval.setDuration(qosPeriodSec);
 			nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 			nextSubInterval = SubInterval.VERIFYSUBSEQUENT;
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(verifyMaxIntervalSec);
+			curStatusInterval.setDuration(qosPeriodSec);
 		} else if (nextSubInterval.equals(SubInterval.VERIFYSUBSEQUENT)) {
 			/*
 			 * Need to know whether the previous interval
@@ -592,13 +595,13 @@ public class FindMaxLoadPath extends LoadPath {
 				} else {
 					// Test again at this interval
 					nextInterval.setUsers(curUsers);
-					nextInterval.setDuration(verifyMaxIntervalSec);
+					nextInterval.setDuration(qosPeriodSec);
 					nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 
 					curStatusInterval.setName(nextInterval.getName());
 					curStatusInterval.setStartUsers(curUsers);
 					curStatusInterval.setEndUsers(curUsers);
-					curStatusInterval.setDuration(verifyMaxIntervalSec);
+					curStatusInterval.setDuration(qosPeriodSec);
 
 					nextSubInterval = SubInterval.VERIFYSUBSEQUENT;					
 				}

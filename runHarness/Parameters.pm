@@ -36,7 +36,7 @@ my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
 								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
 								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
-my @runLengthParams = ( 'steadyState', 'rampUp', 'rampDown'  );
+my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'rampDown'  );
 
 my @filterConstants = ( 'tmpDir' );
 
@@ -938,39 +938,33 @@ $parameters{"description"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"runLength"} = {
-	"type"      => "=s",
-	"default"   => "medium",
-	"parent"    => "runProc",
-	"usageText" => "This is a shortcut for specifying the length of a run.\n\t"
-	  . "Allowable values:\n\t"
-	  . "short (120s, 180s, 60s)\n\t"
-	  . "medium (600s, 900s, 60s)\n\t"
-	  . "long ( 600s, 1800s, 120s)",
-	"showUsage" => 1,
-};
 $parameters{"rampUp"} = {
 	"type"    => "=i",
-	"default" => "",
+	"default" => "300",
 	"parent"  => "runProc",
 	"usageText" =>
-"This is the length of the ramp-up period for the run.\n\tIt overrides the ramp-up length set by the runLength parameter.\n\tThe number of users is slowly increased over the course of the ramp-up period.",
+"This is the length of the ramp-up period for the run.",
 	"showUsage" => 1,
 };
-$parameters{"steadyState"} = {
+$parameters{"numQosPeriods"} = {
 	"type"    => "=i",
-	"default" => "",
+	"default" => "3",
 	"parent"  => "runProc",
-	"usageText" =>
-"This is the length of the steady-state period for the run.\n\tIt overrides the steady-state length set by the runLength parameter.\n\tThe steady-state must be long enough for the performance metrics to stabilize.",
+	"usageText" => "The number of QoS periods that the workload must pass without any failure.",
 	"showUsage" => 1,
+};
+$parameters{"qosPeriodSec"} = {
+	"type"    => "=i",
+	"default" => "300",
+	"parent"  => "runProc",
+	"usageText" => "The length of a QoS period.",
+	"showUsage" => 0,
 };
 $parameters{"rampDown"} = {
 	"type"      => "=i",
-	"default"   => "",
+	"default"   => "60",
 	"parent"    => "runProc",
-	"usageText" => "This is the length of the ramp-down period for the run.\n\t"
-	  . "It overrides the ramp-down length set by the runLength parameter.",
+	"usageText" => "This is the length of the ramp-down period for the run.",
 	"showUsage" => 1,
 };
 

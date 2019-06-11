@@ -344,7 +344,7 @@ sub createRunConfigHash {
 	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
-	my $steadyState      = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown         = $self->getParamValue('rampDown');
 	my $totalTime        = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor = $self->getParamValue('usersScaleFactor');
@@ -531,7 +531,7 @@ override 'configure' => sub {
 
 	my $workloadProfileHome = $self->getParamValue('workloadProfileDir');
 	my $rampUp              = $self->getParamValue('rampUp');
-	my $steadyState         = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
@@ -1012,7 +1012,7 @@ sub startRun {
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
-	my $steadyState         = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 
@@ -1527,7 +1527,7 @@ sub stopAppStatsCollection {
 	);
 
 	my $rampUp      = $self->getParamValue('rampUp');
-	my $steadyState = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
 	my $db          = $self->getParamValue('dbServer');
 
 	# Get the name of the first dbServer
@@ -1791,7 +1791,8 @@ sub getWorkloadSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
 
 	$csvRef->{"RampUp"}      = $self->getParamValue('rampUp');
-	$csvRef->{"SteadyState"} = $self->getParamValue('steadyState');
+	$csvRef->{"numQoSPeriods"} = $self->getParamValue('numQoSPeriods');
+	$csvRef->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 	$csvRef->{"RampDown"}    = $self->getParamValue('rampDown');
 
 }

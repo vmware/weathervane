@@ -39,6 +39,16 @@ spec:
         tier: dataManager
         impl: auctiondatamanager
     spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: wvrole
+                operator: In
+                values:
+                - sut
       containers:
       - image: repository/weathervane-auctiondatamanager:1.2.0
         name: auctiondatamanager

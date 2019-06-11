@@ -403,7 +403,7 @@ sub startStatsCollection {
 	my $console_logger    = get_logger("Console");
 	my $workloadDriver    = $self->primaryDriver;
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
-	my $steadyStateLength = $self->getParamValue('steadyState');
+	my $steadyStateLength = $self->getParamValue('numQoSPeriods') * $self->getParamValue('qosPeriodSec');
 	my $numIntervals = floor( $steadyStateLength / ( $intervalLengthSec * 1.0 ) );
 	my $logLevel = $self->getParamValue('logLevel');
 

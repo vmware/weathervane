@@ -2211,6 +2211,7 @@ sub parseStats {
 	my $runStatus;
 	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
 	if ( $res->is_success ) {
+		$logger->debug("Final status content: " . $res->content);
 		$runStatus = $json->decode( $res->content );			
 	} else {
 		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
@@ -2240,7 +2241,7 @@ sub parseStats {
 		}
 		
 		if (!$maxPassStatsSummary) {
-			$console_logger->warn("Could not find the max passing interval for appInstance " + $appInstanceName);
+			$console_logger->warn("Could not find the max passing interval for appInstance " . $appInstanceName);
 			next;
 		}
 		

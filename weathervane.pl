@@ -535,6 +535,13 @@ if ($stop) {
 	setParamValue( $paramsHashRef, "runProcedure", 'stop' );
 }
 
+# If we are running the findMax or findMaxMultiRun runStrategy (they are the same thing)
+# then set exitOnFirstFailure to true
+if ((getParamValue($paramsHashRef, "runStrategy") eq 'findMax') 
+		|| (getParamValue($paramsHashRef, "runStrategy") eq 'findMaxMultiRun')) {
+	setParamValue( $paramsHashRef, "exitOnFirstFailure",  1);
+}
+
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 

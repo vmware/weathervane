@@ -110,6 +110,9 @@ public class StatsSummary {
 		if (this.workloadName == null) {
 			this.workloadName = that.workloadName;
 		}
+		if (this.operations == null) {
+			this.operations = that.operations;
+		}
 		if (this.targetName == null) {
 			this.targetName = that.targetName;
 		}
@@ -607,8 +610,7 @@ public class StatsSummary {
 		retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"
 				, "Time (Sec)", "Time (Sec)", "Time (Sec)", "Throughput", "Percentage", "Percent", "Ops", "Failures", "RT Failures"));
 		
-		for (int index = 0; index < operations.size(); index++) {
-			String opName = operations.get(index).getOperationName();
+		for (String opName : opNameToStatsMap.keySet()) {
 			if (!opNameToStatsMap.containsKey(opName)) {
 				continue;
 			}

@@ -178,7 +178,7 @@ public class FixedLoadPath extends LoadPath {
 				WorkloadStatus status = new WorkloadStatus();
 				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 				status.setMaxPassUsers(users);
-				status.setMaxPassIntervalName("QOS");
+				status.setMaxPassIntervalName("QOS-1");
 				status.setPassed(passedQos);
 				workload.loadPathComplete(status);
 			}

@@ -151,7 +151,13 @@ sub initializeWorkloads {
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug("initializeWorkloads.  seqnum = $seqnum, tmpDir = $tmpDir");
 
-	my $success = callBooleanMethodOnObjectsParallel2( 'initializeRun', $self->workloadsRef, $seqnum, $tmpDir );
+	# Clear the old data from the workloadDrivers
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+	  $workload->clearResults();
+	}
+		
+	my $success = callBooleanMethodOnObjectsParallel2( 'initializeRun', $workloadsRef, $seqnum, $tmpDir );
 	if ( !$success ) {
 		$debug_logger->debug("initializeWorkloads initialize failed. ");
 		return 0;

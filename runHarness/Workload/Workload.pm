@@ -113,6 +113,13 @@ sub clearReloadDb {
 	}
 }
 
+sub clearResults {
+	my ( $self ) = @_;
+	my $logger = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("clearResults");
+	return $self->primaryDriver->clearResults());
+}
+
 sub initializeRun {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");

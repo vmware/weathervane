@@ -127,6 +127,7 @@ public class FixedLoadPath extends LoadPath {
 				 */
 				StatsSummaryRollup rollup = fetchStatsSummaryRollup("QOS-" + curPhaseInterval);
 				if (rollup != null) {
+					getIntervalStatsSummaries().add(rollup);
 					prevIntervalPassed = rollup.isIntervalPassed();
 					if (!prevIntervalPassed) {
 						// Run failed. 
@@ -134,13 +135,12 @@ public class FixedLoadPath extends LoadPath {
 						if (firstFailIntervalName == null) {
 							firstFailIntervalName = "QOS-" + curPhaseInterval;
 						}
-						if (exitOnFirstFailure) {
+						if (isExitOnFirstFailure()) {
 							curPhase = Phase.RAMPDOWN;
 							curPhaseInterval = 0;
 							return getNextInterval();
 						}
 					} 
-					getIntervalStatsSummaries().add(rollup);
 				} else {
 					logger.warn("Failed to get rollup for interval QOS-" + curPhaseInterval);
 				}
@@ -275,6 +275,14 @@ public class FixedLoadPath extends LoadPath {
 
 	public long getQosPeriodSec() {
 		return qosPeriodSec;
+	}
+
+	public boolean isExitOnFirstFailure() {
+		return exitOnFirstFailure;
+	}
+
+	public void setExitOnFirstFailure(boolean exitOnFirstFailure) {
+		this.exitOnFirstFailure = exitOnFirstFailure;
 	}
 
 	@Override

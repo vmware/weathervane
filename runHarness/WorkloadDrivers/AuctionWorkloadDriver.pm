@@ -1006,9 +1006,6 @@ sub startRun {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	  
-	# Clear the results from previous runs
-	$self->clearResults();
-
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";

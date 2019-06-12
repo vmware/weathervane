@@ -618,7 +618,7 @@ sub getWorkloadStatsSummary {
 
 	$csv{'workload'} = $self->getParamValue('workloadImpl');
 
-	#	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
+	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
 
 	$self->primaryDriver->getWorkloadStatsSummary( \%csv, $tmpDir );
 

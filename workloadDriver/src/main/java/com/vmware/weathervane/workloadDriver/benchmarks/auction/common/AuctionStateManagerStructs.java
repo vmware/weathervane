@@ -817,7 +817,19 @@ public class AuctionStateManagerStructs extends StateManagerStructs {
 			ItemRepresentation curItem = this.getResponse();
 
 			Map<String, List<Map<RestAction, String>>> curItemLinks = curItem.getLinks();
-
+			if (logger.isDebugEnabled()) {
+				StringBuilder linkString = new StringBuilder();
+				for (Map.Entry<String, List<Map<RestAction, String>>> entry1 : curItemLinks.entrySet()) {
+					linkString.append("ID " + entry1.getKey() +": ");
+					for (Map<RestAction, String> linkMap : entry1.getValue()) {
+						for (Map.Entry<RestAction, String> entry2 : linkMap.entrySet()) {
+							linkString.append(entry2.getKey() + "->" + entry2.getValue() + ", ");
+						}
+					}
+				}
+				logger.debug("getRandomItemImageLink for " + curItem.getId() + ", links: " + linkString.toString());
+			}
+			
 			if (curItemLinks.containsKey("ItemImage")) {
 				List<Map<RestAction, String>> curItemImageLinks = curItemLinks.get("ItemImage");
 				if (curItemImageLinks.size() > 0) {

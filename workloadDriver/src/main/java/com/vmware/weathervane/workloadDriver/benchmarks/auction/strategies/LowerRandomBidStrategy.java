@@ -25,7 +25,7 @@ public class LowerRandomBidStrategy implements BidStrategy {
 	private static final Logger logger = LoggerFactory.getLogger(LowerRandomBidStrategy.class);
 
 	// ToDo: The probabilities should be parameters and externally configurable
-	private double bidProbability = 0.05;
+	private double bidProbability = 0.1;
 	private double bidAmountIncreaseAvg = 0.02;
 	private double bidAmountIncreaseStdDev = 0.02;
 	private double bidAmountIncreaseMin = 0.005;

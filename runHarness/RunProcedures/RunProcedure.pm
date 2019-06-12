@@ -232,7 +232,7 @@ sub followRunProgress {
 	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $rampUp         = $self->getParamValue('rampUp');
-	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
+	my $steadyState = $self->getParamValue('qosPeriodSec');
 
 	my $pid = fork();
 	if ( !defined $pid ) {

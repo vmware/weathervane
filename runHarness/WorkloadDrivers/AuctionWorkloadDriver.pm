@@ -1086,11 +1086,16 @@ sub startRun {
 	}
 
 	my $usingFindMaxLoadPathType = 0;
+	my $usingFixedLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		if ( $loadPathType eq "findmax" ) {
 			$usingFindMaxLoadPathType = 1;
+			last;
+		}
+		if ($loadPathType eq "fixed" ) {
+			$usingFixedLoadPathType = 1;
 			last;
 		}
 	}
@@ -1118,18 +1123,17 @@ sub startRun {
 		my $startedRampDown = 0;
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-			if (( $inline =~ /^\|\s+\d+\|/ ) 
-				|| ( $inline =~ /^\|\s+Time\|/ ) 
-				|| ( $inline =~ /^\|\s+\(sec\)\|/ )) {
-				if ( $self->getParamValue('showPeriodicOutput') ) {
-				    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
-						$inline = $1 . "\n";
-				    }
-				    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
-						$inline = $1 . "\n";
-				    }
-					print $periodicOutputId . $inline;
-				}
+			if ($self->getParamValue('showPeriodicOutput')
+			        && (( $inline =~ /^\|\s+\d+\|/ ) 
+					|| ( $inline =~ /^\|\s+Time\|/ ) 
+					|| ( $inline =~ /^\|\s+\(sec\)\|/ ))) {
+			    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
+					$inline = $1 . "\n";
+			    }
+			    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
+					$inline = $1 . "\n";
+			    }
+				print $periodicOutputId . $inline;
 			}
 		
 			# The next line after ----- should be first header
@@ -1150,32 +1154,11 @@ sub startRun {
 					my $runLengthMinutes = $totalTime / 60;
 					my $impl             = $self->getParamValue('workloadImpl');
 
-					if (!$usingFindMaxLoadPathType) {
+					if ($usingFixedLoadPathType) {
 						$console_logger->info(
 							"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
 						);
 						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
-					}
-
-				}
-			}
-		
-			if (!($inline =~ /^\|\s*\d/)) {
-				# Don't do anything with header lines
-				next;
-			} elsif ($inline =~ /^\|[^\d]*(\d+)\|/) {
-				my $curTime = $1;
-
-				if (!$usingFindMaxLoadPathType) {
-					if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
-						$console_logger->info("Steady-State Started");
-						$startedSteadyState = 1;
-						# Start collecting statistics on all hosts and services
-						$self->workload->startStatsCollection($tmpDir);
-					} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) {
-						$console_logger->info("Steady-State Complete");
-						$startedRampDown = 1;
-						$self->workload->stopStatsCollection();
 					}
 				}
 			}
@@ -1213,13 +1196,13 @@ sub startRun {
 				if ($curInterval) {
 					$curIntervalName = $curInterval->{'name'};
 				}
-				if ($usingFindMaxLoadPathType) {
+				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
 
 					if (defined $statsRunning[$appInstanceNum] && $statsRunning[$appInstanceNum]) {
 						$statsRunning[$appInstanceNum] = 0;
-						$console_logger->info("   [$wkldName] Stopping performance statistics on workload.");
+						$logger->debug("   [$wkldName] Stopping performance statistics on workload.");
 						$self->workload->stopStatsCollection($tmpDir);
 					}
 
@@ -1264,9 +1247,10 @@ sub startRun {
 						my $nameStr = $self->parseNameStr($curIntervalName);
 						$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");
 
-						if ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
+						if ( ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
+								|| ($curIntervalName =~ /QOS\-(\d+)/)) {
 							$statsRunning[$appInstanceNum] = 1;
-							$console_logger->info("   [$wkldName] Starting performance statistics on workload.");
+							$logger->debug("   [$wkldName] Starting performance statistics on workload.");
 							$self->workload->startStatsCollection($tmpDir);
 						}
 					}
@@ -1346,6 +1330,8 @@ sub parseNameStr {
 	} elsif ($str =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
 		my $numRerun = $2 + 1;
 		$nameStr = "verify maximum run at $1 users rerun $numRerun";
+	} elsif ($str =~ /QOS\-(\d+)/) {
+		$nameStr = "QoS period $1";
 	} else {
 		$nameStr = $str;
 	}

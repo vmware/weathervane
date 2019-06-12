@@ -560,12 +560,14 @@ override 'configure' => sub {
 		# behaviorSpec by copying the specs
 `cp $sourceBehaviorSpecDirName/auction.revisedMainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
+`cp $sourceBehaviorSpecDirName/auction.mainUser2.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
 	}
 	else {
 		my @behaviorSpecFiles = (
 			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
+			'auction.mainUser2.behavior.json',
 			'auction.followAuction.behavior.json'
 		);
 		foreach my $behaviorSpec (@behaviorSpecFiles) {
@@ -951,6 +953,7 @@ sub initializeRun {
 	  "$tmpDir/configuration/workloadDriver/workload${workloadNum}";
 	my @behaviorSpecFiles = (
 		'auction.mainUser.behavior.json',
+		'auction.mainUser2.behavior.json',
 		'auction.revisedMainUser.behavior.json',
 		'auction.followAuction.behavior.json'
 	);

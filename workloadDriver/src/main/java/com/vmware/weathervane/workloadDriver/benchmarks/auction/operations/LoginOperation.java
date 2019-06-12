@@ -95,7 +95,8 @@ public class LoginOperation extends AuctionOperation implements  NeedsPersonName
 		// Choose a new bidding strategy to be used for the duration of this
 		// user's login
 		BidStrategy choice = null;
-		if (this.getBehavior().getBehaviorSpec().getName().equals("auctionRevisedMainUser")) {
+		if (this.getBehavior().getBehaviorSpec().getName().equals("auctionRevisedMainUser") 
+				|| this.getBehavior().getBehaviorSpec().getName().equals("mainUser2")) {
 			choice = new LowerRandomBidStrategy();
 		} else {
 			choice = new RandomBidStrategy();

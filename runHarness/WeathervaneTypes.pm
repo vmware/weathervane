@@ -75,7 +75,7 @@ our @configurationSizes = ( 'micro', 'small', 'medium', 'large');
 
 # These are all of the workload profiles that are supported for each workload
 our %workloadProfiles = (
-	"auction" => ["official", "revised"],
+	"auction" => ["official", "revised", "official2"],
 	);
 
 # These are all of the appInstance sizes that are supported for each workload

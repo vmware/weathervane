@@ -357,6 +357,8 @@ sub createRunConfigHash {
 	my $behaviorSpecName = "auctionMainUser";
 	if ($workloadProfile eq "revised") {
 		$behaviorSpecName = "auctionRevisedMainUser";
+	} elsif ($workloadProfile eq "official2") {
+		$behaviorSpecName = "auctionMainUser2";
 	}
 
 

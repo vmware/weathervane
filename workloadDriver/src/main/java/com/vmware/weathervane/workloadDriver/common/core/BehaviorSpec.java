@@ -161,7 +161,7 @@ public class BehaviorSpec
 					matrixString.append("    [ ");
 					for( int k = 0; k < this.transitionMatrices[i][j].length; k++ )
 					{
-						logger.debug(this.transitionMatrices[i][j][k] + ", ");
+						matrixString.append(this.transitionMatrices[i][j][k] + ", ");
 					}
 					matrixString.append(" ],\n");;
 				}
@@ -208,7 +208,7 @@ public class BehaviorSpec
 					matrixString.append("    [ ");;
 					for( int k = 0; k < this.selectionMatrices[i][j].length; k++ )
 					{
-						logger.debug(this.selectionMatrices[i][j][k] + ", ");
+						matrixString.append(this.selectionMatrices[i][j][k] + ", ");
 					}
 					matrixString.append(" ],\n");;
 				}

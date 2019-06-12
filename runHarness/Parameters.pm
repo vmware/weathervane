@@ -2517,7 +2517,7 @@ $parameters{"images"} = {
 
 $parameters{"minimumUsers"} = {
 	"type"      => "=i",
-	"default"   => 240,
+	"default"   => 200,
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

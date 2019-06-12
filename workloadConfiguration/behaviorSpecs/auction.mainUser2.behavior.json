@@ -1,5 +1,5 @@
 {
-	"name" : "mainUser2",
+	"name" : "auctionMainUser2",
 				"initialState" : 0,
 			 	"maxNumAsyncBehaviors" : 2,				
 				"transitionChoosers" : [

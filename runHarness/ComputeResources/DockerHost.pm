@@ -622,29 +622,29 @@ sub convertK8sMemString {
 			if ($suffix =~ /E/) {
 				$dockerMemString *= 1000 * 1000 * 1000;
 				# Convert from G to Gi
-				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9313));
 				$suffix = "g";
 			} elsif ($suffix =~ /P/) {				
 				$dockerMemString *= 1000 * 1000;
 				# Convert from G to Gi
-				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9313));
 				$suffix = "g";
 			} elsif ($suffix =~ /T/) {
 				$dockerMemString *= 1000;
 				# Convert from G to Gi
-				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9313));
 				$suffix = "g";
 			} elsif ($suffix =~ /G/) {				
 				# Convert from G to Gi
-				$dockerMemString = trunc(round($dockerMemString * 0.9313));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9313));
 				$suffix = "g";
 			} elsif ($suffix =~ /M/) {				
 				# Convert from M to Mi
-				$dockerMemString = trunc(round($dockerMemString * 0.9537));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9537));
 				$suffix = "m";
 			} elsif ($suffix =~ /K/) {				
 				# Convert from K to Ki
-				$dockerMemString = trunc(round($dockerMemString * 0.9766));
+				$dockerMemString = trunc(sprintf("%.0f", $dockerMemString * 0.9766));
 				$suffix = "k";
 			} 	
 		}

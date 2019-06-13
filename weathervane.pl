@@ -542,6 +542,14 @@ if ((getParamValue($paramsHashRef, "runStrategy") eq 'findMax')
 	setParamValue( $paramsHashRef, "exitOnFirstFailure",  1);
 }
 
+if (getParamValue($paramsHashRef, "numQosPeriods") <= 0) {
+	die("The value for the numQosPeriods parameter must be greater than 0.");
+}
+
+if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
+	die("The value for the qosPeriodSec parameter must be greater than 0.");
+}
+
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 

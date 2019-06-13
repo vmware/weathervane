@@ -562,13 +562,15 @@ override 'configure' => sub {
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser2.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
+`cp $sourceBehaviorSpecDirName/auction.followAuction2.behavior.json $targetBehaviorSpecDirName/.`;
 	}
 	else {
 		my @behaviorSpecFiles = (
 			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
 			'auction.mainUser2.behavior.json',
-			'auction.followAuction.behavior.json'
+			'auction.followAuction.behavior.json',
+			'auction.followAuction2.behavior.json'
 		);
 		foreach my $behaviorSpec (@behaviorSpecFiles) {
 			open( FILEIN, "$sourceBehaviorSpecDirName/$behaviorSpec" )
@@ -955,7 +957,8 @@ sub initializeRun {
 		'auction.mainUser.behavior.json',
 		'auction.mainUser2.behavior.json',
 		'auction.revisedMainUser.behavior.json',
-		'auction.followAuction.behavior.json'
+		'auction.followAuction.behavior.json',
+		'auction.followAuction2.behavior.json'
 	);
 	foreach my $behaviorSpec (@behaviorSpecFiles) {
       # Read the file

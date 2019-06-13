@@ -495,17 +495,7 @@ public class Behavior implements OperationCompleteCallback {
 	 * operation and its starting time.
 	 */
 	protected void chooseCycleTime(Operation operation) {
-				
-		long meanCycleTime = _behaviorSpec.getMeanCycleTime(operation.getOperationIndex()) * 1000;
-
-		/*
-		 * Randomize the cycle time to be exponentially distributed with the
-		 * given mean.
-		 */
-		long cycleTime = (long) Math.ceil(NegativeExponential.getNext(meanCycleTime));
-		logger.debug("meanCycleTime = " + meanCycleTime + ", cycleTime = " + cycleTime);
-		operation.setCycleTime(cycleTime);
-
+		operation.setCycleTime(_behaviorSpec.getMeanCycleTime(operation.getOperationIndex()) * 1000);
 	}
 	
 	/**

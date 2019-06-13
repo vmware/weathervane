@@ -41,6 +41,23 @@ spec:
         type: coordinationServer
         impl: zookeeper
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: wvrole
+                operator: NotIn
+                values:
+                - driver
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: wvrole
+                operator: In
+                values:
+                - sut
       containers:
       - image: repository/weathervane-zookeeper:1.2.0
         name: zookeeper

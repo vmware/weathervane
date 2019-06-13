@@ -416,6 +416,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 							// Cancel the watchdog task so it will be rescheduled
 							if (_watchdogTaskScheduledFuture != null) {
+								logger.info("auctioneer:run for auction {}: Got high bid so cancelling the watchdog task", _auctionId);
 								_watchdogTaskScheduledFuture.cancel(true);
 								_watchdogTaskScheduledFuture = null;
 							}
@@ -441,8 +442,11 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 		 * If no watchDog is running then start one
 		 */
 		if (_watchdogTaskScheduledFuture == null) {
+			logger.debug("auctioneer:run for auction {}: no watchdog is scheduled so scheduling.", _auctionId);
 			_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
 					new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
+		} else {
+			logger.debug("auctioneer:run for auction {}: watchdog is already scheduled.", _auctionId);			
 		}
 		
 		logger.debug("newBidMessageQueue has no more bids for auction " + _auctionId);
@@ -654,11 +658,13 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 
 			}
 
-			if (!auctionCompleted && !_shuttingDown && (_highBid.getBidCount() > 1)) {
+			if (!auctionCompleted && !_shuttingDown) {
 				// Schedule a new watchdog task
+				logger.debug("BidWatchdogTask:run for auction {}: rescheduling for {} seconds from now", _auctionId,  _auctionMaxIdleTime);
 				_watchdogTaskScheduledFuture = _scheduledExecutorService.schedule(
 						new WatchdogTask(_highBid), _auctionMaxIdleTime, TimeUnit.SECONDS);
 			} else {
+				logger.debug("BidWatchdogTask:run for auction {}: not rescheduling", _auctionId);
 				_watchdogTaskScheduledFuture = null;
 			}
 			_isWatchdogRunning.release();

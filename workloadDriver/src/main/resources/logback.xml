@@ -24,8 +24,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </encoder>
   </appender>
 
-    <logger name="org.apache.http.wire" level="WARN" />
-    <logger name="org.apache.http" level="WARN" />
     <logger name="com.vmware" level="WARN" />
 
   <root level="warn">

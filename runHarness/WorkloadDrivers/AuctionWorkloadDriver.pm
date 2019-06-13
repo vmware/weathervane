@@ -344,7 +344,7 @@ sub createRunConfigHash {
 	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
-	my $steadyState      = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown         = $self->getParamValue('rampDown');
 	my $totalTime        = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor = $self->getParamValue('usersScaleFactor');
@@ -357,6 +357,8 @@ sub createRunConfigHash {
 	my $behaviorSpecName = "auctionMainUser";
 	if ($workloadProfile eq "revised") {
 		$behaviorSpecName = "auctionRevisedMainUser";
+	} elsif ($workloadProfile eq "official2") {
+		$behaviorSpecName = "auctionMainUser2";
 	}
 
 
@@ -410,7 +412,9 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}        = 'fixed';
 			$loadPath->{"rampUp"}      = $rampUp;
-			$loadPath->{"steadyState"} = $steadyState;
+			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
+			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"exitOnFirstFailure"} = $self->getParamValue('exitOnFirstFailure');
 			$loadPath->{"rampDown"}    = $rampDown;
 			$loadPath->{"users"}       = $users;
 			$loadPath->{"timeStep"}    = 15;
@@ -442,6 +446,8 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}          = "findmax";
 			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
+			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
+			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {
 			$logger->debug(
@@ -528,7 +534,7 @@ override 'configure' => sub {
 
 	my $workloadProfileHome = $self->getParamValue('workloadProfileDir');
 	my $rampUp              = $self->getParamValue('rampUp');
-	my $steadyState         = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
@@ -554,13 +560,17 @@ override 'configure' => sub {
 		# behaviorSpec by copying the specs
 `cp $sourceBehaviorSpecDirName/auction.revisedMainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
+`cp $sourceBehaviorSpecDirName/auction.mainUser2.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
+`cp $sourceBehaviorSpecDirName/auction.followAuction2.behavior.json $targetBehaviorSpecDirName/.`;
 	}
 	else {
 		my @behaviorSpecFiles = (
 			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
-			'auction.followAuction.behavior.json'
+			'auction.mainUser2.behavior.json',
+			'auction.followAuction.behavior.json',
+			'auction.followAuction2.behavior.json'
 		);
 		foreach my $behaviorSpec (@behaviorSpecFiles) {
 			open( FILEIN, "$sourceBehaviorSpecDirName/$behaviorSpec" )
@@ -945,8 +955,10 @@ sub initializeRun {
 	  "$tmpDir/configuration/workloadDriver/workload${workloadNum}";
 	my @behaviorSpecFiles = (
 		'auction.mainUser.behavior.json',
+		'auction.mainUser2.behavior.json',
 		'auction.revisedMainUser.behavior.json',
-		'auction.followAuction.behavior.json'
+		'auction.followAuction.behavior.json',
+		'auction.followAuction2.behavior.json'
 	);
 	foreach my $behaviorSpec (@behaviorSpecFiles) {
       # Read the file
@@ -1002,14 +1014,11 @@ sub startRun {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	  
-	# Clear the results from previous runs
-	$self->clearResults();
-
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
-	my $steadyState         = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
 	my $totalTime           = $rampUp + $steadyState + $rampDown;
 
@@ -1080,11 +1089,16 @@ sub startRun {
 	}
 
 	my $usingFindMaxLoadPathType = 0;
+	my $usingFixedLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		if ( $loadPathType eq "findmax" ) {
 			$usingFindMaxLoadPathType = 1;
+			last;
+		}
+		if ($loadPathType eq "fixed" ) {
+			$usingFixedLoadPathType = 1;
 			last;
 		}
 	}
@@ -1112,18 +1126,17 @@ sub startRun {
 		my $startedRampDown = 0;
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
-			if (( $inline =~ /^\|\s+\d+\|/ ) 
-				|| ( $inline =~ /^\|\s+Time\|/ ) 
-				|| ( $inline =~ /^\|\s+\(sec\)\|/ )) {
-				if ( $self->getParamValue('showPeriodicOutput') ) {
-				    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
-						$inline = $1 . "\n";
-				    }
-				    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
-						$inline = $1 . "\n";
-				    }
-					print $periodicOutputId . $inline;
-				}
+			if ($self->getParamValue('showPeriodicOutput')
+			        && (( $inline =~ /^\|\s+\d+\|/ ) 
+					|| ( $inline =~ /^\|\s+Time\|/ ) 
+					|| ( $inline =~ /^\|\s+\(sec\)\|/ ))) {
+			    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
+					$inline = $1 . "\n";
+			    }
+			    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
+					$inline = $1 . "\n";
+			    }
+				print $periodicOutputId . $inline;
 			}
 		
 			# The next line after ----- should be first header
@@ -1141,35 +1154,14 @@ sub startRun {
 				}
 				else {
 					$nextIsHeader = 0;
-					my $runLengthMinutes = $totalTime / 60;
+					my $runLengthMinutes = round($totalTime / 60.0);
 					my $impl             = $self->getParamValue('workloadImpl');
 
-					if (!$usingFindMaxLoadPathType) {
+					if ($usingFixedLoadPathType) {
 						$console_logger->info(
 							"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
 						);
 						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
-					}
-
-				}
-			}
-		
-			if (!($inline =~ /^\|\s*\d/)) {
-				# Don't do anything with header lines
-				next;
-			} elsif ($inline =~ /^\|[^\d]*(\d+)\|/) {
-				my $curTime = $1;
-
-				if (!$usingFindMaxLoadPathType) {
-					if (!$startedSteadyState && ($curTime >= $rampUp) && ($curTime < ($rampUp + $steadyState))) {
-						$console_logger->info("Steady-State Started");
-						$startedSteadyState = 1;
-						# Start collecting statistics on all hosts and services
-						$self->workload->startStatsCollection($tmpDir);
-					} elsif (!$startedRampDown && ($curTime > ($rampUp + $steadyState))) {
-						$console_logger->info("Steady-State Complete");
-						$startedRampDown = 1;
-						$self->workload->stopStatsCollection();
 					}
 				}
 			}
@@ -1178,7 +1170,6 @@ sub startRun {
 		close $driverPipe;			
 		exit;
 	}
-
 
 	# Now poll for a runState of COMPLETE 
 	# once every minute
@@ -1208,13 +1199,13 @@ sub startRun {
 				if ($curInterval) {
 					$curIntervalName = $curInterval->{'name'};
 				}
-				if ($usingFindMaxLoadPathType) {
+				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
 
 					if (defined $statsRunning[$appInstanceNum] && $statsRunning[$appInstanceNum]) {
 						$statsRunning[$appInstanceNum] = 0;
-						$console_logger->info("   [$wkldName] Stopping performance statistics on workload.");
+						$logger->debug("   [$wkldName] Stopping performance statistics on workload.");
 						$self->workload->stopStatsCollection($tmpDir);
 					}
 
@@ -1259,14 +1250,15 @@ sub startRun {
 						my $nameStr = $self->parseNameStr($curIntervalName);
 						$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");
 
-						if ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
+						if ( ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
+								|| ($curIntervalName =~ /QOS\-(\d+)/)) {
 							$statsRunning[$appInstanceNum] = 1;
-							$console_logger->info("   [$wkldName] Starting performance statistics on workload.");
+							$logger->debug("   [$wkldName] Starting performance statistics on workload.");
 							$self->workload->startStatsCollection($tmpDir);
 						}
 					}
 				}
-			}		
+			}
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
 				$runCompleted = 1;
@@ -1342,6 +1334,8 @@ sub parseNameStr {
 	} elsif ($str =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
 		my $numRerun = $2 + 1;
 		$nameStr = "verify maximum run at $1 users rerun $numRerun";
+	} elsif ($str =~ /QOS\-(\d+)/) {
+		$nameStr = "QoS period $1";
 	} else {
 		$nameStr = $str;
 	}
@@ -1525,7 +1519,7 @@ sub stopAppStatsCollection {
 	);
 
 	my $rampUp      = $self->getParamValue('rampUp');
-	my $steadyState = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $db          = $self->getParamValue('dbServer');
 
 	# Get the name of the first dbServer
@@ -1789,7 +1783,8 @@ sub getWorkloadSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
 
 	$csvRef->{"RampUp"}      = $self->getParamValue('rampUp');
-	$csvRef->{"SteadyState"} = $self->getParamValue('steadyState');
+	$csvRef->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
+	$csvRef->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 	$csvRef->{"RampDown"}    = $self->getParamValue('rampDown');
 
 }
@@ -2209,6 +2204,7 @@ sub parseStats {
 	my $runStatus;
 	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
 	if ( $res->is_success ) {
+		$logger->debug("Final status content: " . $res->content);
 		$runStatus = $json->decode( $res->content );			
 	} else {
 		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
@@ -2238,7 +2234,7 @@ sub parseStats {
 		}
 		
 		if (!$maxPassStatsSummary) {
-			$console_logger->warn("Could not find the max passing interval for appInstance " + $appInstanceName);
+			$console_logger->warn("Could not find the max passing interval for appInstance " . $appInstanceName);
 			next;
 		}
 		

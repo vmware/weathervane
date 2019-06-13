@@ -1154,7 +1154,7 @@ sub startRun {
 				}
 				else {
 					$nextIsHeader = 0;
-					my $runLengthMinutes = round($totalTime / 60.0);
+					my $runLengthMinutes = sprintf("%.0f", $totalTime / 60.0);
 					my $impl             = $self->getParamValue('workloadImpl');
 
 					if ($usingFixedLoadPathType) {

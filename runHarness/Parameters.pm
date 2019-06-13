@@ -2469,7 +2469,7 @@ $parameters{"esxDatastorePath"} = {
 
 $parameters{"workloadProfile"} = {
 	"type"      => "=s",
-	"default"   => "official",
+	"default"   => "official2",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

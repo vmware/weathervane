@@ -54,7 +54,7 @@
 				],
 				"isResetState" : [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
 				"asyncBehaviors" : ["none", "none", "none", "none", "none", "none", "none", "followAuction", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none"],
-				"meanCycleTimes" : [ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
+				"meanCycleTimes" : [ 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
 				"responseTimeLimits" : [ 2, 2, 3, 2, 2, 2, 2, 3, 5, 60, 2, 2, 2, 2, 2, 2, 5, 2, 5, 3, 9999999 ],
 				"responseTimeLimitsPercentile" : [ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 ],
 				"mixPercentage" : [ 0.95, 0.0, 0.95, 15.33, 7.71, 0.95, 0.47, 7.05, 7.54, 38.44, 2.77, 5.26, 0.48, 0.47, 0.93, 7.71, 0.4, 1.41, 0.22, 0.95, 0.0 ],

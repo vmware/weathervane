@@ -59,9 +59,9 @@
 				"isResetState" : [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
 				"asyncBehaviors" : ["none", "none", "none", "none", "none", "none", "none", "followAuction", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none", "none"],
 				"meanCycleTimes" : [ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
-				"responseTimeLimits" : [ 2, 2, 3, 2, 2, 2, 2, 3, 3, 60, 2, 2, 2, 2, 2, 2, 5, 2, 5, 3, 9999999 ],
+				"responseTimeLimits" : [ 2, 2, 3, 2, 2, 2, 2, 4, 3, 60, 2, 2, 2, 2, 2, 2, 5, 2, 5, 3, 9999999 ],
 				"responseTimeLimitsPercentile" : [ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 ],
-				"mixPercentage" : [ 2.98, 0.0, 2.97, 10.5, 1.62, 2.97, 0.0, 5.95, 15.46, 49.34, 1.2, 0, 0.93, 0.97, 0.99, 1.64, 0.58, 0.96, 0, 0.94, 0.0 ],
+				"mixPercentage" : [ 2.34, 0.0, 2.34, 11.07, 3.99, 2.34, 0.0, 4.72, 5.22, 45.80, 2.27, 0, 2.39, 2.39, 2.39, 3.99, 3.99, 2.43, 0, 2.34, 0.0 ],
 				"mixPercentageTolerance" : 0.10,
 				"useResponseTime" : [ true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, false ]
 }

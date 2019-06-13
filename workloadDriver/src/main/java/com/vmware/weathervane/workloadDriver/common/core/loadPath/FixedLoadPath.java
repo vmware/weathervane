@@ -44,6 +44,9 @@ public class FixedLoadPath extends LoadPath {
 	
 	private long timeStep = 10L;
 
+	@JsonIgnore
+	private final long warmUpTime = 120;
+	
 	/*
 	 * Phases in a findMax run: 
 	 * - RAMPUP: Ramp up to users in timeStep intervals
@@ -86,12 +89,27 @@ public class FixedLoadPath extends LoadPath {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 
 		/*
-		 * Create a list of uniform intervals from time periods
+		 * Create a list of uniform intervals for rampup. The last 120 seconds of 
+		 * rampup is at the fixed user level to make sure all users are active 
+		 * at start of QoS.
 		 */
+		long rampUpRampingTime = rampUp;
+		long rampUpWarmTime = 0;
+		if (rampUpRampingTime > (warmUpTime + timeStep)) {
+			rampUpRampingTime -= warmUpTime;
+			rampUpWarmTime = warmUpTime;
+		}
 		rampupIntervals = new LinkedList<UniformLoadInterval>();
 		long numIntervals = (long) Math.ceil(rampUp / (timeStep * 1.0));
 		long startUsers = (long) Math.ceil(Math.abs(users) / ((numIntervals - 1) * 1.0));
 		rampupIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
+		if (rampUpWarmTime > 0) {
+			UniformLoadInterval warmInterval = new UniformLoadInterval();
+			warmInterval.setName("warmUp");
+			warmInterval.setDuration(rampUpWarmTime);
+			warmInterval.setUsers(users);
+			rampupIntervals.add(warmInterval);
+		}
 		
 		curStatsInterval = new UniformLoadInterval();
 		curStatsInterval.setName("RampUp");

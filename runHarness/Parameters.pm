@@ -940,7 +940,7 @@ $parameters{"description"} = {
 
 $parameters{"rampUp"} = {
 	"type"    => "=i",
-	"default" => "300",
+	"default" => "420",
 	"parent"  => "runProc",
 	"usageText" =>
 "This is the length of the ramp-up period for the run.",

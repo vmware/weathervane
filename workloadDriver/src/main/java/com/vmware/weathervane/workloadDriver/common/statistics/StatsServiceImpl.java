@@ -276,6 +276,7 @@ public class StatsServiceImpl implements StatsService {
 				if (intervalAggregatedStats != null) {
 					statsSummaryResponseMessage.setNumSamplesReceived(intervalSamplesReceived);
 					statsSummaryResponseMessage.setStatsSummary(intervalAggregatedStats);
+					statsSummaryResponseMessage.setSummaryText(intervalAggregatedStats.getStatsSummary());
 				}
 			}
 		}

@@ -150,6 +150,26 @@ public class BehaviorSpec
 				}
 			}
 		}
+		
+		if (logger.isDebugEnabled()) {
+			StringBuilder matrixString = new StringBuilder();
+			logger.debug("Normalized transition matrix for " + this.name + ":");
+			matrixString.append("[\n");
+			for( int i = 0; i < this.transitionMatrices.length; i++ ) {
+				matrixString.append("  [\n");
+				for (int j = 0; j < this.transitionMatrices[i].length; j++) {
+					matrixString.append("    [ ");
+					for( int k = 0; k < this.transitionMatrices[i][j].length; k++ )
+					{
+						matrixString.append(this.transitionMatrices[i][j][k] + ", ");
+					}
+					matrixString.append(" ],\n");;
+				}
+				matrixString.append("  ],\n");
+			}			
+			matrixString.append("],\n");
+			logger.debug(matrixString.toString());
+		}
 	}
 	
 	public void createSelectionMatrix()
@@ -176,6 +196,26 @@ public class BehaviorSpec
 				}
 			
 			}
+		}
+		
+		if (logger.isDebugEnabled()) {
+			StringBuilder matrixString = new StringBuilder();
+			logger.debug("selection matrix for " + this.name + ":");
+			matrixString.append("[\n");
+			for( int i = 0; i < this.selectionMatrices.length; i++ ) {
+				matrixString.append("  [\n");
+				for (int j = 0; j < this.selectionMatrices[i].length; j++) {
+					matrixString.append("    [ ");;
+					for( int k = 0; k < this.selectionMatrices[i][j].length; k++ )
+					{
+						matrixString.append(this.selectionMatrices[i][j][k] + ", ");
+					}
+					matrixString.append(" ],\n");;
+				}
+				matrixString.append("  ],\n");
+			}			
+			matrixString.append("],\n");
+			logger.debug(matrixString.toString());
 		}
 	}
 	

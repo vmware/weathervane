@@ -22,6 +22,7 @@ public class StatsSummaryResponseMessage {
 	private String status;
 	private String message;
 	private StatsSummary statsSummary;
+	private String summaryText;
 	private Integer numSamplesReceived;
 	private Integer numSamplesExpected;
 	
@@ -63,6 +64,14 @@ public class StatsSummaryResponseMessage {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public String getSummaryText() {
+		return summaryText;
+	}
+
+	public void setSummaryText(String summaryText) {
+		this.summaryText = summaryText;
 	}
 
 	@Override

@@ -35,6 +35,23 @@ spec:
         tier: driver
         type: node
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: wvrole
+                operator: NotIn
+                values:
+                - sut
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: wvrole
+                operator: In
+                values:
+                - driver
       containers:
       - image: repository/weathervane-auctionworkloaddriver:2.0.0
         name: wklddriver

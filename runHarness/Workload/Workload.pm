@@ -113,6 +113,13 @@ sub clearReloadDb {
 	}
 }
 
+sub clearResults {
+	my ( $self ) = @_;
+	my $logger = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("clearResults");
+	return $self->primaryDriver->clearResults();
+}
+
 sub initializeRun {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger = get_logger("Weathervane::Workload::Workload");
@@ -403,7 +410,7 @@ sub startStatsCollection {
 	my $console_logger    = get_logger("Console");
 	my $workloadDriver    = $self->primaryDriver;
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
-	my $steadyStateLength = $self->getParamValue('steadyState');
+	my $steadyStateLength = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $numIntervals = floor( $steadyStateLength / ( $intervalLengthSec * 1.0 ) );
 	my $logLevel = $self->getParamValue('logLevel');
 
@@ -611,7 +618,7 @@ sub getWorkloadStatsSummary {
 
 	$csv{'workload'} = $self->getParamValue('workloadImpl');
 
-	#	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
+	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
 
 	$self->primaryDriver->getWorkloadStatsSummary( \%csv, $tmpDir );
 

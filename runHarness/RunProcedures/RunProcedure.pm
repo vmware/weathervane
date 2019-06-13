@@ -151,7 +151,13 @@ sub initializeWorkloads {
 	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$debug_logger->debug("initializeWorkloads.  seqnum = $seqnum, tmpDir = $tmpDir");
 
-	my $success = callBooleanMethodOnObjectsParallel2( 'initializeRun', $self->workloadsRef, $seqnum, $tmpDir );
+	# Clear the old data from the workloadDrivers
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+	  $workload->clearResults();
+	}
+		
+	my $success = callBooleanMethodOnObjectsParallel2( 'initializeRun', $workloadsRef, $seqnum, $tmpDir );
 	if ( !$success ) {
 		$debug_logger->debug("initializeWorkloads initialize failed. ");
 		return 0;
@@ -226,7 +232,7 @@ sub followRunProgress {
 	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $rampUp         = $self->getParamValue('rampUp');
-	my $steadyState    = $self->getParamValue('steadyState');
+	my $steadyState = $self->getParamValue('qosPeriodSec');
 
 	my $pid = fork();
 	if ( !defined $pid ) {
@@ -468,7 +474,7 @@ sub startStatsCollection {
 	my ($self, $tmpDir)            = @_;
 	my $console_logger    = get_logger("Console");
 	my $intervalLengthSec = $self->getParamValue('statsInterval');
-	my $steadyStateLength = $self->getParamValue('steadyState');
+	my $steadyStateLength = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $numIntervals = floor( $steadyStateLength / ( $intervalLengthSec * 1.0 ) );
 	my $logLevel     = $self->getParamValue('logLevel');
 	my $logger       = get_logger("Weathervane::RunProcedures::RunProcedure");
@@ -1123,7 +1129,7 @@ sub interactiveMode {
 #	my $console_logger = get_logger("Console");
 #	my $logger         = get_logger("Weathervane::RunProcedures::RunProcedure");
 #	my $rampUp         = $self->getParamValue('rampUp');
-#	my $steadyState    = $self->getParamValue('steadyState');
+#   my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 #	my $rampDown       = $self->getParamValue('rampDown');
 #	my $totalDuration  = $rampUp + $steadyState + $rampDown;
 #	my $endTime        = time() + $totalDuration;

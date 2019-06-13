@@ -15,9 +15,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.core.loadPath;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,79 +36,198 @@ public class FixedLoadPath extends LoadPath {
 
 	private long users;
 
-	private long rampUp;
-	private long steadyState;
-	private long rampDown;
-
+	private long rampUp = 300;
+	private long numQosPeriods = 3;
+	private long qosPeriodSec = 300;
+	private long rampDown = 120;
+	private boolean exitOnFirstFailure = false;
+	
 	private long timeStep = 10L;
 
 	@JsonIgnore
-	private List<UniformLoadInterval> uniformIntervals = null;
+	private final long warmUpTime = 120;
+	
+	/*
+	 * Phases in a findMax run: 
+	 * - RAMPUP: Ramp up to users in timeStep intervals
+	 * - QOS: Use intervals of qosPeriodSec.  if any fail then the run fails.
+	 * - RAMPDOWN: End of run period used to avoid getting shut-down effects in QOS 
+	 * - POSTRUN: Periods of qosPeriodSec after RAMPDOWN which are returned if other workloads are still running.
+	 */
+	private enum Phase {
+		RAMPUP, QOS, RAMPDOWN, POSTRUN
+	};
 
 	@JsonIgnore
-	private int nextIntervalIndex = 0;
+	private Phase curPhase = Phase.RAMPUP;
 
 	@JsonIgnore
-	private int nextStatsIntervalIndex = 0;
+	private LinkedList<UniformLoadInterval> rampupIntervals = null;
+	
+	@JsonIgnore
+	private long curPhaseInterval = 0;
+	
+	@JsonIgnore
+	private boolean passedQos = true;
+
+	@JsonIgnore
+	private String firstFailIntervalName = null;
+	
+	/*
+	 * Use a semaphore to prevent returning stats interval until we have determined
+	 * the next load interval
+	 */
+	@JsonIgnore
+	private final Semaphore statsIntervalAvailable = new Semaphore(0, true);
+	
+	@JsonIgnore
+	private UniformLoadInterval curStatsInterval;
 
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 
-		uniformIntervals = new ArrayList<UniformLoadInterval>();
-
 		/*
-		 * Create a list of uniform intervals from time periods
+		 * Create a list of uniform intervals for rampup. The last 120 seconds of 
+		 * rampup is at the fixed user level to make sure all users are active 
+		 * at start of QoS.
 		 */
+		long rampUpRampingTime = rampUp;
+		long rampUpWarmTime = 0;
+		if (rampUpRampingTime > (warmUpTime + timeStep)) {
+			rampUpRampingTime -= warmUpTime;
+			rampUpWarmTime = warmUpTime;
+		}
+		rampupIntervals = new LinkedList<UniformLoadInterval>();
 		long numIntervals = (long) Math.ceil(rampUp / (timeStep * 1.0));
 		long startUsers = (long) Math.ceil(Math.abs(users) / ((numIntervals - 1) * 1.0));
-		uniformIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
+		rampupIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
+		if (rampUpWarmTime > 0) {
+			UniformLoadInterval warmInterval = new UniformLoadInterval();
+			warmInterval.setName("warmUp");
+			warmInterval.setDuration(rampUpWarmTime);
+			warmInterval.setUsers(users);
+			rampupIntervals.add(warmInterval);
+		}
 		
-		UniformLoadInterval steadyInterval = new UniformLoadInterval();
-		steadyInterval.setDuration(steadyState);
-		steadyInterval.setUsers(users);
-		steadyInterval.setName("steadyState");
-		uniformIntervals.add(steadyInterval);
-		
-		numIntervals = (long) Math.ceil(rampDown / (timeStep * 1.0));
-		uniformIntervals.addAll(generateRampIntervals("rampDown", rampDown, timeStep, users, 0));		
+		curStatsInterval = new UniformLoadInterval();
+		curStatsInterval.setName("RampUp");
+		curStatsInterval.setDuration(rampUp);
+		curStatsInterval.setUsers(users);
+		statsIntervalAvailable.release();
 
+		curStatusInterval.setName("RampUp");
+		curStatusInterval.setDuration(rampUp);
+		curStatusInterval.setStartUsers(0L);
+		curStatusInterval.setEndUsers(users);
 	}
 
 	@JsonIgnore
 	@Override
 	public UniformLoadInterval getNextInterval() {
 
-		logger.debug("getNextInterval, nextIntervalIndex = " + nextIntervalIndex);
-		if ((uniformIntervals == null) || (uniformIntervals.size() == 0)) {
-			logger.debug("getNextInterval returning null");
-			return null;
-		}
+		UniformLoadInterval nextInterval = null;
+		if (Phase.RAMPUP.equals(curPhase)) {
+			if (rampupIntervals.isEmpty()) {
+				curPhase  = Phase.QOS;
+				curPhaseInterval = 0;
+				nextInterval = getNextInterval();
+			} else {
+				nextInterval = rampupIntervals.pop();
+			}
+		} else if (Phase.QOS.equals(curPhase)) {
+			boolean prevIntervalPassed = true;
+			if (curPhaseInterval != 0) {
+				/*
+				 * This is the not first interval. Need to know whether the previous interval
+				 * passed. Get the statsSummaryRollup for the previous interval
+				 */
+				StatsSummaryRollup rollup = fetchStatsSummaryRollup("QOS-" + curPhaseInterval);
+				if (rollup != null) {
+					getIntervalStatsSummaries().add(rollup);
+					prevIntervalPassed = rollup.isIntervalPassed();
+					if (!prevIntervalPassed) {
+						// Run failed. 
+						passedQos = false;
+						if (firstFailIntervalName == null) {
+							firstFailIntervalName = "QOS-" + curPhaseInterval;
+						}
+						if (isExitOnFirstFailure()) {
+							curPhase = Phase.RAMPDOWN;
+							curPhaseInterval = 0;
+							return getNextInterval();
+						}
+					} 
+				} else {
+					logger.warn("Failed to get rollup for interval QOS-" + curPhaseInterval);
+				}
+			}
+			
+			if (curPhaseInterval >= getNumQosPeriods()) {
+				// Last QOS period passed.  Move to rampDown
+				curPhase = Phase.RAMPDOWN;
+				curPhaseInterval = 0;
+				nextInterval = getNextInterval();
+			} else {
+				curPhaseInterval++;
+				nextInterval = new UniformLoadInterval();
+				nextInterval.setName("QOS-" + curPhaseInterval);
+				nextInterval.setDuration(getQosPeriodSec());
+				nextInterval.setUsers(users);
 
-		UniformLoadInterval nextInterval;
-		if (nextIntervalIndex >= uniformIntervals.size()) {
-			/*
-			 * At end of intervals, signal that loadPath is complete.
-			 * Keep returning the last interval
-			 */
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup("steadyState");
-			boolean prevIntervalPassed = false;
-			if (rollup != null) {
-				prevIntervalPassed = rollup.isIntervalPassed();			
-			} 
-			WorkloadStatus status = new WorkloadStatus();
-			status.setIntervalStatsSummaries(getIntervalStatsSummaries());
-			status.setMaxPassUsers(users);
-			status.setMaxPassIntervalName("steadyState");
-			status.setPassed(prevIntervalPassed);
-			workload.loadPathComplete(status);
-			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
-		} else {
-			nextInterval = uniformIntervals.get(nextIntervalIndex);
-			nextIntervalIndex++;
-		}
+				curStatusInterval.setName("QOS-" + curPhaseInterval);
+				curStatusInterval.setDuration(qosPeriodSec);
+				curStatusInterval.setStartUsers(users);
+				curStatusInterval.setEndUsers(users);
 
+				curStatsInterval = nextInterval;
+				statsIntervalAvailable.release();						
+			}	
+		} else if (Phase.RAMPDOWN.equals(curPhase)) {
+			nextInterval = new UniformLoadInterval();
+			nextInterval.setName("rampDown");
+			nextInterval.setDuration(rampDown);
+			nextInterval.setUsers(users);
+
+			curStatsInterval.setName("RampDown");
+			curStatsInterval.setDuration(rampDown);
+			curStatsInterval.setUsers(users);
+			statsIntervalAvailable.release();
+
+			curStatusInterval.setName("RampDown");
+			curStatusInterval.setDuration(rampDown);
+			curStatusInterval.setStartUsers(users);
+			curStatusInterval.setEndUsers(users);
+
+			curPhaseInterval = 0;
+			curPhase = Phase.POSTRUN;
+		} else if (Phase.POSTRUN.equals(curPhase)) {
+			if (curPhaseInterval == 0) {
+				// Run finished
+				WorkloadStatus status = new WorkloadStatus();
+				status.setIntervalStatsSummaries(getIntervalStatsSummaries());
+				status.setMaxPassUsers(users);
+				if (passedQos) {
+					status.setMaxPassIntervalName("QOS-1");
+				} else {
+					status.setMaxPassIntervalName(firstFailIntervalName);					
+				}
+				status.setPassed(passedQos);
+				workload.loadPathComplete(status);
+			}
+			curPhaseInterval++;
+			nextInterval = new UniformLoadInterval();
+			nextInterval.setName("PostPass-" + curPhaseInterval);
+			nextInterval.setDuration(getQosPeriodSec());
+			nextInterval.setUsers(users);
+
+			curStatusInterval.setName("PostPass-" + curPhaseInterval);
+			curStatusInterval.setDuration(qosPeriodSec);
+			curStatusInterval.setStartUsers(users);
+			curStatusInterval.setEndUsers(users);
+		} 
+		
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 	}
@@ -115,67 +235,16 @@ public class FixedLoadPath extends LoadPath {
 	@JsonIgnore
 	@Override
 	public LoadInterval getNextStatsInterval() {
-		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
-		UniformLoadInterval nextStatsInterval = new UniformLoadInterval();
+		logger.debug("getNextStatsInterval");
 
-		String curIntervalName = null;
-
-		if (nextStatsIntervalIndex == 0) {
-			nextStatsInterval.setName("rampUp");
-			nextStatsInterval.setDuration(rampUp);
-			nextStatsInterval.setUsers(users);
-		} else if (nextStatsIntervalIndex == 1) {
-			nextStatsInterval.setName("steadyState");
-			nextStatsInterval.setDuration(steadyState);
-			nextStatsInterval.setUsers(users);
-			curIntervalName = "rampUp";
-		} else if (nextStatsIntervalIndex == 2) {
-			nextStatsInterval.setName("rampDown");
-			nextStatsInterval.setDuration(rampDown);
-			nextStatsInterval.setUsers(users);
-			curIntervalName = "steadyState";
-		} else {
-			curIntervalName = "rampDown";
-		}
-
-		if (curIntervalName != null) {
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-			boolean prevIntervalPassed = false;
-			if (rollup != null) {
-				prevIntervalPassed = rollup.isIntervalPassed();
-				getIntervalStatsSummaries().add(rollup);
-			}
-		}
-
-		nextStatsIntervalIndex++;
-
-		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
-		return nextStatsInterval;
+		statsIntervalAvailable.acquireUninterruptibly();
+		logger.debug("getNextStatsInterval returning interval: " + curStatsInterval);
+		return curStatsInterval;
 	}
 
 	@Override
 	public RampLoadInterval getCurStatusInterval() {
-		RampLoadInterval curInterval = new RampLoadInterval();
-		if ((nextStatsIntervalIndex == 0) ||  (nextStatsIntervalIndex == 1)) {
-			curInterval.setName("rampUp");
-			curInterval.setStartUsers(0L);
-			curInterval.setEndUsers(users);
-			curInterval.setDuration(rampUp);
-			curInterval.setTimeStep(timeStep);
-		} else if (nextStatsIntervalIndex == 2) {
-			curInterval.setName("steadyState");
-			curInterval.setStartUsers(users);
-			curInterval.setEndUsers(users);
-			curInterval.setDuration(steadyState);
-			curInterval.setTimeStep(timeStep);
-		} else {
-			curInterval.setName("rampDown");
-			curInterval.setStartUsers(users);
-			curInterval.setEndUsers(0L);
-			curInterval.setDuration(rampDown);
-			curInterval.setTimeStep(timeStep);
-		}
-		return curInterval;
+		return curStatusInterval;
 	}
 
 	public long getUsers() {
@@ -194,14 +263,6 @@ public class FixedLoadPath extends LoadPath {
 		this.rampUp = rampUp;
 	}
 
-	public long getSteadyState() {
-		return steadyState;
-	}
-
-	public void setSteadyState(long steadyState) {
-		this.steadyState = steadyState;
-	}
-
 	public long getRampDown() {
 		return rampDown;
 	}
@@ -216,6 +277,30 @@ public class FixedLoadPath extends LoadPath {
 
 	public void setTimeStep(long timeStep) {
 		this.timeStep = timeStep;
+	}
+
+	public void setNumQosPeriods(long numQosPeriods) {
+		this.numQosPeriods = numQosPeriods;
+	}
+
+	public long getNumQosPeriods() {
+		return numQosPeriods;
+	}
+
+	public void setQosPeriodSec(long qosPeriodSec) {
+		this.qosPeriodSec = qosPeriodSec;
+	}
+
+	public long getQosPeriodSec() {
+		return qosPeriodSec;
+	}
+
+	public boolean isExitOnFirstFailure() {
+		return exitOnFirstFailure;
+	}
+
+	public void setExitOnFirstFailure(boolean exitOnFirstFailure) {
+		this.exitOnFirstFailure = exitOnFirstFailure;
 	}
 
 	@Override

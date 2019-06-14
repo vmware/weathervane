@@ -7,7 +7,7 @@ metadata:
     tier: driver
     type: node
 data: 
-  PORT: "7500"
+  PORT: "80"
   JVMOPTS: "-Xmx6g -Xms6g -XX:+AlwaysPreTouch"
   WORKLOADNUM: "1"
 ---
@@ -60,7 +60,7 @@ spec:
         - configMapRef:
             name: wklddriver-config
         ports: 
-        - containerPort: 7500
+        - containerPort: 80
           name: wklddriverport
           protocol: TCP
         resources:
@@ -85,7 +85,7 @@ spec:
             - /bin/sh
             - -i
             - -c
-            - 'curl -s http://127.0.0.1:7500/driver/up | grep -Eq true'
+            - 'curl -s http://127.0.0.1:80/driver/up | grep -Eq true'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -103,7 +103,7 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - port: 7500
+  - port: 80
     name: wklddriverport
   selector:
     app: auction

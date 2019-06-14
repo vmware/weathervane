@@ -27,7 +27,7 @@
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
-  "appServerWarmerIterations" : 50,
+  "appServerWarmerIterations" : 500,
   "numClientUpdateThreads" : 2,
 
   "numCoordinationServers" : 1, 

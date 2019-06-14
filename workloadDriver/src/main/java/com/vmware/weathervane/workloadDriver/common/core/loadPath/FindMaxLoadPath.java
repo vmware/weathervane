@@ -326,7 +326,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 * Have passed twice in a row, increase the rate step to possibly 
 					 * shorten run
 					 */
-					nextRateStep *= 2;
+					nextRateStep *= 1.5;
 					
 					numSucessiveIntervalsPassed = 0;
 				}
@@ -368,7 +368,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 * Have failed twice in a row, increase the rate step to possibly 
 					 * shorten run
 					 */
-					nextRateStep *= 2;
+					nextRateStep *= 1.5;
 					
 					numSucessiveIntervalsPassed = 0;
 				}
@@ -612,7 +612,7 @@ public class FindMaxLoadPath extends LoadPath {
 				numSucessiveIntervalsFailed++;
 				if (numSucessiveIntervalsFailed >= 2) {
 					numSucessiveIntervalsFailed = 0;
-					minRateStep *= 2;
+					minRateStep *= 1.5;
 				}
 				maxPassUsers -= minRateStep;
 				if (maxPassUsers <= 0) {

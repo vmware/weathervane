@@ -331,6 +331,11 @@ sub getHosts {
 	return \@hosts;
 }
 
+sub getHostPort {
+	my ( $self ) = @_;
+	return $self->portMap->{'http'};
+}
+
 sub getStatsHost {
 	my ( $self ) = @_;
 	return $self->host->name
@@ -856,7 +861,7 @@ sub initializeRun {
 	# Send the hosts and port number to the controller
 	my $runContent = $json->encode($self->getHosts());
 	my $url = $baseUrl . "/hosts";
-	$logger->debug("Sending POST to $url");
+	$logger->debug("Sending POST to $url.  content = $runContent");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
@@ -873,10 +878,10 @@ sub initializeRun {
 	}
 	
 	my %portHash;
-	$portHash{"port"} = $self->portMap->{'http'};
+	$portHash{"port"} = $self->getHostPort();
 	$runContent = $json->encode(\%portHash);
 	$url = $baseUrl . "/port";
-	$logger->debug("Sending POST to $url");
+	$logger->debug("Sending POST to $url.  content = $runContent");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );

@@ -217,10 +217,12 @@ public class RunServiceImpl implements RunService {
 
 	@Override
 	public Boolean areDriversUp() {
+		logger.debug("areDriversUp");
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		for (String hostname : hosts) {
 			String url = "http://" + hostname + ":" + portNumber + "/driver/up";
+			logger.debug("areDriversUp: Peforming get for url: {}", url);
 			ResponseEntity<IsStartedResponse> responseEntity = restTemplate.getForEntity(url, IsStartedResponse.class);
 
 			IsStartedResponse response = responseEntity.getBody();

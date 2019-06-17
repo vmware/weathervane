@@ -550,6 +550,10 @@ if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
 	die("The value for the qosPeriodSec parameter must be greater than 0.");
 }
 
+if (getParamValue( $paramsHashRef, "findMaxStopPct" ) <= 0) {
+	die "The value for findMaxStopPct must be greater than 0.\n";
+}
+
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 

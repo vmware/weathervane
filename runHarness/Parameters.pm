@@ -967,6 +967,13 @@ $parameters{"exitOnFirstFailure"} = {
 	"usageText" => "If set to true, fixed runStrategy will exit on first failing QoS period.",
 	"showUsage" => 0,
 };
+$parameters{"findMaxStopPct"} = {
+	"type"    => "=f",
+	"default" => 0.02,
+	"parent"  => "runProc",
+	"usageText" => "findMax will stop when the difference between maxPass and minFail is less than findMaxStopPct*minFail",
+	"showUsage" => 0,
+};
 $parameters{"rampDown"} = {
 	"type"      => "=i",
 	"default"   => "120",
@@ -1579,14 +1586,6 @@ $parameters{"virtualInfrastructureType"} = {
 $parameters{"initialRateStep"} = {
 	"type"      => "=i",
 	"default"   => 500,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"minRateStep"} = {
-	"type"      => "=i",
-	"default"   => 125,
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 1,

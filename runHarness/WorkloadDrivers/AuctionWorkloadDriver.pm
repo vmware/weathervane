@@ -355,9 +355,7 @@ sub createRunConfigHash {
 
 	my $workloadProfile  = $self->getParamValue('workloadProfile');
 	my $behaviorSpecName = "auctionMainUser";
-	if ($workloadProfile eq "revised") {
-		$behaviorSpecName = "auctionRevisedMainUser";
-	} elsif ($workloadProfile eq "official2") {
+	if ($workloadProfile eq "official2") {
 		$behaviorSpecName = "auctionMainUser2";
 	}
 
@@ -558,7 +556,6 @@ override 'configure' => sub {
 
 		# The passingPct was not set, just use the default that is in the
 		# behaviorSpec by copying the specs
-`cp $sourceBehaviorSpecDirName/auction.revisedMainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser2.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
@@ -566,7 +563,6 @@ override 'configure' => sub {
 	}
 	else {
 		my @behaviorSpecFiles = (
-			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
 			'auction.mainUser2.behavior.json',
 			'auction.followAuction.behavior.json',
@@ -956,7 +952,6 @@ sub initializeRun {
 	my @behaviorSpecFiles = (
 		'auction.mainUser.behavior.json',
 		'auction.mainUser2.behavior.json',
-		'auction.revisedMainUser.behavior.json',
 		'auction.followAuction.behavior.json',
 		'auction.followAuction2.behavior.json'
 	);

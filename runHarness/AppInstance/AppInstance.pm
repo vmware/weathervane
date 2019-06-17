@@ -441,7 +441,6 @@ sub foundMax {
 				": At maximum number of loaded db users $users"
 			);
 			$foundMax = 1;
-			$atMaxUsers = 1;
 		}
 	}
 	else {
@@ -459,7 +458,6 @@ sub foundMax {
 				", appInstance ", $self->instanceNum,
 				": Can't run lower than Weathervane minumum users (" . $minUsers . ")"
 			);
-			$atMinUsers = 1;
 			$foundMax = 1;
 		}
 	}

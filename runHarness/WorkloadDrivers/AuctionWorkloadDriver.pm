@@ -1749,20 +1749,6 @@ sub getWorkloadStatsSummary {
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
-		my $prefix = "-AI${appInstanceNum}";
-
-		my $isPassed = $self->isPassed( $appInstanceRef, $tmpDir );
-		if ($isPassed) {
-			$csvRef->{"pass$prefix"} = "Y";
-		}
-		else {
-			$csvRef->{"pass$prefix"} = "N";
-		}
-		$csvRef->{"users$prefix"}       = $self->maxPassUsers->{$appInstanceNum};
-		$csvRef->{"opsSec$prefix"}       = $self->opsSec->{$appInstanceNum};
-		$csvRef->{"httpReqSec$prefix"}   = $self->reqSec->{$appInstanceNum};
-		$csvRef->{"overallAvgRT$prefix"} = $self->overallAvgRT->{$appInstanceNum};
-
 		$totalUsers       += $self->maxPassUsers->{$appInstanceNum};
 		$opsSec       += $self->opsSec->{$appInstanceNum};
 		$httpReqSec   += $self->reqSec->{$appInstanceNum};
@@ -1777,6 +1763,23 @@ sub getWorkloadStatsSummary {
 	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
 	$csvRef->{"overallAvgRT-total"} = $overallAvgRT;
 
+	$appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstanceRef (@$appInstancesRef) {
+		my $appInstanceNum = $appInstanceRef->instanceNum;
+		my $prefix = "-AI${appInstanceNum}";
+
+		my $isPassed = $self->isPassed( $appInstanceRef, $tmpDir );
+		if ($isPassed) {
+			$csvRef->{"pass$prefix"} = "Y";
+		}
+		else {
+			$csvRef->{"pass$prefix"} = "N";
+		}
+		$csvRef->{"users$prefix"}       = $self->maxPassUsers->{$appInstanceNum};
+		$csvRef->{"opsSec$prefix"}       = $self->opsSec->{$appInstanceNum};
+		$csvRef->{"httpReqSec$prefix"}   = $self->reqSec->{$appInstanceNum};
+		$csvRef->{"overallAvgRT$prefix"} = $self->overallAvgRT->{$appInstanceNum};
+	}	
 }
 
 sub getWorkloadSummary {

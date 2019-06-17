@@ -63,5 +63,6 @@
 				"responseTimeLimitsPercentile" : [ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99 ],
 				"mixPercentage" : [ 2.39, 0.0, 2.39, 11.28, 4.02, 2.38, 0.0, 4.85, 5.25, 45.13, 2.29, 0, 2.40, 2.40, 2.40, 4.02, 4.02, 2.40, 0, 2.39, 0.0 ],
 				"mixPercentageTolerance" : 0.10,
+				"allowedFailurePercent" : [ 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999, 0.9999 ],
 				"useResponseTime" : [ true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, false ]
 }

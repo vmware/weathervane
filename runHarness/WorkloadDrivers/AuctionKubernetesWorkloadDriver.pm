@@ -107,6 +107,11 @@ override 'getHosts' => sub {
 	return \@hosts;
 };
 
+sub getHostPort {
+	my ( $self ) = @_;
+	return 80;
+}
+
 override 'getStatsHost' => sub {
 	my ( $self ) = @_;
 	return "wkldcontroller";

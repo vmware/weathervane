@@ -103,6 +103,7 @@ public class BehaviorSpec
 	private Double[] responseTimeLimitsPercentile = null;
 	private Double[] mixPercentage = null;
 	private Double mixPercentageTolerance = 0.10;
+	private Double[] allowedFailurePercent = null;
 	private Boolean[] useResponseTime = null;
 	private Boolean[] isResetState = null;
 	
@@ -320,6 +321,14 @@ public class BehaviorSpec
 
 	public void setMixPercentageTolerance(Double mixPercentageTolerance) {
 		this.mixPercentageTolerance = mixPercentageTolerance;
+	}
+
+	public Double[] getAllowedFailurePercent() {
+		return allowedFailurePercent;
+	}
+
+	public void setAllowedFailurePercent(Double[] allowedFailurePercent) {
+		this.allowedFailurePercent = allowedFailurePercent;
 	}
 
 	public void printMix()

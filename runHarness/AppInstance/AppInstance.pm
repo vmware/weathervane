@@ -38,11 +38,6 @@ has 'curRateStep' => (
 	isa => 'Int',
 );
 
-has 'minRateStep' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
 has 'minFailUsers' => (
 	is      => 'rw',
 	isa     => 'Int',
@@ -141,7 +136,6 @@ override 'initialize' => sub {
 	$self->name("W${workloadNum}A${appInstanceNum}");
 
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
-	$self->minRateStep( $self->getParamValue('minRateStep') );
 
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
@@ -485,10 +479,7 @@ sub resetFindMax {
 	$self->maxPassUsers(0);
 	$self->alreadyFoundMax(0);
 
-	# Reduce the min rate step and start step at twice new min
-	my $newMinRateStep = int( ( $self->minRateStep / 2 ) + 0.5 );
-	$self->minRateStep($newMinRateStep);
-	$self->curRateStep( 2 * $newMinRateStep );
+	$self->curRateStep(int( ( $self->curRateStep / 2 ) + 0.5 ));
 
 }
 
@@ -509,7 +500,6 @@ sub getFindMaxInfoString {
 	  . $self->instanceNum . ": ";
 	$returnString .= " Users = " . $self->users;
 	$returnString .= " InitialRateStep = " . $self->curRateStep;
-	$returnString .= " MinRateStep = " . $self->minRateStep . "\n";
 	return $returnString;
 }
 sub pretouchData {

@@ -969,7 +969,7 @@ $parameters{"exitOnFirstFailure"} = {
 };
 $parameters{"findMaxStopPct"} = {
 	"type"    => "=f",
-	"default" => 0.02,
+	"default" => 0.01,
 	"parent"  => "runProc",
 	"usageText" => "findMax will stop when the difference between maxPass and minFail is less than findMaxStopPct*minFail",
 	"showUsage" => 0,

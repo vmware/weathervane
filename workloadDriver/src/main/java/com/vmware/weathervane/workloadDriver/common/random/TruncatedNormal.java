@@ -17,16 +17,15 @@ package com.vmware.weathervane.workloadDriver.common.random;
 
 import java.util.Random;
 
-public class NegativeExponential {
+public class TruncatedNormal {
 	
 	private static final Random rand = new Random();
 		
-	public static double getNext(double mean) {
-		if (mean == 0) {
-			return 0.0;
-		} else {		
-			return Math.log(1-rand.nextDouble())*(-mean);
-		}
-	}	
-	
+	public static double getNext(double mean, double stddev, double min, double max) {
+		double rVal;
+		do {
+			rVal = rand.nextGaussian()*stddev + mean;
+		} while ((rVal < min) || (rVal > max));
+		return rVal;
+	}		
 }

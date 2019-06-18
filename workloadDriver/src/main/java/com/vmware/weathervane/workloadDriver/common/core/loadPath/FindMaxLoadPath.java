@@ -342,7 +342,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				if ((curUsers + nextRateStep) >= minFailUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Reducing nextRateStep to halfway between axPass and minFail");
-					nextRateStep = (minFailUsers - maxPassUsers) /2;
+					nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) /2);
 				}
 
 				curRateStep = nextRateStep;
@@ -383,7 +383,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				if ((curUsers - nextRateStep) <= maxPassUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
-					nextRateStep = (minFailUsers - maxPassUsers) /2;
+					nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) / 2);
 				}
 
 				curRateStep = nextRateStep;

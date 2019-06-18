@@ -1198,8 +1198,8 @@ sub startRun {
 				my $curIntervalName;
 				if ($curInterval) {
 					$curIntervalName = $curInterval->{'name'};
+					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
-				$logger->debug("$wkldName: curInterval = $curIntervalName");
 				
 				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;

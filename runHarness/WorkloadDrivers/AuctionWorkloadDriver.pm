@@ -2212,7 +2212,7 @@ sub parseStats {
 		$logger->debug("Final status content: " . $res->content);
 		$runStatus = $json->decode( $res->content );			
 	} else {
-		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
+		$console_logger->warn("Could not retrieve final run state for workload $workloadNum");
 		return 0;
 	}
 
@@ -2250,75 +2250,40 @@ sub parseStats {
 		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
 		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
 		
-		open( RESULTFILE, "$tmpDir/run$suffix.log" )
-		  or die "Can't open $tmpDir/run$suffix.log: $!";
+		# Get the statsSummary for the max passing interval
+		my $loadPathName = $workloadStatus->{"loadPathname"};
+		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$appInstanceName/specName/$loadPathName/intervalName/$maxPassIntervalName/rollup";
+		$logger->debug("Sending get to $url");
+		$req = HTTP::Request->new( GET => $url );
+		$res = $ua->request($req);
+		my $statsSummaryRollup;
+		$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug("MaxPassInterval statsSummary: " . $res->content);
+			$statsSummaryRollup = $json->decode( $res->content )->{'statsSummaryRollup'};			
+		} else {
+			$console_logger->warn("Could not retrieve max passing interval summary for workload $workloadNum");
+			return 0;
+		}
+		
+		my $opNameToStatsMap = $statsSummaryRollup->{'computedOpStatsSummaries'};
+		foreach my $operation (keys @$opNameToStatsMap) {
+			my $opStats = $opNameToStatsMap->{$operation};
+			my $opPassRT  = $opStats->{'passedRt'};
+			my $opPassMix = $opStats->{'passedMixPct'};
+			$self->rtAvg->{"$operation-$appInstanceNum"} = $opStats->{'avgRt'};
+			$self->proportion->{"$operation-$appInstanceNum"} = $opStats->{'mixPct'};
+			$self->pctPassRT->{"$operation-$appInstanceNum"} = $opStats->{'passingPct'};
+			$self->successes->{"$operation-$appInstanceNum"} = $opStats->{'successes'};
+			$self->failures->{"$operation-$appInstanceNum"} = $opStats->{'rtFailures'};
 
-		while ( my $inline = <RESULTFILE> ) {
-	
-			if ( $inline =~ /Summary Statistics for workload appInstance${appInstanceNum}\s*$/ )
-			{
-
-				# This is the section with the operation response-time data
-				# for appInstance $1
-				while ( $inline = <RESULTFILE> ) {
-
-					if ( $inline =~ /Interval:\s$maxPassIntervalName/ ) {
-
-						# parse the steadystate results for appInstance $1
-						while ( $inline = <RESULTFILE> ) {
-							if ( $inline =~ /\|\s+Name/ ) {
-
-								# Now can parse the per-operation stats
-								while ( $inline = <RESULTFILE> ) {
-									if ( $inline =~ /^\s*$/ ) {
-										last;
-									}
-									elsif ( $inline =~
-/\|\s*(\w+)\|[^\|]*\|\s*(true|false)\|\s*(true|false)\|[^\|]*\|\s*(\d+\.\d+)\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|\s*(\d+\.\d+)\|\s*(\d+\.\d+)\|\s*(\d+)\|\s*(\d+)\|/
-									  )
-									{
-
-										my $operation = $1;
-										my $opPassRT  = $2;
-										my $opPassMix = $3;
-
-										$self->rtAvg->{"$operation-$appInstanceNum"}
-										  = $4;
-										$self->proportion->{
-											"$operation-$appInstanceNum"} = $5;
-										$self->pctPassRT->{
-											"$operation-$appInstanceNum"} = $6;
-
-										$self->successes->{
-											"$operation-$appInstanceNum"} = $7;
-										$self->failures->{
-											"$operation-$appInstanceNum"} = $8;
-
-										if ( $opPassRT eq "false" ) {
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation"
-											);
-										}
-										if (   ( $opPassMix eq "false" )
-											&& ( $anyUsedLoadPath == 0 ) )
-										{
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation"
-											);
-										}
-
-									}
-								}
-							}
-							if ( $inline =~ /^\s*$/ ) {
-								last;
-							}
-						}
-					}
-				}
+			if ( !$opPassRT ) {
+				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation");
+			}
+			if (!$opPassMix  && ($anyUsedLoadPath == 0)) {
+				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation");
 			}
 		}
-		close RESULTFILE;
 		
 		my $resultString = "passed at $maxPassUsers";
 		if (!$passed) {

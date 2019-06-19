@@ -834,12 +834,20 @@ sub writeUsersTxt {
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;
-		my $users = $appInstance->getUsers();
-		my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
-		$console_logger->info($outString);
-		print $fileOut "$outString\n";
+		my $loadPathType = $appInstance->getParamValue('loadPathType');
+		if ($loadPathType eq 'fixed') {
+			my $users = $appInstance->getParamValue('users');
+			if ($users) {
+				my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
+				$console_logger->info($outString);
+				print $fileOut "$outString\n";
+			}
+		} elsif ($loadPathType eq 'findMax') {
+				my $outString      = "Workload $workloadNum, App Instance $instanceNum: Single-Run FindMax";
+				$console_logger->info($outString);
+				print $fileOut "$outString\n";			
+		}
 	}
-
 }
 
 

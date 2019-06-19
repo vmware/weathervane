@@ -10,6 +10,7 @@ public class ComputedOpStatsSummary {
 	private boolean passed = false;
 	private boolean passedRt = false;
 	private boolean passedMixPct = false;
+	private boolean passedFailurePct = false;
 	private double throughput = 0;
 	private double effectiveThroughput = 0;
 	private double passingPct = 0;
@@ -103,6 +104,12 @@ public class ComputedOpStatsSummary {
 	}
 	public void setRtFailures(long rtFailures) {
 		this.rtFailures = rtFailures;
+	}
+	public boolean isPassedFailurePct() {
+		return passedFailurePct;
+	}
+	public void setPassedFailurePct(boolean passedFailurePct) {
+		this.passedFailurePct = passedFailurePct;
 	}
 	@Override
 	public String toString() {

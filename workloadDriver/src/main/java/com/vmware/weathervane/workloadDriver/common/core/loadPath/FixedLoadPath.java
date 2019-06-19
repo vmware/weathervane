@@ -214,6 +214,7 @@ public class FixedLoadPath extends LoadPath {
 					status.setMaxPassIntervalName(firstFailIntervalName);					
 				}
 				status.setPassed(passedQos);
+				status.setLoadPathName(this.getName());
 				workload.loadPathComplete(status);
 			}
 			curPhaseInterval++;

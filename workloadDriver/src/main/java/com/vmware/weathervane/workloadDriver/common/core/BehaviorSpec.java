@@ -323,6 +323,10 @@ public class BehaviorSpec
 		this.mixPercentageTolerance = mixPercentageTolerance;
 	}
 
+	public Double getAllowedFailurePercent(int i) {
+		return allowedFailurePercent[i];
+	}
+
 	public Double[] getAllowedFailurePercent() {
 		return allowedFailurePercent;
 	}

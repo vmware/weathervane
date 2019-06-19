@@ -29,6 +29,7 @@ public class StatsSummaryRollup {
 	private boolean intervalPassed = true;
 	private boolean intervalPassedRT = true;
 	private boolean intervalPassedMix = true;
+	private boolean intervalPassedFailure = true;
 	private long startActiveUsers = -1;
 	private long endActiveUsers = -1;
 
@@ -92,6 +93,7 @@ public class StatsSummaryRollup {
 				computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
 				computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
 				computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
+				computedOpStatsSummary.setPassedFailurePct(opStatsSummary.passedFailurePercent());
 				boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
 				if (!passedMixPct) {
 					logger.info("doRollup: workload " + statsSummary.getWorkloadName() 
@@ -102,12 +104,14 @@ public class StatsSummaryRollup {
 				}
 				computedOpStatsSummary.setPassedMixPct(passedMixPct);
 
-				boolean opPassed = computedOpStatsSummary.isPassedRt() && computedOpStatsSummary.isPassedMixPct();
+				boolean opPassed = computedOpStatsSummary.isPassedRt() 
+						&& computedOpStatsSummary.isPassedMixPct() 
+						&& computedOpStatsSummary.isPassedFailurePct();
 				computedOpStatsSummary.setPassed(opPassed);
 				setIntervalPassed(isIntervalPassed() && opPassed);
 				setIntervalPassedRT(isIntervalPassedRT() && computedOpStatsSummary.isPassedRt());
 				setIntervalPassedMix(isIntervalPassedMix() && computedOpStatsSummary.isPassedMixPct());
-
+				setIntervalPassedFailure(isIntervalPassedFailure() && computedOpStatsSummary.isPassedFailurePct());
 				computedOpStatsSummary.setThroughput(opStatsSummary.getTotalNumOps() / (1.0 * getIntervalDurationSec()));
 				computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * totalNumOps));
 				computedOpStatsSummary.setEffectiveThroughput(
@@ -318,6 +322,14 @@ public class StatsSummaryRollup {
 		this.computedOpStatsSummaries = computedOpStatsSummaries;
 	}
 
+	public boolean isIntervalPassedFailure() {
+		return intervalPassedFailure;
+	}
+
+	public void setIntervalPassedFailure(boolean intervalPassedFailure) {
+		this.intervalPassedFailure = intervalPassedFailure;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();
@@ -336,6 +348,7 @@ public class StatsSummaryRollup {
 		retVal.append(", pctPassing = " + pctPassing);
 		retVal.append(", intervalPassed = " + intervalPassed);
 		retVal.append(", intervalPassedRT = " + intervalPassedRT);
+		retVal.append(", intervalPassedFailure = " + intervalPassedFailure);
 		retVal.append(", intervalPassedMix = " + intervalPassedMix + ": ");
 		
 		for (String opName: getComputedOpStatsSummaries().keySet()) {

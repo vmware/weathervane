@@ -93,6 +93,9 @@ public class FindMaxLoadPath extends LoadPath {
 
 	@JsonIgnore
 	private long curRateStep;
+	
+	@JsonIgnore
+	private boolean loadPathComplete = false;
 
 	@JsonIgnore
 	private int numVerifyMaxRepeatsPassed = 0;
@@ -133,6 +136,12 @@ public class FindMaxLoadPath extends LoadPath {
 		this.maxUsers = workload.getMaxUsers();
 		this.initialRampRateStep = maxUsers / 20;
 		numRequiredVerifyMaxRepeats = numQosPeriods - 1;
+		
+		curInterval= new UniformLoadInterval();
+		curInterval.setUsers(initialRampRateStep);
+		curInterval.setName("prerun");
+		curInterval.setDuration(initialRampIntervalSec);
+		
 		/*
 		 * Set up the curStatsInterval
 		 */
@@ -147,29 +156,34 @@ public class FindMaxLoadPath extends LoadPath {
 	public UniformLoadInterval getNextInterval() {
 
 		logger.debug("getNextInterval ");
-		UniformLoadInterval nextInterval = null;
+		if (loadPathComplete) {
+			intervalNum++;
+			curInterval.setName("PostRun-" + intervalNum);
+			statsIntervalAvailable.release();
+			return curInterval;
+		}
+		
 		switch (curPhase) {
 		case INITIALRAMP:
-			nextInterval = getNextInitialRampInterval();
+			curInterval = getNextInitialRampInterval();
 			break;
 		case FINDFIRSTMAX:
-			nextInterval = getNextFindFirstMaxInterval();
+			curInterval = getNextFindFirstMaxInterval();
 			break;
 		case VERIFYMAX:
-			nextInterval = getNextVerifyMaxInterval();
+			curInterval = getNextVerifyMaxInterval();
 			break;
 		}
 
-		curInterval = nextInterval;
 		statsIntervalAvailable.release();
-		return nextInterval;
+		return curInterval;
 	}
 
 	@JsonIgnore
 	private UniformLoadInterval getNextInitialRampInterval() {
 		logger.debug("getNextInitialRampInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		intervalNum++;
 		logger.debug("getNextInitialRampInterval interval " + intervalNum);
 
@@ -268,7 +282,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextFindFirstMaxInterval() {
 		logger.debug("getNextFindFirstMaxInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			long prevCurUsers = curUsers;
 			
@@ -495,7 +509,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextVerifyMaxInterval() {
 		logger.debug("getNextVerifyMaxInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			/*
 			 * Ramping to the currentValue of maxPassUsers.  On the first try at 
@@ -619,7 +633,8 @@ public class FindMaxLoadPath extends LoadPath {
 			 */
 			passed = true;
 		}
-
+		loadPathComplete = true;
+		intervalNum = 0;
 		WorkloadStatus status = new WorkloadStatus();
 		status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 		status.setMaxPassUsers(maxPassUsers);

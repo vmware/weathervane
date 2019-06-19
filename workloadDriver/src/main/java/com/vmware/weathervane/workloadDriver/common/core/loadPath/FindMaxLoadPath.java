@@ -640,6 +640,7 @@ public class FindMaxLoadPath extends LoadPath {
 		status.setMaxPassUsers(maxPassUsers);
 		status.setMaxPassIntervalName(maxPassIntervalName);
 		status.setPassed(passed);
+		status.setLoadPathName(this.getName());
 		workload.loadPathComplete(status);
 	}
 

@@ -80,9 +80,10 @@ public class StatsSummary {
 			boolean useRt = behaviorSpec.getUseResponseTime(operationIndex);
 			double rqdMixPct = behaviorSpec.getMixPercentage(operationIndex);
 			double mixTolerance = behaviorSpec.getMixPercentageTolerance();
+			double allowedFailurePercent = behaviorSpec.getAllowedFailurePercent(operationIndex);
 			opNameToStatsMap.put(operationName,
 					new OperationStatsSummary(operationName, operationIndex, rtLimit,
-							rtLimitPctile, useRt, rqdMixPct, mixTolerance));
+							rtLimitPctile, useRt, rqdMixPct, mixTolerance, allowedFailurePercent));
 
 		}
 	}
@@ -592,6 +593,7 @@ public class StatsSummary {
 		retVal.append("\tPassed: " + statsSummaryRollup.isIntervalPassed() + "\n");
 		retVal.append("\tPassed Response-Time: " + statsSummaryRollup.isIntervalPassedRT() + "\n");
 		retVal.append("\tPassed Mix Percentage: " + statsSummaryRollup.isIntervalPassedMix() + "\n");
+		retVal.append("\tPassed Failure Percentage: " + statsSummaryRollup.isIntervalPassedFailure() + "\n");
 		retVal.append("\tActive users at start: " + startActiveUsers + "\n");
 		retVal.append("\tActive users at end: " + endActiveUsers + "\n");
 		retVal.append("\tThroughput: " + throughput + " ops/sec\n");

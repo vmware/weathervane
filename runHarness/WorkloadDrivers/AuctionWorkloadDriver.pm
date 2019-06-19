@@ -111,6 +111,12 @@ has 'passRT' => (
 	default => sub { {} },
 );
 
+has 'passFailure' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 has 'overallAvgRT' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -136,6 +142,12 @@ has 'successes' => (
 );
 
 has 'failures' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
+has 'rtFailures' => (
 	is      => 'rw',
 	isa     => 'HashRef',
 	default => sub { {} },
@@ -656,11 +668,13 @@ sub clearResults {
 	$self->reqSec(       {} );
 	$self->passAll(      {} );
 	$self->passRT(       {} );
+	$self->passFailure( {} );
 	$self->overallAvgRT( {} );
 	$self->rtAvg(        {} );
 	$self->pctPassRT(    {} );
 	$self->successes(    {} );
 	$self->failures(     {} );
+	$self->rtFailures(     {} );
 	$self->proportion(   {} );
 }
 
@@ -1229,6 +1243,7 @@ sub startRun {
 								} else {
 									my $passRT;
 									my $passMix;
+									my $passFailure;
 									if ($statsSummary->{"intervalPassedRT"}) {
 										$passRT = 'passed:RT';
 									} else {
@@ -1239,7 +1254,12 @@ sub startRun {
 									} else {
 										$passMix = 'failed:Mix';
 									}
-									$successStr = "$passRT $passMix";
+									if ($statsSummary->{"intervalPassedFailure"}) {
+										$passFailure = 'passed:Failure';
+									} else {
+										$passFailure = 'failed:Failure';
+									}
+									$successStr = "$passRT $passMix $passFailure";
 								}
 								$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
 							}
@@ -1837,8 +1857,8 @@ sub getWorkloadAppStatsSummary {
 		}
 
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->rtAvg->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->rtAvg->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1846,8 +1866,8 @@ sub getWorkloadAppStatsSummary {
 
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->pctPassRT->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->pctPassRT->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1865,8 +1885,18 @@ sub getWorkloadAppStatsSummary {
 			  $self->successes->{"$op-$appInstanceNum"};
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->rtFailures->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->rtFailures->{"$op-$appInstanceNum"} ) )
+			{
+				next;
+			}
+			$csv{"${aiSuffix}${op}_RtFailures"} =
+			  $self->rtFailures->{"$op-$appInstanceNum"};
+
+		}
+		foreach my $op (@operations) {
+			if (   ( !exists $self->failures->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->failures->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1875,8 +1905,8 @@ sub getWorkloadAppStatsSummary {
 
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->proportion->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->proportion->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -2154,7 +2184,7 @@ sub isPassed {
 	if ($usedLoadPath) {
 
 		# Using a load path in steady state, so ignore proportions
-		return $self->passRT->{$appInstanceNum};
+		return $self->passRT->{$appInstanceNum} && $self->passFailure->{$appInstanceNum};
 	}
 	return $self->passAll->{$appInstanceNum};
 }
@@ -2189,6 +2219,7 @@ sub parseStats {
 		$self->proportion->{ $operations[$opCounter] } = 0;
 		$self->successes->{ $operations[$opCounter] }  = 0;
 		$self->failures->{ $operations[$opCounter] }   = 0;
+		$self->rtFailures->{ $operations[$opCounter] }   = 0;
 		$self->rtAvg->{ $operations[$opCounter] }      = 0;
 		$self->pctPassRT->{ $operations[$opCounter] }  = 0;
 	}	
@@ -2246,6 +2277,7 @@ sub parseStats {
 		$self->maxPassUsers->{$appInstanceNum} = $maxPassUsers;
 		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
 		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
+		$self->passFailure->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedFailure"};
 		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};
 		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
 		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
@@ -2271,17 +2303,22 @@ sub parseStats {
 			my $opStats = $opNameToStatsMap->{$operation};
 			my $opPassRT  = $opStats->{'passedRt'};
 			my $opPassMix = $opStats->{'passedMixPct'};
+			my $opPassFailure = $opStats->{'passedFailurePct'};
 			$self->rtAvg->{"$operation-$appInstanceNum"} = $opStats->{'avgRt'};
 			$self->proportion->{"$operation-$appInstanceNum"} = $opStats->{'mixPct'};
 			$self->pctPassRT->{"$operation-$appInstanceNum"} = $opStats->{'passingPct'};
 			$self->successes->{"$operation-$appInstanceNum"} = $opStats->{'successes'};
-			$self->failures->{"$operation-$appInstanceNum"} = $opStats->{'rtFailures'};
+			$self->rtFailures->{"$operation-$appInstanceNum"} = $opStats->{'rtFailures'};
+			$self->failures->{"$operation-$appInstanceNum"} = $opStats->{'failures'};
 
 			if ( !$opPassRT ) {
 				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation");
 			}
 			if (!$opPassMix  && ($anyUsedLoadPath == 0)) {
 				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation");
+			}
+			if ( !$opPassRT ) {
+				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Failure-Percent metric for $operation");
 			}
 		}
 		

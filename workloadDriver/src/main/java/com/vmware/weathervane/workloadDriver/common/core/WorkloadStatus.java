@@ -30,6 +30,8 @@ public class WorkloadStatus {
 	
 	private String maxPassIntervalName;
 	
+	private String loadPathName;
+	
 	private long maxPassUsers;
 
 	private boolean passed;
@@ -96,6 +98,14 @@ public class WorkloadStatus {
 
 	public void setCurInterval(RampLoadInterval curInterval) {
 		this.curInterval = curInterval;
+	}
+
+	public String getLoadPathName() {
+		return loadPathName;
+	}
+
+	public void setLoadPathName(String loadPathName) {
+		this.loadPathName = loadPathName;
 	}
 
 }

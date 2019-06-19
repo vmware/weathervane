@@ -4,6 +4,9 @@ package com.vmware.weathervane.workloadDriver.common.statistics;
  * Class to hold calculated values for each operation 
  */
 public class ComputedOpStatsSummary {
+	private long successes = 0;
+	private long failures = 0;
+	private long rtFailures = 0;
 	private boolean passed = false;
 	private boolean passedRt = false;
 	private boolean passedMixPct = false;
@@ -83,6 +86,24 @@ public class ComputedOpStatsSummary {
 		this.avgCycleTime = avgCycleTime;
 	}
 
+	public long getSuccesses() {
+		return successes;
+	}
+	public void setSuccesses(long successes) {
+		this.successes = successes;
+	}
+	public long getFailures() {
+		return failures;
+	}
+	public void setFailures(long failures) {
+		this.failures = failures;
+	}
+	public long getRtFailures() {
+		return rtFailures;
+	}
+	public void setRtFailures(long rtFailures) {
+		this.rtFailures = rtFailures;
+	}
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();

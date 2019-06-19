@@ -85,8 +85,12 @@ public class StatsSummaryRollup {
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
-			computedOpStatsSummaries.put(opName, computedOpStatsSummary);
+			getComputedOpStatsSummaries().put(opName, computedOpStatsSummary);
 			if (opStatsSummary.getTotalNumOps() > 0) {
+				computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps() 
+						- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
+				computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
+				computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
 				computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
 				boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
 				if (!passedMixPct) {
@@ -247,7 +251,7 @@ public class StatsSummaryRollup {
 	}
 
 	public ComputedOpStatsSummary getComputedOpStatsSummary(String opName) {
-		return computedOpStatsSummaries.get(opName);
+		return getComputedOpStatsSummaries().get(opName);
 	}
 
 	public double getIntervalDurationSec() {
@@ -306,6 +310,14 @@ public class StatsSummaryRollup {
 		this.endActiveUsers = endActiveUsers;
 	}
 
+	public Map<String, ComputedOpStatsSummary> getComputedOpStatsSummaries() {
+		return computedOpStatsSummaries;
+	}
+
+	public void setComputedOpStatsSummaries(Map<String, ComputedOpStatsSummary> computedOpStatsSummaries) {
+		this.computedOpStatsSummaries = computedOpStatsSummaries;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();
@@ -326,8 +338,8 @@ public class StatsSummaryRollup {
 		retVal.append(", intervalPassedRT = " + intervalPassedRT);
 		retVal.append(", intervalPassedMix = " + intervalPassedMix + ": ");
 		
-		for (String opName: computedOpStatsSummaries.keySet()) {
-			ComputedOpStatsSummary opSummary = computedOpStatsSummaries.get(opName);
+		for (String opName: getComputedOpStatsSummaries().keySet()) {
+			ComputedOpStatsSummary opSummary = getComputedOpStatsSummaries().get(opName);
 			retVal.append("ComputedSummary for " + opName + ": " + opSummary + "; ");
 		}			
 		

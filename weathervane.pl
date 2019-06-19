@@ -800,15 +800,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
 		}
-		my $appInstanceHostOrCluster = 
-			getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash, 
-										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
-		$appInstance->instanceNum($appInstanceNum);
-		$appInstance->workload($workload);
-		$appInstance->host($appInstanceHostOrCluster);
-		$appInstance->initialize();
-		push @appInstances, $appInstance;
 
 		# Overwrite the appInstance's parameters with those specified by the configuration size.
 		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
@@ -825,6 +816,16 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			  }
 			}
 		}
+
+		my $appInstanceHostOrCluster = 
+			getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash, 
+										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
+		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
+		$appInstance->instanceNum($appInstanceNum);
+		$appInstance->workload($workload);
+		$appInstance->host($appInstanceHostOrCluster);
+		$appInstance->initialize();
+		push @appInstances, $appInstance;
 		
 		# Create and add all of the services for the appInstance.
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};

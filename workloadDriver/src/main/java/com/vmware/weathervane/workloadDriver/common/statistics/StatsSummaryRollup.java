@@ -87,7 +87,7 @@ public class StatsSummaryRollup {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
 			getComputedOpStatsSummaries().put(opName, computedOpStatsSummary);
-			if (opStatsSummary.getTotalNumOps() > 0) {
+			if (opStatsSummary.getRequiredMixPct() > 0) {
 				computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps() 
 						- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
 				computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());

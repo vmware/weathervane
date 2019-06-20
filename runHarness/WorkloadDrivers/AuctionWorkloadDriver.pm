@@ -1232,37 +1232,30 @@ sub startRun {
 						if (!(defined $lastIntervalNames[$appInstanceNum]) ||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
-							my $metricsStr = "";
 							my $nameStr = $self->parseNameStr($endIntervalName);
-							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
-								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
-								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
-								my $successStr;
-								if ($statsSummary->{"intervalPassed"}) {
-									$successStr = 'passed';
-								} else {
-									my $passRT;
-									my $passMix;
-									my $passFailure;
-									if ($statsSummary->{"intervalPassedRT"}) {
-										$passRT = 'passed:RT';
-									} else {
-										$passRT = 'failed:RT';
-									}
-									if ($statsSummary->{"intervalPassedMix"}) {
-										$passMix = 'passed:Mix';
-									} else {
-										$passMix = 'failed:Mix';
-									}
-									if ($statsSummary->{"intervalPassedFailure"}) {
-										$passFailure = 'passed:Failure';
-									} else {
-										$passFailure = 'failed:Failure';
-									}
-									$successStr = "$passRT $passMix $passFailure";
-								}
-								$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+							if ($endIntervalName =~ /InitialRamp\-(\d+)/) {
+								# Don't print end message for InitialRamp intervals
+								next;
 							}
+							my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
+							my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+							my $successStr;
+							if ($statsSummary->{"intervalPassed"}) {
+								$successStr = 'passed';
+							} else {
+								$successStr = 'failed: ';
+								if (!$statsSummary->{"intervalPassedRT"}) {
+									$successStr .= 'RT,';
+								}
+								if (!$statsSummary->{"intervalPassedMix"}) {
+									$successStr .= 'Mix,';
+								}
+								if (!$statsSummary->{"intervalPassedFailure"}) {
+									$successStr .= 'FailurePct,';
+								}
+								chop($successStr);
+							}
+							my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
 							$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 						}
 					}
@@ -2283,7 +2276,7 @@ sub parseStats {
 		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
 		
 		# Get the statsSummary for the max passing interval
-		my $loadPathName = $workloadStatus->{"loadPathname"};
+		my $loadPathName = $workloadStatus->{"loadPathName"};
 		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$appInstanceName/specName/$loadPathName/intervalName/$maxPassIntervalName/rollup";
 		$logger->debug("Sending get to $url");
 		$req = HTTP::Request->new( GET => $url );
@@ -2299,7 +2292,7 @@ sub parseStats {
 		}
 		
 		my $opNameToStatsMap = $statsSummaryRollup->{'computedOpStatsSummaries'};
-		foreach my $operation (keys @$opNameToStatsMap) {
+		foreach my $operation (keys %$opNameToStatsMap) {
 			my $opStats = $opNameToStatsMap->{$operation};
 			my $opPassRT  = $opStats->{'passedRt'};
 			my $opPassMix = $opStats->{'passedMixPct'};

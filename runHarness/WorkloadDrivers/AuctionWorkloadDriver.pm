@@ -1036,7 +1036,7 @@ sub startRun {
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
-	my $warmup              = $self->getParamValue('warmUp');
+	my $warmUp              = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
 	my $totalTime           = $rampUp + $warmUp + $steadyState + $rampDown;

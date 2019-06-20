@@ -36,7 +36,7 @@ my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
 								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
 								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
-my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'rampDown'  );
+my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'warmUp', 'rampDown'  );
 
 my @filterConstants = ( 'tmpDir' );
 
@@ -940,10 +940,17 @@ $parameters{"description"} = {
 
 $parameters{"rampUp"} = {
 	"type"    => "=i",
-	"default" => "420",
+	"default" => "240",
 	"parent"  => "runProc",
-	"usageText" =>
-"This is the length of the ramp-up period for the run.",
+	"usageText" => "This is the length of the ramp-up period for a fixed run.",
+	"showUsage" => 1,
+};
+
+$parameters{"warmUp"} = {
+	"type"    => "=i",
+	"default" => "300",
+	"parent"  => "runProc",
+	"usageText" => "This is the length of the warm-up period for a fixed run.",
 	"showUsage" => 1,
 };
 $parameters{"numQosPeriods"} = {

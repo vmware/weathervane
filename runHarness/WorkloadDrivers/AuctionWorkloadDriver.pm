@@ -361,9 +361,10 @@ sub createRunConfigHash {
 	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
+	my $warmUp           = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown         = $self->getParamValue('rampDown');
-	my $totalTime        = $rampUp + $steadyState + $rampDown;
+	my $totalTime        = $rampUp + $warmUp + $steadyState + $rampDown;
 	my $usersScaleFactor = $self->getParamValue('usersScaleFactor');
 	my $usersPerAuctionScaleFactor =
 	  $self->getParamValue('usersPerAuctionScaleFactor');
@@ -427,6 +428,7 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}        = 'fixed';
 			$loadPath->{"rampUp"}      = $rampUp;
+			$loadPath->{"warmUp"}      = $warmUp;
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 			$loadPath->{"exitOnFirstFailure"} = $self->getParamValue('exitOnFirstFailure');
@@ -549,9 +551,10 @@ override 'configure' => sub {
 
 	my $workloadProfileHome = $self->getParamValue('workloadProfileDir');
 	my $rampUp              = $self->getParamValue('rampUp');
+	my $warmUp              = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
-	my $totalTime           = $rampUp + $steadyState + $rampDown;
+	my $totalTime           = $rampUp + $warmUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
 	my $rampupInterval      = $self->getParamValue('rampupInterval');
 
@@ -1032,9 +1035,10 @@ sub startRun {
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
+	my $warmup              = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
-	my $totalTime           = $rampUp + $steadyState + $rampDown;
+	my $totalTime           = $rampUp + $warmUp + $steadyState + $rampDown;
 
 	my $logName = "$logDir/StartRun$suffix.log";
 	my $logHandle;
@@ -1801,6 +1805,7 @@ sub getWorkloadSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
 
 	$csvRef->{"RampUp"}      = $self->getParamValue('rampUp');
+	$csvRef->{"WarmUp"}      = $self->getParamValue('warmUp');
 	$csvRef->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 	$csvRef->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 	$csvRef->{"RampDown"}    = $self->getParamValue('rampDown');

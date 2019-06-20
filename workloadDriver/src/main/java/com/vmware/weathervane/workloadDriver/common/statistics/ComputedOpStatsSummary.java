@@ -7,10 +7,10 @@ public class ComputedOpStatsSummary {
 	private long successes = 0;
 	private long failures = 0;
 	private long rtFailures = 0;
-	private boolean passed = false;
-	private boolean passedRt = false;
-	private boolean passedMixPct = false;
-	private boolean passedFailurePct = false;
+	private boolean passed = true;
+	private boolean passedRt = true;
+	private boolean passedMixPct = true;
+	private boolean passedFailurePct = true;
 	private double throughput = 0;
 	private double effectiveThroughput = 0;
 	private double passingPct = 0;

@@ -223,7 +223,7 @@ public class FixedLoadPath extends LoadPath {
 			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setUsers(users);
 
-			curStatusInterval.setName("PostPRun-" + curPhaseInterval);
+			curStatusInterval.setName("PostRun-" + curPhaseInterval);
 			curStatusInterval.setDuration(qosPeriodSec);
 			curStatusInterval.setStartUsers(users);
 			curStatusInterval.setEndUsers(users);

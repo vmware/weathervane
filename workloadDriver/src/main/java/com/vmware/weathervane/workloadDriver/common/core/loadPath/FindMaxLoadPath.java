@@ -36,6 +36,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(FindMaxLoadPath.class);
 
 	private long maxUsers;
+	private long minUsers;
 
 	private final long numQosPeriods = 3;
 	private final long qosPeriodSec = 300;
@@ -367,19 +368,25 @@ public class FindMaxLoadPath extends LoadPath {
 				if (curUsers < minFailUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Found new minFailUsers = " + curUsers);
 					minFailUsers = curUsers;
+					if (minFailUsers <= minUsers) {
+						// Never passed.  End the run.
+						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed at minUsers.  Ending run");
+						maxPassUsers = 0;
+						loadPathComplete();						
+					}
 					if ((minFailUsers - maxPassUsers) < (minFailUsers * findMaxStopPct)) {
 						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", findMaxStopPct);
-						if (maxPassUsers == 0) {
+						if (maxPassUsers < minUsers) {
 							// Never passed.  End the run.
 							logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": never passed.  Ending run");
+							maxPassUsers = 0;
 							loadPathComplete();
 						}
 						return moveToVerifyMax();						
 					}
 				}
 
-				long nextRateStep = curRateStep;
-				
+				long nextRateStep = curRateStep;		
 				numSucessiveIntervalsPassed--;
 				if (numSucessiveIntervalsPassed <= -2) {
 					/*
@@ -398,10 +405,14 @@ public class FindMaxLoadPath extends LoadPath {
 				if ((curUsers - nextRateStep) <= maxPassUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
 					nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) / 2);
-				}
+				} 
 
 				curRateStep = nextRateStep;
-				curUsers -= curRateStep;
+				if ((curUsers - nextRateStep) < minUsers) {
+					curUsers = minUsers;
+				} else {
+					curUsers -= curRateStep;
+				}
 			}
 
 			/*
@@ -610,7 +621,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * Reduce the number of users by minRateStep and try again.
 				 */
 				maxPassUsers -= curRateStep;
-				if (maxPassUsers <= 0) {
+				if (maxPassUsers < minUsers) {
 					maxPassUsers = 0;
 					loadPathComplete();
 				}

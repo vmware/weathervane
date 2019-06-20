@@ -36,16 +36,14 @@ public class FixedLoadPath extends LoadPath {
 
 	private long users;
 
-	private long rampUp = 300;
+	private long rampUp = 240;
+	private long warmUp = 300;
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
 	private long rampDown = 120;
 	private boolean exitOnFirstFailure = false;
 	
 	private long timeStep = 10L;
-
-	@JsonIgnore
-	private final long warmUpTime = 120;
 	
 	/*
 	 * Phases in a findMax run: 
@@ -55,7 +53,7 @@ public class FixedLoadPath extends LoadPath {
 	 * - POSTRUN: Periods of qosPeriodSec after RAMPDOWN which are returned if other workloads are still running.
 	 */
 	private enum Phase {
-		RAMPUP, QOS, RAMPDOWN, POSTRUN
+		RAMPUP, WARMUP, QOS, RAMPDOWN, POSTRUN
 	};
 
 	@JsonIgnore
@@ -89,27 +87,12 @@ public class FixedLoadPath extends LoadPath {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate, executorService);
 
 		/*
-		 * Create a list of uniform intervals for rampup. The last 120 seconds of 
-		 * rampup is at the fixed user level to make sure all users are active 
-		 * at start of QoS.
+		 * Create a list of uniform intervals for rampup. 
 		 */
-		long rampUpRampingTime = rampUp;
-		long rampUpWarmTime = 0;
-		if (rampUpRampingTime > (warmUpTime + timeStep)) {
-			rampUpRampingTime -= warmUpTime;
-			rampUpWarmTime = warmUpTime;
-		}
 		rampupIntervals = new LinkedList<UniformLoadInterval>();
 		long numIntervals = (long) Math.ceil(rampUp / (timeStep * 1.0));
 		long startUsers = (long) Math.ceil(Math.abs(users) / ((numIntervals - 1) * 1.0));
 		rampupIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
-		if (rampUpWarmTime > 0) {
-			UniformLoadInterval warmInterval = new UniformLoadInterval();
-			warmInterval.setName("warmUp");
-			warmInterval.setDuration(rampUpWarmTime);
-			warmInterval.setUsers(users);
-			rampupIntervals.add(warmInterval);
-		}
 		
 		curStatsInterval = new UniformLoadInterval();
 		curStatsInterval.setName("RampUp");
@@ -130,11 +113,31 @@ public class FixedLoadPath extends LoadPath {
 		UniformLoadInterval nextInterval = null;
 		if (Phase.RAMPUP.equals(curPhase)) {
 			if (rampupIntervals.isEmpty()) {
-				curPhase  = Phase.QOS;
+				curPhase  = Phase.WARMUP;
 				curPhaseInterval = 0;
 				nextInterval = getNextInterval();
 			} else {
 				nextInterval = rampupIntervals.pop();
+			}
+		} else if (Phase.WARMUP.equals(curPhase)) {
+			if (curPhaseInterval == 0 ) {
+				nextInterval = new UniformLoadInterval();
+				nextInterval.setName("WARMUP-" + curPhaseInterval);
+				nextInterval.setDuration(warmUp);
+				nextInterval.setUsers(users);
+
+				curStatusInterval.setName("WARMUP-" + curPhaseInterval);
+				curStatusInterval.setDuration(warmUp);
+				curStatusInterval.setStartUsers(users);
+				curStatusInterval.setEndUsers(users);
+				curStatsInterval = nextInterval;
+				statsIntervalAvailable.release();
+				
+				curPhaseInterval++;
+			} else {
+				curPhase  = Phase.QOS;
+				curPhaseInterval = 0;
+				nextInterval = getNextInterval();
 			}
 		} else if (Phase.QOS.equals(curPhase)) {
 			boolean prevIntervalPassed = true;

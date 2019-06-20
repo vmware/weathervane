@@ -463,6 +463,7 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}          = "findmax";
 			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
+			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 		}

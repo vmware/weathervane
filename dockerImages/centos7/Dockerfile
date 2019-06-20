@@ -8,10 +8,14 @@ COPY ssh /root/.ssh
 
 RUN \
   chmod +x /updateResolveConf.pl && \
+  yum -y install wget && \
+  wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+  rpm -ivh epel-release-latest-7.noarch.rpm && \
+  rm -f epel-release-latest-7.noarch.rpm && \
+  yum -y install python2-httpie && \
   yum -y install sudo && \
   yum -y install iproute && \
   yum -y install perl && \
-  yum -y install wget && \
   yum -y install emacs && \
   yum -y install bind-utils && \
   yum -y install openssh-clients && \

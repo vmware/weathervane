@@ -279,6 +279,14 @@ sub foundMax {
 	return $foundMax;
 }
 
+sub printFindMaxResult {
+	my ($self) = @_;
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		$workload->printFindMaxResult();
+	}
+}
+
 sub adjustUsersForFindMax {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;

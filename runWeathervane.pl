@@ -283,12 +283,10 @@ if ($backgroundScript) {
 	}
 	if (!(-f $backgroundScript)) {
 		print "The script $backgroundScript must be a file.\n";
-		usage();
 		exit 1;									
 	}
 	if (!(-x $backgroundScript)) {
 		print "The script $backgroundScript must be a executable.\n";
-		usage();
 		exit 1;									
 	}
 }

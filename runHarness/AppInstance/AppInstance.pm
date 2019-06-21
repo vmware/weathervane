@@ -427,13 +427,9 @@ sub foundMax {
 
 		my $maxUsers = $self->getParamValue('maxUsers');
 		if ($users == $maxUsers) {
-			$console_logger->info(
-				"Workload ",
-				$self->workload->instanceNum,
-				", appInstance ",
-				$self->instanceNum,
-				": At maximum number of loaded db users $users"
-			);
+			$logger->debug("Workload ", $self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": At maximum number of loaded db users $users");
 			$foundMax = 1;
 		}
 	}
@@ -461,7 +457,26 @@ sub foundMax {
 		". Workload ", $self->workload->instanceNum,
 		", appInstance ", $self->instanceNum
 	);
+	
 	return $foundMax;
+}
+
+sub printFindMaxResult {
+	my ($self) = @_;
+	my $console_logger = get_logger("Console");
+	my $maxUsers = $self->getParamValue('maxUsers');
+	if (($self->maxPassUsers != $maxUsers) && ($self->maxPassUsers != 0)) {
+		$console_logger->info("Workload ",$self->workload->instanceNum,", appInstance ",
+				$self->instanceNum, ": Max passing load = ", $self->maxPassUsers);
+	} elsif ($self->maxPassUsers == $maxUsers) {
+		$console_logger->info("Workload ",$self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Max passing load would exceed maximum number of loaded db users ($maxUsers)");
+	} else {
+		$console_logger->info("Workload ",$self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Did not pass at any load.");
+	}
 }
 
 sub resetFindMax {

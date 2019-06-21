@@ -165,6 +165,14 @@ sub foundMax {
 	return $foundMax;
 }
 
+sub printFindMaxResult {
+	my ($self)   = @_;
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		$appInstance->printFindMaxResult();
+	}
+}
+
 sub adjustUsersForFindMax {
 	my ($self)         = @_;
 	my $appInstanceRef = $self->appInstancesRef;

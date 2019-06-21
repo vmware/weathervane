@@ -100,6 +100,7 @@ override 'start' => sub {
 			Log::Log4perl->eradicate_appender("tmpdirConsoleFile");
 			
 		}
+		$self->runProcedure->printFindMaxResult();
 	}
 
 };

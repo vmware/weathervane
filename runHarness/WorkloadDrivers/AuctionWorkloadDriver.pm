@@ -466,6 +466,7 @@ sub createRunConfigHash {
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"findMaxStopPct"} = $self->getParamValue('findMaxStopPct');
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {
 			$logger->debug(
@@ -879,38 +880,55 @@ sub initializeRun {
 	# Send the hosts and port number to the controller
 	my $runContent = $json->encode($self->getHosts());
 	my $url = $baseUrl . "/hosts";
-	$logger->debug("Sending POST to $url.  content = $runContent");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+
+	$retryCount = 0;
+	my $success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send hosts message to workload controller. Exiting");
 		return 0;
 	}
-	
+		
 	my %portHash;
 	$portHash{"port"} = $self->getHostPort();
 	$runContent = $json->encode(\%portHash);
 	$url = $baseUrl . "/port";
-	$logger->debug("Sending POST to $url.  content = $runContent");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  " . $res->content );
-	}
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send port message to workload controller. Exiting");
 		return 0;
 	}
@@ -950,20 +968,26 @@ sub initializeRun {
 
 	$runContent = $json->encode($runRef);
 	$url = $baseUrl . "/$runName";
-	$logger->debug("Run content for workload $workloadNum:\n$runContent\n");
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
 		$logger->debug( "Response unsucessful.  Content: " . $res->content );
 		return 0;
@@ -989,17 +1013,26 @@ sub initializeRun {
       close FILE;
 
 	  $url      = $baseUrl . "/behaviorSpec";
-	  $logger->debug("Sending POST to $url with contents:\n$contents");
 	  $req = HTTP::Request->new( POST => $url );
 	  $req->content_type('application/json');
 	  $req->header( Accept => "application/json" );
 	  $req->content($contents);
-
-	  $res = $ua->request($req);
-	  $logger->debug( "Response status line: " . $res->status_line . " for url " . $url );
-	  if ( $res->is_success ) {
-	  	$logger->debug("Response sucessful.  Content: " . $res->content );
-	  }	else {
+	  $retryCount = 0;
+	  $success = 0;
+	  do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	  } while ((!$success) && ($retryCount < 12))
+	  if (!$success) {
 		$console_logger->warn("Could not send behaviorSpec message to workload controller. Exiting");
 		return 0;
 	  }
@@ -1007,17 +1040,27 @@ sub initializeRun {
 
 	# Now send the initialize message to the runService
 	$url      = $baseUrl . "/$runName/initialize";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
 
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	} else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send initialize message to workload controller. Exiting");
 		return 0;
 	}
@@ -1061,19 +1104,26 @@ sub startRun {
 	my $pid1       = fork();
 	if ( $pid1 == 0 ) {
 		my $url      = $self->getControllerURL() . "/run/$runName/start";
-		$logger->debug("Sending POST to $url");
 		$req = HTTP::Request->new( POST => $url );
 		$req->content_type('application/json');
 		$req->header( Accept => "application/json" );
 		$req->content($runContent);
-
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
-		}
-		else {
+		my $retryCount = 0;
+		my $success = 0;
+		do {
+			$logger->debug("Sending POST to $url.  content = $runContent");
+			$res = $ua->request($req);
+			$logger->debug(
+				"Response status line: " . $res->status_line . " for url " . $url );
+			if ( $res->is_success ) {
+				$logger->debug( "Response sucessful.  Content: " . $res->content );
+				$sucess = 1;
+			} else {
+				sleep 10;
+			}
+			$retryCount++
+		} while ((!$success) && ($retryCount < 12))
+		if (!$success) {
 			$console_logger->warn("Could not send start message to workload controller. Exiting");
 			return 0;
 		}
@@ -1090,19 +1140,26 @@ sub startRun {
 	my $statsStartedContent = $json->encode($statsStartedMsg);
 
 	my $url      = $self->getControllerURL() . "/stats/started/$runName";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($statsStartedContent);
-
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+	my $retryCount = 0;
+	my $success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send stats/started message to workload controller. Exiting");
 		return 0;
 	}
@@ -1310,21 +1367,26 @@ sub startRun {
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $json->encode($statsCompleteMsg);
 	$url      = $self->getControllerURL() . "/stats/complete/$runName";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($statsCompleteContent);
-
-	$res = $ua->request($req);
-	$logger->debug( "Response status line: "
-		  . $res->status_line
-		  . " for url "
-		  . $url );
-	if ( $res->is_success ) {
-		$logger->debug("Response sucessful.  Content: " . $res->content );
-	}	
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$sucess = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12))
+	if (!$success) {
 		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
 		return 0;
 	}

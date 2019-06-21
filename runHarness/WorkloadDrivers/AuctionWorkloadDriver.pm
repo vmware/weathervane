@@ -894,12 +894,12 @@ sub initializeRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send hosts message to workload controller. Exiting");
 		return 0;
@@ -922,12 +922,12 @@ sub initializeRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send port message to workload controller. Exiting");
 		return 0;
@@ -981,12 +981,12 @@ sub initializeRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
 		$logger->debug( "Response unsucessful.  Content: " . $res->content );
@@ -1026,12 +1026,12 @@ sub initializeRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	  } while ((!$success) && ($retryCount < 12))
+	  } while ((!$success) && ($retryCount < 12));
 	  if (!$success) {
 		$console_logger->warn("Could not send behaviorSpec message to workload controller. Exiting");
 		return 0;
@@ -1054,12 +1054,12 @@ sub initializeRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send initialize message to workload controller. Exiting");
 		return 0;
@@ -1117,12 +1117,12 @@ sub startRun {
 				"Response status line: " . $res->status_line . " for url " . $url );
 			if ( $res->is_success ) {
 				$logger->debug( "Response sucessful.  Content: " . $res->content );
-				$sucess = 1;
+				$success = 1;
 			} else {
 				sleep 10;
 			}
 			$retryCount++
-		} while ((!$success) && ($retryCount < 12))
+		} while ((!$success) && ($retryCount < 12));
 		if (!$success) {
 			$console_logger->warn("Could not send start message to workload controller. Exiting");
 			return 0;
@@ -1153,12 +1153,12 @@ sub startRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send stats/started message to workload controller. Exiting");
 		return 0;
@@ -1380,12 +1380,12 @@ sub startRun {
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
 			$logger->debug( "Response sucessful.  Content: " . $res->content );
-			$sucess = 1;
+			$success = 1;
 		} else {
 			sleep 10;
 		}
 		$retryCount++
-	} while ((!$success) && ($retryCount < 12))
+	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
 		return 0;

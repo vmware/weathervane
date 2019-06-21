@@ -836,7 +836,7 @@ sub writeUsersTxt {
 		my $instanceNum = $appInstance->instanceNum;
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		if ($loadPathType eq 'fixed') {
-			my $users = $appInstance->getParamValue('users');
+			my $users = $appInstance->users;
 			if ($users) {
 				my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
 				$console_logger->info($outString);

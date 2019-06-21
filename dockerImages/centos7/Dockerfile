@@ -9,9 +9,7 @@ COPY ssh /root/.ssh
 RUN \
   chmod +x /updateResolveConf.pl && \
   yum -y install wget && \
-  wget http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-  rpm -ivh epel-release-latest-7.noarch.rpm && \
-  rm -f epel-release-latest-7.noarch.rpm && \
+  yum -y install epel-release && \
   yum -y install python2-httpie && \
   yum -y install sudo && \
   yum -y install iproute && \

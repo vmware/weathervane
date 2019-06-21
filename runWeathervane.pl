@@ -132,6 +132,23 @@ sub parseConfigFile {
 	
 	return \@return;
 }
+
+sub parseKubeconfigFile {
+	my ($configFileName) = @_;
+	
+	# Read in the config file
+	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
+	my @files;
+	my $dockerNamespace;
+	while (<CONFIGFILE>) {
+		if ($_ =~ /^\s*[a-zA-Z0-9\-_]+:\s*(\/.*)$/) {
+			push @files, $1;
+		}
+	}
+	close CONFIGFILE;
+		
+	return \@files;
+}
 		
 sub dockerExists {
 	my ( $name ) = @_;
@@ -289,6 +306,12 @@ foreach my $k8sConfig (@$k8sConfigFilesRef) {
 		$k8sConfigMountString .= "-v $k8sConfig:$k8sConfig ";				
 	} else {
 		$k8sConfigMountString .= "-v $k8sConfig:/root/weathervane/$k8sConfig ";		
+	}
+	
+	# Also mount any files that are referenced in the kubeconfig file
+	my $kubeconfigFilesRef = parseKubeconfigFile($k8sConfig);
+	foreach my $file (@$kubeconfigFilesRef) {
+		$k8sConfigMountString .= "-v $file:$file ";		
 	}
 }
 

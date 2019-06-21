@@ -25,6 +25,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   </appender>
 
     <logger name="com.vmware" level="WARN" />
+    <logger name="com.vmware.weathervane.workloadDriver.common.core.loadPath" level="WARN" />
 
   <root level="warn">
     <appender-ref ref="STDOUT" />

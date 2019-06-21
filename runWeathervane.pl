@@ -296,6 +296,11 @@ if (dockerExists("weathervane")) {
 }
 
 my $resultsFile = "$pwd/weathervaneResults.csv";
+if (!(-e $resultsFile)) {
+	`touch $resultsFile`;
+} elsif (-d $resultsFile) {
+	die "The file $resultsFile must be an ordinary file";
+}
 
 my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];

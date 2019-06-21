@@ -137,7 +137,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 		this.maxUsers = workload.getMaxUsers();
 		this.initialRampRateStep = maxUsers / 20;
-		numRequiredVerifyMaxRepeats = numQosPeriods - 1;
+		numRequiredVerifyMaxRepeats = getNumQosPeriods() - 1;
 		
 		curInterval= new UniformLoadInterval();
 		curInterval.setUsers(initialRampRateStep);
@@ -332,9 +332,9 @@ public class FindMaxLoadPath extends LoadPath {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": found new maxPassUsers = " + curUsers);
 					maxPassUsers = curUsers;
 					maxPassIntervalName = curInterval.getName();
-					if ((minFailUsers - maxPassUsers) < (minFailUsers * findMaxStopPct)) {
+					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
 						logger.debug(
-								"getNextFindFirstMaxInterval" + this.getName() + ": maxPas and minFail are within {} percent, going to next phase", findMaxStopPct);
+								"getNextFindFirstMaxInterval" + this.getName() + ": maxPas and minFail are within {} percent, going to next phase", getFindMaxStopPct());
 						return moveToVerifyMax();						
 					}
 				}
@@ -375,8 +375,8 @@ public class FindMaxLoadPath extends LoadPath {
 						maxPassUsers = 0;
 						loadPathComplete();						
 					}
-					if ((minFailUsers - maxPassUsers) < (minFailUsers * findMaxStopPct)) {
-						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", findMaxStopPct);
+					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
+						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", getFindMaxStopPct());
 						if (maxPassUsers < getMinUsers()) {
 							// Never passed.  End the run.
 							logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": never passed.  Ending run");
@@ -487,13 +487,13 @@ public class FindMaxLoadPath extends LoadPath {
 			 * users for the previous interval, but with the non-warmup duration
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(qosPeriodSec);
+			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setName("FINDFIRSTMAX-" + curUsers);
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(qosPeriodSec);
+			curStatusInterval.setDuration(getQosPeriodSec());
 			
 			nextSubInterval = SubInterval.RAMP;
 		}
@@ -507,7 +507,7 @@ public class FindMaxLoadPath extends LoadPath {
 		 * When moving to VERIFYMAX, the initial rateStep is 1/20 of maxPassUsers, 
 		 * and the minRateStep is 1/100 of maxPassUsers
 		 */
-		curRateStep = (long) Math.ceil(maxPassUsers * findMaxStopPct);
+		curRateStep = (long) Math.ceil(maxPassUsers * getFindMaxStopPct());
 		curUsers = maxPassUsers;
 
 		intervalNum = 0;
@@ -575,14 +575,14 @@ public class FindMaxLoadPath extends LoadPath {
 			 * for this value of curUsers.  Run a sub-interval at curUsers.
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(qosPeriodSec);
+			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 			nextSubInterval = SubInterval.VERIFYSUBSEQUENT;
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(qosPeriodSec);
+			curStatusInterval.setDuration(getQosPeriodSec());
 		} else if (nextSubInterval.equals(SubInterval.VERIFYSUBSEQUENT)) {
 			/*
 			 * Need to know whether the previous interval
@@ -610,13 +610,13 @@ public class FindMaxLoadPath extends LoadPath {
 				} else {
 					// Test again at this interval
 					nextInterval.setUsers(curUsers);
-					nextInterval.setDuration(qosPeriodSec);
+					nextInterval.setDuration(getQosPeriodSec());
 					nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 
 					curStatusInterval.setName(nextInterval.getName());
 					curStatusInterval.setStartUsers(curUsers);
 					curStatusInterval.setEndUsers(curUsers);
-					curStatusInterval.setDuration(qosPeriodSec);
+					curStatusInterval.setDuration(getQosPeriodSec());
 
 					nextSubInterval = SubInterval.VERIFYSUBSEQUENT;					
 				}
@@ -689,6 +689,18 @@ public class FindMaxLoadPath extends LoadPath {
 
 	public void setMinUsers(long minUsers) {
 		this.minUsers = minUsers;
+	}
+
+	public long getNumQosPeriods() {
+		return numQosPeriods;
+	}
+
+	public long getQosPeriodSec() {
+		return qosPeriodSec;
+	}
+
+	public double getFindMaxStopPct() {
+		return findMaxStopPct;
 	}
 
 	@Override

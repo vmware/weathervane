@@ -133,7 +133,8 @@ public class FindMaxLoadPath extends LoadPath {
 			String statsHostName, int portNumber, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate,
 				executorService);
-		
+		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
+
 		this.maxUsers = workload.getMaxUsers();
 		this.initialRampRateStep = maxUsers / 20;
 		numRequiredVerifyMaxRepeats = numQosPeriods - 1;
@@ -368,7 +369,7 @@ public class FindMaxLoadPath extends LoadPath {
 				if (curUsers < minFailUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Found new minFailUsers = " + curUsers);
 					minFailUsers = curUsers;
-					if (minFailUsers <= minUsers) {
+					if (minFailUsers <= getMinUsers()) {
 						// Never passed.  End the run.
 						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed at minUsers.  Ending run");
 						maxPassUsers = 0;
@@ -376,7 +377,7 @@ public class FindMaxLoadPath extends LoadPath {
 					}
 					if ((minFailUsers - maxPassUsers) < (minFailUsers * findMaxStopPct)) {
 						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", findMaxStopPct);
-						if (maxPassUsers < minUsers) {
+						if (maxPassUsers < getMinUsers()) {
 							// Never passed.  End the run.
 							logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": never passed.  Ending run");
 							maxPassUsers = 0;
@@ -408,10 +409,13 @@ public class FindMaxLoadPath extends LoadPath {
 				} 
 
 				curRateStep = nextRateStep;
-				if ((curUsers - nextRateStep) < minUsers) {
-					curUsers = minUsers;
+				logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": curRateStep = {}, curUsers = {}, minUsers = {}", curRateStep, curUsers, getMinUsers());
+				if ((curUsers - nextRateStep) <= getMinUsers()) {
+					curUsers = getMinUsers();
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": (curUsers - nextRateStep) <= minUsers, set curUsers to minUsers");
 				} else {
 					curUsers -= curRateStep;
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": (curUsers - nextRateStep) > minUsers, set curUsers to {}", curUsers);
 				}
 			}
 
@@ -621,7 +625,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 * Reduce the number of users by minRateStep and try again.
 				 */
 				maxPassUsers -= curRateStep;
-				if (maxPassUsers < minUsers) {
+				if (maxPassUsers < getMinUsers()) {
 					maxPassUsers = 0;
 					loadPathComplete();
 				}
@@ -677,6 +681,14 @@ public class FindMaxLoadPath extends LoadPath {
 
 	public void setMaxUsers(long maxUsers) {
 		this.maxUsers = maxUsers;
+	}
+
+	public long getMinUsers() {
+		return minUsers;
+	}
+
+	public void setMinUsers(long minUsers) {
+		this.minUsers = minUsers;
 	}
 
 	@Override

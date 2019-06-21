@@ -286,6 +286,11 @@ if ($backgroundScript) {
 		usage();
 		exit 1;									
 	}
+	if (!(-x $backgroundScript)) {
+		print "The script $backgroundScript must be a executable.\n";
+		usage();
+		exit 1;									
+	}
 }
 
 if (dockerExists("weathervane")) {

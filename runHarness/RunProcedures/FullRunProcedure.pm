@@ -73,7 +73,7 @@ override 'run' => sub {
 	$ok = $self->initializeWorkloads( $seqnum, $tmpDir );
 	if ( !$ok ) {
 		$self->cleanupAfterFailure(
-			"Workload driver did not initialze properly.  Exiting.",
+			"Workload driver did not initialize properly.  Exiting.",
 			$seqnum, $tmpDir );
 		my $runResult = RunResult->new(
 			'runNum'     => $seqnum,

@@ -1354,6 +1354,8 @@ sub parseNameStr {
 	} elsif ($str =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
 		my $numRerun = $2 + 1;
 		$nameStr = "verify maximum run at $1 users rerun $numRerun";
+	} elsif ($str =~ /WARMUP\-(\d+)/) {
+		$nameStr = "WarmUp";
 	} elsif ($str =~ /QOS\-(\d+)/) {
 		$nameStr = "QoS period $1";
 	} else {

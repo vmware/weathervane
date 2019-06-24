@@ -38,9 +38,9 @@ public class FindMaxLoadPath extends LoadPath {
 	private long maxUsers;
 	private long minUsers;
 
-	private final long numQosPeriods = 3;
-	private final long qosPeriodSec = 300;
-	private final double findMaxStopPct = 0.02;
+	private long numQosPeriods = 3;
+	private long qosPeriodSec = 300;
+	private double findMaxStopPct = 0.02;
 
 	/*
 	 * Phases in a findMax run: - INITIALRAMP: Use short intervals to ramp up until

@@ -2315,8 +2315,6 @@ sub parseStats {
 	my $workloadStati = $runStatus->{"workloadStati"};
 	foreach my $workloadStatus (@$workloadStati) {
 		# For each appinstance, get the statsRollup for the max passing loadInterval
-		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 
-					. ", appInstanceNum = " . $appInstanceNum);
 		my $appInstanceName = $workloadStatus->{"name"};
 		$appInstanceName =~ /appInstance(\d+)/;
 		my $appInstanceNum = $1;
@@ -2324,6 +2322,8 @@ sub parseStats {
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
+		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 
+					. ", appInstanceNum = " . $appInstanceNum);
 		if (!$maxPassIntervalName) {
 			$logger->debug("parseStats: workload " . $appInstanceName 
 					. ", appInstanceNum = " . $appInstanceNum 

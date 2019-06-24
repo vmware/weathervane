@@ -339,7 +339,7 @@ if ($backgroundScript) {
 }
 
 # make sure the docker image is up-to-date
-print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.";
+print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.\n";
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
 my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 

@@ -1830,22 +1830,23 @@ sub getWorkloadStatsSummary {
 	my $httpReqSec   = 0;
 	my $overallAvgRT = 0;
 
+	my $numPassingAi = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
-		$totalUsers       += $self->maxPassUsers->{$appInstanceNum};
-		$opsSec       += $self->opsSec->{$appInstanceNum};
-		$httpReqSec   += $self->reqSec->{$appInstanceNum};
-		$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
+		if ($self->passAll->{$appInstanceNum}) {
+			$numPassingAi++;
+			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
+			$opsSec       += $self->opsSec->{$appInstanceNum};
+			$httpReqSec   += $self->reqSec->{$appInstanceNum};
+			$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
+		}
 	}
 	
-	my $numAppInstances = $#{$appInstancesRef} + 1;
-	$overallAvgRT /= $numAppInstances;
-
 	$csvRef->{"users-total"}       = $totalUsers;
 	$csvRef->{"opsSec-total"}       = $opsSec;
 	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
-	$csvRef->{"overallAvgRT-total"} = $overallAvgRT;
+	$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
 
 	$appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
@@ -2321,6 +2322,7 @@ sub parseStats {
 		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
+		$self->passAll->{$appInstanceNum} = $passed;
 		
 		my $resultString = "passed at $maxPassUsers";
 		if (!$passed) {
@@ -2365,11 +2367,12 @@ sub parseStats {
 		
 		if (!$maxPassStatsSummary) {
 			$console_logger->warn("Could not find the max passing interval for appInstance " . $appInstanceName);
+			$self->passRT->{$appInstanceNum} = 0;
+			$self->passFailure->{$appInstanceNum} = 0;
 			next;
 		}
 		
 		$self->maxPassUsers->{$appInstanceNum} = $maxPassUsers;
-		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
 		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
 		$self->passFailure->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedFailure"};
 		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};

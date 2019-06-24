@@ -165,6 +165,7 @@ sub dockerExists {
 }
 
 sub runPeriodicScript {
+	`$backgroundScript`;
 	my $pid = fork();
 	if (!defined $pid ) {
 		die("Couldn't fork a process to run background script: $!\n");
@@ -331,7 +332,14 @@ if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
+my $pid = '';
+if ($backgroundScript) {
+	print "Running script $backgroundScript every $scriptPeriodSec seconds.\n";
+	$pid = runPeriodicScript();
+}
+
 # make sure the docker image is up-to-date
+print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.";
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
 my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 
@@ -343,12 +351,6 @@ my $dockerId = `$cmdString`;
 my $pipeString = "docker logs --follow weathervane |";
 my $pipePid = open my $driverPipe, "$pipeString"
 	  or die "Can't open docker logs pipe ($pipeString) : $!\n";
-
-my $pid = '';
-if ($backgroundScript) {
-	print "Running script $backgroundScript every $scriptPeriodSec seconds.\n";
-	$pid = runPeriodicScript();
-}
 
 my $inline;
 while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {

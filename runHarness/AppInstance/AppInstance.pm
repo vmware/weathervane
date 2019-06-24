@@ -427,9 +427,9 @@ sub foundMax {
 
 		my $maxUsers = $self->getParamValue('maxUsers');
 		if ($users == $maxUsers) {
-			$logger->debug("Workload ", $self->workload->instanceNum,
+			$console_logger->warn("Workload ", $self->workload->instanceNum,
 				", appInstance ", $self->instanceNum,
-				": At maximum number of loaded db users $users");
+				": Passed at maximum number of loaded users $users.  Increase maxUsers and try again.");
 			$foundMax = 1;
 		}
 	}

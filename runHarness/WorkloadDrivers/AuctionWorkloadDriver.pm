@@ -396,7 +396,7 @@ sub createRunConfigHash {
 		my $workload = {};
 		$workload->{'name'}             = "appInstance" . $instanceNum;
 		$workload->{"behaviorSpecName"} = $behaviorSpecName;
-		$workload->{"maxUsers"}         = $appInstance->getMaxLoadedUsers();
+		$workload->{"maxUsers"}         = $appInstance->getParamValue('maxUsers');
 
 		if ( $self->getParamValue('useThinkTime') ) {
 			$workload->{"useThinkTime"} = JSON::true;
@@ -462,7 +462,7 @@ sub createRunConfigHash {
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
 			$loadPath->{"type"}          = "findmax";
-			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
+			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
@@ -472,9 +472,9 @@ sub createRunConfigHash {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type ramptomax"
 			);
-			$loadPath->{"startUsers"} = $appInstance->getMaxLoadedUsers() / 10;
-			$loadPath->{"maxUsers"}   = $appInstance->getMaxLoadedUsers();
-			$loadPath->{"stepSize"}   = $appInstance->getMaxLoadedUsers() / 10;
+			$loadPath->{"startUsers"} = $appInstance->getParamValue('maxUsers') / 10;
+			$loadPath->{"maxUsers"}   = $appInstance->getParamValue('maxUsers');
+			$loadPath->{"stepSize"}   = $appInstance->getParamValue('maxUsers') / 10;
 			$loadPath->{"intervalDuration"}     = 600;
 			$loadPath->{"rampIntervalDuration"} = 300;
 		}
@@ -2321,6 +2321,31 @@ sub parseStats {
 		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
+		
+		my $resultString = "passed at $maxPassUsers";
+		if (!$passed) {
+			$resultString = "failed";
+			my $minUsers = $self->getParamValue('minimumUsers');
+			if ($maxPassUsers == $minUsers) {
+				$resultString .= " at minimumUsers ($minUsers)"
+			}
+			my $appInstance;
+			foreach my $appInstance (@$appInstancesRef) {
+				if ($appInstance->instanceNum == $appInstanceNum) {
+					last;
+				}
+			}
+			my $maxUsers = -1;
+			if ($appInstance) {
+				$maxUsers = $appInstance->getParamValue('maxUsers');	
+			}
+			if ($maxPassUsers == $maxUsers) {
+				$resultString = "Run could not find maximum because passing value would exceed maxUsers ($maxUsers)." 
+								. "\nIncrease maxUsers and try again.";				
+			}
+		}
+		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
+		
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 
 					. ", appInstanceNum = " . $appInstanceNum);
@@ -2389,15 +2414,7 @@ sub parseStats {
 			if ( !$opPassRT ) {
 				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Failure-Percent metric for $operation");
 			}
-		}
-		
-		my $resultString = "passed at $maxPassUsers";
-		if (!$passed) {
-			$resultString = "failed";
-		}
-		
-		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
-		
+		}		
 	}
 	
 	$self->resultsValid(1);

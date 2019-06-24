@@ -86,8 +86,6 @@ public class FindMaxLoadPath extends LoadPath {
 	private long minFailUsers = Long.MAX_VALUE;
 	@JsonIgnore
 	private long maxPassUsers = 0;
-	@JsonIgnore
-	private String maxPassIntervalName = null;
 
 	@JsonIgnore
 	private long initialRampRateStep = 1000;
@@ -315,8 +313,7 @@ public class FindMaxLoadPath extends LoadPath {
 				logger.debug(
 						"getNextFindFirstMaxInterval. At max users, so can't advance.  Ending workload and returning curInterval: "
 								+ curInterval);
-				maxPassUsers = 0;
-				loadPathComplete();
+				loadPathComplete(false);
 				return curInterval;
 			} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
 				/*
@@ -331,7 +328,6 @@ public class FindMaxLoadPath extends LoadPath {
 				if (curUsers > maxPassUsers) {
 					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": found new maxPassUsers = " + curUsers);
 					maxPassUsers = curUsers;
-					maxPassIntervalName = curInterval.getName();
 					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
 						logger.debug(
 								"getNextFindFirstMaxInterval" + this.getName() + ": maxPas and minFail are within {} percent, going to next phase", getFindMaxStopPct());
@@ -372,16 +368,16 @@ public class FindMaxLoadPath extends LoadPath {
 					if (minFailUsers <= getMinUsers()) {
 						// Never passed.  End the run.
 						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed at minUsers.  Ending run");
-						maxPassUsers = 0;
-						loadPathComplete();						
+						maxPassUsers = minUsers;
+						loadPathComplete(false);						
 					}
 					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
 						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", getFindMaxStopPct());
 						if (maxPassUsers < getMinUsers()) {
 							// Never passed.  End the run.
 							logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": never passed.  Ending run");
-							maxPassUsers = 0;
-							loadPathComplete();
+							maxPassUsers = minUsers;
+							loadPathComplete(false);
 						}
 						return moveToVerifyMax();						
 					}
@@ -443,7 +439,6 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				minFailUsers = Long.MAX_VALUE;
 				maxPassUsers = 0;
-				maxPassIntervalName = null;
 
 				/*
 				 * First interval of FINDFIRSTMAX should just be a longer run at the same level
@@ -606,7 +601,7 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				numVerifyMaxRepeatsPassed++;
 				if (numVerifyMaxRepeatsPassed == numRequiredVerifyMaxRepeats) {
-					loadPathComplete();
+					loadPathComplete(true);
 				} else {
 					// Test again at this interval
 					nextInterval.setUsers(curUsers);
@@ -626,8 +621,8 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				maxPassUsers -= curRateStep;
 				if (maxPassUsers < getMinUsers()) {
-					maxPassUsers = 0;
-					loadPathComplete();
+					maxPassUsers = minUsers;
+					loadPathComplete(false);
 				}
 				numVerifyMaxRepeatsPassed = 0;
 				nextSubInterval = SubInterval.RAMP;
@@ -640,20 +635,13 @@ public class FindMaxLoadPath extends LoadPath {
 		return nextInterval;
 	}
 
-	private void loadPathComplete() {
-		boolean passed = false;
-		if (maxPassUsers > 0) {
-			/*
-			 * Pass up the maximum number of users that passed a steady interval.
-			 */
-			passed = true;
-		}
+	private void loadPathComplete(boolean passed) {
 		loadPathComplete = true;
 		intervalNum = 0;
 		WorkloadStatus status = new WorkloadStatus();
 		status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 		status.setMaxPassUsers(maxPassUsers);
-		status.setMaxPassIntervalName(maxPassIntervalName);
+		status.setMaxPassIntervalName(curInterval.getName());
 		status.setPassed(passed);
 		status.setLoadPathName(this.getName());
 		workload.loadPathComplete(status);

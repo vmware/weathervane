@@ -1846,8 +1846,11 @@ sub getWorkloadStatsSummary {
 	$csvRef->{"users-total"}       = $totalUsers;
 	$csvRef->{"opsSec-total"}       = $opsSec;
 	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
-	$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
-
+	if ($numPassingAi > 0) {
+		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
+	} else {
+		$csvRef->{"overallAvgRT-total"} = 0;		
+	}
 	$appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
@@ -2407,16 +2410,6 @@ sub parseStats {
 			$self->successes->{"$operation-$appInstanceNum"} = $opStats->{'successes'};
 			$self->rtFailures->{"$operation-$appInstanceNum"} = $opStats->{'rtFailures'};
 			$self->failures->{"$operation-$appInstanceNum"} = $opStats->{'failures'};
-
-			if ( !$opPassRT ) {
-				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation");
-			}
-			if (!$opPassMix  && ($anyUsedLoadPath == 0)) {
-				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation");
-			}
-			if ( !$opPassRT ) {
-				$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum: Failed Failure-Percent metric for $operation");
-			}
 		}		
 	}
 	

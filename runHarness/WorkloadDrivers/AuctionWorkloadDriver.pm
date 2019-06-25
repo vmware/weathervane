@@ -893,7 +893,7 @@ sub initializeRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -921,7 +921,7 @@ sub initializeRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -980,7 +980,7 @@ sub initializeRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -989,7 +989,7 @@ sub initializeRun {
 	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
-		$logger->debug( "Response unsucessful.  Content: " . $res->content );
+		$logger->debug( "Response unsuccessful.  Content: " . $res->content );
 		return 0;
 	}
 
@@ -1025,7 +1025,7 @@ sub initializeRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1053,7 +1053,7 @@ sub initializeRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1116,7 +1116,7 @@ sub startRun {
 			$logger->debug(
 				"Response status line: " . $res->status_line . " for url " . $url );
 			if ( $res->is_success ) {
-				$logger->debug( "Response sucessful.  Content: " . $res->content );
+				$logger->debug( "Response successful.  Content: " . $res->content );
 				$success = 1;
 			} else {
 				sleep 10;
@@ -1152,7 +1152,7 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1379,7 +1379,7 @@ sub startRun {
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );
 		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
+			$logger->debug( "Response successful.  Content: " . $res->content );
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1467,7 +1467,7 @@ sub stopRun {
 		  . $url );
 	if ( $res->is_success ) {
 		$logger->debug(
-			"Response sucessful.  Content: " . $res->content );
+			"Response successful.  Content: " . $res->content );
 	}	
 	else {
 		$console_logger->warn(

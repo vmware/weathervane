@@ -851,7 +851,7 @@ sub writeUsersTxt {
 				print $fileOut "$outString\n";
 			}
 		} elsif ($loadPathType eq 'findMax') {
-				my $outString      = "Workload $workloadNum, App Instance $instanceNum: Single-Run FindMax";
+				my $outString      = "Workload $workloadNum, App Instance $instanceNum: FindMax";
 				$console_logger->info($outString);
 				print $fileOut "$outString\n";			
 		}

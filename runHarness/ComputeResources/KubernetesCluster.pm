@@ -345,14 +345,44 @@ sub kubernetesGetLbIP {
 
 	my $cmd;
 	$cmd = "kubectl get svc $svcName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
-	my ($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("kubernetesGetLbIP failed: $cmdFailed");
-	}
 	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
+	# Wait for ip to be provisioned
+	# ToDo: Need a timeout here.
+	my $ip = "";
+	my $cmdFailed;
+	while (!$ip) {
+		($cmdFailed, $ip) = runCmd($cmd);
+	  	if ($cmdFailed)	{
+	  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+	  	}
+	  	if (!$ip) {
+	  		sleep 10;
+	  	} else {
+			$logger->debug("Called kubernetesGetLbIP: got $ip");
+	  	}
+	}
 	
-	return ($cmdFailed, $outString);
+	# If the returned value is a hostname then convert it to an IP address
+	if ($ip =~ /\w/) {
+		$logger->debug("LoadBalancer access is a hostname.  Convert it to an IP");
+		my $realIp = "";
+		$cmd = `dig +short $ip`;
+		$logger->debug("Command: $cmd");
+		while (!$realIp) {
+			($cmdFailed, $realIp) = runCmd($cmd);
+		  	if ($cmdFailed)	{
+		  		$logger->error("Error getting LoadBalancer IP for hostname $ip: error = $cmdFailed");
+	  		}
+		  	if (!$realIp) {
+		  		sleep 10;
+		  	} else {
+				$logger->debug("Called kubernetesGetLbIP: converting $ip to IP got $realIp");
+				my @ips = split(/\n/, $realIp);
+				my $ip = $ips[0];
+	  		}
+		}
+	}
+	return ($cmdFailed, $ip);
 }
 
 sub kubernetesGetNodeIPs {

@@ -66,23 +66,13 @@ override 'getControllerURL' => sub {
 	my $port;
 	$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
 	if ($cluster->getParamValue('useLoadBalancer')) {
-		# Wait for ip to be provisioned
-		# ToDo: Need a timeout here.
-		my $ip = "";
-		while (!$ip) {
-			my $cmdFailed;
-		  	($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
-		  	if ($cmdFailed)	{
-		  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
-		  	}
-		  	if (!$ip) {
-		  		sleep 10;
-		  	} else {
-				$logger->debug("Called kubernetesGetLbIP: got $ip");
-		  	}
-		}
-        $hostname = $ip;
-	    $port = 80;
+	  	my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
+		if ($cmdFailed)	{
+		  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+	  	} else {
+	        $hostname = $ip;
+		    $port = 80;
+	  	}
 	} else {
 		# Using NodePort service for ingress
 		# Get the IP addresses of the nodes 

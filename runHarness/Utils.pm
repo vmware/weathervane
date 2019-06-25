@@ -384,8 +384,12 @@ sub runCmd {
 	# cmdFailed ("" if success, $logOutput(cmd $output and not "") if failed)
 	# cmdOutput (cmd $output if success, cmd $output if failed)
 
-	my ($cmd) = @_;
+	my ($cmd, $printLogOutput) = @_;
 	my $logger = get_logger("Weathervane");
+
+	if (!(defined $printLogOutput)) {
+		$printLogOutput = 1;
+	}
 
 	# Do some sanity/safety checks before running commands.
 	#check for unexpanded variable
@@ -426,6 +430,9 @@ sub runCmd {
 	} else {
 		if (!(length $output)) {
 			$logOutput = "(no output)";
+		}
+		if (!$printLogOutput) {
+			$logOutput = "";
 		}
 		$logger->debug("runCmd Success ($cmd): $logOutput");
 		return ("", $output);

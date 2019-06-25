@@ -50,10 +50,12 @@ public class OperationStatsSummary {
 	private boolean useResponseTime;
 	private double requiredMixPct;
 	private double mixPctTolerance;
+	private double allowedFailurePercent;
 		
 	public OperationStatsSummary(String operationName, int operationIndex,
 			long responseTimeLimit, double responseTimeLimitPercentile, 
-			boolean useResponseTime, double requiredMixPct, double mixTolerance) {
+			boolean useResponseTime, double requiredMixPct, double mixTolerance,
+			double allowedFailurePercent) {
 		this.operationIndex = operationIndex;
 		this.operationName = operationName;
 		this.responseTimeLimit = responseTimeLimit;
@@ -61,6 +63,7 @@ public class OperationStatsSummary {
 		this.useResponseTime = useResponseTime;
 		this.requiredMixPct = requiredMixPct;
 		this.mixPctTolerance = mixTolerance;
+		this.allowedFailurePercent = allowedFailurePercent;
 		logger.debug("Created new operationStatsSummary: " + this);
 	}
 
@@ -156,6 +159,7 @@ public class OperationStatsSummary {
 
 		this.responseTimeLimit = that.responseTimeLimit;
 		this.responseTimeLimitPercentile = that.responseTimeLimitPercentile;
+		this.allowedFailurePercent = that.allowedFailurePercent;
 		this.useResponseTime = that.useResponseTime;
 		this.requiredMixPct = that.requiredMixPct;
 		this.mixPctTolerance = that.mixPctTolerance;
@@ -345,6 +349,15 @@ public class OperationStatsSummary {
 			}
 		}
 	}
+
+	public boolean passedFailurePercent() {
+		double failedPct = getTotalNumFailed() / (getTotalNumOps() * 1.0);
+		if (failedPct > allowedFailurePercent) {
+			return false;
+		} else {
+			return true;
+		}
+	}
 	
 	public boolean passedMixPct(long overallNumOps) {		
 		logger.debug("passedMixPct overallNumOps = " + overallNumOps);
@@ -371,6 +384,14 @@ public class OperationStatsSummary {
 		
 	}
 
+	public double getAllowedFailurePercent() {
+		return allowedFailurePercent;
+	}
+
+	public void setAllowedFailurePercent(double allowedFailurePercent) {
+		this.allowedFailurePercent = allowedFailurePercent;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();
@@ -388,6 +409,7 @@ public class OperationStatsSummary {
 		retVal.append(", totalSteps = " + totalSteps);
 		retVal.append(", responseTimeLimit = " + responseTimeLimit);
 		retVal.append(", responseTimeLimitPercentile = " + responseTimeLimitPercentile);
+		retVal.append(", allowedFailurePercent = " + allowedFailurePercent);
 		retVal.append(", useResponseTime = " + useResponseTime);
 		retVal.append(", requiredMixPct = " + requiredMixPct);
 		retVal.append(", mixPctTolerance = " + mixPctTolerance);

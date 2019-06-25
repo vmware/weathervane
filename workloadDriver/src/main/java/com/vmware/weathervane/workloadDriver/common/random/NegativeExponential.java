@@ -21,10 +21,6 @@ public class NegativeExponential {
 	
 	private static final Random rand = new Random();
 		
-	public NegativeExponential() {
-		
-	}
-
 	public static double getNext(double mean) {
 		if (mean == 0) {
 			return 0.0;

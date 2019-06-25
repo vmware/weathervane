@@ -36,7 +36,7 @@ my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
 								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
 								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
-my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'rampDown'  );
+my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'warmUp', 'rampDown'  );
 
 my @filterConstants = ( 'tmpDir' );
 
@@ -923,7 +923,7 @@ $parameters{"users"} = {
 
 $parameters{"maxUsers"} = {
 	"type"    => "=i",
-	"default" => 1000,
+	"default" => 0,
 	"parent"  => "appInstance",
 	"usageText" =>
 "This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load.\n",
@@ -940,10 +940,17 @@ $parameters{"description"} = {
 
 $parameters{"rampUp"} = {
 	"type"    => "=i",
-	"default" => "420",
+	"default" => "240",
 	"parent"  => "runProc",
-	"usageText" =>
-"This is the length of the ramp-up period for the run.",
+	"usageText" => "This is the length of the ramp-up period for a fixed run.",
+	"showUsage" => 1,
+};
+
+$parameters{"warmUp"} = {
+	"type"    => "=i",
+	"default" => "300",
+	"parent"  => "runProc",
+	"usageText" => "This is the length of the warm-up period for a fixed run.",
 	"showUsage" => 1,
 };
 $parameters{"numQosPeriods"} = {
@@ -965,6 +972,13 @@ $parameters{"exitOnFirstFailure"} = {
 	"default" => JSON::false,
 	"parent"  => "runProc",
 	"usageText" => "If set to true, fixed runStrategy will exit on first failing QoS period.",
+	"showUsage" => 0,
+};
+$parameters{"findMaxStopPct"} = {
+	"type"    => "=f",
+	"default" => 0.01,
+	"parent"  => "runProc",
+	"usageText" => "findMax will stop when the difference between maxPass and minFail is less than findMaxStopPct*minFail",
 	"showUsage" => 0,
 };
 $parameters{"rampDown"} = {
@@ -1579,14 +1593,6 @@ $parameters{"virtualInfrastructureType"} = {
 $parameters{"initialRateStep"} = {
 	"type"      => "=i",
 	"default"   => 500,
-	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 1,
-};
-
-$parameters{"minRateStep"} = {
-	"type"      => "=i",
-	"default"   => 125,
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -2517,8 +2523,8 @@ $parameters{"images"} = {
 
 $parameters{"minimumUsers"} = {
 	"type"      => "=i",
-	"default"   => 200,
-	"parent"    => "appInstance",
+	"default"   => 60,
+	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 0,
 };

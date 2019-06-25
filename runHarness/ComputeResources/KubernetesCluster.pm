@@ -767,7 +767,7 @@ sub kubernetesTopPodAllNamespaces {
 			my $outString;
 			my $cmdFailed;
 			$cmd = "kubectl top pod --heapster-scheme=https --all-namespaces --kubeconfig=$kubeconfigFile $contextString";
-			($cmdFailed, $outString) = runCmd($cmd);
+			($cmdFailed, $outString) = runCmd($cmd, 0);
 			if ($cmdFailed) {
 				$logger->info("kubernetesTopPodAllNamespaces top pod failed: $cmdFailed");
 			}
@@ -826,7 +826,7 @@ sub kubernetesTopNode {
 			my $outString;
 			my $cmdFailed;
 			$cmd = "kubectl top node --heapster-scheme=https --kubeconfig=$kubeconfigFile $contextString";
-			($cmdFailed, $outString) = runCmd($cmd);
+			($cmdFailed, $outString) = runCmd($cmd, 0);
 			if ($cmdFailed) {
 				$logger->info("kubernetesTopNode top node failed: $cmdFailed");
 			}

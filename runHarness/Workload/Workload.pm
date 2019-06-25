@@ -98,7 +98,17 @@ sub prepareDataServices {
 	my ( $self, $setupLogDir ) = @_;
 	# If the driver is running on Kubernetes clusters, then
 	# we can do the prepare in parallel
-	if ((ref $self->primaryDriver->host) eq 'KubernetesCluster') {
+	# If all of the dataManagers are running on Kubernetes clusters, then
+	# we can do the prepare in parallel
+	my $allK8s = 1;
+	my $appInstancesRef = $self->appInstancesRef;
+	foreach my $appInstanceRef (@{$appInstancesRef}) {
+		my $dataManager = $appInstanceRef->dataManager;
+		if ((ref $dataManager->host) ne 'KubernetesCluster') {
+			$allK8s = 0;
+		}
+	}
+	if ($allK8s) {
 		callMethodOnObjectsParallel1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
 	} else {
 		callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
@@ -153,6 +163,14 @@ sub foundMax {
 	}
 
 	return $foundMax;
+}
+
+sub printFindMaxResult {
+	my ($self)   = @_;
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		$appInstance->printFindMaxResult();
+	}
 }
 
 sub adjustUsersForFindMax {
@@ -277,9 +295,22 @@ sub setLoadPathType {
 
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
-	my $appInstanceRef = $self->appInstancesRef;
-	foreach my $appInstance (@$appInstanceRef) {
-		$appInstance->startServices($serviceTier, $setupLogDir);
+	# If all of the dataManagers are running on Kubernetes clusters, then
+	# we can do the start in parallel
+	my $allK8s = 1;
+	my $appInstancesRef = $self->appInstancesRef;
+	foreach my $appInstanceRef (@{$appInstancesRef}) {
+		my $dataManager = $appInstanceRef->dataManager;
+		if ((ref $dataManager->host) ne 'KubernetesCluster') {
+			$allK8s = 0;
+		}
+	}
+	if ($allK8s) {
+		callMethodOnObjectsParallel2( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir );
+	} else {
+		foreach my $appInstance (@$appInstancesRef) {
+			$appInstance->startServices($serviceTier, $setupLogDir);
+		}
 	}
 }
 
@@ -811,12 +842,20 @@ sub writeUsersTxt {
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;
-		my $users = $appInstance->getUsers();
-		my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
-		$console_logger->info($outString);
-		print $fileOut "$outString\n";
+		my $loadPathType = $appInstance->getParamValue('loadPathType');
+		if ($loadPathType eq 'fixed') {
+			my $users = $appInstance->users;
+			if ($users) {
+				my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
+				$console_logger->info($outString);
+				print $fileOut "$outString\n";
+			}
+		} elsif ($loadPathType eq 'findMax') {
+				my $outString      = "Workload $workloadNum, App Instance $instanceNum: FindMax";
+				$console_logger->info($outString);
+				print $fileOut "$outString\n";			
+		}
 	}
-
 }
 
 

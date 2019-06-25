@@ -38,11 +38,6 @@ has 'curRateStep' => (
 	isa => 'Int',
 );
 
-has 'minRateStep' => (
-	is  => 'rw',
-	isa => 'Int',
-);
-
 has 'minFailUsers' => (
 	is      => 'rw',
 	isa     => 'Int',
@@ -141,7 +136,6 @@ override 'initialize' => sub {
 	$self->name("W${workloadNum}A${appInstanceNum}");
 
 	$self->curRateStep( $self->getParamValue('initialRateStep') );
-	$self->minRateStep( $self->getParamValue('minRateStep') );
 
 	$self->users( $self->getParamValue('users') );
 	my $userLoadPath = $self->getParamValue('userLoadPath');
@@ -363,23 +357,13 @@ sub adjustUsersForFindMax {
 	my $passed      = $self->passedLast();
 	my $users       = $self->users;
 	my $curRateStep = $self->curRateStep;
-	my $minRateStep = $self->minRateStep;
 	my $maxPass     = $self->maxPassUsers;
 	my $minFail     = $self->minFailUsers;
 
 	if ($passed) {
-
-		if ( $users > $maxPass ) {
-			$self->maxPassUsers($users);
-		}
-
 		# Get a rate step that leaves next run at below minFail
-		while ( ( $users + $curRateStep ) >= $minFail ) {
-			$curRateStep = ceil( $curRateStep / 2 );
-			if ( $curRateStep < $minRateStep ) {
-				$curRateStep = $minRateStep;
-				last;
-			}
+		if ( ( $users + $curRateStep ) >= $minFail ) {
+			$curRateStep = ceil( ($minFail - $maxPass) / 2 );
 		}
 
 		my $maxUsers = $self->getParamValue('maxUsers');
@@ -394,16 +378,8 @@ sub adjustUsersForFindMax {
 
 	}
 	else {
-		if ( $users < $minFail ) {
-			$self->minFailUsers($users);
-		}
-
-		while ( ( $users - $curRateStep ) <= $maxPass ) {
-			$curRateStep = ceil( $curRateStep / 2 );
-			if ( $curRateStep < $minRateStep ) {
-				$curRateStep = $minRateStep;
-				last;
-			}
+		if ( ( $users - $curRateStep ) <= $maxPass ) {
+			$curRateStep = ceil( ($minFail - $maxPass) / 2 );
 		}
 
 		my $nextUsers = $users - $curRateStep;
@@ -437,92 +413,70 @@ sub foundMax {
 
 	my $passed      = $self->passedLast();
 	my $users       = $self->users;
-	my $curRateStep = $self->curRateStep;
-	my $minRateStep = $self->minRateStep;
 	my $maxPass     = $self->maxPassUsers;
 	my $minFail     = $self->minFailUsers;
-	my $minUsers    = $self->getParamValue('minimumUsers');
-
+	my $findMaxStopPct    = $self->getParamValue('findMaxStopPct');
+	
 	if ($passed) {
+		if ( $users > $maxPass ) {
+			$self->maxPassUsers($users);
+			if (($minFail - $maxPass) < ($minFail * $findMaxStopPct)) {
+				$foundMax = 1;
+			}
+		}
 
 		my $maxUsers = $self->getParamValue('maxUsers');
 		if ($users == $maxUsers) {
-			$console_logger->info(
-				"Workload ",
-				$self->workload->instanceNum,
-				", appInstance ",
-				$self->instanceNum,
-				": At maximum number of loaded db users $users"
-			);
+			$console_logger->warn("Workload ", $self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Passed at maximum number of loaded users $users.  Increase maxUsers and try again.");
 			$foundMax = 1;
-		} else {
-
-			# At a maximum if can't run another run, even at minimum
-			# step size, at a number of users lower than the current
-			# minFail
-			while ( ( $users + $curRateStep ) >= $minFail ) {
-				$curRateStep = ceil( $curRateStep / 2 );
-				if ( $curRateStep < $minRateStep ) {
-					$curRateStep = $minRateStep;
-					last;
-				}
-			}
-
-			if ( ( $users + $curRateStep ) >= $minFail ) {
-
-				# Already failed at one step increase
-				$console_logger->info(
-					"Workload ",
-					$self->workload->instanceNum,
-					", appInstance ",
-					$self->instanceNum,
-					": At maximum of $users"
-				);
-				$foundMax = 1;
-
-			}
 		}
-
 	}
 	else {
-
-		# Run Failed.  Determine whether already hit maximum.
-		# At a maximum if can't run another run, even at minimum
-		# step size, at a number of users higher than the current
-		# maxPass
-		while ( ( $users - $curRateStep ) <= $maxPass ) {
-			$curRateStep = ceil( $curRateStep / 2 );
-			if ( $curRateStep < $minRateStep ) {
-				$curRateStep = $minRateStep;
-				last;
+		if ( $users < $minFail ) {
+			$self->minFailUsers($users);
+			if (($minFail - $maxPass) < ($minFail * $findMaxStopPct)) {
+				$foundMax = 1;
 			}
 		}
 
-		my $nextUsers = $users - $curRateStep;
-		if ( ( $nextUsers <= $maxPass ) || ( $nextUsers < $minUsers ) ) {
+		my $minUsers    = $self->getParamValue('minimumUsers');
+		if ($users == $minUsers) {
 			$console_logger->info(
-				"Workload ",
-				$self->workload->instanceNum,
-				", appInstance ",
-				$self->instanceNum,
-				": At maximum of $maxPass"
+				"Workload ", $self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Can't run lower than Weathervane minumum users (" . $minUsers . ")"
 			);
-
-			# put the users back to maxPass
-			$self->users($maxPass);
 			$foundMax = 1;
 		}
 	}
 
 	$self->alreadyFoundMax($foundMax);
-	$logger->debug(
-		"foundMax return " . $foundMax,
-		". Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
+	$logger->debug("foundMax return " . $foundMax,
+		". Workload ", $self->workload->instanceNum,
+		", appInstance ", $self->instanceNum
 	);
+	
 	return $foundMax;
+}
+
+sub printFindMaxResult {
+	my ($self) = @_;
+	my $console_logger = get_logger("Console");
+	my $maxUsers = $self->getParamValue('maxUsers');
+	if (($self->maxPassUsers != $maxUsers) && ($self->maxPassUsers != 0)) {
+		$console_logger->info("Workload ",$self->workload->instanceNum,", appInstance ",
+				$self->instanceNum, ": Max passing load = ", $self->maxPassUsers);
+	} elsif ($self->maxPassUsers == $maxUsers) {
+		$console_logger->info("Workload ",$self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Max passing load would exceed maximum number of loaded db users ($maxUsers)");
+	} else {
+		$console_logger->info("Workload ",$self->workload->instanceNum,
+				", appInstance ", $self->instanceNum,
+				": Did not pass at any load.");
+	}
 }
 
 sub resetFindMax {
@@ -540,10 +494,7 @@ sub resetFindMax {
 	$self->maxPassUsers(0);
 	$self->alreadyFoundMax(0);
 
-	# Reduce the min rate step and start step at twice new min
-	my $newMinRateStep = int( ( $self->minRateStep / 2 ) + 0.5 );
-	$self->minRateStep($newMinRateStep);
-	$self->curRateStep( 2 * $newMinRateStep );
+	$self->curRateStep(int( ( $self->curRateStep / 2 ) + 0.5 ));
 
 }
 
@@ -564,7 +515,6 @@ sub getFindMaxInfoString {
 	  . $self->instanceNum . ": ";
 	$returnString .= " Users = " . $self->users;
 	$returnString .= " InitialRateStep = " . $self->curRateStep;
-	$returnString .= " MinRateStep = " . $self->minRateStep . "\n";
 	return $returnString;
 }
 sub pretouchData {

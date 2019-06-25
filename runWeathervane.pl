@@ -27,6 +27,8 @@ my $configFile = 'weathervane.config';
 my $version = '2.0.0';
 my $outputDir = 'output';
 my $tmpDir = '';
+my $backgroundScript = '';
+my $scriptPeriodSec = 60;
 my $help = '';
 
 if ((-e "./version.txt") && (-f "./version.txt")) {
@@ -40,6 +42,8 @@ GetOptions(	'accept!' => \$accept,
 			'outputDir=s' => \$outputDir,
 			'version=s' => \$version,
 			'tmpDir=s' => \$tmpDir,
+			'script=s' => \$backgroundScript,
+			'scriptPeriod=i' => \$scriptPeriodSec,
 			'help!' => \$help,
 		);
 		
@@ -74,6 +78,15 @@ sub usage {
 	print "              this script was invoked.\n";
 	print "              default value: None.  If no value is specified the temporary files are stored\n";
 	print "                             inside the Weathervane container.\n";
+	print "--script:     The path to a script that should be run every scriptPeriod seconds.\n";
+	print "              The script may be used to refresh the credentials in the kubeconfig file\n";
+	print "              or to trigger external stats collection.\n";
+	print "              If this parameter is not a fully-qualified file name starting with a \/ then\n";
+	print "              the location of the file is assumed to be relative to the directory in which\n";
+	print "              this script was invoked.\n";
+	print "              default value: None.\n";
+	print "--scriptPeriod: The frequency at which the script should be run in seconds.\n";
+	print "              default value: 60\n";
 	print "--accept:     Accepts the terms of the Weathervane license.  Useful when running this script\n";
 	print "              from another script.  Only needs to be specified on the first run in a given directory.\n";
 	print "              default value: None.  If no value is specified the user is prompted to accept the\n";
@@ -119,12 +132,27 @@ sub parseConfigFile {
 	
 	return \@return;
 }
+
+sub parseKubeconfigFile {
+	my ($configFileName) = @_;
+	
+	# Read in the config file
+	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
+	my @files;
+	my $dockerNamespace;
+	while (<CONFIGFILE>) {
+		if ($_ =~ /^\s*[a-zA-Z0-9\-_]+:\s*(\/.*)$/) {
+			push @files, $1;
+		}
+	}
+	close CONFIGFILE;
+		
+	return \@files;
+}
 		
 sub dockerExists {
 	my ( $name ) = @_;
-	
 	my $out = `docker ps -a`;
-	
 	my @lines = split /\n/, $out;
 	my $found = 0;
 	foreach my $line (@lines) {	
@@ -133,13 +161,22 @@ sub dockerExists {
 			last;
 		}
 	}
-
 	return $found;
 }
 
-if ($help) {
-	usage();
-	exit 0;
+sub runPeriodicScript {
+	`$backgroundScript`;
+	my $pid = fork();
+	if (!defined $pid ) {
+		die("Couldn't fork a process to run background script: $!\n");
+	} elsif ( $pid == 0 ) {
+		while (1) {
+			`$backgroundScript`;
+			sleep($scriptPeriodSec);
+		}
+		exit;
+	}
+	return $pid;
 }
 
 # Force acceptance of the license if not using the accept parameter
@@ -168,6 +205,12 @@ sub forceLicenseAccept {
 	}
 	
 }
+
+if ($help) {
+	usage();
+	exit 0;
+}
+
 unless ( -e "./.accept-weathervane" ) {
 	if ($accept) {
 		open( my $file, ">./.accept-weathervane" ) or die "Can't create file ./.accept-weathervane: $!\n";
@@ -230,11 +273,35 @@ if ($tmpDir) {
 	$tmpMountString = "-v $tmpDir:/root/weathervane/tmpLog";
 }
 
+if ($backgroundScript) {
+	# If the $backgroundScript does not reference a file with an absolute path, 
+	# then make it an absolute path relative to the local dir
+	if (!($backgroundScript =~ /\//)) {
+		$backgroundScript = "$pwd/$backgroundScript";	
+	}
+	if (!(-e $backgroundScript)) {
+		die "The script $backgroundScript does not exist.\n";
+	}
+	if (!(-f $backgroundScript)) {
+		print "The script $backgroundScript must be a file.\n";
+		exit 1;									
+	}
+	if (!(-x $backgroundScript)) {
+		print "The script $backgroundScript must be a executable.\n";
+		exit 1;									
+	}
+}
+
 if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
 my $resultsFile = "$pwd/weathervaneResults.csv";
+if (!(-e $resultsFile)) {
+	`touch $resultsFile`;
+} elsif (-d $resultsFile) {
+	die "The file $resultsFile must be an ordinary file";
+}
 
 my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];
@@ -249,6 +316,12 @@ foreach my $k8sConfig (@$k8sConfigFilesRef) {
 	} else {
 		$k8sConfigMountString .= "-v $k8sConfig:/root/weathervane/$k8sConfig ";		
 	}
+	
+	# Also mount any files that are referenced in the kubeconfig file
+	my $kubeconfigFilesRef = parseKubeconfigFile($k8sConfig);
+	foreach my $file (@$kubeconfigFilesRef) {
+		$k8sConfigMountString .= "-v $file:$file ";		
+	}
 }
 
 my $configMountString = "-v $configFile:/root/weathervane/weathervane.config";
@@ -259,7 +332,14 @@ if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
 }
 
+my $pid = '';
+if ($backgroundScript) {
+	print "Running script $backgroundScript every $scriptPeriodSec seconds.\n";
+	$pid = runPeriodicScript();
+}
+
 # make sure the docker image is up-to-date
+print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.\n";
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
 my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 
@@ -275,4 +355,8 @@ my $pipePid = open my $driverPipe, "$pipeString"
 my $inline;
 while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
     print $inline;
+}
+
+if ($pid) {
+	kill 9, $pid;
 }

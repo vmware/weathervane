@@ -29,6 +29,7 @@ public class StatsSummaryRollup {
 	private boolean intervalPassed = true;
 	private boolean intervalPassedRT = true;
 	private boolean intervalPassedMix = true;
+	private boolean intervalPassedFailure = true;
 	private long startActiveUsers = -1;
 	private long endActiveUsers = -1;
 
@@ -85,9 +86,14 @@ public class StatsSummaryRollup {
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
-			computedOpStatsSummaries.put(opName, computedOpStatsSummary);
-			if (opStatsSummary.getTotalNumOps() > 0) {
+			getComputedOpStatsSummaries().put(opName, computedOpStatsSummary);
+			if (opStatsSummary.getRequiredMixPct() > 0) {
+				computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps() 
+						- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
+				computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
+				computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
 				computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
+				computedOpStatsSummary.setPassedFailurePct(opStatsSummary.passedFailurePercent());
 				boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
 				if (!passedMixPct) {
 					logger.info("doRollup: workload " + statsSummary.getWorkloadName() 
@@ -98,12 +104,14 @@ public class StatsSummaryRollup {
 				}
 				computedOpStatsSummary.setPassedMixPct(passedMixPct);
 
-				boolean opPassed = computedOpStatsSummary.isPassedRt() && computedOpStatsSummary.isPassedMixPct();
+				boolean opPassed = computedOpStatsSummary.isPassedRt() 
+						&& computedOpStatsSummary.isPassedMixPct() 
+						&& computedOpStatsSummary.isPassedFailurePct();
 				computedOpStatsSummary.setPassed(opPassed);
 				setIntervalPassed(isIntervalPassed() && opPassed);
 				setIntervalPassedRT(isIntervalPassedRT() && computedOpStatsSummary.isPassedRt());
 				setIntervalPassedMix(isIntervalPassedMix() && computedOpStatsSummary.isPassedMixPct());
-
+				setIntervalPassedFailure(isIntervalPassedFailure() && computedOpStatsSummary.isPassedFailurePct());
 				computedOpStatsSummary.setThroughput(opStatsSummary.getTotalNumOps() / (1.0 * getIntervalDurationSec()));
 				computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * totalNumOps));
 				computedOpStatsSummary.setEffectiveThroughput(
@@ -247,7 +255,7 @@ public class StatsSummaryRollup {
 	}
 
 	public ComputedOpStatsSummary getComputedOpStatsSummary(String opName) {
-		return computedOpStatsSummaries.get(opName);
+		return getComputedOpStatsSummaries().get(opName);
 	}
 
 	public double getIntervalDurationSec() {
@@ -306,6 +314,22 @@ public class StatsSummaryRollup {
 		this.endActiveUsers = endActiveUsers;
 	}
 
+	public Map<String, ComputedOpStatsSummary> getComputedOpStatsSummaries() {
+		return computedOpStatsSummaries;
+	}
+
+	public void setComputedOpStatsSummaries(Map<String, ComputedOpStatsSummary> computedOpStatsSummaries) {
+		this.computedOpStatsSummaries = computedOpStatsSummaries;
+	}
+
+	public boolean isIntervalPassedFailure() {
+		return intervalPassedFailure;
+	}
+
+	public void setIntervalPassedFailure(boolean intervalPassedFailure) {
+		this.intervalPassedFailure = intervalPassedFailure;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder retVal = new StringBuilder();
@@ -324,10 +348,11 @@ public class StatsSummaryRollup {
 		retVal.append(", pctPassing = " + pctPassing);
 		retVal.append(", intervalPassed = " + intervalPassed);
 		retVal.append(", intervalPassedRT = " + intervalPassedRT);
+		retVal.append(", intervalPassedFailure = " + intervalPassedFailure);
 		retVal.append(", intervalPassedMix = " + intervalPassedMix + ": ");
 		
-		for (String opName: computedOpStatsSummaries.keySet()) {
-			ComputedOpStatsSummary opSummary = computedOpStatsSummaries.get(opName);
+		for (String opName: getComputedOpStatsSummaries().keySet()) {
+			ComputedOpStatsSummary opSummary = getComputedOpStatsSummaries().get(opName);
 			retVal.append("ComputedSummary for " + opName + ": " + opSummary + "; ");
 		}			
 		

@@ -1,4 +1,4 @@
-<!--
+/*
 Copyright (c) 2017 VMware, Inc. All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -12,22 +12,20 @@ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PRO
 SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+*/
+package com.vmware.weathervane.workloadDriver.common.random;
 
-<configuration>
+import java.util.Random;
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <!-- encoders are assigned the type
-         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
-
-    <logger name="com.vmware" level="WARN" />
-    <logger name="com.vmware.weathervane.workloadDriver.common.core.loadPath" level="WARN" />
-
-  <root level="warn">
-    <appender-ref ref="STDOUT" />
-  </root>
-</configuration>
+public class TruncatedNormal {
+	
+	private static final Random rand = new Random();
+		
+	public static double getNext(double mean, double stddev, double min, double max) {
+		double rVal;
+		do {
+			rVal = rand.nextGaussian()*stddev + mean;
+		} while ((rVal < min) || (rVal > max));
+		return rVal;
+	}		
+}

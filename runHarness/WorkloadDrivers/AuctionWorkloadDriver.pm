@@ -111,6 +111,12 @@ has 'passRT' => (
 	default => sub { {} },
 );
 
+has 'passFailure' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 has 'overallAvgRT' => (
 	is      => 'rw',
 	isa     => 'HashRef',
@@ -136,6 +142,12 @@ has 'successes' => (
 );
 
 has 'failures' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
+has 'rtFailures' => (
 	is      => 'rw',
 	isa     => 'HashRef',
 	default => sub { {} },
@@ -331,6 +343,11 @@ sub getHosts {
 	return \@hosts;
 }
 
+sub getHostPort {
+	my ( $self ) = @_;
+	return $self->portMap->{'http'};
+}
+
 sub getStatsHost {
 	my ( $self ) = @_;
 	return $self->host->name
@@ -344,9 +361,10 @@ sub createRunConfigHash {
 	my $workloadNum    = $self->workload->instanceNum;
 
 	my $rampUp           = $self->getParamValue('rampUp');
+	my $warmUp           = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown         = $self->getParamValue('rampDown');
-	my $totalTime        = $rampUp + $steadyState + $rampDown;
+	my $totalTime        = $rampUp + $warmUp + $steadyState + $rampDown;
 	my $usersScaleFactor = $self->getParamValue('usersScaleFactor');
 	my $usersPerAuctionScaleFactor =
 	  $self->getParamValue('usersPerAuctionScaleFactor');
@@ -355,9 +373,7 @@ sub createRunConfigHash {
 
 	my $workloadProfile  = $self->getParamValue('workloadProfile');
 	my $behaviorSpecName = "auctionMainUser";
-	if ($workloadProfile eq "revised") {
-		$behaviorSpecName = "auctionRevisedMainUser";
-	} elsif ($workloadProfile eq "official2") {
+	if ($workloadProfile eq "official2") {
 		$behaviorSpecName = "auctionMainUser2";
 	}
 
@@ -380,7 +396,7 @@ sub createRunConfigHash {
 		my $workload = {};
 		$workload->{'name'}             = "appInstance" . $instanceNum;
 		$workload->{"behaviorSpecName"} = $behaviorSpecName;
-		$workload->{"maxUsers"}         = $appInstance->getMaxLoadedUsers();
+		$workload->{"maxUsers"}         = $appInstance->getParamValue('maxUsers');
 
 		if ( $self->getParamValue('useThinkTime') ) {
 			$workload->{"useThinkTime"} = JSON::true;
@@ -412,6 +428,7 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}        = 'fixed';
 			$loadPath->{"rampUp"}      = $rampUp;
+			$loadPath->{"warmUp"}      = $warmUp;
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 			$loadPath->{"exitOnFirstFailure"} = $self->getParamValue('exitOnFirstFailure');
@@ -445,17 +462,19 @@ sub createRunConfigHash {
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
 			$loadPath->{"type"}          = "findmax";
-			$loadPath->{"maxUsers"} = $appInstance->getMaxLoadedUsers();
+			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
+			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"findMaxStopPct"} = $self->getParamValue('findMaxStopPct');
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type ramptomax"
 			);
-			$loadPath->{"startUsers"} = $appInstance->getMaxLoadedUsers() / 10;
-			$loadPath->{"maxUsers"}   = $appInstance->getMaxLoadedUsers();
-			$loadPath->{"stepSize"}   = $appInstance->getMaxLoadedUsers() / 10;
+			$loadPath->{"startUsers"} = $appInstance->getParamValue('maxUsers') / 10;
+			$loadPath->{"maxUsers"}   = $appInstance->getParamValue('maxUsers');
+			$loadPath->{"stepSize"}   = $appInstance->getParamValue('maxUsers') / 10;
 			$loadPath->{"intervalDuration"}     = 600;
 			$loadPath->{"rampIntervalDuration"} = 300;
 		}
@@ -534,9 +553,10 @@ override 'configure' => sub {
 
 	my $workloadProfileHome = $self->getParamValue('workloadProfileDir');
 	my $rampUp              = $self->getParamValue('rampUp');
+	my $warmUp              = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
-	my $totalTime           = $rampUp + $steadyState + $rampDown;
+	my $totalTime           = $rampUp + $warmUp + $steadyState + $rampDown;
 	my $usersScaleFactor    = $self->getParamValue('usersScaleFactor');
 	my $rampupInterval      = $self->getParamValue('rampupInterval');
 
@@ -558,7 +578,6 @@ override 'configure' => sub {
 
 		# The passingPct was not set, just use the default that is in the
 		# behaviorSpec by copying the specs
-`cp $sourceBehaviorSpecDirName/auction.revisedMainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.mainUser2.behavior.json $targetBehaviorSpecDirName/. `;
 `cp $sourceBehaviorSpecDirName/auction.followAuction.behavior.json $targetBehaviorSpecDirName/.`;
@@ -566,7 +585,6 @@ override 'configure' => sub {
 	}
 	else {
 		my @behaviorSpecFiles = (
-			'auction.revisedMainUser.behavior.json',
 			'auction.mainUser.behavior.json',
 			'auction.mainUser2.behavior.json',
 			'auction.followAuction.behavior.json',
@@ -655,11 +673,13 @@ sub clearResults {
 	$self->reqSec(       {} );
 	$self->passAll(      {} );
 	$self->passRT(       {} );
+	$self->passFailure( {} );
 	$self->overallAvgRT( {} );
 	$self->rtAvg(        {} );
 	$self->pctPassRT(    {} );
 	$self->successes(    {} );
 	$self->failures(     {} );
+	$self->rtFailures(     {} );
 	$self->proportion(   {} );
 }
 
@@ -860,38 +880,55 @@ sub initializeRun {
 	# Send the hosts and port number to the controller
 	my $runContent = $json->encode($self->getHosts());
 	my $url = $baseUrl . "/hosts";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+
+	$retryCount = 0;
+	my $success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send hosts message to workload controller. Exiting");
 		return 0;
 	}
-	
+		
 	my %portHash;
-	$portHash{"port"} = $self->portMap->{'http'};
+	$portHash{"port"} = $self->getHostPort();
 	$runContent = $json->encode(\%portHash);
 	$url = $baseUrl . "/port";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  " . $res->content );
-	}
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send port message to workload controller. Exiting");
 		return 0;
 	}
@@ -931,22 +968,28 @@ sub initializeRun {
 
 	$runContent = $json->encode($runRef);
 	$url = $baseUrl . "/$runName";
-	$logger->debug("Run content for workload $workloadNum:\n$runContent\n");
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
-		$logger->debug( "Response unsucessful.  Content: " . $res->content );
+		$logger->debug( "Response unsuccessful.  Content: " . $res->content );
 		return 0;
 	}
 
@@ -956,7 +999,6 @@ sub initializeRun {
 	my @behaviorSpecFiles = (
 		'auction.mainUser.behavior.json',
 		'auction.mainUser2.behavior.json',
-		'auction.revisedMainUser.behavior.json',
 		'auction.followAuction.behavior.json',
 		'auction.followAuction2.behavior.json'
 	);
@@ -971,17 +1013,26 @@ sub initializeRun {
       close FILE;
 
 	  $url      = $baseUrl . "/behaviorSpec";
-	  $logger->debug("Sending POST to $url with contents:\n$contents");
 	  $req = HTTP::Request->new( POST => $url );
 	  $req->content_type('application/json');
 	  $req->header( Accept => "application/json" );
 	  $req->content($contents);
-
-	  $res = $ua->request($req);
-	  $logger->debug( "Response status line: " . $res->status_line . " for url " . $url );
-	  if ( $res->is_success ) {
-	  	$logger->debug("Response sucessful.  Content: " . $res->content );
-	  }	else {
+	  $retryCount = 0;
+	  $success = 0;
+	  do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	  } while ((!$success) && ($retryCount < 12));
+	  if (!$success) {
 		$console_logger->warn("Could not send behaviorSpec message to workload controller. Exiting");
 		return 0;
 	  }
@@ -989,17 +1040,27 @@ sub initializeRun {
 
 	# Now send the initialize message to the runService
 	$url      = $baseUrl . "/$runName/initialize";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($runContent);
-	$res = $ua->request($req);
-	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
 
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	} else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send initialize message to workload controller. Exiting");
 		return 0;
 	}
@@ -1018,9 +1079,10 @@ sub startRun {
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
+	my $warmUp              = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown            = $self->getParamValue('rampDown');
-	my $totalTime           = $rampUp + $steadyState + $rampDown;
+	my $totalTime           = $rampUp + $warmUp + $steadyState + $rampDown;
 
 	my $logName = "$logDir/StartRun$suffix.log";
 	my $logHandle;
@@ -1042,19 +1104,26 @@ sub startRun {
 	my $pid1       = fork();
 	if ( $pid1 == 0 ) {
 		my $url      = $self->getControllerURL() . "/run/$runName/start";
-		$logger->debug("Sending POST to $url");
 		$req = HTTP::Request->new( POST => $url );
 		$req->content_type('application/json');
 		$req->header( Accept => "application/json" );
 		$req->content($runContent);
-
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response sucessful.  Content: " . $res->content );
-		}
-		else {
+		my $retryCount = 0;
+		my $success = 0;
+		do {
+			$logger->debug("Sending POST to $url.  content = $runContent");
+			$res = $ua->request($req);
+			$logger->debug(
+				"Response status line: " . $res->status_line . " for url " . $url );
+			if ( $res->is_success ) {
+				$logger->debug( "Response successful.  Content: " . $res->content );
+				$success = 1;
+			} else {
+				sleep 10;
+			}
+			$retryCount++
+		} while ((!$success) && ($retryCount < 12));
+		if (!$success) {
 			$console_logger->warn("Could not send start message to workload controller. Exiting");
 			return 0;
 		}
@@ -1071,19 +1140,26 @@ sub startRun {
 	my $statsStartedContent = $json->encode($statsStartedMsg);
 
 	my $url      = $self->getControllerURL() . "/stats/started/$runName";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($statsStartedContent);
-
-	$res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug( "Response sucessful.  Content: " . $res->content );
-	}
-	else {
+	my $retryCount = 0;
+	my $success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send stats/started message to workload controller. Exiting");
 		return 0;
 	}
@@ -1198,7 +1274,9 @@ sub startRun {
 				my $curIntervalName;
 				if ($curInterval) {
 					$curIntervalName = $curInterval->{'name'};
+					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
+				
 				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
@@ -1216,31 +1294,30 @@ sub startRun {
 						if (!(defined $lastIntervalNames[$appInstanceNum]) ||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
-							my $metricsStr = "";
 							my $nameStr = $self->parseNameStr($endIntervalName);
-							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
-								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
-								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
-								my $successStr;
-								if ($statsSummary->{"intervalPassed"}) {
-									$successStr = 'passed';
-								} else {
-									my $passRT;
-									my $passMix;
-									if ($statsSummary->{"intervalPassedRT"}) {
-										$passRT = 'passed:RT';
-									} else {
-										$passRT = 'failed:RT';
-									}
-									if ($statsSummary->{"intervalPassedMix"}) {
-										$passMix = 'passed:Mix';
-									} else {
-										$passMix = 'failed:Mix';
-									}
-									$successStr = "$passRT $passMix";
-								}
-								$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+							if ($endIntervalName =~ /InitialRamp\-(\d+)/) {
+								# Don't print end message for InitialRamp intervals
+								next;
 							}
+							my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
+							my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+							my $successStr;
+							if ($statsSummary->{"intervalPassed"}) {
+								$successStr = 'passed';
+							} else {
+								$successStr = 'failed: ';
+								if (!$statsSummary->{"intervalPassedRT"}) {
+									$successStr .= 'RT,';
+								}
+								if (!$statsSummary->{"intervalPassedMix"}) {
+									$successStr .= 'Mix,';
+								}
+								if (!$statsSummary->{"intervalPassedFailure"}) {
+									$successStr .= 'FailurePct,';
+								}
+								chop($successStr);
+							}
+							my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
 							$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 						}
 					}
@@ -1290,21 +1367,26 @@ sub startRun {
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $json->encode($statsCompleteMsg);
 	$url      = $self->getControllerURL() . "/stats/complete/$runName";
-	$logger->debug("Sending POST to $url");
 	$req = HTTP::Request->new( POST => $url );
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	$req->content($statsCompleteContent);
-
-	$res = $ua->request($req);
-	$logger->debug( "Response status line: "
-		  . $res->status_line
-		  . " for url "
-		  . $url );
-	if ( $res->is_success ) {
-		$logger->debug("Response sucessful.  Content: " . $res->content );
-	}	
-	else {
+	$retryCount = 0;
+	$success = 0;
+	do {
+		$logger->debug("Sending POST to $url.  content = $runContent");
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug( "Response successful.  Content: " . $res->content );
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
 		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
 		return 0;
 	}
@@ -1334,6 +1416,8 @@ sub parseNameStr {
 	} elsif ($str =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/) {
 		my $numRerun = $2 + 1;
 		$nameStr = "verify maximum run at $1 users rerun $numRerun";
+	} elsif ($str =~ /WARMUP\-(\d+)/) {
+		$nameStr = "WarmUp";
 	} elsif ($str =~ /QOS\-(\d+)/) {
 		$nameStr = "QoS period $1";
 	} else {
@@ -1383,7 +1467,7 @@ sub stopRun {
 		  . $url );
 	if ( $res->is_success ) {
 		$logger->debug(
-			"Response sucessful.  Content: " . $res->content );
+			"Response successful.  Content: " . $res->content );
 	}	
 	else {
 		$console_logger->warn(
@@ -1746,7 +1830,28 @@ sub getWorkloadStatsSummary {
 	my $httpReqSec   = 0;
 	my $overallAvgRT = 0;
 
+	my $numPassingAi = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstanceRef (@$appInstancesRef) {
+		my $appInstanceNum = $appInstanceRef->instanceNum;
+		if ($self->passAll->{$appInstanceNum}) {
+			$numPassingAi++;
+			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
+			$opsSec       += $self->opsSec->{$appInstanceNum};
+			$httpReqSec   += $self->reqSec->{$appInstanceNum};
+			$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
+		}
+	}
+	
+	$csvRef->{"users-total"}       = $totalUsers;
+	$csvRef->{"opsSec-total"}       = $opsSec;
+	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
+	if ($numPassingAi > 0) {
+		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
+	} else {
+		$csvRef->{"overallAvgRT-total"} = 0;		
+	}
+	$appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
 		my $prefix = "-AI${appInstanceNum}";
@@ -1762,27 +1867,14 @@ sub getWorkloadStatsSummary {
 		$csvRef->{"opsSec$prefix"}       = $self->opsSec->{$appInstanceNum};
 		$csvRef->{"httpReqSec$prefix"}   = $self->reqSec->{$appInstanceNum};
 		$csvRef->{"overallAvgRT$prefix"} = $self->overallAvgRT->{$appInstanceNum};
-
-		$totalUsers       += $self->maxPassUsers->{$appInstanceNum};
-		$opsSec       += $self->opsSec->{$appInstanceNum};
-		$httpReqSec   += $self->reqSec->{$appInstanceNum};
-		$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
-	}
-	
-	my $numAppInstances = $#{$appInstancesRef} + 1;
-	$overallAvgRT /= $numAppInstances;
-
-	$csvRef->{"users-total"}       = $totalUsers;
-	$csvRef->{"opsSec-total"}       = $opsSec;
-	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
-	$csvRef->{"overallAvgRT-total"} = $overallAvgRT;
-
+	}	
 }
 
 sub getWorkloadSummary {
 	my ( $self, $csvRef, $logDir ) = @_;
 
 	$csvRef->{"RampUp"}      = $self->getParamValue('rampUp');
+	$csvRef->{"WarmUp"}      = $self->getParamValue('warmUp');
 	$csvRef->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 	$csvRef->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 	$csvRef->{"RampDown"}    = $self->getParamValue('rampDown');
@@ -1832,8 +1924,8 @@ sub getWorkloadAppStatsSummary {
 		}
 
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->rtAvg->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->rtAvg->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1841,8 +1933,8 @@ sub getWorkloadAppStatsSummary {
 
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->pctPassRT->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->pctPassRT->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1860,8 +1952,18 @@ sub getWorkloadAppStatsSummary {
 			  $self->successes->{"$op-$appInstanceNum"};
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->rtFailures->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->rtFailures->{"$op-$appInstanceNum"} ) )
+			{
+				next;
+			}
+			$csv{"${aiSuffix}${op}_RtFailures"} =
+			  $self->rtFailures->{"$op-$appInstanceNum"};
+
+		}
+		foreach my $op (@operations) {
+			if (   ( !exists $self->failures->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->failures->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -1870,8 +1972,8 @@ sub getWorkloadAppStatsSummary {
 
 		}
 		foreach my $op (@operations) {
-			if (   ( !exists $self->successes->{"$op-$appInstanceNum"} )
-				|| ( !defined $self->successes->{"$op-$appInstanceNum"} ) )
+			if (   ( !exists $self->proportion->{"$op-$appInstanceNum"} )
+				|| ( !defined $self->proportion->{"$op-$appInstanceNum"} ) )
 			{
 				next;
 			}
@@ -2149,7 +2251,7 @@ sub isPassed {
 	if ($usedLoadPath) {
 
 		# Using a load path in steady state, so ignore proportions
-		return $self->passRT->{$appInstanceNum};
+		return $self->passRT->{$appInstanceNum} && $self->passFailure->{$appInstanceNum};
 	}
 	return $self->passAll->{$appInstanceNum};
 }
@@ -2184,6 +2286,7 @@ sub parseStats {
 		$self->proportion->{ $operations[$opCounter] } = 0;
 		$self->successes->{ $operations[$opCounter] }  = 0;
 		$self->failures->{ $operations[$opCounter] }   = 0;
+		$self->rtFailures->{ $operations[$opCounter] }   = 0;
 		$self->rtAvg->{ $operations[$opCounter] }      = 0;
 		$self->pctPassRT->{ $operations[$opCounter] }  = 0;
 	}	
@@ -2207,7 +2310,7 @@ sub parseStats {
 		$logger->debug("Final status content: " . $res->content);
 		$runStatus = $json->decode( $res->content );			
 	} else {
-		$console_logger->warn("Could not retrieve find run state for workload $workloadNum");
+		$console_logger->warn("Could not retrieve final run state for workload $workloadNum");
 		return 0;
 	}
 
@@ -2220,11 +2323,43 @@ sub parseStats {
 		$appInstanceName =~ /appInstance(\d+)/;
 		my $appInstanceNum = $1;
 		my $statsSummaries = $workloadStatus->{"intervalStatsSummaries"};
-		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		my $maxPassUsers = $workloadStatus->{"maxPassUsers"};
 		my $passed = $workloadStatus->{"passed"};
-		$logger->debug("parseStats: Found workloadStatus for workload " . $appInstanceName 
+		$self->passAll->{$appInstanceNum} = $passed;
+		
+		my $resultString = "passed at $maxPassUsers";
+		if (!$passed) {
+			$resultString = "failed";
+			my $minUsers = $self->getParamValue('minimumUsers');
+			if ($maxPassUsers == $minUsers) {
+				$resultString .= " at minimumUsers ($minUsers)"
+			}
+			my $appInstance;
+			foreach my $appInstance (@$appInstancesRef) {
+				if ($appInstance->instanceNum == $appInstanceNum) {
+					last;
+				}
+			}
+			my $maxUsers = -1;
+			if ($appInstance) {
+				$maxUsers = $appInstance->getParamValue('maxUsers');	
+			}
+			if ($maxPassUsers == $maxUsers) {
+				$resultString = "Run could not find maximum because passing value would exceed maxUsers ($maxUsers)." 
+								. "\nIncrease maxUsers and try again.";				
+			}
+		}
+		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
+		
+		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
+		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 
 					. ", appInstanceNum = " . $appInstanceNum);
+		if (!$maxPassIntervalName) {
+			$logger->debug("parseStats: workload " . $appInstanceName 
+					. ", appInstanceNum = " . $appInstanceNum 
+					. " does not have a maxPassInterval");
+			next;
+		}
 		
 		my $maxPassStatsSummary = "";
 		for my $statsSummary (@$statsSummaries) {
@@ -2235,93 +2370,47 @@ sub parseStats {
 		
 		if (!$maxPassStatsSummary) {
 			$console_logger->warn("Could not find the max passing interval for appInstance " . $appInstanceName);
+			$self->passRT->{$appInstanceNum} = 0;
+			$self->passFailure->{$appInstanceNum} = 0;
 			next;
 		}
 		
 		$self->maxPassUsers->{$appInstanceNum} = $maxPassUsers;
-		$self->passAll->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassed"};
 		$self->passRT->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedRT"};
+		$self->passFailure->{$appInstanceNum} = $maxPassStatsSummary->{"intervalPassedFailure"};
 		$self->overallAvgRT->{$appInstanceNum} = $maxPassStatsSummary->{"avgRT"};
 		$self->opsSec->{$appInstanceNum} = $maxPassStatsSummary->{"throughput"};
 		$self->reqSec->{$appInstanceNum} = $maxPassStatsSummary->{"stepsThroughput"};
 		
-		open( RESULTFILE, "$tmpDir/run$suffix.log" )
-		  or die "Can't open $tmpDir/run$suffix.log: $!";
-
-		while ( my $inline = <RESULTFILE> ) {
-	
-			if ( $inline =~ /Summary Statistics for workload appInstance${appInstanceNum}\s*$/ )
-			{
-
-				# This is the section with the operation response-time data
-				# for appInstance $1
-				while ( $inline = <RESULTFILE> ) {
-
-					if ( $inline =~ /Interval:\s$maxPassIntervalName/ ) {
-
-						# parse the steadystate results for appInstance $1
-						while ( $inline = <RESULTFILE> ) {
-							if ( $inline =~ /\|\s+Name/ ) {
-
-								# Now can parse the per-operation stats
-								while ( $inline = <RESULTFILE> ) {
-									if ( $inline =~ /^\s*$/ ) {
-										last;
-									}
-									elsif ( $inline =~
-/\|\s*(\w+)\|[^\|]*\|\s*(true|false)\|\s*(true|false)\|[^\|]*\|\s*(\d+\.\d+)\|[^\|]*\|[^\|]*\|[^\|]*\|[^\|]*\|\s*(\d+\.\d+)\|\s*(\d+\.\d+)\|\s*(\d+)\|\s*(\d+)\|/
-									  )
-									{
-
-										my $operation = $1;
-										my $opPassRT  = $2;
-										my $opPassMix = $3;
-
-										$self->rtAvg->{"$operation-$appInstanceNum"}
-										  = $4;
-										$self->proportion->{
-											"$operation-$appInstanceNum"} = $5;
-										$self->pctPassRT->{
-											"$operation-$appInstanceNum"} = $6;
-
-										$self->successes->{
-											"$operation-$appInstanceNum"} = $7;
-										$self->failures->{
-											"$operation-$appInstanceNum"} = $8;
-
-										if ( $opPassRT eq "false" ) {
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Failed Response-Time metric for $operation"
-											);
-										}
-										if (   ( $opPassMix eq "false" )
-											&& ( $anyUsedLoadPath == 0 ) )
-										{
-											$console_logger->info(
-"Workload $workloadNum AppInstance $appInstanceNum: Proportion check failed for $operation"
-											);
-										}
-
-									}
-								}
-							}
-							if ( $inline =~ /^\s*$/ ) {
-								last;
-							}
-						}
-					}
-				}
-			}
-		}
-		close RESULTFILE;
-		
-		my $resultString = "passed at $maxPassUsers";
-		if (!$passed) {
-			$resultString = "failed";
+		# Get the statsSummary for the max passing interval
+		my $loadPathName = $workloadStatus->{"loadPathName"};
+		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$appInstanceName/specName/$loadPathName/intervalName/$maxPassIntervalName/rollup";
+		$logger->debug("Sending get to $url");
+		$req = HTTP::Request->new( GET => $url );
+		$res = $ua->request($req);
+		my $statsSummaryRollup;
+		$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
+		if ( $res->is_success ) {
+			$logger->debug("MaxPassInterval statsSummary: " . $res->content);
+			$statsSummaryRollup = $json->decode( $res->content )->{'statsSummaryRollup'};			
+		} else {
+			$console_logger->warn("Could not retrieve max passing interval summary for workload $workloadNum");
+			return 0;
 		}
 		
-		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
-		
+		my $opNameToStatsMap = $statsSummaryRollup->{'computedOpStatsSummaries'};
+		foreach my $operation (keys %$opNameToStatsMap) {
+			my $opStats = $opNameToStatsMap->{$operation};
+			my $opPassRT  = $opStats->{'passedRt'};
+			my $opPassMix = $opStats->{'passedMixPct'};
+			my $opPassFailure = $opStats->{'passedFailurePct'};
+			$self->rtAvg->{"$operation-$appInstanceNum"} = $opStats->{'avgRt'};
+			$self->proportion->{"$operation-$appInstanceNum"} = $opStats->{'mixPct'};
+			$self->pctPassRT->{"$operation-$appInstanceNum"} = $opStats->{'passingPct'};
+			$self->successes->{"$operation-$appInstanceNum"} = $opStats->{'successes'};
+			$self->rtFailures->{"$operation-$appInstanceNum"} = $opStats->{'rtFailures'};
+			$self->failures->{"$operation-$appInstanceNum"} = $opStats->{'failures'};
+		}		
 	}
 	
 	$self->resultsValid(1);

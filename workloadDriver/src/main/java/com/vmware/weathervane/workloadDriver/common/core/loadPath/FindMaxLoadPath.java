@@ -36,9 +36,11 @@ public class FindMaxLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(FindMaxLoadPath.class);
 
 	private long maxUsers;
+	private long minUsers;
 
-	private final long numQosPeriods = 3;
-	private final long qosPeriodSec = 300;
+	private long numQosPeriods = 3;
+	private long qosPeriodSec = 300;
+	private double findMaxStopPct = 0.02;
 
 	/*
 	 * Phases in a findMax run: - INITIALRAMP: Use short intervals to ramp up until
@@ -84,16 +86,15 @@ public class FindMaxLoadPath extends LoadPath {
 	private long minFailUsers = Long.MAX_VALUE;
 	@JsonIgnore
 	private long maxPassUsers = 0;
-	@JsonIgnore
-	private String maxPassIntervalName = null;
 
 	@JsonIgnore
 	private long initialRampRateStep = 1000;
 
 	@JsonIgnore
 	private long curRateStep;
+	
 	@JsonIgnore
-	private long minRateStep;
+	private boolean loadPathComplete = false;
 
 	@JsonIgnore
 	private int numVerifyMaxRepeatsPassed = 0;
@@ -130,10 +131,17 @@ public class FindMaxLoadPath extends LoadPath {
 			String statsHostName, int portNumber, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate,
 				executorService);
-		
+		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
+
 		this.maxUsers = workload.getMaxUsers();
-		this.initialRampRateStep = maxUsers / 10;
-		numRequiredVerifyMaxRepeats = numQosPeriods - 1;
+		this.initialRampRateStep = maxUsers / 20;
+		numRequiredVerifyMaxRepeats = getNumQosPeriods() - 1;
+		
+		curInterval= new UniformLoadInterval();
+		curInterval.setUsers(initialRampRateStep);
+		curInterval.setName("prerun");
+		curInterval.setDuration(initialRampIntervalSec);
+		
 		/*
 		 * Set up the curStatsInterval
 		 */
@@ -148,29 +156,34 @@ public class FindMaxLoadPath extends LoadPath {
 	public UniformLoadInterval getNextInterval() {
 
 		logger.debug("getNextInterval ");
-		UniformLoadInterval nextInterval = null;
+		if (loadPathComplete) {
+			intervalNum++;
+			curInterval.setName("PostRun-" + intervalNum);
+			statsIntervalAvailable.release();
+			return curInterval;
+		}
+		
 		switch (curPhase) {
 		case INITIALRAMP:
-			nextInterval = getNextInitialRampInterval();
+			curInterval = getNextInitialRampInterval();
 			break;
 		case FINDFIRSTMAX:
-			nextInterval = getNextFindFirstMaxInterval();
+			curInterval = getNextFindFirstMaxInterval();
 			break;
 		case VERIFYMAX:
-			nextInterval = getNextVerifyMaxInterval();
+			curInterval = getNextVerifyMaxInterval();
 			break;
 		}
 
-		curInterval = nextInterval;
 		statsIntervalAvailable.release();
-		return nextInterval;
+		return curInterval;
 	}
 
 	@JsonIgnore
 	private UniformLoadInterval getNextInitialRampInterval() {
 		logger.debug("getNextInitialRampInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		intervalNum++;
 		logger.debug("getNextInitialRampInterval interval " + intervalNum);
 
@@ -195,10 +208,10 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				if (intervalNum != 2) {
 					/*
-					 * InitialRamp intervals pass if operations pass response-time QOS. The mix QoS
+					 * InitialRamp intervals pass if 99% of all operations pass response-time QOS. The mix QoS
 					 * is not used in initialRamp
 					 */
-					prevIntervalPassed = rollup.isIntervalPassedRT();
+					prevIntervalPassed = (rollup.getPctPassing() >= 0.99);
 				}
 				getIntervalStatsSummaries().add(rollup);
 			}
@@ -245,7 +258,6 @@ public class FindMaxLoadPath extends LoadPath {
 		 * minRateStep is 1/20 of curUsers
 		 */
 		curRateStep = curUsers / 10;
-		minRateStep = curUsers / 100;
 		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
@@ -257,7 +269,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 		// No ramp on first APPROXIMATE interval
 		nextSubInterval = SubInterval.WARMUP;
-		logger.debug("getNextInitialRampInterval: Moving to FINDFIRSTMAX phase.  curUsers = " + curUsers
+		logger.debug("getNextInitialRampInterval " + this.getName() + ": Moving to FINDFIRSTMAX phase.  curUsers = " + curUsers
 				+ ", curRateStep = " + curRateStep);
 		return getNextFindFirstMaxInterval();
 	}
@@ -270,13 +282,13 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextFindFirstMaxInterval() {
 		logger.debug("getNextFindFirstMaxInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			long prevCurUsers = curUsers;
 			
 			intervalNum++;
 
-			logger.debug("getNextFindFirstMaxInterval ramp subinterval for interval " + intervalNum);
+			logger.debug("getNextFindFirstMaxInterval " + this.getName() + " ramp subinterval for interval " + intervalNum);
 
 			boolean prevIntervalPassed = false;
 			String curIntervalName = curInterval.getName();
@@ -290,7 +302,7 @@ public class FindMaxLoadPath extends LoadPath {
 				getIntervalStatsSummaries().add(rollup);
 			}
 
-			logger.debug("getNextFindFirstMaxInterval: Interval " + intervalNum + " prevIntervalPassed = "
+			logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Interval " + intervalNum + " prevIntervalPassed = "
 					+ prevIntervalPassed);
 
 			if (prevIntervalPassed && (curUsers == maxUsers)) {
@@ -301,32 +313,37 @@ public class FindMaxLoadPath extends LoadPath {
 				logger.debug(
 						"getNextFindFirstMaxInterval. At max users, so can't advance.  Ending workload and returning curInterval: "
 								+ curInterval);
-				maxPassUsers = 0;
-				loadPathComplete();
+				loadPathComplete(false);
 				return curInterval;
 			} else if (prevIntervalPassed && ((curUsers + curRateStep) > maxUsers)) {
 				/*
 				 * Can't step up beyond maxUsers, so just go to maxUsers. Reduce the curStep to
 				 * halfway between curUsers and maxUsers
 				 */
-				logger.debug("getNextFindFirstMaxInterval: Next interval would have exceeded maxUsers, using maxUsers");
+				logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Next interval would have exceeded maxUsers, using maxUsers");
 				curRateStep = (maxUsers - curUsers) / 2;
 				curUsers = maxUsers;
 			} else if (prevIntervalPassed) {
+				logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Passed interval at curUsers = " + curUsers);
 				if (curUsers > maxPassUsers) {
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": found new maxPassUsers = " + curUsers);
 					maxPassUsers = curUsers;
-					maxPassIntervalName = curInterval.getName();
+					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
+						logger.debug(
+								"getNextFindFirstMaxInterval" + this.getName() + ": maxPas and minFail are within {} percent, going to next phase", getFindMaxStopPct());
+						return moveToVerifyMax();						
+					}
 				}
 
 				long nextRateStep = curRateStep;
-				
 				numSucessiveIntervalsPassed++;
 				if (numSucessiveIntervalsPassed >= 2) {
 					/*
 					 * Have passed twice in a row, increase the rate step to possibly 
 					 * shorten run
 					 */
-					nextRateStep *= 2;
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Passed twice in a row.  Increasing nextRateStep");
+					nextRateStep *= 1.5;
 					
 					numSucessiveIntervalsPassed = 0;
 				}
@@ -335,41 +352,46 @@ public class FindMaxLoadPath extends LoadPath {
 				 * The next interval needs to be less than minFailUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				while ((curUsers + nextRateStep) >= minFailUsers) {
-					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
-						break;
-					}
-				}
-
 				if ((curUsers + nextRateStep) >= minFailUsers) {
-					/*
-					 * Can't get closer to maximum with the minRateStep. Go to the next phase.
-					 */
-					logger.debug(
-							"getNextFindFirstMaxInterval: Can't get closer to maximum with minRateStep, going to next phase");
-					return moveToVerifyMax();
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Reducing nextRateStep to halfway between axPass and minFail");
+					nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) /2);
 				}
 
 				curRateStep = nextRateStep;
 				curUsers += curRateStep;
 			} else {
+				logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed interval at curUsers = " + curUsers);
 				// prevIntervalFailed
 				if (curUsers < minFailUsers) {
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Found new minFailUsers = " + curUsers);
 					minFailUsers = curUsers;
+					if (minFailUsers <= getMinUsers()) {
+						// Never passed.  End the run.
+						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed at minUsers.  Ending run");
+						maxPassUsers = minUsers;
+						loadPathComplete(false);						
+					}
+					if ((minFailUsers - maxPassUsers) < (minFailUsers * getFindMaxStopPct())) {
+						logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": maxPass and minFail are within {} percent, going to next phase", getFindMaxStopPct());
+						if (maxPassUsers < getMinUsers()) {
+							// Never passed.  End the run.
+							logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": never passed.  Ending run");
+							maxPassUsers = minUsers;
+							loadPathComplete(false);
+						}
+						return moveToVerifyMax();						
+					}
 				}
 
-				long nextRateStep = curRateStep;
-				
+				long nextRateStep = curRateStep;		
 				numSucessiveIntervalsPassed--;
 				if (numSucessiveIntervalsPassed <= -2) {
 					/*
 					 * Have failed twice in a row, increase the rate step to possibly 
 					 * shorten run
 					 */
-					nextRateStep *= 2;
-					
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Failed twice in a row.  Increasing nextRateStep");
+					nextRateStep *= 1.5;					
 					numSucessiveIntervalsPassed = 0;
 				}
 				
@@ -377,30 +399,20 @@ public class FindMaxLoadPath extends LoadPath {
 				 * The next interval needs to be greater than maxPassUsers. May need to shrink the
 				 * step size in order to do this.
 				 */
-				while ((curUsers - nextRateStep) <= maxPassUsers) {
-					nextRateStep /= 2;
-					if (nextRateStep < minRateStep) {
-						nextRateStep = minRateStep;
-						break;
-					}
-				}
-
 				if ((curUsers - nextRateStep) <= maxPassUsers) {
-					if (maxPassUsers == 0) {
-						// Never passed.  End the run.
-						loadPathComplete();
-					}
-					
-					/*
-					 * Can't get closer to maximum with the minRateStep. Go to the next phase.
-					 */
-					logger.debug(
-							"getNextFindFirstMaxInterval: Can't get closer to maximum with minRateStep, going to next phase");
-					return moveToVerifyMax();
-				}
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
+					nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) / 2);
+				} 
 
 				curRateStep = nextRateStep;
-				curUsers -= curRateStep;
+				logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": curRateStep = {}, curUsers = {}, minUsers = {}", curRateStep, curUsers, getMinUsers());
+				if ((curUsers - nextRateStep) <= getMinUsers()) {
+					curUsers = getMinUsers();
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": (curUsers - nextRateStep) <= minUsers, set curUsers to minUsers");
+				} else {
+					curUsers -= curRateStep;
+					logger.debug("getNextFindFirstMaxInterval" + this.getName() + ": (curUsers - nextRateStep) > minUsers, set curUsers to {}", curUsers);
+				}
 			}
 
 			/*
@@ -427,7 +439,6 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				minFailUsers = Long.MAX_VALUE;
 				maxPassUsers = 0;
-				maxPassIntervalName = null;
 
 				/*
 				 * First interval of FINDFIRSTMAX should just be a longer run at the same level
@@ -471,13 +482,13 @@ public class FindMaxLoadPath extends LoadPath {
 			 * users for the previous interval, but with the non-warmup duration
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(qosPeriodSec);
+			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setName("FINDFIRSTMAX-" + curUsers);
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(qosPeriodSec);
+			curStatusInterval.setDuration(getQosPeriodSec());
 			
 			nextSubInterval = SubInterval.RAMP;
 		}
@@ -491,8 +502,7 @@ public class FindMaxLoadPath extends LoadPath {
 		 * When moving to VERIFYMAX, the initial rateStep is 1/20 of maxPassUsers, 
 		 * and the minRateStep is 1/100 of maxPassUsers
 		 */
-		curRateStep = maxPassUsers / 20;
-		minRateStep = maxPassUsers / 100;
+		curRateStep = (long) Math.ceil(maxPassUsers * getFindMaxStopPct());
 		curUsers = maxPassUsers;
 
 		intervalNum = 0;
@@ -509,7 +519,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval getNextVerifyMaxInterval() {
 		logger.debug("getNextVerifyMaxInterval ");
 
-		UniformLoadInterval nextInterval = new UniformLoadInterval();
+		UniformLoadInterval nextInterval = curInterval;
 		if (nextSubInterval.equals(SubInterval.RAMP)) {
 			/*
 			 * Ramping to the currentValue of maxPassUsers.  On the first try at 
@@ -560,14 +570,14 @@ public class FindMaxLoadPath extends LoadPath {
 			 * for this value of curUsers.  Run a sub-interval at curUsers.
 			 */
 			nextInterval.setUsers(curUsers);
-			nextInterval.setDuration(qosPeriodSec);
+			nextInterval.setDuration(getQosPeriodSec());
 			nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 			nextSubInterval = SubInterval.VERIFYSUBSEQUENT;
 
 			curStatusInterval.setName(nextInterval.getName());
 			curStatusInterval.setStartUsers(curUsers);
 			curStatusInterval.setEndUsers(curUsers);
-			curStatusInterval.setDuration(qosPeriodSec);
+			curStatusInterval.setDuration(getQosPeriodSec());
 		} else if (nextSubInterval.equals(SubInterval.VERIFYSUBSEQUENT)) {
 			/*
 			 * Need to know whether the previous interval
@@ -591,17 +601,17 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				numVerifyMaxRepeatsPassed++;
 				if (numVerifyMaxRepeatsPassed == numRequiredVerifyMaxRepeats) {
-					loadPathComplete();
+					loadPathComplete(true);
 				} else {
 					// Test again at this interval
 					nextInterval.setUsers(curUsers);
-					nextInterval.setDuration(qosPeriodSec);
+					nextInterval.setDuration(getQosPeriodSec());
 					nextInterval.setName("VERIFYMAX-" + curUsers + "-ITERATION-" + numVerifyMaxRepeatsPassed);
 
 					curStatusInterval.setName(nextInterval.getName());
 					curStatusInterval.setStartUsers(curUsers);
 					curStatusInterval.setEndUsers(curUsers);
-					curStatusInterval.setDuration(qosPeriodSec);
+					curStatusInterval.setDuration(getQosPeriodSec());
 
 					nextSubInterval = SubInterval.VERIFYSUBSEQUENT;					
 				}
@@ -609,15 +619,10 @@ public class FindMaxLoadPath extends LoadPath {
 				/*
 				 * Reduce the number of users by minRateStep and try again.
 				 */
-				numSucessiveIntervalsFailed++;
-				if (numSucessiveIntervalsFailed >= 2) {
-					numSucessiveIntervalsFailed = 0;
-					minRateStep *= 2;
-				}
-				maxPassUsers -= minRateStep;
-				if (maxPassUsers <= 0) {
-					maxPassUsers = 0;
-					loadPathComplete();
+				maxPassUsers -= curRateStep;
+				if (maxPassUsers < getMinUsers()) {
+					maxPassUsers = minUsers;
+					loadPathComplete(false);
 				}
 				numVerifyMaxRepeatsPassed = 0;
 				nextSubInterval = SubInterval.RAMP;
@@ -630,20 +635,15 @@ public class FindMaxLoadPath extends LoadPath {
 		return nextInterval;
 	}
 
-	private void loadPathComplete() {
-		boolean passed = false;
-		if (maxPassUsers > 0) {
-			/*
-			 * Pass up the maximum number of users that passed a steady interval.
-			 */
-			passed = true;
-		}
-
+	private void loadPathComplete(boolean passed) {
+		loadPathComplete = true;
+		intervalNum = 0;
 		WorkloadStatus status = new WorkloadStatus();
 		status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 		status.setMaxPassUsers(maxPassUsers);
-		status.setMaxPassIntervalName(maxPassIntervalName);
+		status.setMaxPassIntervalName(curInterval.getName());
 		status.setPassed(passed);
+		status.setLoadPathName(this.getName());
 		workload.loadPathComplete(status);
 	}
 
@@ -669,6 +669,26 @@ public class FindMaxLoadPath extends LoadPath {
 
 	public void setMaxUsers(long maxUsers) {
 		this.maxUsers = maxUsers;
+	}
+
+	public long getMinUsers() {
+		return minUsers;
+	}
+
+	public void setMinUsers(long minUsers) {
+		this.minUsers = minUsers;
+	}
+
+	public long getNumQosPeriods() {
+		return numQosPeriods;
+	}
+
+	public long getQosPeriodSec() {
+		return qosPeriodSec;
+	}
+
+	public double getFindMaxStopPct() {
+		return findMaxStopPct;
 	}
 
 	@Override

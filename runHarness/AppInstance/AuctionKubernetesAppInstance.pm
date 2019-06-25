@@ -141,22 +141,12 @@ override 'getEdgeAddrsRef' => sub {
 	
 	$logger->debug("getEdgeAddrsRef: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
 	if ($cluster->getParamValue('useLoadBalancer')) {
-		my $ip = "";
-		# Wait for ip to be provisioned
-		# ToDo: Need a timeout here.
-		while (!$ip) {
-			my $cmdFailed;
-		  	($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
-		  	if ($cmdFailed)	{
-		  		$logger->error("Error getting IP for frontend loadbalancer: error = $cmdFailed");
-		  	}
-		  	if (!$ip) {
-		  		sleep 10;
-		  	} else {
-				$logger->debug("Called kubernetesGetLbIP: got $ip");
-		  	}
-		}
-		push @$wwwIpAddrsRef, [$ip, 80, 443];							
+	  	my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
+		if ($cmdFailed)	{
+			$logger->error("Error getting IP for frontend loadbalancer: error = $cmdFailed");
+	  	} else {
+			push @$wwwIpAddrsRef, [$ip, 80, 443];
+	  	}							
 	} else {
 		# Using NodePort service for ingress
 		# Get the IP addresses of the nginx-ingress in this appInstance's namespace

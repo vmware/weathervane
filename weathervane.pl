@@ -550,6 +550,10 @@ if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
 	die("The value for the qosPeriodSec parameter must be greater than 0.");
 }
 
+if (getParamValue( $paramsHashRef, "findMaxStopPct" ) <= 0) {
+	die "The value for findMaxStopPct must be greater than 0.\n";
+}
+
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 
@@ -658,7 +662,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					}
 					$workloadParamHashRef->{$key} = $config->{$key} * $numAppInstances;
 				}
-			} elsif ($key ne "users") {
+			} elsif (($key ne "users") && ($key ne "maxUsers")){
 				$workloadParamHashRef->{$key} = $config->{$key};
 			}
 		}
@@ -796,15 +800,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
 		}
-		my $appInstanceHostOrCluster = 
-			getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash, 
-										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
-		$appInstance->instanceNum($appInstanceNum);
-		$appInstance->workload($workload);
-		$appInstance->host($appInstanceHostOrCluster);
-		$appInstance->initialize();
-		push @appInstances, $appInstance;
 
 		# Overwrite the appInstance's parameters with those specified by the configuration size.
 		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
@@ -816,11 +811,22 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			}
 			my $config = $fixedConfigs->{$configSize};
 			foreach my $key (keys %$config) {
-			  if (($key ne "users") || !$appInstanceParamHashRef->{"users"}) {
+			  if ((($key ne "users") || !$appInstanceParamHashRef->{"users"})
+			  		&& (($key ne "maxUsers") || !$appInstanceParamHashRef->{"maxUsers"})) {
 				$appInstanceParamHashRef->{$key} = $config->{$key};
 			  }
 			}
 		}
+
+		my $appInstanceHostOrCluster = 
+			getAppInstanceHostOrCluster($appInstanceParamHashRef, \%nameToComputeResourceHash, 
+										$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
+		my $appInstance = AppInstanceFactory->getAppInstance($appInstanceParamHashRef, $appInstanceHostOrCluster);
+		$appInstance->instanceNum($appInstanceNum);
+		$appInstance->workload($workload);
+		$appInstance->host($appInstanceHostOrCluster);
+		$appInstance->initialize();
+		push @appInstances, $appInstance;
 		
 		# Create and add all of the services for the appInstance.
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};

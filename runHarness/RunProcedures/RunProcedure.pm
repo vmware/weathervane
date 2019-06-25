@@ -279,6 +279,14 @@ sub foundMax {
 	return $foundMax;
 }
 
+sub printFindMaxResult {
+	my ($self) = @_;
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		$workload->printFindMaxResult();
+	}
+}
+
 sub adjustUsersForFindMax {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;
@@ -323,13 +331,16 @@ sub prepareDataServices {
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$logger->debug("prepareDataServices with logDir $setupLogDir");
 	
-	# If all of the drivers are running on Kubernetes clusters, then
+	# If all of the dataManagers are running on Kubernetes clusters, then
 	# we can do the prepare in parallel
 	my $allK8s = 1;
 	foreach my $workloadRef (@{$self->workloadsRef}) {
-		my $primaryDriver = $workloadRef->primaryDriver;
-		if ((ref $primaryDriver->host) ne 'KubernetesCluster') {
-			$allK8s = 0;
+		my $appInstancesRef = $workloadRef->appInstancesRef;
+		foreach my $appInstanceRef (@{$appInstancesRef}) {
+			my $dataManager = $appInstanceRef->dataManager;
+			if ((ref $dataManager->host) ne 'KubernetesCluster') {
+				$allK8s = 0;
+			}
 		}
 	}
 	if ($allK8s) {
@@ -405,10 +416,27 @@ sub startServices {
 	
 	$logger->debug("startServices for serviceTier $serviceTier with logDir $setupLogDir");
 	
-	my $workloadsRef = $self->workloadsRef;
-	foreach my $workload (@$workloadsRef) {
-		$workload->startServices($serviceTier, $setupLogDir);
+	# If all of the dataManagers are running on Kubernetes clusters, then
+	# we can do the start in parallel
+	my $allK8s = 1;
+	foreach my $workloadRef (@{$self->workloadsRef}) {
+		my $appInstancesRef = $workloadRef->appInstancesRef;
+		foreach my $appInstanceRef (@{$appInstancesRef}) {
+			my $dataManager = $appInstanceRef->dataManager;
+			if ((ref $dataManager->host) ne 'KubernetesCluster') {
+				$allK8s = 0;
+			}
+		}
 	}
+	if ($allK8s) {
+		callMethodOnObjectsParallel2( 'startServices', $self->workloadsRef, $serviceTier, $setupLogDir );		
+	} else {
+		my $workloadsRef = $self->workloadsRef;
+		foreach my $workload (@$workloadsRef) {
+			$workload->startServices($serviceTier, $setupLogDir);
+		}
+	}
+
 }
 
 sub stopServices {

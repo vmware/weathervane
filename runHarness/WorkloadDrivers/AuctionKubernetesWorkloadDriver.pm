@@ -82,7 +82,7 @@ override 'getControllerURL' => sub {
 		  	}
 		}
         $hostname = $ip;
-	    $port = $self->portMap->{'http'};
+	    $port = 80;
 	} else {
 		# Using NodePort service for ingress
 		# Get the IP addresses of the nodes 
@@ -92,7 +92,7 @@ override 'getControllerURL' => sub {
 			exit 1;
 		}
 		$hostname = $ipAddrsRef->[0];
-		$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", $self->portMap->{'http'}, $self->namespace);
+		$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
 	}
 	return "http://${hostname}:$port";
 };
@@ -106,6 +106,11 @@ override 'getHosts' => sub {
 	}
 	return \@hosts;
 };
+
+sub getHostPort {
+	my ( $self ) = @_;
+	return 80;
+}
 
 override 'getStatsHost' => sub {
 	my ( $self ) = @_;
@@ -151,7 +156,7 @@ sub configureWkldController {
 	while ( my $inline = <FILEIN> ) {
 
 		if ( $inline =~ /(\s+)PORT:/ ) {
-			print FILEOUT "${1}PORT: \"" . $self->portMap->{'http'} . "\"\n";
+			print FILEOUT "${1}PORT: \"80\"\n";
 		}
 		elsif ( $inline =~ /(\s+)JVMOPTS:/ ) {
 			print FILEOUT "${1}JVMOPTS: \"$driverJvmOpts\"\n";
@@ -226,7 +231,7 @@ sub configureWkldDriver {
 	while ( my $inline = <FILEIN> ) {
 
 		if ( $inline =~ /(\s+)PORT:/ ) {
-			print FILEOUT "${1}PORT: \"" . $self->portMap->{'http'} . "\"\n";
+			print FILEOUT "${1}PORT: \"80\"\n";
 		}
 		elsif ( $inline =~ /(\s+)JVMOPTS:/ ) {
 			print FILEOUT "${1}JVMOPTS: \"$driverJvmOpts\"\n";

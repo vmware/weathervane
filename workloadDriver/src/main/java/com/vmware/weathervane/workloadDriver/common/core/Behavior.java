@@ -35,6 +35,7 @@ import com.vmware.weathervane.workloadDriver.common.chooser.TransitionChooserRes
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
 import com.vmware.weathervane.workloadDriver.common.random.NegativeExponential;
+import com.vmware.weathervane.workloadDriver.common.random.TruncatedNormal;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 /**
@@ -490,12 +491,20 @@ public class Behavior implements OperationCompleteCallback {
 		this._httpTransport = httpTransport;
 	}
 	
-	/**
-	 * Determine the start time of the next operation, based on the current
-	 * operation and its starting time.
-	 */
 	protected void chooseCycleTime(Operation operation) {
-		operation.setCycleTime(_behaviorSpec.getMeanCycleTime(operation.getOperationIndex()) * 1000);
+		
+		long meanCycleTime = _behaviorSpec.getMeanCycleTime(operation.getOperationIndex()) * 1000;
+
+		/*
+		 * Randomize the cycle time to be distributed according to a normal distribution
+		 * with mean=meanCycleTime, stdev=meanCycleTime/4, but truncated to +/-meanCycleTime/2.
+		 */
+		double stdev = meanCycleTime/4.0;
+		double min = meanCycleTime - (meanCycleTime/2.0);
+		double max = meanCycleTime + (meanCycleTime/2.0);
+		long cycleTime = (long) Math.ceil(TruncatedNormal.getNext(meanCycleTime, stdev, min, max));
+		logger.debug("meanCycleTime = " + meanCycleTime + ", cycleTime = " + cycleTime);
+		operation.setCycleTime(cycleTime);
 	}
 	
 	/**

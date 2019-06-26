@@ -165,6 +165,12 @@ has 'suffix' => (
 	default => "",
 );
 
+has 'controllerUrl' => (
+	is      => 'rw',
+	isa     => 'Str',
+	default => "",
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
@@ -324,9 +330,12 @@ sub printLoadPath {
 
 sub getControllerURL {
 	my ( $self ) = @_;
-	my $port = $self->portMap->{'http'};
-	my $hostname = $self->host->name;
-	return "http://${hostname}:$port";
+	if (!$self->controllerUrl) {
+		my $port = $self->portMap->{'http'};
+		my $hostname = $self->host->name;
+		$self->controllerUrl("http://${hostname}:$port");
+	}
+	return $self->controllerUrl;
 }
 
 sub getHosts {
@@ -681,6 +690,8 @@ sub clearResults {
 	$self->failures(     {} );
 	$self->rtFailures(     {} );
 	$self->proportion(   {} );
+	
+	$self->controllerUrl("");
 }
 
 sub followLogs {

@@ -60,31 +60,33 @@ override 'redeploy' => sub {
 override 'getControllerURL' => sub {
 	my ( $self ) = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
-	my $cluster = $self->host;
-	
-	my $hostname;
-	my $port;
-	$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
-	if ($cluster->getParamValue('useLoadBalancer')) {
-	  	my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
-		if ($cmdFailed)	{
-		  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
-	  	} else {
-	        $hostname = $ip;
-		    $port = 80;
-	  	}
-	} else {
-		# Using NodePort service for ingress
-		# Get the IP addresses of the nodes 
-		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-		if ($#{$ipAddrsRef} < 0) {
-			$logger->error("There are no IP addresses for the Kubernetes nodes");
-			exit 1;
+	if (!$self->controllerUrl) {
+		my $cluster = $self->host;
+		my $hostname;
+		my $port;
+		$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
+		if ($cluster->getParamValue('useLoadBalancer')) {
+	  		my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
+			if ($cmdFailed)	{
+			  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+		  	} else {
+		        $hostname = $ip;
+			    $port = 80;
+		  	}
+		} else {
+			# Using NodePort service for ingress
+			# Get the IP addresses of the nodes 
+			my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+			if ($#{$ipAddrsRef} < 0) {
+				$logger->error("There are no IP addresses for the Kubernetes nodes");
+				exit 1;
+			}
+			$hostname = $ipAddrsRef->[0];
+			$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
 		}
-		$hostname = $ipAddrsRef->[0];
-		$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
+		$self->controllerUrl("http://${hostname}:$port");
 	}
-	return "http://${hostname}:$port";
+	return $self->controllerUrl;
 };
 
 override 'getHosts' => sub {

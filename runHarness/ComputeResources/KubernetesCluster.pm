@@ -363,10 +363,10 @@ sub kubernetesGetLbIP {
 	}
 	
 	# If the returned value is a hostname then convert it to an IP address
-	if ($ip =~ /\w/) {
+	if ($ip =~ /[A-Za-z]/) {
 		$logger->debug("LoadBalancer access is a hostname.  Convert it to an IP");
 		my $realIp = "";
-		$cmd = `dig +short $ip`;
+		$cmd = "dig +short $ip";
 		$logger->debug("Command: $cmd");
 		while (!$realIp) {
 			($cmdFailed, $realIp) = runCmd($cmd);
@@ -378,10 +378,11 @@ sub kubernetesGetLbIP {
 		  	} else {
 				$logger->debug("Called kubernetesGetLbIP: converting $ip to IP got $realIp");
 				my @ips = split(/\n/, $realIp);
-				my $ip = $ips[0];
+				$ip = $ips[0];
 	  		}
 		}
 	}
+	$logger->debug("Called kubernetesGetLbIP: Returning IP $ip");
 	return ($cmdFailed, $ip);
 }
 

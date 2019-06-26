@@ -160,7 +160,6 @@ metadata:
     type: appServer
     impl: tomcat
 spec:
-  type: NodePort
   ports:
   - port: 8080
     name: httpport

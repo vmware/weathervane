@@ -132,6 +132,12 @@ sub configureWkldController {
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
 	}
+	if ( $self->getParamValue('driverEnableJmx') ) {
+		$completeJVMOpts .= " -Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true "
+							. "-Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false "
+							. "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false "
+							. "-Djava.rmi.server.hostname=127.0.0.1 ";
+	}
 
 	if ( $maxConnPerUser > 0 ) {
 		$driverJvmOpts .= " -DMAXCONNPERUSER=" . $maxConnPerUser;
@@ -206,6 +212,12 @@ sub configureWkldDriver {
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
+	}
+	if ( $self->getParamValue('driverEnableJmx') ) {
+		$completeJVMOpts .= " -Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true "
+							. "-Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false "
+							. "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false "
+							. "-Djava.rmi.server.hostname=127.0.0.1 ";
 	}
 
 	if ( $maxConnPerUser > 0 ) {

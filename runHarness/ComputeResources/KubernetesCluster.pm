@@ -350,32 +350,41 @@ sub kubernetesGetLbIP {
 	# ToDo: Need a timeout here.
 	my $ip = "";
 	my $cmdFailed;
-	while (!$ip) {
+	my $retries = 40;
+	while (!$ip && ($retries > 0)) {
 		($cmdFailed, $ip) = runCmd($cmd);
 	  	if ($cmdFailed)	{
 	  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+			return ($cmdFailed, $ip);
 	  	}
 	  	if (!$ip) {
-	  		sleep 10;
+	  		sleep 30;
+	  		$retries--;
 	  	} else {
 			$logger->debug("Called kubernetesGetLbIP: got $ip");
 	  	}
+	}
+	if (!$ip) {
+		$cmdFailed = "Didn't get LoadBalancer IP/Hostname in 20 minutes";
+		return ($cmdFailed, $ip);
 	}
 	
 	# If the returned value is a hostname then convert it to an IP address
 	if ($ip =~ /[A-Za-z]/) {
 		$logger->debug("LoadBalancer access is a hostname.  Convert it to an IP");
+		$retries = 40;
 		my $realIp = "";
 		$cmd = "dig +short $ip";
 		$logger->debug("Command: $cmd");
-		while (!$realIp) {
+		while (!$realIp && ($retries > 0)) {
 			($cmdFailed, $realIp) = $self->kubernetesExecOne($svcName, $cmd, $namespace);
-			 runCmd($cmd);
 		  	if ($cmdFailed)	{
 		  		$logger->error("Error getting LoadBalancer IP for hostname $ip: error = $cmdFailed");
+				return ($cmdFailed, $ip);
 	  		}
 		  	if (!$realIp) {
-		  		sleep 10;
+		  		sleep 30;
+		  		$retries--;
 		  	} else {
 				$logger->debug("Called kubernetesGetLbIP: converting $ip to IP got $realIp");
 				my @ips = split(/\n/, $realIp);
@@ -383,6 +392,11 @@ sub kubernetesGetLbIP {
 	  		}
 		}
 	}
+	if (!$ip) {
+		$cmdFailed = "Didn't get IP for LoadBalancer Hostname in 20 minutes";
+		return ($cmdFailed, $ip);
+	}
+
 	$logger->debug("Called kubernetesGetLbIP: Returning IP $ip");
 	return ($cmdFailed, $ip);
 }

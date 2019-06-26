@@ -1233,6 +1233,14 @@ $parameters{"appServerPerformanceMonitor"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"appServerEnableJmx"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"auctionBidServerPerformanceMonitor"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

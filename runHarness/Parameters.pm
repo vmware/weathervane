@@ -1233,10 +1233,10 @@ $parameters{"appServerPerformanceMonitor"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"appServerEnableJmx"} = {
+$parameters{"enableJmx"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "appInstance",
+	"parent"    => "runProc",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1245,22 +1245,6 @@ $parameters{"auctionBidServerPerformanceMonitor"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
 	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"auctionBidServerEnableJmx"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"driverEnableJmx"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,
 };

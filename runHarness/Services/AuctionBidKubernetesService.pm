@@ -65,7 +65,7 @@ sub configure {
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$completeJVMOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:$tomcatCatalinaBase/logs/gc.log ";
 	}
-	if ( $self->getParamValue('auctionBidServerEnableJmx') ) {
+	if ( $self->getParamValue('enableJmx') ) {
 		$completeJVMOpts .= " -Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true "
 							. "-Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false "
 							. "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false "

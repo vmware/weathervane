@@ -369,7 +369,8 @@ sub kubernetesGetLbIP {
 		$cmd = "dig +short $ip";
 		$logger->debug("Command: $cmd");
 		while (!$realIp) {
-			($cmdFailed, $realIp) = runCmd($cmd);
+			($cmdFailed, $realIp) = $self->kubernetesExecOne($svcName, $cmd, $namespace);
+			 runCmd($cmd);
 		  	if ($cmdFailed)	{
 		  		$logger->error("Error getting LoadBalancer IP for hostname $ip: error = $cmdFailed");
 	  		}

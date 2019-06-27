@@ -8,4 +8,4 @@ perl /configure.pl
 
 # Start cassandra
 echo "Starting cassandra"
-su cassandra -c cassandra
+cassandra -R

@@ -345,14 +345,58 @@ sub kubernetesGetLbIP {
 
 	my $cmd;
 	$cmd = "kubectl get svc $svcName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath=\"{.status.loadBalancer.ingress[*]['ip', 'hostname']}\"";
-	my ($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("kubernetesGetLbIP failed: $cmdFailed");
-	}
 	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
+	# Wait for ip to be provisioned
+	# ToDo: Need a timeout here.
+	my $ip = "";
+	my $cmdFailed;
+	my $retries = 40;
+	while (!$ip && ($retries > 0)) {
+		($cmdFailed, $ip) = runCmd($cmd);
+	  	if ($cmdFailed)	{
+	  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
+			return ($cmdFailed, $ip);
+	  	}
+	  	if (!$ip) {
+	  		sleep 30;
+	  		$retries--;
+	  	} else {
+			$logger->debug("Called kubernetesGetLbIP: got $ip");
+	  	}
+	}
+	if (!$ip) {
+		$cmdFailed = "Didn't get LoadBalancer IP/Hostname in 20 minutes";
+		return ($cmdFailed, $ip);
+	}
 	
-	return ($cmdFailed, $outString);
+	# If the returned value is a hostname then wait until an IP address is available
+	if ($ip =~ /[A-Za-z]/) {
+		$logger->debug("LoadBalancer access is a hostname.  Wait for IP");
+		$retries = 40;
+		my $realIp = "";
+		$cmd = "dig +short $ip";
+		$logger->debug("Command: $cmd");
+		while (!$realIp && ($retries > 0)) {
+			($cmdFailed, $realIp) = runCmd($cmd);
+		  	if ($cmdFailed)	{
+		  		$logger->error("Error getting LoadBalancer IP for hostname $ip: error = $cmdFailed");
+				return ($cmdFailed, $ip);
+	  		}
+		  	if (!$realIp) {
+		  		sleep 30;
+		  		$retries--;
+		  	} else {
+				$logger->debug("Called kubernetesGetLbIP: converting $ip to IP got $realIp");
+	  		}
+		}
+	}
+	if (!$ip) {
+		$cmdFailed = "Didn't get IP for LoadBalancer Hostname in 20 minutes";
+		return ($cmdFailed, $ip);
+	}
+
+	$logger->debug("Called kubernetesGetLbIP: Returning IP $ip");
+	return ($cmdFailed, $ip);
 }
 
 sub kubernetesGetNodeIPs {

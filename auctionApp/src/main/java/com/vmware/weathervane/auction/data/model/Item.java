@@ -148,7 +148,7 @@ public class Item implements Serializable,DomainObject {
 		this.auctioneer = auctioneer;
 	}
 
-	@OneToOne
+	@OneToOne(cascade = {CascadeType.ALL},fetch=FetchType.EAGER)
 	public HighBid getHighbid() {
 		return highbid;
 	}

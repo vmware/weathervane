@@ -46,4 +46,5 @@ my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloa
 				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" . 
 				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions 2>/dev/null";
 				
+print "Running for appInstance $appInstanceNum: $cmdString\n";
 system($cmdString);

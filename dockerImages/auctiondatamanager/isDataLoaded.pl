@@ -3,33 +3,30 @@
 use strict;
 use POSIX;
 
-print "Checking whether data is loaded\n";
+print "Cleaning data\n";
 
-# the usersPerAuctionScaleFactor
-my $auctions = ceil($ENV{'USERS'} / $ENV{'USERSPERAUCTIONSCALEFACTOR'}); 
+# Not preparing any auctions, just cleaning up
+my $auctions = 0;
 
 my $dbPrepOptions = " -a $auctions -c ";
 
 my $users = $ENV{'USERS'};
-my $maxUsers = $ENV{'MAXUSERS'};
-if ( $users > $maxUsers ) {
-	$maxUsers = $users;
-}
-$dbPrepOptions .= " -u $maxUsers ";
+$dbPrepOptions .= " -u $users ";
 
 my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
 $springProfilesActive .= ",dbprep";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 my $heap              = $ENV{'HEAP'};
+my $dbLoaderJavaOptions = "";
 
-my $cmdString = "java  -Xmx$heap -Xms$heap -client -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" .
-		 " -DDBHOSTNAME=$ENV{'DBHOSTNAME'} -DDBPORT=$ENV{'DBPORT'} -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'}" . 
-		 " -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'} com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
+my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLoaderClasspath" .
+				" -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$ENV{'DBHOSTNAME'} -DDBPORT=$ENV{'DBPORT'}" . 
+				" -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'} -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'}" .
+				" com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
+
 print "Running: $cmdString\n";
-
 my $cmdOut = `$cmdString`;
-
 print "$cmdOut\n";
 
 if ($?) {

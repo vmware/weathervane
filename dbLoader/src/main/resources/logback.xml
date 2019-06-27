@@ -23,7 +23,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </encoder>
   </appender>
 
-  <logger name="com.vmware" level="WARN"/>
+  <logger name="com.vmware" level="DEBUG"/>
   <logger name="org.hibernate" level="WARN"/>
 
   <!-- Strictly speaking, the level attribute is not necessary since -->

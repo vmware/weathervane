@@ -277,12 +277,18 @@ public class DBPrep {
 			dbPrepService.setPrepEndIndex(endIndex);
 			dbPrepService.setResetAuctions(true);
 			Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+			dbPrepThread.setUncaughtExceptionHandler(
+					new Thread.UncaughtExceptionHandler() {
+						public void uncaughtException(Thread th, Throwable ex) {
+							logger.warn("Uncaught exception in dbPrepService: " + ex);
+							System.exit(1);
+						}
+					});
 			threadList.add(dbPrepThread);
 			dbPrepThread.start();
 			startIndex += numAuctionsToReset;
 			numRemainingAuctions -= numAuctionsToReset;
 		}
-
 		// Wait for all threads to complete
 		for (Thread thread : threadList) {
 			thread.join();
@@ -319,6 +325,13 @@ public class DBPrep {
 			dbPrepService.setPrepEndIndex(endIndex);
 			dbPrepService.setResetAuctions(false);
 			Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+			dbPrepThread.setUncaughtExceptionHandler(
+					new Thread.UncaughtExceptionHandler() {
+						public void uncaughtException(Thread th, Throwable ex) {
+							logger.warn("Uncaught exception in dbPrepService: " + ex);
+							System.exit(1);
+						}
+					});
 			threadList.add(dbPrepThread);
 			dbPrepThread.start();
 

@@ -35,7 +35,6 @@ CREATE INDEX bidcompletiondelay_item_id_key ON bidcompletiondelay USING btree (i
 CREATE INDEX item_auction_id_key ON item USING btree (auction_id);
 CREATE INDEX item_auction_id_id_key ON item USING btree (auction_id,id);
 CREATE INDEX item_auctioneer_id_key ON item USING btree (auctioneer_id);
-CREATE INDEX item_highbid_id_key ON item USING btree (highbid_id);
 CREATE INDEX item_preloaded_idx ON item USING btree (preloaded);
 
 CREATE INDEX user_authtoken_idx ON userdata USING btree (authtoken);

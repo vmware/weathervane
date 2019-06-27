@@ -3,9 +3,10 @@
 use strict;
 use POSIX;
 
-print "Preparing data for run\n";
 my $maxUsers = $ENV{'MAXUSERS'};
 my $users = $ENV{'USERS'};
+my $appInstanceNum = $ENV{'APPINSTANCENUM'};
+print "Preparing data for appInstance $appInstanceNum\n";
 
 if ( $users > $maxUsers ) {
 	$maxUsers = $users;
@@ -36,10 +37,9 @@ my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLo
 				" -DDBPORT=$ENV{'DBPORT'} -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'}" .
 				" -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'} com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
 				
-print "Running: $cmdString\n";
+print "Running for appInstance $appInstanceNum: $cmdString\n";
 my $cmdOut = `$cmdString`;
-
-print "$cmdOut\n";
+print "Output for appInstance $appInstanceNum: $cmdOut\n";
 
 if ($?) {
 	exit 1;

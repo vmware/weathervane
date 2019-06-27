@@ -3,15 +3,19 @@
 use strict;
 use POSIX;
 
-print "Cleaning data\n";
+my $appInstanceNum = $ENV{'APPINSTANCENUM'};
+print "Cleaning data for appInstance $appInstanceNum\n";
 
 # Not preparing any auctions, just cleaning up
 my $auctions = 0;
-
-my $dbPrepOptions = " -a $auctions -c ";
+my $dbPrepOptions = " -a $auctions ";
 
 my $users = $ENV{'USERS'};
-$dbPrepOptions .= " -u $users ";
+my $maxUsers = $ENV{'MAXUSERS'};
+if ( $users > $maxUsers ) {
+	$maxUsers = $users;
+}
+$dbPrepOptions .= " -u $maxUsers ";
 
 my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
 $springProfilesActive .= ",dbprep";
@@ -25,9 +29,9 @@ my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLo
 				" -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'} -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'}" .
 				" com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";
 
-print "Running: $cmdString\n";
+print "Running for appInstance $appInstanceNum: $cmdString\n";
 my $cmdOut = `$cmdString`;
-print "$cmdOut\n";
+print "Output for appInstance $appInstanceNum: $cmdOut\n";
 
 if ($?) {
 	exit 1;

@@ -8,7 +8,6 @@ COPY isDataLoaded.pl /isDataLoaded.pl
 COPY loadData.pl /loadData.pl
 COPY prepareData.pl /prepareData.pl
 COPY pretouchData.pl /pretouchData.pl
-COPY cleanData.pl /cleanData.pl
 COPY images /images
 COPY items.json /items.json
 	

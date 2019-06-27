@@ -371,43 +371,12 @@ sub isDataLoaded {
 		return 1;
 	}
 	close $applog;
-
-
 }
 
 
 sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
-	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->appInstance->workload->instanceNum;
-	my $appInstanceNum = $self->instanceNum;
-	my $name        = $self->name;
-	my $cluster = $self->host;
-	my $namespace = $self->appInstance->namespace;
-
-	my $retVal      = 0;
-
-
-	$console_logger->info(
-		"Cleaning and compacting storage on all data services.  This can take a long time after large runs." );
-	$logger->debug("cleanData.  user = $users");
-
-	$logger->debug(
-		"cleanData. Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum." );
-	print $logHandle "Cleaning up data services for appInstance " . "$appInstanceNum of workload $workloadNum.\n";
-
-	print $logHandle "Exec-ing perl /cleanData.pl  in container $name\n";
-	$logger->debug("Exec-ing perl /cleanData.pl  in container $name");
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /cleanData.pl", $namespace);
-	print $logHandle "Output: cmdFailed = $cmdFailed, outString = $outString\n";
-	$logger->debug("Output: cmdFailed = $cmdFailed, outString = $outString");
-	if ($cmdFailed) {
-		$console_logger->error(
-			"Data cleaning process failed.  Check CleanData_W${workloadNum}I${appInstanceNum}.log for more information."
-		);
-		return 0;
-	}
 	
 	# ToDo: Compact cassandra is not done by dataManager container
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');

@@ -6,6 +6,7 @@ metadata:
     app: auction
     tier: driver
     type: node
+    impl: wklddriver
 data: 
   PORT: "80"
   JVMOPTS: "-Xmx6g -Xms6g -XX:+AlwaysPreTouch"
@@ -19,6 +20,7 @@ metadata:
     app: auction
     tier: driver
     type: node
+    impl: wklddriver
 spec:
   serviceName: wklddriver
   selector:
@@ -26,6 +28,7 @@ spec:
       app: auction
       tier: driver
       type: node
+      impl: wklddriver
   replicas: 1
   template:
     metadata:
@@ -34,6 +37,7 @@ spec:
         app: auction
         tier: driver
         type: node
+        impl: wklddriver
     spec:
       affinity:
         nodeAffinity:
@@ -62,6 +66,9 @@ spec:
         ports: 
         - containerPort: 80
           name: wklddriverport
+          protocol: TCP
+        - containerPort: 9090
+          name: jmxport
           protocol: TCP
         resources:
           requests:
@@ -100,12 +107,16 @@ metadata:
     app: auction
     tier: driver
     type: node
+    impl: wklddriver
 spec:
   clusterIP: None
   ports:
   - port: 80
     name: wklddriverport
+  - port: 9090
+    name: jmxport
   selector:
     app: auction
     tier: driver
     type: node
+    impl: wklddriver    

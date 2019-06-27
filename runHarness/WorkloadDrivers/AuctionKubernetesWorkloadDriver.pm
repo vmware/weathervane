@@ -60,41 +60,33 @@ override 'redeploy' => sub {
 override 'getControllerURL' => sub {
 	my ( $self ) = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
-	my $cluster = $self->host;
-	
-	my $hostname;
-	my $port;
-	$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
-	if ($cluster->getParamValue('useLoadBalancer')) {
-		# Wait for ip to be provisioned
-		# ToDo: Need a timeout here.
-		my $ip = "";
-		while (!$ip) {
-			my $cmdFailed;
-		  	($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
-		  	if ($cmdFailed)	{
-		  		$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
-		  	}
-		  	if (!$ip) {
-		  		sleep 10;
+	if (!$self->controllerUrl) {
+		my $cluster = $self->host;
+		my $hostname;
+		my $port;
+		$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
+		if ($cluster->getParamValue('useLoadBalancer')) {
+	  		my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
+			if ($cmdFailed)	{
+			  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
 		  	} else {
-				$logger->debug("Called kubernetesGetLbIP: got $ip");
+		        $hostname = $ip;
+			    $port = 80;
 		  	}
+		} else {
+			# Using NodePort service for ingress
+			# Get the IP addresses of the nodes 
+			my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+			if ($#{$ipAddrsRef} < 0) {
+				$logger->error("There are no IP addresses for the Kubernetes nodes");
+				exit 1;
+			}
+			$hostname = $ipAddrsRef->[0];
+			$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
 		}
-        $hostname = $ip;
-	    $port = 80;
-	} else {
-		# Using NodePort service for ingress
-		# Get the IP addresses of the nodes 
-		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-		if ($#{$ipAddrsRef} < 0) {
-			$logger->error("There are no IP addresses for the Kubernetes nodes");
-			exit 1;
-		}
-		$hostname = $ipAddrsRef->[0];
-		$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
+		$self->controllerUrl("http://${hostname}:$port");
 	}
-	return "http://${hostname}:$port";
+	return $self->controllerUrl;
 };
 
 override 'getHosts' => sub {
@@ -139,6 +131,12 @@ sub configureWkldController {
 	my $driverJvmOpts           = $self->getParamValue('driverControllerJvmOpts');
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
+	}
+	if ( $self->getParamValue('enableJmx') ) {
+		$driverJvmOpts .= " -Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true "
+							. "-Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false "
+							. "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false "
+							. "-Djava.rmi.server.hostname=127.0.0.1 ";
 	}
 
 	if ( $maxConnPerUser > 0 ) {
@@ -214,6 +212,12 @@ sub configureWkldDriver {
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	if ( $self->getParamValue('logLevel') >= 3 ) {
 		$driverJvmOpts .= " -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc-W${workloadNum}.log";
+	}
+	if ( $self->getParamValue('enableJmx') ) {
+		$driverJvmOpts .= " -Dcom.sun.management.jmxremote.rmi.port=9090 -Dcom.sun.management.jmxremote=true "
+							. "-Dcom.sun.management.jmxremote.port=9090 -Dcom.sun.management.jmxremote.ssl=false "
+							. "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false "
+							. "-Djava.rmi.server.hostname=127.0.0.1 ";
 	}
 
 	if ( $maxConnPerUser > 0 ) {

@@ -81,6 +81,9 @@ spec:
         - containerPort: 8443
           name: httpsport
           protocol: TCP
+        - containerPort: 9090
+          name: jmxport
+          protocol: TCP
         resources:
           requests:
             cpu: 1
@@ -162,6 +165,8 @@ spec:
     name: httpport
   - port: 8443
     name: httpsport
+  - port: 9090
+    name: jmxport
   selector:
     app: auction
     tier: backend

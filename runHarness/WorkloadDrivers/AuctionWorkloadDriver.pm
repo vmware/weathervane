@@ -1371,7 +1371,31 @@ sub startRun {
 		 or die "Couldn't open $destinationPath/FinalRunState.json: $!";
 	print FILE $endRunStatusRaw;
 	close FILE;
-	
+
+	# Write end-of-run report using output from the stats endpoint
+	my $workloadStati = $json->decode($endRunStatusRaw)->{'workloadStati'};
+	foreach my $workloadStatus (@$workloadStati) {
+		my $wkldName = $workloadStatus->{'name'};
+		my $loadPathName = $workloadStatus->{'loadPathName'};
+		my $maxPassIntervalName = $workloadStatus->{'maxPassIntervalName'};
+
+		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$wkldName/specName/$loadPathName/intervalName/$maxPassIntervalName";
+		$logger->debug("Sending get to $url");
+		$req = HTTP::Request->new( GET => $url );
+		$res = $ua->request($req);
+		$logger->debug(
+			"Response status line: " . $res->status_line . " for url " . $url );
+
+		if ( $res->is_success ) {
+			my $endStats = $json->decode($res->content);
+			my $summaryText = $endStats->{'summaryText'};
+
+			open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
+				or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
+			print FILE $summaryText;
+			close FILE;
+		}
+	}
 
 	# Now send the stats/complete message the primary driver which is also the statsService host
 	my $statsCompleteMsg = {};

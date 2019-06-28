@@ -232,6 +232,7 @@ sub followRunProgress {
 	my ($self, $tmpDir)         = @_;
 	my $console_logger = get_logger("Console");
 	my $rampUp         = $self->getParamValue('rampUp');
+	my $warmUp         = $self->getParamValue('warmUp');
 	my $steadyState = $self->getParamValue('qosPeriodSec');
 
 	my $pid = fork();
@@ -257,6 +258,7 @@ sub followRunProgress {
 		}
 
 		sleep($rampUp);
+		sleep($warmUp);
 		$self->startStatsCollection($tmpDir);
 		sleep($steadyState);
 		$self->stopStatsCollection();

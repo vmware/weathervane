@@ -1306,30 +1306,29 @@ sub startRun {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
 							my $nameStr = $self->parseNameStr($endIntervalName);
-							if ($endIntervalName =~ /InitialRamp\-(\d+)/) {
-								# Don't print end message for InitialRamp intervals
-								next;
+							# Don't print end message for InitialRamp intervals
+							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
+								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
+								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+								my $successStr;
+								if ($statsSummary->{"intervalPassed"}) {
+									$successStr = 'passed';
+								} else {
+									$successStr = 'failed: ';
+									if (!$statsSummary->{"intervalPassedRT"}) {
+										$successStr .= 'RT,';
+									}
+									if (!$statsSummary->{"intervalPassedMix"}) {
+										$successStr .= 'Mix,';
+									}
+									if (!$statsSummary->{"intervalPassedFailure"}) {
+										$successStr .= 'FailurePct,';
+									}
+									chop($successStr);
+								}
+								my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+								$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 							}
-							my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
-							my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
-							my $successStr;
-							if ($statsSummary->{"intervalPassed"}) {
-								$successStr = 'passed';
-							} else {
-								$successStr = 'failed: ';
-								if (!$statsSummary->{"intervalPassedRT"}) {
-									$successStr .= 'RT,';
-								}
-								if (!$statsSummary->{"intervalPassedMix"}) {
-									$successStr .= 'Mix,';
-								}
-								if (!$statsSummary->{"intervalPassedFailure"}) {
-									$successStr .= 'FailurePct,';
-								}
-								chop($successStr);
-							}
-							my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
-							$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 						}
 					}
 

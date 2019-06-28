@@ -275,6 +275,14 @@ public class FixedLoadPath extends LoadPath {
 		this.rampDown = rampDown;
 	}
 
+	public long getWarmUp() {
+		return warmUp;
+	}
+
+	public void setWarmUp(long warmUp) {
+		this.warmUp = warmUp;
+	}
+
 	public long getTimeStep() {
 		return timeStep;
 	}

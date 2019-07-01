@@ -254,8 +254,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 	private UniformLoadInterval moveToFindFirstMax() {
 		/*
-		 * When moving to FINDFIRSTMAX, the initial rateStep is 1/10 of curUsers, and the
-		 * minRateStep is 1/20 of curUsers
+		 * When moving to FINDFIRSTMAX, the initial rateStep is 1/10 of curUsers
 		 */
 		curRateStep = curUsers / 10;
 		curUsers -= curRateStep;

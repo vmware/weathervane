@@ -647,6 +647,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		if (!($configSize ~~ @configKeys)) {
 			$console_logger->error("Error: For workload " . $workloadNum 
 				.  " configurationSize " . $configSize . " does not exist.");
+			exit(1);
 		}
 		my $config = $fixedConfigs->{$configSize};
 		foreach my $key (keys %$config) {

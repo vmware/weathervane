@@ -326,7 +326,6 @@
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "20Gi",
 },
- 
 
 "micro500mPar40thread" : {
   "users" : 200,
@@ -404,9 +403,9 @@
   "numAppServers" : 1,
   "appServerCpus" : "400m",
   "appServerMem" : "1000Mi",
-  "appServerJvmOpts" : "-Xmx500M -Xms500M -XX:+UseConcMarkSweepGC -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 20,
-  "appServerJdbcConnections" : 21,
+  "appServerJvmOpts" : "-Xmx450M -Xms450M -XX:+UseParallelGC -XX:NewRatio=2 -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 40,
+  "appServerJdbcConnections" : 41,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,

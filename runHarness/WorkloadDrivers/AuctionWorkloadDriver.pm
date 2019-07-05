@@ -1302,7 +1302,18 @@ sub startRun {
 					my $lastIndexStatsSummaries = $#$statsSummaries;
 					if ($lastIndexStatsSummaries >= 0) {
 						my $statsSummary = $statsSummaries->[$lastIndexStatsSummaries];
-						if (!(defined $lastIntervalNames[$appInstanceNum]) ||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
+						if ($statsSummary && (defined $statsSummary->{"intervalName"})) {
+							if (!(defined $lastIntervalNames[$appInstanceNum])) {
+								$logger->debug("$wkloadName: statsSummary intervalName = " 
+									. $statsSummary->{"intervalName"} . ", lastIntervalName not set");
+							} else {
+								$logger->debug("$wkloadName: statsSummary intervalName = " 
+									. $statsSummary->{"intervalName"} . ", lastIntervalName = " 
+									. $lastIntervalNames[$appInstanceNum]);							
+							}								
+						}
+						if (!(defined $lastIntervalNames[$appInstanceNum]) 
+							||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
 							my $nameStr = $self->parseNameStr($endIntervalName);
@@ -1389,10 +1400,12 @@ sub startRun {
 			my $endStats = $json->decode($res->content);
 			my $summaryText = $endStats->{'summaryText'};
 
-			open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
-				or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
-			print FILE $summaryText;
-			close FILE;
+			if ($summaryText) {
+				open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
+					or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
+				print FILE $summaryText;
+				close FILE;
+			}
 		}
 	}
 

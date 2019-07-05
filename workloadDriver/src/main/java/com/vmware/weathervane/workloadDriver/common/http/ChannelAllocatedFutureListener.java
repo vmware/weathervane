@@ -89,7 +89,8 @@ public class ChannelAllocatedFutureListener implements FutureListener<Channel> {
 	}
 	
 	@Override
-	public void operationComplete(Future<Channel> future) throws Exception {		String uri;
+	public void operationComplete(Future<Channel> future) throws Exception {		
+		String uri;
 		if ((_urlBindVariables != null) && !_urlBindVariables.isEmpty()) {
 			uri = _simpleUri.getUriString(_urlBindVariables);
 		} else {

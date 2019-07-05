@@ -498,8 +498,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 	private UniformLoadInterval moveToVerifyMax() {
 		/*
-		 * When moving to VERIFYMAX, the initial rateStep is 1/20 of maxPassUsers, 
-		 * and the minRateStep is 1/100 of maxPassUsers
+		 * When moving to VERIFYMAX, the initial rateStep is findMaxStopPct*maxPassUsers, 
 		 */
 		curRateStep = (long) Math.ceil(maxPassUsers * getFindMaxStopPct());
 		curUsers = maxPassUsers;

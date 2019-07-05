@@ -1304,10 +1304,10 @@ sub startRun {
 						my $statsSummary = $statsSummaries->[$lastIndexStatsSummaries];
 						if ($statsSummary && (defined $statsSummary->{"intervalName"})) {
 							if (!(defined $lastIntervalNames[$appInstanceNum])) {
-								$logger->debug("$wkloadName: statsSummary intervalName = " 
+								$logger->debug("$wkldName: statsSummary intervalName = " 
 									. $statsSummary->{"intervalName"} . ", lastIntervalName not set");
 							} else {
-								$logger->debug("$wkloadName: statsSummary intervalName = " 
+								$logger->debug("$wkldName: statsSummary intervalName = " 
 									. $statsSummary->{"intervalName"} . ", lastIntervalName = " 
 									. $lastIntervalNames[$appInstanceNum]);							
 							}								

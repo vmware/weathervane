@@ -674,9 +674,11 @@ sub kubernetesCopyFromFirst {
 	
 	my $podName = $names[0];
 	$cmd = "kubectl cp -c $containerName  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName:$sourceFile $destFile";
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesFollowLogs logs failed: $cmdFailed");
+		$logger->error("kubernetesCopyFromFirst failed: $cmdFailed");
 	}
 	
 	return 1;

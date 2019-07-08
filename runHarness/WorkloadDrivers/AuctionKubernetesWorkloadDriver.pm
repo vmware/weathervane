@@ -326,12 +326,12 @@ override 'getStatsFiles' => sub {
 		return;
 	}
 
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/gc-W${workloadNum}.log", "$destinationPath/." );
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1.csv", "$destinationPath/." );
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-allSamples.csv", "$destinationPath/." );
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/." );
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/." );
-	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/." );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/gc-W${workloadNum}.log", "$destinationPath/gc-W${workloadNum}.log" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1.csv", "$destinationPath/appInstance${workloadNum}-loadPath1.csv" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-allSamples.csv", "$destinationPath/appInstance${workloadNum}-loadPath1-allSamples.csv" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/appInstance${workloadNum}-periodic.csv" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/appInstance${workloadNum}-periodic-allSamples.csv" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/appInstance${workloadNum}-loadPath1-summary.txt" );
 };
 
 override 'getNumActiveUsers' => sub {

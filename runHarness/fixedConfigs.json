@@ -666,4 +666,129 @@
   
 },
 
+
+"medium" : {
+  "users" : 2000,
+  "maxUsers" : 20000,
+  "numDrivers" : 12,
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
+  "driverCpus" : "2",
+  "driverMem" : "6500Mi",
+  "driverControllerJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
+  "driverControllerCpus" : "300m",
+  "driverControllerMem" : "1500Mi",
+
+  "numWebServers" : 2,
+  "webServerCpus" : "2",
+  "webServerMem"  : "10Gi",
+  "webServerImpl" : "nginx",
+
+  "numAuctionBidServers" : 3,
+  "auctionBidServerCpus" : "2",
+  "auctionBidServerMem" : "5Gi",
+  "auctionBidServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "auctionBidServerThreads" : 100,
+  "auctionBidServerJdbcConnections" : 101,
+  "numClientUpdateThreads" : 2,
+  "auctionBidServerImpl" : "auctionbidservice",
+  
+  "numAppServers" : 3,
+  "appServerCpus" :"2",
+  "appServerMem" : "7Gi",
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 100,
+  "appServerJdbcConnections" : 101,
+  "numAuctioneerThreads" : 1,  
+  "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 500,
+
+  "numCoordinationServers" : 3, 
+  "coordinationServerCpus" : "500m",
+  "coordinationServerMem" : "500Mi",
+  "coordinationServerImpl" : "zookeeper",
+  
+  "numMsgServers" : 1, 
+  "msgServerCpus" : "1",
+  "msgServerMem" : "2Gi",
+  "msgServerImpl" : "rabbitmq",
+
+  "numDbServers" : 1, 
+  "dbServerCpus" : "2",
+  "dbServerMem" : "8Gi",
+  "dbServerImpl" : "postgresql",
+  "postgresqlDataVolumeSize" : "20Gi",
+  "postgresqlLogVolumeSize" : "20Gi",
+
+  "numNosqlServers" : 3, 
+  "nosqlServerCpus" : "2",
+  "nosqlServerMem" : "32Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "100Gi",
+  
+},
+
+
+"large" : {
+  "users" : 2000,
+  "maxUsers" : 20000,
+  "numDrivers" : 12,
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
+  "driverCpus" : "2",
+  "driverMem" : "6500Mi",
+  "driverControllerJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
+  "driverControllerCpus" : "300m",
+  "driverControllerMem" : "1500Mi",
+
+  "numWebServers" : 4,
+  "webServerCpus" : "2",
+  "webServerMem"  : "10Gi",
+  "webServerImpl" : "nginx",
+
+  "numAuctionBidServers" : 6,
+  "auctionBidServerCpus" : "2",
+  "auctionBidServerMem" : "5Gi",
+  "auctionBidServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "auctionBidServerThreads" : 100,
+  "auctionBidServerJdbcConnections" : 101,
+  "numClientUpdateThreads" : 2,
+  "auctionBidServerImpl" : "auctionbidservice",
+  
+  "numAppServers" : 6,
+  "appServerCpus" :"2",
+  "appServerMem" : "7Gi",
+  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 100,
+  "appServerJdbcConnections" : 101,
+  "numAuctioneerThreads" : 1,  
+  "appServerImpl" : "tomcat",
+  "appServerWarmerThreadsPerServer" : 1,
+  "appServerWarmerIterations" : 500,
+
+  "numCoordinationServers" : 3, 
+  "coordinationServerCpus" : "500m",
+  "coordinationServerMem" : "500Mi",
+  "coordinationServerImpl" : "zookeeper",
+  
+  "numMsgServers" : 1, 
+  "msgServerCpus" : "1",
+  "msgServerMem" : "2Gi",
+  "msgServerImpl" : "rabbitmq",
+
+  "numDbServers" : 1, 
+  "dbServerCpus" : "2",
+  "dbServerMem" : "8Gi",
+  "dbServerImpl" : "postgresql",
+  "postgresqlDataVolumeSize" : "20Gi",
+  "postgresqlLogVolumeSize" : "20Gi",
+
+  "numNosqlServers" : 3, 
+  "nosqlServerCpus" : "2",
+  "nosqlServerMem" : "32Gi",
+  "nosqlServerImpl" : "cassandra",
+  "cassandraDataVolumeSize" : "100Gi",
+  
+},
+
+
 }

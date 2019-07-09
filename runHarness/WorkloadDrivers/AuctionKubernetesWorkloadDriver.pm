@@ -304,6 +304,12 @@ override 'followLogs' => sub {
 	}	
 };
 
+override 'getLogFiles' => sub {
+	my ( $self, $destinationPath ) = @_;
+	my $namespace = $self->namespace;
+	$self->host->kubernetesGetLogs("type=node", "wklddriver", $namespace, $destinationPath ) = @_;
+};
+
 override 'stopDrivers' => sub {
 	my ( $self, $logHandle) = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");

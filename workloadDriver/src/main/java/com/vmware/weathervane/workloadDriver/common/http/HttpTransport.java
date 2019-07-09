@@ -110,16 +110,17 @@ public class HttpTransport {
 				logger.debug("newPool: Creating new FixedChannelPool for userId = " + _user.getId() + ".  remoteAddress = " + key.getAddress()
 								+ ", useSSl = " + key.isUseSsl());
 				Bootstrap bootstrap = ClientBootstrapFactory.getInstance();
-				return new FixedChannelPool(bootstrap.remoteAddress(key.getAddress()), 
-							new HttpClientChannelPoolHandler(_sslContext, key.isUseSsl(), _user.getId()), 
-							ChannelHealthChecker.ACTIVE, AcquireTimeoutAction.FAIL,
-							5000, _maxConnPerUser, 20, true);
+				FixedChannelPool pool = new FixedChannelPool(bootstrap.remoteAddress(key.getAddress()), 
+						new HttpClientChannelPoolHandler(_sslContext, key.isUseSsl(), _user.getId()), 
+						ChannelHealthChecker.ACTIVE, AcquireTimeoutAction.FAIL,
+						5000, _maxConnPerUser, 20, true);
+				return pool;
 			}
 		};
-
 	}
 
 	public void close( ) {
+		logger.debug("close for userId = " + _user.getId());
 		for (FixedChannelPool pool : _pools) {
 			pool.close();
 		}

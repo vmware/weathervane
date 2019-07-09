@@ -278,21 +278,14 @@ public class ChannelAllocatedFutureListener implements FutureListener<Channel> {
 			ch.flush();			
 			
 		} else {
+			/*
+			 * Signal to the caller that the operation failed
+			 */
+			Throwable t = future.cause();
 			logger.info("channel allocation failed for " + _httpMethod + " request with url "
-					+ uri + ",  userId = " + _userId + ", behaviorId = " + _callback.getBehaviorId() + ", cause = " + future.cause().getMessage());
-			// retry
-			long now = _allocateStartTimeMillis;
-			if (channelStatsCollectorLogger.isDebugEnabled()) {
-				now = System.currentTimeMillis();
-				_channelStatsCollector.incrementNumChannelsRequested();
-				_channelStatsCollector.incrementNumChannelsAcquiredFailed();
-			}
-			Future<Channel> f = _pool.acquire();
-			f.addListener(new ChannelAllocatedFutureListener(_httpTransport, _httpMethod, _simpleUri, 
-									_urlBindVariables, _headers, _content, _formParameters, _fileUploads, _dropResponse, 
-									_callback, _pool, now, _userId));
+					+ uri + ",  userId = " + _userId + ", behaviorId = " + _callback.getBehaviorId() + ", cause = " + t.getMessage());	
+			_callback.httpRequestFailed(t, _httpMethod == HttpMethod.GET);
 		}
-		
 	}
 	
 	/**

@@ -337,12 +337,16 @@ public class StatsSummary {
 		StringBuilder allOpString = new StringBuilder();
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
+			if (computedOpStatsSummary == null) {
+				continue;
+			}
 
 			allOpString.append(opName + ":" + opStatsSummary.getTotalNumOps() + "/" + 
 					opStatsSummary.getTotalNumFailedRT() + "(" + 
 					opStatsSummary.getResponseTimeLimit() 
-					+ "/" + doubleFormat3.format(statsSummaryRollup.getComputedOpStatsSummary(opName).getAvgRt())
-					+ "/" + doubleFormat3.format(statsSummaryRollup.getComputedOpStatsSummary(opName).getAvgFailedRt())
+					+ "/" + doubleFormat3.format(computedOpStatsSummary.getAvgRt())
+					+ "/" + doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt())
 					+ "), ");
 		}
 
@@ -420,6 +424,9 @@ public class StatsSummary {
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
+			if (computedOpStatsSummary == null) {
+				continue;
+			}
 			
 			String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
 			String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
@@ -523,6 +530,9 @@ public class StatsSummary {
 		for (String opName : opNameToStatsMap.keySet()) {
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
+			if (computedOpStatsSummary == null) {
+				continue;
+			}
 			
 			String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
 			String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
@@ -618,7 +628,7 @@ public class StatsSummary {
 			}
 			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
-			if (opStatsSummary.getTotalNumOps()  > 0) {
+			if ((computedOpStatsSummary != null) && (opStatsSummary.getTotalNumOps()  > 0)) {
 				retVal.append(String.format(opLineOutputFormat, opName, computedOpStatsSummary.isPassed(), computedOpStatsSummary.isPassedRt(),
 						computedOpStatsSummary.isPassedMixPct(), doubleFormat2.format(computedOpStatsSummary.getThroughput()),
 						doubleFormat3.format(computedOpStatsSummary.getAvgRt()), doubleFormat2.format(opStatsSummary.getMinResponseTime() / 1000.0),

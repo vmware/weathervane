@@ -41,8 +41,6 @@ public class LoggingChannelCloseFutureListener implements ChannelFutureListener 
 		SocketAddress remoteAddress = ch.remoteAddress();
 		logger.debug("Channel closed for userId = " + _userId + ", localAddress = " + localAddress
 				+ ", remoteAddress = " + remoteAddress);
-		
-	
 	}
 
 }

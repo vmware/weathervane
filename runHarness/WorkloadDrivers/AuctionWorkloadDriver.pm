@@ -1302,34 +1302,44 @@ sub startRun {
 					my $lastIndexStatsSummaries = $#$statsSummaries;
 					if ($lastIndexStatsSummaries >= 0) {
 						my $statsSummary = $statsSummaries->[$lastIndexStatsSummaries];
-						if (!(defined $lastIntervalNames[$appInstanceNum]) ||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
+						if ($statsSummary && (defined $statsSummary->{"intervalName"})) {
+							if (!(defined $lastIntervalNames[$appInstanceNum])) {
+								$logger->debug("$wkldName: statsSummary intervalName = " 
+									. $statsSummary->{"intervalName"} . ", lastIntervalName not set");
+							} else {
+								$logger->debug("$wkldName: statsSummary intervalName = " 
+									. $statsSummary->{"intervalName"} . ", lastIntervalName = " 
+									. $lastIntervalNames[$appInstanceNum]);							
+							}								
+						}
+						if (!(defined $lastIntervalNames[$appInstanceNum]) 
+							||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
 							my $nameStr = $self->parseNameStr($endIntervalName);
-							if ($endIntervalName =~ /InitialRamp\-(\d+)/) {
-								# Don't print end message for InitialRamp intervals
-								next;
+							# Don't print end message for InitialRamp intervals
+							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
+								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
+								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+								my $successStr;
+								if ($statsSummary->{"intervalPassed"}) {
+									$successStr = 'passed';
+								} else {
+									$successStr = 'failed: ';
+									if (!$statsSummary->{"intervalPassedRT"}) {
+										$successStr .= 'RT,';
+									}
+									if (!$statsSummary->{"intervalPassedMix"}) {
+										$successStr .= 'Mix,';
+									}
+									if (!$statsSummary->{"intervalPassedFailure"}) {
+										$successStr .= 'FailurePct,';
+									}
+									chop($successStr);
+								}
+								my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+								$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 							}
-							my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
-							my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
-							my $successStr;
-							if ($statsSummary->{"intervalPassed"}) {
-								$successStr = 'passed';
-							} else {
-								$successStr = 'failed: ';
-								if (!$statsSummary->{"intervalPassedRT"}) {
-									$successStr .= 'RT,';
-								}
-								if (!$statsSummary->{"intervalPassedMix"}) {
-									$successStr .= 'Mix,';
-								}
-								if (!$statsSummary->{"intervalPassedFailure"}) {
-									$successStr .= 'FailurePct,';
-								}
-								chop($successStr);
-							}
-							my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
-							$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
 						}
 					}
 
@@ -1390,10 +1400,12 @@ sub startRun {
 			my $endStats = $json->decode($res->content);
 			my $summaryText = $endStats->{'summaryText'};
 
-			open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
-				or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
-			print FILE $summaryText;
-			close FILE;
+			if ($summaryText) {
+				open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
+					or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
+				print FILE $summaryText;
+				close FILE;
+			}
 		}
 	}
 

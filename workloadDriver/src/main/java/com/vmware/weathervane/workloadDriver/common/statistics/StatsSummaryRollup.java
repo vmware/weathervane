@@ -143,11 +143,8 @@ public class StatsSummaryRollup {
 				
 				logger.info("For operation " + opName + " opStatsSummary = " + opStatsSummary
 						+ ", computedOpStatsSummary = " + computedOpStatsSummary);
-				
 			}
 		}
-		
-
 	}
 
 	public String getIntervalName() {

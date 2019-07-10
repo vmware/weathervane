@@ -160,6 +160,10 @@ public class Run {
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
 			state = RunState.COMPLETED;
+			// Stop all workloads
+			for (Workload workload: workloads) {
+				workload.stop();
+			}
 		}
 	}
 

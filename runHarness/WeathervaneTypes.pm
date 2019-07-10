@@ -71,8 +71,6 @@ our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRu
 							'findMaxMultiAI', 'findMaxMultiRun', 'single', 'findMax' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
-our @configurationSizes = ( 'micro', 'small', 'medium', 'large');
-
 # These are all of the workload profiles that are supported for each workload
 our %workloadProfiles = (
 	"auction" => ["official", "official2"],

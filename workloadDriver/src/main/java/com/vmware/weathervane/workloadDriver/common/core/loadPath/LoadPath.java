@@ -169,13 +169,11 @@ public abstract class LoadPath implements Runnable {
 			logger.debug("run: sleeping for  " + wait + " seconds");
 			executorService.schedule(this, wait, TimeUnit.SECONDS);
 		}
-
 	}
 
 	public void changeActiveUsers(long numUsers) {
 		logger.debug("changeActiveUsers to " + numUsers);
 		numActiveUsers = numUsers;
-		int nodeNumber = 0;
 		for (String hostname : hosts) {
 			/*
 			 * Send the changeusers message for the workload to the host
@@ -196,9 +194,6 @@ public abstract class LoadPath implements Runnable {
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error posting changeUsers message to " + url);
 			}
-
-
-			nodeNumber++;
 		}
 
 	}

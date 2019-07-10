@@ -158,20 +158,14 @@ public class SimpleUri {
 	}
 
 	private String doReplace(String str, Map<String, String> bindVariables) {
-		StringBuilder formatted = new StringBuilder(str);
-
+		String resultString = str;
 		if (bindVariables != null) {
 			for (String varName : bindVariables.keySet()) {
 				String varWithBrackets = "{" + varName + "}";
-				int bindVarIndex = formatted.indexOf(varWithBrackets);
-				if (bindVarIndex >= 0) {
-					String varValue = bindVariables.get(varName);
-					formatted.replace(bindVarIndex, bindVarIndex + varWithBrackets.length(),
-							varValue);
-				}
+				resultString = resultString.replace(varWithBrackets, bindVariables.get(varName));
 			}
 		}
-		return formatted.toString();
+		return resultString;
 	}
 
 }

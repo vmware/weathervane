@@ -369,15 +369,15 @@ sub kubernetesGetLbIP {
 		return ($cmdFailed, $ip);
 	}
 	
-	# If the returned value is a hostname then wait until an IP address is available
+	# If the returned value is a hostname then convert it to an IP address
 	if ($ip =~ /[A-Za-z]/) {
-		$logger->debug("LoadBalancer access is a hostname.  Wait for IP");
+		$logger->debug("LoadBalancer access is a hostname.  Convert it to an IP");
 		$retries = 40;
 		my $realIp = "";
 		$cmd = "dig +short $ip";
 		$logger->debug("Command: $cmd");
 		while (!$realIp && ($retries > 0)) {
-			($cmdFailed, $realIp) = runCmd($cmd);
+			($cmdFailed, $realIp) = $self->kubernetesExecOne($svcName, $cmd, $namespace);
 		  	if ($cmdFailed)	{
 		  		$logger->error("Error getting LoadBalancer IP for hostname $ip: error = $cmdFailed");
 				return ($cmdFailed, $ip);
@@ -387,6 +387,8 @@ sub kubernetesGetLbIP {
 		  		$retries--;
 		  	} else {
 				$logger->debug("Called kubernetesGetLbIP: converting $ip to IP got $realIp");
+				my @ips = split(/\n/, $realIp);
+				$ip = $ips[0];
 	  		}
 		}
 	}
@@ -672,9 +674,11 @@ sub kubernetesCopyFromFirst {
 	
 	my $podName = $names[0];
 	$cmd = "kubectl cp -c $containerName  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName:$sourceFile $destFile";
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesFollowLogs logs failed: $cmdFailed");
+		$logger->error("kubernetesCopyFromFirst failed: $cmdFailed");
 	}
 	
 	return 1;

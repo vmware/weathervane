@@ -102,8 +102,10 @@ sub printCsv {
 		print CSVFILE "\n";
 	}
 	foreach my $key ( keys %$csvHashRef ) {
-		$debug_logger->debug("printCsv: printing value for key $key");
-		print CSVFILE $csvHashRef->{$key} . ",";
+		if ((exists $csvHashRef->{$key}) && (defined $csvHashRef->{$key})) {
+			$debug_logger->debug("printCsv: printing value for key $key");
+			print CSVFILE $csvHashRef->{$key} . ",";
+		}
 	}
 	print CSVFILE "\n";
 	close CSVFILE;

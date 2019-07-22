@@ -52,11 +52,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<context:component-scan base-package="com.vmware.weathervane.auction.service" />
 	<context:component-scan base-package="com.vmware.weathervane.auction.security" />
 
-	<!-- Date formatter used to create the date for the fixedStartCelendar -->
-	<bean id="dateFormat" class="java.text.SimpleDateFormat">
-		<constructor-arg value="yyyy-MM-dd:HH-mm" />
-	</bean>
-
 	<bean id="bidService"
 		class="com.vmware.weathervane.auction.service.BidServiceImpl">
 		<property name="numClientUpdateExecutorThreads" value="${NUMCLIENTUPDATETHREADS:1}" />

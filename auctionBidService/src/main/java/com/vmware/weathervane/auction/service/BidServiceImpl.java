@@ -195,7 +195,7 @@ public class BidServiceImpl implements BidService {
 	public BidRepresentation getNextBid(Long auctionId, Long itemId, Integer lastBidCount, AsyncContext ac)
 			throws InvalidStateException, AuthenticationException {
 
-		logger.debug("LiveAuctionServiceImpl:getNextBid for auctionId = " + auctionId + ", itemId = " + itemId + ", lastBidCount = " + lastBidCount);
+		logger.debug("BidServiceImpl:getNextBid for auctionId = " + auctionId + ", itemId = " + itemId + ", lastBidCount = " + lastBidCount);
 
 		ClientBidUpdater clientBidUpdater = _clientBidUpdaterMap.get(auctionId);
 

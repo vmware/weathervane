@@ -92,7 +92,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		logger.info("logout for user with authToken " + authToken);
 		User theUser = userDao.getUserByAuthToken(authToken);
 		if (theUser != null) {
-	 		theUser.setLoggedin(false); // remove token
+	 		theUser.setLoggedin(false);
+	 		theUser.setAuthToken(null); // remove token
 			userDao.update(theUser);
 			attendanceRecordRepository.leaveAuctionsForUser(theUser.getId());
 		} else {

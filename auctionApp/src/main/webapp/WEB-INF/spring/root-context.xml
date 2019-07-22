@@ -52,7 +52,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<context:component-scan base-package="com.vmware.weathervane.auction.service" />
 	<context:component-scan base-package="com.vmware.weathervane.auction.security" />
 
-	<!-- Date formatter used to create the date for the fixedStartCelendar -->
+	<!-- Date formatter used to create the date for the fixedStartCalendar -->
 	<bean id="dateFormat" class="java.text.SimpleDateFormat">
 		<constructor-arg value="yyyy-MM-dd:HH-mm" />
 	</bean>
@@ -67,6 +67,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			</bean>
 		</constructor-arg>
 	</bean>
+	
 	<bean id="liveAuctionService"
 		class="com.vmware.weathervane.auction.service.liveAuction.LiveAuctionServiceImpl">
 		<property name="auctionQueueUpdateDelay" value="60" />

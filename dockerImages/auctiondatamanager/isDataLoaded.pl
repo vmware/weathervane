@@ -21,10 +21,10 @@ my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
 $springProfilesActive .= ",dbprep";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
-my $heap              = $ENV{'HEAP'};
+my $jvmopts              = $ENV{'JVMOPTS'};
 my $dbLoaderJavaOptions = "";
 
-my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -client -cp $dbLoaderClasspath" .
+my $cmdString = "java $jvmopts $dbLoaderJavaOptions -client -cp $dbLoaderClasspath" .
 				" -Dspring.profiles.active=\"$springProfilesActive\" -DDBHOSTNAME=$ENV{'DBHOSTNAME'} -DDBPORT=$ENV{'DBPORT'}" . 
 				" -DCASSANDRA_CONTACTPOINTS=$ENV{'CASSANDRA_CONTACTPOINTS'} -DCASSANDRA_PORT=$ENV{'CASSANDRA_PORT'}" .
 				" com.vmware.weathervane.auction.dbloader.DBPrep $dbPrepOptions 2>&1";

@@ -61,7 +61,7 @@ sub startDataManagerContainer {
 	my $name        = $self->name;
 	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
-	my $heap = $self->getParamValue('dbLoaderHeap');
+	my $jvmopts = $self->getParamValue('dbLoaderJvmOpts');
 	my $threads = $self->getParamValue('dbLoaderThreads');
 	my %envVarMap;
 	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
@@ -69,7 +69,7 @@ sub startDataManagerContainer {
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
-	$envVarMap{"HEAP"} = $heap;	
+	$envVarMap{"JVMOPTS"} = $jvmopts;	
 	$envVarMap{"THREADS"} = $threads;	
 	
 	my $cassandraContactpoints = "";

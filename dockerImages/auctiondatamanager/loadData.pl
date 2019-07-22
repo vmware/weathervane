@@ -13,7 +13,7 @@ my $dbHostname = $ENV{'DBHOSTNAME'};
 my $dbPort = $ENV{'DBPORT'};
 my $cassandraContactpoints = $ENV{'CASSANDRA_CONTACTPOINTS'};
 my $cassandraPort = $ENV{'CASSANDRA_PORT'};
-my $heap              = $ENV{'HEAP'};
+my $jvmopts              = $ENV{'JVMOPTS'};
 my $threads = $ENV{'THREADS'};
 
 if ( $users > $maxUsers ) {
@@ -41,7 +41,7 @@ my $dbLoaderJavaOptions = "";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 
-my $cmdString = "java -Xmx$heap -Xms$heap $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
+my $cmdString = "java $jvmopts $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
 				" -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" .
 				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" . 
 				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions 2>/dev/null";

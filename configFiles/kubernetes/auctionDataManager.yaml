@@ -12,7 +12,7 @@ data:
   CASSANDRA_PORT: "9042"
   DBHOSTNAME: "postgresql"
   DBPORT: "5432"
-  HEAP: "4G"
+  JVMOPTS: "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch"
   THREADS: "8"
   SPRINGPROFILESACTIVE: "postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit" 
 ---

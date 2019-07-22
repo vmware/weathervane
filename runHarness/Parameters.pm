@@ -1622,9 +1622,9 @@ $parameters{"dbLoaderThreads"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dbLoaderHeap"} = {
+$parameters{"dbLoaderJvmOpts"} = {
 	"type"      => "=s",
-	"default"   => "4G",
+	"default"   => "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 1,

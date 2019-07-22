@@ -37,6 +37,7 @@ import com.vmware.weathervane.auction.data.dao.DbBenchmarkInfoDao;
 import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
 import com.vmware.weathervane.auction.data.dao.ItemDao;
+import com.vmware.weathervane.auction.data.dao.UserDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoException;
 import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoNeededException;
@@ -56,6 +57,7 @@ public class DBPrep {
 
 	private static AuctionDao auctionDao;
 	private static ItemDao itemDao;
+	private static UserDao userDao;
 	private static HighBidDao highBidDao;
 	private static AuctionMgmtDao auctionMgmtDao;
 	private static FixedTimeOffsetDao fixedTimeOffsetDao;
@@ -131,6 +133,7 @@ public class DBPrep {
 				.getBean("dbBenchmarkInfoDao");
 		auctionDao = (AuctionDao) context.getBean("auctionDao");
 		itemDao = (ItemDao) context.getBean("itemDao");
+		userDao = (UserDao) context.getBean("userDao");
 		highBidDao = (HighBidDao) context.getBean("highBidDao");
 		auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
@@ -299,6 +302,20 @@ public class DBPrep {
 		highBidDao.deleteByPreloaded(false);
 
 		/*
+		 * Delete items that were added during the last run
+		 */
+		logger.info("Deleting non-preloaded items\n");
+		int numDeleted = itemDao.deleteByPreloaded(false);
+		logger.info("Deleted " + numDeleted + " non-preloaded items\n");
+		
+		/*
+		 * Reset the users
+		 */
+		userDao.clearAllAuthTokens();
+		userDao.resetAllCreditLimits();
+		userDao.clearAllLoggedIn();
+
+		/*
 		 * Set the correct number of auctions to start during this run
 		 */
 		logger.info("Finding auctions with current flag set\n");
@@ -343,13 +360,6 @@ public class DBPrep {
 		for (Thread thread : threadList) {
 			thread.join();
 		}
-
-		/*
-		 * Delete items that were added during the last run
-		 */
-		logger.info("Deleting non-preloaded items\n");
-		int numDeleted = itemDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded items\n");
 
 		/*
 		 * Clear the masterNodeNum in the AuctionMgmt table so that a node

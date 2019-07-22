@@ -37,7 +37,6 @@ public class UserDaoJpa extends GenericDaoJpa<User, Long> implements UserDao {
 	@Override
 	@Transactional(readOnly=true)
 	public User getUserByName(String username) {
-
 		String queryString = "SELECT user FROM User user WHERE user.email = :name";
 		Query query = entityManager.createQuery(queryString);
 		query.setParameter("name", username);
@@ -48,7 +47,6 @@ public class UserDaoJpa extends GenericDaoJpa<User, Long> implements UserDao {
 	@Override
 	@Transactional(readOnly=true)
 	public List<User> getLoggedInUsers() {
-		
 		String queryString = "SELECT user FROM User user WHERE user.authToken IS NOT NULL";
 		Query query = entityManager.createQuery(queryString);
 		return query.getResultList();			
@@ -69,6 +67,34 @@ public class UserDaoJpa extends GenericDaoJpa<User, Long> implements UserDao {
 			return null;
 		}
 		
+	}
+
+	@Override
+	@Transactional
+	public int clearAllAuthTokens() {
+		String queryString = "UPDATE User user SET user.authToken = NULL";
+		logger.debug("clearAllAuthTokens queryString = " + queryString);
+		Query query = entityManager.createQuery(queryString);
+		return query.executeUpdate();			
+	}
+
+
+	@Override
+	@Transactional
+	public int clearAllLoggedIn() {
+		String queryString = "UPDATE User user SET user.loggedin = false";
+		logger.debug("clearAllLoggedIn queryString = " + queryString);
+		Query query = entityManager.createQuery(queryString);
+		return query.executeUpdate();			
+	}
+
+	@Override
+	@Transactional
+	public int resetAllCreditLimits() {
+		String queryString = "UPDATE User user SET user.creditLimit = 1000000";
+		logger.debug("resetAllCreditLimits queryString = " + queryString);
+		Query query = entityManager.createQuery(queryString);
+		return query.executeUpdate();			
 	}
 
 	@Override

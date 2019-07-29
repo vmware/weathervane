@@ -35,7 +35,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		reply-timeout="10000" />
 
 	<rabbit:queue id="highBidQueue"  />
-	<rabbit:queue id="newBidQueue"  />
 	
 	<rabbit:topic-exchange name="liveAuctionMgmtExchange">
 		<rabbit:bindings>
@@ -49,12 +48,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 	
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+	
 	<beans profile="singleRabbit">
 		<rabbit:connection-factory id="rabbitConnectionFactory"
 			host="${RABBITMQ_HOST}" port="${RABBITMQ_PORT}" 
 			username="auction" password="auction" virtual-host="auction" 
-			/>
-			
+			/>	
 	</beans>
 
 	<beans profile="clusteredRabbit">

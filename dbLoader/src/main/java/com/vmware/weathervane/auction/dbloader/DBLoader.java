@@ -342,15 +342,15 @@ public class DBLoader {
 		if (dbLoaderWorkEstimate == null) {
 			dbLoaderWorkEstimate = new DbLoaderWorkEstimate();
 			if (imageStoreType.equals("cassandra")) {
-				dbLoaderWorkEstimate.setUserWork(0.0004);
-				dbLoaderWorkEstimate.setHistoryWork(0.00085);
-				dbLoaderWorkEstimate.setFutureWork(0.00015);
-				dbLoaderWorkEstimate.setCurrentWork(0.013);
+				dbLoaderWorkEstimate.setUserWork(0.00005);
+				dbLoaderWorkEstimate.setHistoryWork(0.0032);
+				dbLoaderWorkEstimate.setFutureWork(0.001);
+				dbLoaderWorkEstimate.setCurrentWork(0.0134);
 			} else {
-				dbLoaderWorkEstimate.setUserWork(0.0004);
-				dbLoaderWorkEstimate.setHistoryWork(0.0016);
-				dbLoaderWorkEstimate.setFutureWork(0.0012);
-				dbLoaderWorkEstimate.setCurrentWork(0.0128);
+				dbLoaderWorkEstimate.setUserWork(0.00005);
+				dbLoaderWorkEstimate.setHistoryWork(0.0032);
+				dbLoaderWorkEstimate.setFutureWork(0.001);
+				dbLoaderWorkEstimate.setCurrentWork(0.0134);
 			}
 		}
 

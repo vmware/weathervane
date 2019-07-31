@@ -125,10 +125,14 @@ public class DbLoaderDao {
 	private static long historyWorkRemaining = 0;
 	private static long futureWorkRemaining = 0;
 	private static long currentWorkRemaining = 0;
-
-	private static DbLoaderWorkEstimate originalDbLoaderWorkEstimate;
 	private static DbLoaderWorkEstimate dbLoaderWorkEstimate;
 
+	private static long userWorkOriginal = 0;
+	private static long historyWorkOriginal = 0;
+	private static long futureWorkOriginal = 0;
+	private static long currentWorkOriginal = 0;
+	private static DbLoaderWorkEstimate originalDbLoaderWorkEstimate;
+	
 	/*
 	 * What time was it when the last gave a completion estimate.
 	 */
@@ -182,6 +186,11 @@ public class DbLoaderDao {
 	public static void setTotalWork(DbLoaderWorkEstimate theWorkEstimate, long userWork,
 			long historyWork, long futureWork, long currentWork, String messageString) {
 
+		userWorkOriginal = userWork;
+		historyWorkOriginal = historyWork;
+		futureWorkOriginal = futureWork;
+		currentWorkOriginal = currentWork;
+		
 		originalDbLoaderWorkEstimate = theWorkEstimate;
 		dbLoaderWorkEstimate = new DbLoaderWorkEstimate();
 		dbLoaderWorkEstimate.setUserWork(originalDbLoaderWorkEstimate.getUserWork());
@@ -218,7 +227,7 @@ public class DbLoaderDao {
 	}
 
 	private static synchronized void logWorkDone(Epochs typeOfWork, long workDone, String messageString) {
-
+		logger.debug("logWorkDone typeOfWork = " + typeOfWork + ", workDone = " + workDone);
 		double epochWorkRemaining = 0;
 		boolean firstInterval = false;
 		switch (typeOfWork) {
@@ -254,16 +263,14 @@ public class DbLoaderDao {
 		 * interval
 		 */
 		long now = System.currentTimeMillis();
+		logger.debug("logWorkDone typeOfWork = " + typeOfWork + ", firstInterval = " + firstInterval
+				+ ", epochWorkRemaining = " + epochWorkRemaining 
+				+ ", now = " + now 
+				+ ", nextUpdateTimeMillis = " + nextUpdateTimeMillis 
+				);
 		if ((now >= nextUpdateTimeMillis) || (epochWorkRemaining == 0)) {
 			long intervalDuration = now - updateIntervalStartTimeMillis;
-
-			long totalWorkRemaining = userWorkRemaining + historyWorkRemaining
-					+ futureWorkRemaining + currentWorkRemaining;
-			logger.debug("At end of interval: totalWorkRemaining = " + totalWorkRemaining
-					+ ", totalWork = " + totalWork + ", updateIntervalMillis = "
-					+ updateIntervalMillis);
-			double pctDone = 100.0 - ((totalWorkRemaining / (totalWork * 1.0)) * 100.0);
-
+			
 			/*
 			 * Update the work-per-item estimates for all types of work, but
 			 * only if there is still work to do.
@@ -297,7 +304,7 @@ public class DbLoaderDao {
 					break;
 				}
 
-				if (userWorkRemaining != 0) {
+				if (userWorkRemaining > 0) {
 					newWorkEstimate = workAdjustmentPct
 							* originalDbLoaderWorkEstimate.getUserWork();
 					dbLoaderWorkEstimate.setUserWork(newWorkEstimate);
@@ -307,7 +314,7 @@ public class DbLoaderDao {
 							+ userWorkRemainingCurIntervalStart + ", newWorkEstimate = "
 							+ newWorkEstimate);
 				}
-				if (historyWorkRemaining != 0) {
+				if (historyWorkRemaining > 0) {
 					newWorkEstimate = workAdjustmentPct
 							* originalDbLoaderWorkEstimate.getHistoryWork();
 					dbLoaderWorkEstimate.setHistoryWork(newWorkEstimate);
@@ -317,7 +324,7 @@ public class DbLoaderDao {
 							+ historyWorkRemainingCurIntervalStart + ", newWorkEstimate = "
 							+ newWorkEstimate);
 				}
-				if (futureWorkRemaining != 0) {
+				if (futureWorkRemaining > 0) {
 					newWorkEstimate = workAdjustmentPct
 							* originalDbLoaderWorkEstimate.getFutureWork();
 					dbLoaderWorkEstimate.setFutureWork(newWorkEstimate);
@@ -327,7 +334,7 @@ public class DbLoaderDao {
 							+ futureWorkRemainingCurIntervalStart + ", newWorkEstimate = "
 							+ newWorkEstimate);
 				}
-				if (currentWorkRemaining != 0) {
+				if (currentWorkRemaining > 0) {
 					newWorkEstimate = workAdjustmentPct
 							* originalDbLoaderWorkEstimate.getCurrentWork();
 					dbLoaderWorkEstimate.setCurrentWork(newWorkEstimate);
@@ -350,6 +357,16 @@ public class DbLoaderDao {
 			double workForCurrent = currentWorkRemaining * dbLoaderWorkEstimate.getCurrentWork();
 			double totalTimeRemaining = workForUsers + workForHistory + workForFuture
 					+ workForCurrent;
+
+			double totalDurationEstimate = userWorkOriginal * dbLoaderWorkEstimate.getUserWork()
+			+ historyWorkOriginal * dbLoaderWorkEstimate.getHistoryWork()
+			+ futureWorkOriginal * dbLoaderWorkEstimate.getFutureWork()
+			+ currentWorkOriginal * dbLoaderWorkEstimate.getCurrentWork();
+
+			logger.debug("At end of interval: totalTimeRemaining = " + totalTimeRemaining
+					+ ", totalWork = " + totalWork + ", updateIntervalMillis = "
+					+ updateIntervalMillis);
+			double pctDone = 100.0 - ((totalTimeRemaining / totalDurationEstimate) * 100.0);
 
 			long duration = Math.round(totalTimeRemaining * 1000);
 			String durationString = String

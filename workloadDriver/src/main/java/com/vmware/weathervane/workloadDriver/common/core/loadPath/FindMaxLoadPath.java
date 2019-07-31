@@ -300,15 +300,16 @@ public class FindMaxLoadPath extends LoadPath {
 							return nextInterval();
 						} else {
 							long nextRateStep = curRateStep;
+							numSucessiveIntervalsFailed = 0;
 							numSucessiveIntervalsPassed++;
-							if (numSucessiveIntervalsPassed >= 2) {
+							if (numSucessiveIntervalsPassed >= 3) {
 								/*
-								 * Have passed twice in a row, increase the rate step to possibly 
+								 * Have passed three times in a row, increase the rate step to possibly 
 								 * shorten run
 								 */
 								logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": Passed twice in a row.  Increasing nextRateStep");
 								numSucessiveIntervalsPassed = 0;
-								nextRateStep *= 1.5;
+								nextRateStep *= 1.25;
 							}
 
 							/*
@@ -371,15 +372,16 @@ public class FindMaxLoadPath extends LoadPath {
 					}
 
 					long nextRateStep = curRateStep;		
-					numSucessiveIntervalsPassed--;
-					if (numSucessiveIntervalsPassed <= -2) {
+					numSucessiveIntervalsPassed = 0;
+					numSucessiveIntervalsFailed++;
+					if (numSucessiveIntervalsFailed >= 2) {
 						/*
 						 * Have failed twice in a row, increase the rate step to possibly 
 						 * shorten run
 						 */
 						logger.debug("nextInterval for " + curPhase + ": "  + this.getName() + ": Failed twice in a row.  Increasing nextRateStep");
 						nextRateStep *= 1.5;					
-						numSucessiveIntervalsPassed = 0;
+						numSucessiveIntervalsFailed = 0;
 					}
 					
 					/*

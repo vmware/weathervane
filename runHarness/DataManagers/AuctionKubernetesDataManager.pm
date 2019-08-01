@@ -241,9 +241,7 @@ sub pretouchData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
-	my $name        = $self->name;
-	my $retVal         = 0;
-	$logger->debug( "pretouchData for workload ", $workloadNum );
+	$logger->debug( "pretouchData for workload {}, appInstance {}", $workloadNum, $appInstanceNum);
 	
 	my $cluster = $self->host;
 	my $namespace = $self->appInstance->namespace;
@@ -254,12 +252,22 @@ sub pretouchData {
 		$console_logger->error("Error opening $logName:$!");
 		return 0;
 	};
-
-	# ToDo: Pretouch cassandra here or in datamanager container
-	
+	print $logHandle "Exec-ing /pretouchData.sh\n";
+	$logger->debug("Exec-ing /pretouchData.sh in cassandra-0");
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("cassandra", "/pretouchData.sh", $namespace);
+	if ($cmdFailed) {
+		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
+		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
+		return 0;
+	}
+	else {
+		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString" );
+		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString\n";
+		return 1;
+	}
 	$logger->debug( "pretouchData complete for workload ", $workloadNum );
-
 	close $logHandle;
+	return 1;
 }
 
 sub loadData {

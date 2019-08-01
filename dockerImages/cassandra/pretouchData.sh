@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "Warming cassandra database"
-cqlsh -f /pretouchData.cql $HOSTNAME > /dev/null
+cqlsh -f /pretouchData.cql --request-timeout=3600 $HOSTNAME > /dev/null

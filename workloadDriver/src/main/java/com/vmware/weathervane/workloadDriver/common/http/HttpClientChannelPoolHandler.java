@@ -70,13 +70,14 @@ public class HttpClientChannelPoolHandler extends AbstractChannelPoolHandler {
 
 		/*
 		 * Add a read timeout handler to close the connection if a request takes
-		 * too long. ToDo: Need to parameterize the timeout as 60 seconds may
+		 * too long. 
+		 * ToDo: Need to parameterize the timeout as 45 seconds may
 		 * not be correct for some workloads.
 		 */
 		if (ch.pipeline().get("readTimeoutHandler") != null) {
 			ch.pipeline().remove("readTimeoutHandler");
 		}
-		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(1200));
+		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(45));
 
 	}
 
@@ -118,7 +119,7 @@ public class HttpClientChannelPoolHandler extends AbstractChannelPoolHandler {
 		if (ch.pipeline().get("readTimeoutHandler") != null) {
 			ch.pipeline().remove("readTimeoutHandler");
 		}
-		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(60));
+		ch.pipeline().addLast("readTimeoutHandler", new ReadTimeoutHandler(45));
 	}
 
 }

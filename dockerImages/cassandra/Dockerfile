@@ -11,6 +11,8 @@ COPY cassandra-init.sh /cassandra-init.sh
 COPY auction_cassandra.cql /auction_cassandra.cql
 COPY cassandra.yaml /cassandra.yaml
 COPY jvm.options /jvm.options
+COPY pretouchData.cql /pretouchData.cql
+COPY pretouchData.sh /pretouchData.sh
 
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

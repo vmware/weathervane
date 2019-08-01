@@ -517,6 +517,7 @@ sub getFindMaxInfoString {
 	$returnString .= " InitialRateStep = " . $self->curRateStep;
 	return $returnString;
 }
+
 sub pretouchData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");

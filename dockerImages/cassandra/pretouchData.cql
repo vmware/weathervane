@@ -1,3 +1,5 @@
+paging off;
+
 select * from auction_image.image_full;
 select * from auction_image.image_preview;
 select * from auction_image.image_thumbnail;

@@ -76,11 +76,12 @@
   <Service name="Catalina">
 <Executor maxThreads="100"
                   minSpareThreads="34"
+                  "threadPriority" = "4"
                 name="tomcatThreadPool"
                 namePrefix="tomcat-http--"/>
    <Connector
 acceptCount="100"
-acceptorThreadCount="2"
+acceptorThreadCount="1"
 connectionTimeout="60000"
 asyncTimeout="60000"
 disableUploadTimeout="false"

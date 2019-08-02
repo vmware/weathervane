@@ -1622,6 +1622,14 @@ $parameters{"dbLoaderThreads"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"dbPrepThreads"} = {
+	"type"      => "=i",
+	"default"   => 60,
+	"parent"    => "dataManager",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"dbLoaderJvmOpts"} = {
 	"type"      => "=s",
 	"default"   => "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch",

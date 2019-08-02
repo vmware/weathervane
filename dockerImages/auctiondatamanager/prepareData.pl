@@ -6,6 +6,7 @@ use POSIX;
 my $maxUsers = $ENV{'MAXUSERS'};
 my $users = $ENV{'USERS'};
 my $appInstanceNum = $ENV{'APPINSTANCENUM'};
+my $threads = $ENV{'PREPTHREADS'};
 print "Preparing data for appInstance $appInstanceNum\n";
 
 if ( $users > $maxUsers ) {
@@ -22,7 +23,7 @@ if (($auctions % 2) != 0) {
 
 my $dbPrepOptions = " -a $auctions ";
 
-$dbPrepOptions .= " -u $users ";
+$dbPrepOptions .= " -u $users -t $threads ";
 
 my $springProfilesActive = $ENV{'SPRINGPROFILESACTIVE'};
 $springProfilesActive .= ",dbprep";

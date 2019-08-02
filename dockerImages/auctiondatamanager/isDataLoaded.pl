@@ -8,7 +8,7 @@ print "Cleaning data for appInstance $appInstanceNum\n";
 
 # Not preparing any auctions, just cleaning up
 my $auctions = 0;
-my $dbPrepOptions = " -a $auctions ";
+my $dbPrepOptions = " -a $auctions -c ";
 
 my $users = $ENV{'USERS'};
 my $maxUsers = $ENV{'MAXUSERS'};

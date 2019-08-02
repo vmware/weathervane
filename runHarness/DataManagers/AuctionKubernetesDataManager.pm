@@ -55,7 +55,8 @@ sub startDataManagerContainer {
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $jvmopts = $self->getParamValue('dbLoaderJvmOpts');
-	my $threads = $self->getParamValue('dbLoaderThreads');
+	my $loaderThreads = $self->getParamValue('dbLoaderThreads');
+	my $prepThreads = $self->getParamValue('dbPrepThreads');
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
@@ -79,8 +80,11 @@ sub startDataManagerContainer {
 		elsif ( $inline =~ /JVMOPTS:/ ) {
 			print FILEOUT "  JVMOPTS: \"$jvmopts\"\n";
 		}
-		elsif ( $inline =~ /THREADS:/ ) {
-			print FILEOUT "  THREADS: \"$threads\"\n";
+		elsif ( $inline =~ /LOADERTHREADS:/ ) {
+			print FILEOUT "  LOADERTHREADS: \"$loaderThreads\"\n";
+		}
+		elsif ( $inline =~ /PREPTHREADS:/ ) {
+			print FILEOUT "  PREPTHREADS: \"$prepThreads\"\n";
 		}
 		elsif ( $inline =~ /APPINSTANCENUM:/ ) {
 			print FILEOUT "  APPINSTANCENUM: \"$appInstanceNum\"\n";

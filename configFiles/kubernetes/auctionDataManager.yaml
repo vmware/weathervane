@@ -13,7 +13,8 @@ data:
   DBHOSTNAME: "postgresql"
   DBPORT: "5432"
   JVMOPTS: "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch"
-  THREADS: "8"
+  LOADERTHREADS: "8"
+  PREPTHREADS: "8"
   SPRINGPROFILESACTIVE: "postgresql,ehcache,imagesInMongo,singleMongo,singleRabbit" 
 ---
 apiVersion: apps/v1

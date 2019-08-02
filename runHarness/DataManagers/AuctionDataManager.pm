@@ -212,9 +212,6 @@ sub prepareData {
 	else {
 		$console_logger->info( "Data is already loaded for appInstance "
 			  . "$appInstanceNum of workload $workloadNum." );
-
-		# cleanup the databases from any previous run
-		$self->cleanData( $users, $logHandle );
 	}
 
 	$console_logger->info( "Preparing auctions and warming data-services for for appInstance "
@@ -230,6 +227,9 @@ sub prepareData {
 		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
+
+	# cleanup the databases from any previous run
+	$self->cleanData( $users, $logHandle );
 
 	# stop the auctiondatamanager container
 	$self->stopDataManagerContainer($logHandle);

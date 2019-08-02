@@ -66,5 +66,7 @@ public interface AuctionDao extends GenericDao<Auction, Long> {
 	 * @param auction
 	 */
 	void setToActivated(Auction auction);
+
+	void pretouchImages(Auction auction);
 	
 }

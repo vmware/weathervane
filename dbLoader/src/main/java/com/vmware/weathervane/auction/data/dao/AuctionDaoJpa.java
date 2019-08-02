@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.inject.Inject;
 import javax.persistence.Query;
@@ -33,6 +34,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
 import com.vmware.weathervane.auction.data.model.Auction;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Item;
@@ -42,6 +44,10 @@ import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
 import com.vmware.weathervane.auction.data.model.Item.ItemState;
 import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.data.repository.event.BidRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageFullRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageInfoRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImagePreviewRepository;
+import com.vmware.weathervane.auction.data.repository.image.ImageThumbnailRepository;
 import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
 @Repository("auctionDao")
@@ -55,6 +61,18 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	@Inject
 	BidRepository bidRepository;
+
+	@Inject
+	ImageInfoRepository imageInfoRepository;
+
+	@Inject
+	ImageFullRepository imageFullRepository;
+
+	@Inject
+	ImagePreviewRepository imagePreviewRepository;
+
+	@Inject
+	ImageThumbnailRepository imageThumbnailRepository;
 
 	public AuctionDaoJpa() {
 		super(Auction.class);
@@ -347,7 +365,35 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 						+ ", highBid = " + highBid.getId());
 			}
 		}
+	}
 
+
+	@Override
+	public void pretouchImages(Auction auction) {
+		logger.info("resetToFuture. auctionId = " + auction.getId());
+		// Bring the auction back into the context
+		Auction theAuction = this.get(auction.getId());
+
+		/*
+		 * Get images for all items
+		 */
+		logger.info("pretouchImages. auctionId = " + auction.getId());
+		for (Item anItem : theAuction.getItems()) {
+			/*
+			 * Preload the images for this item.  Get the image_infos for each 
+			 * item, and then get the different image sizes using the image_id
+			 */
+			Iterable<ImageInfo> imageInfos = imageInfoRepository.findByKeyEntityid(anItem.getId());
+			imageInfos.forEach(new Consumer<ImageInfo>() {
+
+				@Override
+				public void accept(ImageInfo ii) {
+					//imageFullRepository.findByKeyImageId(ii.getKey().getImageId());
+					//imagePreviewRepository.findByKeyImageId(ii.getKey().getImageId());
+					imageThumbnailRepository.findByKeyImageId(ii.getKey().getImageId());
+				}
+			});
+		}
 	}
 
 	@Transactional

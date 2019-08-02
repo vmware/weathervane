@@ -14,7 +14,7 @@ my $dbPort = $ENV{'DBPORT'};
 my $cassandraContactpoints = $ENV{'CASSANDRA_CONTACTPOINTS'};
 my $cassandraPort = $ENV{'CASSANDRA_PORT'};
 my $jvmopts              = $ENV{'JVMOPTS'};
-my $threads = $ENV{'THREADS'};
+my $threads = $ENV{'LOADERTHREADS'};
 
 if ( $users > $maxUsers ) {
 	$maxUsers = $users;

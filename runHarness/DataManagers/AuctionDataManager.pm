@@ -211,12 +211,14 @@ sub prepareData {
 	}
 	else {
 		$console_logger->info( "Data is already loaded for appInstance "
-			  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
+			  . "$appInstanceNum of workload $workloadNum." );
 
 		# cleanup the databases from any previous run
 		$self->cleanData( $users, $logHandle );
 	}
 
+	$console_logger->info( "Preparing auctions and warming data-services for for appInstance "
+				  . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $dockerHostString  = $self->host->dockerHostString;	

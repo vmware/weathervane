@@ -243,31 +243,31 @@ sub pretouchData {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug( "pretouchData for workload {}, appInstance {}", $workloadNum, $appInstanceNum);
 	
-	my $cluster = $self->host;
-	my $namespace = $self->appInstance->namespace;
-	
-	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
-	print $logHandle "Exec-ing /pretouchData.sh\n";
-	$logger->debug("Exec-ing /pretouchData.sh in cassandra-0");
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("cassandra", "/pretouchData.sh", $namespace);
-	if ($cmdFailed) {
-		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
-		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
-		return 0;
-	}
-	else {
-		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString" );
-		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString\n";
-		return 1;
-	}
-	$logger->debug( "pretouchData complete for workload ", $workloadNum );
-	close $logHandle;
-	return 1;
+#	my $cluster = $self->host;
+#	my $namespace = $self->appInstance->namespace;
+#	
+#	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
+#	my $logHandle;
+#	open( $logHandle, ">$logName" ) or do {
+#		$console_logger->error("Error opening $logName:$!");
+#		return 0;
+#	};
+#	print $logHandle "Exec-ing /pretouchData.sh\n";
+#	$logger->debug("Exec-ing /pretouchData.sh in cassandra-0");
+#	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("cassandra", "/pretouchData.sh", $namespace);
+#	if ($cmdFailed) {
+#		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
+#		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
+#		return 0;
+#	}
+#	else {
+#		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString" );
+#		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString\n";
+#		return 1;
+#	}
+#	$logger->debug( "pretouchData complete for workload ", $workloadNum );
+#	close $logHandle;
+#	return 1;
 }
 
 sub loadData {

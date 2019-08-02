@@ -386,8 +386,8 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	
-	# ToDo: Compact cassandra is not done by dataManager container
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	$nosqlServersRef->[0]->cleanData($users, $logHandle);
 }
 
 __PACKAGE__->meta->make_immutable;

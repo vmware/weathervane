@@ -354,16 +354,16 @@ sub isDataLoaded {
 		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
 		return 1;
 	}
-
-
 }
 
 
 sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	# ToDo: Compact cassandra is not done by dataManager container
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	foreach my $nosqlServerRef (@$nosqlServersRef) {
+		$nosqlServerRef->cleanData($users, $logHandle);
+	}
 }
 
 __PACKAGE__->meta->make_immutable;

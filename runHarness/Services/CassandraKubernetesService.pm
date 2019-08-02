@@ -174,6 +174,20 @@ override 'isUp' => sub {
 	}
 };
 
+sub cleanData {
+	my ($self, $users, $logHandle)   = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
+	$logger->debug("cleanData");
+	my $cluster = $self->host;
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecAll($self->getImpl(), "nodetool compact", $self->namespace );
+	if ($cmdFailed) {
+		$logger->warn("Compacting Cassandra nodes failed: $cmdFailed");
+		return 0;
+	} else {
+		return 1;
+	}	
+}
+
 sub cleanLogFiles {
 	my ($self)            = @_;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");

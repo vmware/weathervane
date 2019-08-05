@@ -366,7 +366,7 @@ sub cleanData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServerRef (@$nosqlServersRef) {
-		$nosqlServerRef->cleanData($users, $logHandle);
+#		$nosqlServerRef->cleanData($users, $logHandle);
 	}
 }
 

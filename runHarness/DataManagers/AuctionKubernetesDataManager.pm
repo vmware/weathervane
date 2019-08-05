@@ -391,8 +391,8 @@ sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	
-#	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-#	$nosqlServersRef->[0]->cleanData($users, $logHandle);
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	$nosqlServersRef->[0]->cleanData($users, $logHandle);
 }
 
 __PACKAGE__->meta->make_immutable;

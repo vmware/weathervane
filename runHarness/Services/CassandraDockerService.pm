@@ -246,7 +246,7 @@ sub cleanData {
 	my $logger = get_logger("Weathervane::Services::CassandraDockerService");
 	my $name = $self->name;
 	$logger->debug("cleanData");
-	my ($cmdFailed, $out) = $self->host->dockerExec($logHandle, $name, "nodetool compact");
+	my ($cmdFailed, $out) = $self->host->dockerExec($logHandle, $name, "nodetool compact auction_event");
 	if ($cmdFailed) {
 		$logger->warn("Compacting Cassandra nodes failed: $cmdFailed");
 		return 0;

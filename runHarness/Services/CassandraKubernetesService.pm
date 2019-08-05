@@ -179,7 +179,7 @@ sub cleanData {
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
 	$logger->debug("cleanData");
 	my $cluster = $self->host;
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecAll($self->getImpl(), "nodetool compact", $self->namespace );
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecAll($self->getImpl(), "nodetool compact auction_event", $self->namespace );
 	if ($cmdFailed) {
 		$logger->warn("Compacting Cassandra nodes failed: $cmdFailed");
 		return 0;

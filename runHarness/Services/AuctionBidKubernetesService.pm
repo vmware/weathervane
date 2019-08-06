@@ -171,7 +171,7 @@ sub getConfigFiles {
 	my $namespace = $self->namespace;
 	`mkdir -p $destinationPath`;
 
-	`cp /tmp/tomcat-$namespace.yaml $destinationPath/. 2>&1`;
+	`cp /tmp/auctionbidservice-$namespace.yaml $destinationPath/. 2>&1`;
 
 }
 

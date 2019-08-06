@@ -1616,15 +1616,23 @@ $parameters{"repeatsAtMax"} = {
 
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
-	"default"   => 6,
+	"default"   => 32,
 	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 1,
 };
 
-$parameters{"dbLoaderHeap"} = {
+$parameters{"dbPrepThreads"} = {
+	"type"      => "=i",
+	"default"   => 128,
+	"parent"    => "dataManager",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"dbLoaderJvmOpts"} = {
 	"type"      => "=s",
-	"default"   => "4G",
+	"default"   => "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 1,

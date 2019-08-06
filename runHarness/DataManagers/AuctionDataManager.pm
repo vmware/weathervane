@@ -61,16 +61,18 @@ sub startDataManagerContainer {
 	my $name        = $self->name;
 	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
-	my $heap = $self->getParamValue('dbLoaderHeap');
-	my $threads = $self->getParamValue('dbLoaderThreads');
+	my $jvmopts = $self->getParamValue('dbLoaderJvmOpts');
+	my $loaderThreads = $self->getParamValue('dbLoaderThreads');
+	my $prepThreads = $self->getParamValue('dbPrepThreads');
 	my %envVarMap;
 	$envVarMap{"USERSPERAUCTIONSCALEFACTOR"} = $self->getParamValue('usersPerAuctionScaleFactor');	
 	$envVarMap{"USERS"} = $users;	
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
-	$envVarMap{"HEAP"} = $heap;	
-	$envVarMap{"THREADS"} = $threads;	
+	$envVarMap{"JVMOPTS"} = $jvmopts;	
+	$envVarMap{"LOADERTHREADS"} = $loaderThreads;	
+	$envVarMap{"PREPTHREADS"} = $prepThreads;	
 	
 	my $cassandraContactpoints = "";
 	my $nosqlServicesRef = $self->appInstance->getAllServicesByType("nosqlServer");
@@ -211,12 +213,11 @@ sub prepareData {
 	}
 	else {
 		$console_logger->info( "Data is already loaded for appInstance "
-			  . "$appInstanceNum of workload $workloadNum.  Preparing data for current run." );
-
-		# cleanup the databases from any previous run
-		$self->cleanData( $users, $logHandle );
+			  . "$appInstanceNum of workload $workloadNum." );
 	}
 
+	$console_logger->info( "Preparing auctions and warming data-services for for appInstance "
+				  . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $dockerHostString  = $self->host->dockerHostString;	
@@ -228,6 +229,9 @@ sub prepareData {
 		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
+
+	# cleanup the databases from any previous run
+	$self->cleanData( $users, $logHandle );
 
 	# stop the auctiondatamanager container
 	$self->stopDataManagerContainer($logHandle);
@@ -354,16 +358,16 @@ sub isDataLoaded {
 		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
 		return 1;
 	}
-
-
 }
 
 
 sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	# ToDo: Compact cassandra is not done by dataManager container
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	foreach my $nosqlServerRef (@$nosqlServersRef) {
+#		$nosqlServerRef->cleanData($users, $logHandle);
+	}
 }
 
 __PACKAGE__->meta->make_immutable;

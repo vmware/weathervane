@@ -37,13 +37,18 @@ import com.vmware.weathervane.auction.data.dao.DbBenchmarkInfoDao;
 import com.vmware.weathervane.auction.data.dao.FixedTimeOffsetDao;
 import com.vmware.weathervane.auction.data.dao.HighBidDao;
 import com.vmware.weathervane.auction.data.dao.ItemDao;
+import com.vmware.weathervane.auction.data.dao.UserDao;
 import com.vmware.weathervane.auction.data.imageStore.ImageStoreFacade;
 import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoException;
 import com.vmware.weathervane.auction.data.imageStore.NoBenchmarkInfoNeededException;
+import com.vmware.weathervane.auction.data.model.AttendanceRecord;
 import com.vmware.weathervane.auction.data.model.Auction;
+import com.vmware.weathervane.auction.data.model.Bid;
 import com.vmware.weathervane.auction.data.model.DbBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.ImageStoreBenchmarkInfo;
 import com.vmware.weathervane.auction.data.model.NosqlBenchmarkInfo;
+import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
+import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.data.repository.event.NosqlBenchmarkInfoRepository;
 
 public class DBPrep {
@@ -56,9 +61,13 @@ public class DBPrep {
 
 	private static AuctionDao auctionDao;
 	private static ItemDao itemDao;
+	private static UserDao userDao;
 	private static HighBidDao highBidDao;
 	private static AuctionMgmtDao auctionMgmtDao;
 	private static FixedTimeOffsetDao fixedTimeOffsetDao;
+	
+	private static BidRepository bidRepository;
+	private static AttendanceRecordRepository attendanceRecordRepository;
 
 	private static final Logger logger = LoggerFactory.getLogger(DBPrep.class);
 
@@ -74,6 +83,8 @@ public class DBPrep {
 				"Number of active users to be supported in this run.");
 		Option c = new Option("c", "check", false,
 				"Only check whether the database is loaded with the proper number of users and then exit.");
+		Option p = new Option("p", "pretouch", false,
+				"Pretouch the data in the image and event stores.");
 		Option a = new Option("a", "auctions", true,
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);
@@ -83,6 +94,7 @@ public class DBPrep {
 		cliOptions.addOption(u);
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
+		cliOptions.addOption(p);
 		cliOptions.addOption(t);
 
 		CommandLine cliCmd = null;
@@ -131,9 +143,12 @@ public class DBPrep {
 				.getBean("dbBenchmarkInfoDao");
 		auctionDao = (AuctionDao) context.getBean("auctionDao");
 		itemDao = (ItemDao) context.getBean("itemDao");
+		userDao = (UserDao) context.getBean("userDao");
 		highBidDao = (HighBidDao) context.getBean("highBidDao");
 		auctionMgmtDao = (AuctionMgmtDao) context.getBean("auctionMgmtDao");
 		fixedTimeOffsetDao = (FixedTimeOffsetDao) context.getBean("fixedTimeOffsetDao");
+		bidRepository = (BidRepository) context.getBean("bidRepository");
+		attendanceRecordRepository = (AttendanceRecordRepository) context.getBean("attendanceRecordRepository");
 
 		/*
 		 * Make sure that database is loaded at correctly
@@ -276,6 +291,7 @@ public class DBPrep {
 			dbPrepService.setPrepStartIndex(startIndex);
 			dbPrepService.setPrepEndIndex(endIndex);
 			dbPrepService.setResetAuctions(true);
+			dbPrepService.setPretouch(false);
 			Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
 			dbPrepThread.setUncaughtExceptionHandler(
 					new Thread.UncaughtExceptionHandler() {
@@ -293,56 +309,11 @@ public class DBPrep {
 		for (Thread thread : threadList) {
 			thread.join();
 		}
-
+		threadList.clear();
+		
 		// Need to run this after all auctions have been reset
 		logger.info("Deleting preloaded highBids\n");
 		highBidDao.deleteByPreloaded(false);
-
-		/*
-		 * Set the correct number of auctions to start during this run
-		 */
-		logger.info("Finding auctions with current flag set\n");
-		List<Auction> auctionsToActivate = auctionDao.findByCurrent(true, numAuctions);
-
-		auctionsPerThread = (int) Math.ceil(auctionsToActivate.size() / (1.0 * numThreads));
-		logger.info("Found " + auctionsToActivate.size()
-				+ " auctions to activate in this run. auctionsPerThread = " + auctionsPerThread
-				+ "\n");
-		numRemainingAuctions = auctionsToActivate.size();
-		startIndex = 0;
-		for (int j = 0; j < numThreads; j++) {
-			int numAuctionsToReset = auctionsPerThread;
-			if (numAuctionsToReset > numRemainingAuctions) {
-				numAuctionsToReset = numRemainingAuctions;
-			}
-			int endIndex = startIndex + numAuctionsToReset;
-			logger.debug("Thread " + j + ": resetting " + numAuctionsToReset + " auctions.");
-			DBPrepService dbPrepService = new DBPrepService();
-			dbPrepService.setAuctionsToPrep(auctionsToActivate);
-			dbPrepService.setHighBidDao(highBidDao);
-			dbPrepService.setAuctionDao(auctionDao);
-			dbPrepService.setPrepStartIndex(startIndex);
-			dbPrepService.setPrepEndIndex(endIndex);
-			dbPrepService.setResetAuctions(false);
-			Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
-			dbPrepThread.setUncaughtExceptionHandler(
-					new Thread.UncaughtExceptionHandler() {
-						public void uncaughtException(Thread th, Throwable ex) {
-							logger.warn("Uncaught exception in dbPrepService: " + ex);
-							System.exit(1);
-						}
-					});
-			threadList.add(dbPrepThread);
-			dbPrepThread.start();
-
-			startIndex += numAuctionsToReset;
-			numRemainingAuctions -= numAuctionsToReset;
-		}
-
-		// Wait for all threads to complete
-		for (Thread thread : threadList) {
-			thread.join();
-		}
 
 		/*
 		 * Delete items that were added during the last run
@@ -350,7 +321,119 @@ public class DBPrep {
 		logger.info("Deleting non-preloaded items\n");
 		int numDeleted = itemDao.deleteByPreloaded(false);
 		logger.info("Deleted " + numDeleted + " non-preloaded items\n");
+		
+		/*
+		 * Reset the users
+		 */
+		userDao.clearAllAuthTokens();
+		userDao.resetAllCreditLimits();
+		userDao.clearAllLoggedIn();
+		
+		/*
+		 * If numAuctions is greater than 0, then we are preparing for a new run
+		 */
+		if (numAuctions > 0) {
+			/*
+			 * Set the correct number of auctions to start during this run
+			 */
+			logger.info("Finding auctions with current flag set\n");
+			List<Auction> auctionsToActivate = auctionDao.findByCurrent(true, numAuctions);
 
+			auctionsPerThread = (int) Math.ceil(auctionsToActivate.size() / (1.0 * numThreads));
+			logger.info("Found " + auctionsToActivate.size() + " auctions to activate in this run. auctionsPerThread = "
+					+ auctionsPerThread + "\n");
+			numRemainingAuctions = auctionsToActivate.size();
+			startIndex = 0;
+			for (int j = 0; j < numThreads; j++) {
+				int numAuctionsToReset = auctionsPerThread;
+				if (numAuctionsToReset > numRemainingAuctions) {
+					numAuctionsToReset = numRemainingAuctions;
+				}
+				int endIndex = startIndex + numAuctionsToReset;
+				logger.debug("Thread " + j + ": resetting " + numAuctionsToReset + " auctions.");
+				DBPrepService dbPrepService = new DBPrepService();
+				dbPrepService.setAuctionsToPrep(auctionsToActivate);
+				dbPrepService.setHighBidDao(highBidDao);
+				dbPrepService.setAuctionDao(auctionDao);
+				dbPrepService.setPrepStartIndex(startIndex);
+				dbPrepService.setPrepEndIndex(endIndex);
+				dbPrepService.setResetAuctions(false);
+				dbPrepService.setPretouch(false);
+				Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+				dbPrepThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+					public void uncaughtException(Thread th, Throwable ex) {
+						logger.warn("Uncaught exception in dbPrepService: " + ex);
+						System.exit(1);
+					}
+				});
+				threadList.add(dbPrepThread);
+				dbPrepThread.start();
+
+				startIndex += numAuctionsToReset;
+				numRemainingAuctions -= numAuctionsToReset;
+			}
+
+			// Wait for all threads to complete
+			for (Thread thread : threadList) {
+				thread.join();
+			}
+			threadList.clear();
+
+			if (cliCmd.hasOption("p")) {
+				/*
+				 * Pretouch the images
+				 */
+				List<Auction> allAuctions = auctionDao.getAll();
+				auctionsPerThread = (int) Math.ceil(allAuctions.size() / (1.0 * numThreads));
+				logger.info("Found " + allAuctions.size() + " auctions to preTouch in this run. auctionsPerThread = "
+						+ auctionsPerThread + "\n");
+				numRemainingAuctions = allAuctions.size();
+				startIndex = 0;
+				for (int j = 0; j < numThreads; j++) {
+					int numAuctionsToTouch = auctionsPerThread;
+					if (numAuctionsToTouch > numRemainingAuctions) {
+						numAuctionsToTouch = numRemainingAuctions;
+					}
+					int endIndex = startIndex + numAuctionsToTouch;
+					logger.debug("Thread " + j + ": pretouching " + numAuctionsToTouch + " auctions.");
+					DBPrepService dbPrepService = new DBPrepService();
+					dbPrepService.setAuctionsToPrep(allAuctions);
+					dbPrepService.setHighBidDao(highBidDao);
+					dbPrepService.setAuctionDao(auctionDao);
+					dbPrepService.setPrepStartIndex(startIndex);
+					dbPrepService.setPrepEndIndex(endIndex);
+					dbPrepService.setResetAuctions(false);
+					dbPrepService.setPretouch(true);
+					Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+					dbPrepThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+						public void uncaughtException(Thread th, Throwable ex) {
+							logger.warn("Uncaught exception in dbPrepService: " + ex);
+							System.exit(1);
+						}
+					});
+					threadList.add(dbPrepThread);
+					dbPrepThread.start();
+
+					startIndex += numAuctionsToTouch;
+					numRemainingAuctions -= numAuctionsToTouch;
+				}
+
+				// Wait for all threads to complete
+				for (Thread thread : threadList) {
+					thread.join();
+				}
+				threadList.clear();
+
+				/*
+				 * Pretouch the bid and attendanceRecord data
+				 */
+				logger.info("Pretouching bids");
+				Iterable<Bid> bids = bidRepository.findAll();
+				logger.info("Pretouching attendanceRecords");
+				Iterable<AttendanceRecord> attendance = attendanceRecordRepository.findAll();
+			}
+		}
+		
 		/*
 		 * Clear the masterNodeNum in the AuctionMgmt table so that a node
 		 * can become master at the start of the next run.

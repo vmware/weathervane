@@ -24,8 +24,13 @@ public interface UserDao extends GenericDao<User, Long> {
 
 	public User getUserByAuthToken(String authToken);
 
+	public int clearAllAuthTokens();
+	public int resetAllCreditLimits();
+
 	public User updateUser(User updateUser);
 
 	List<User> getLoggedInUsers();
+
+	int clearAllLoggedIn();
 
 }

@@ -555,6 +555,21 @@ sub kubernetesAreAllPodRunningWithNum {
 			return 0;
 		}	
 	}
+	
+	# make sure all of the endpoints have been created in the associated service
+	$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].apiVersion}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+	} else {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+		if ($num != $outString) {
+			$logger->debug("kubernetesAreAllPodRunningWithNum: Not all endpoints have been created. Found $outString, expected $num");
+			return 0;
+		}	
+	}
+	
 	$logger->debug("kubernetesAreAllPodRunningWithNum: All pods are running");
 	return 1;
 }

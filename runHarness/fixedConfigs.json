@@ -21,9 +21,9 @@
   "numAppServers" : 1,
   "appServerCpus" : "400m",
   "appServerMem" : "1500Mi",
-  "appServerJvmOpts" : "-Xmx1000M -Xms1000M -XX:+UseParallelGC -XX:NewRatio=2 -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 40,
-  "appServerJdbcConnections" : 41,
+  "appServerJvmOpts" : "-Xmx800M -Xms800M -XX:+UseParallelGC -XX:NewRatio=2 -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 25,
+  "appServerJdbcConnections" : 26,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
@@ -57,8 +57,8 @@
 "small" : {
   "users" : 2000,
   "maxUsers" : 20000,
-  "numDrivers" : 6,
-  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
+  "numDrivers" : 4,
+  "driverJvmOpts" : "-Xmx6G -Xms6g -XX:+AlwaysPreTouch",
   "driverCpus" : "2",
   "driverMem" : "6500Mi",
   "driverControllerJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
@@ -81,10 +81,10 @@
   
   "numAppServers" : 1,
   "appServerCpus" :"2",
-  "appServerMem" : "7Gi",
-  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 100,
-  "appServerJdbcConnections" : 101,
+  "appServerMem" : "5Gi",
+  "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 25,
+  "appServerJdbcConnections" : 26,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
@@ -115,7 +115,6 @@
   
 },
 
-
 "medium" : {
   "users" : 2000,
   "maxUsers" : 20000,
@@ -143,10 +142,10 @@
   
   "numAppServers" : 3,
   "appServerCpus" :"2",
-  "appServerMem" : "7Gi",
-  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 100,
-  "appServerJdbcConnections" : 101,
+  "appServerMem" : "5Gi",
+  "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 25,
+  "appServerJdbcConnections" : 26,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
@@ -177,7 +176,6 @@
   
 },
 
-
 "large" : {
   "users" : 2000,
   "maxUsers" : 20000,
@@ -205,10 +203,10 @@
   
   "numAppServers" : 6,
   "appServerCpus" :"2",
-  "appServerMem" : "7Gi",
-  "appServerJvmOpts" : "-Xmx6G -Xms6G -XX:+UseG1GC -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 100,
-  "appServerJdbcConnections" : 101,
+  "appServerMem" : "5Gi",
+  "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
+  "appServerThreads" : 25,
+  "appServerJdbcConnections" : 26,
   "numAuctioneerThreads" : 1,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,

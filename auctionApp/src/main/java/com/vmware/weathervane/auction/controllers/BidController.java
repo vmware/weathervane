@@ -151,11 +151,11 @@ public class BidController extends BaseController {
 
 		/*
 		 * Get the delay between auction updates (in minutes) and set the
-		 * asyncContext timeout to twice that value ( to leave room for
+		 * asyncContext timeout to 1.5x that value ( to leave room for
 		 * something being delayed).
 		 */
 		int maxIdleTime = liveAuctionService.getAuctionMaxIdleTime();
-		ac.setTimeout(4 * maxIdleTime * 1000);
+		ac.setTimeout(Math.round(1.5 * maxIdleTime * 1000));
 		ac.addListener(new AsyncDispatcherServletListener());
 
 		BidRepresentation bidRepresentation = null;

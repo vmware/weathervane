@@ -83,6 +83,8 @@ public class DBPrep {
 				"Number of active users to be supported in this run.");
 		Option c = new Option("c", "check", false,
 				"Only check whether the database is loaded with the proper number of users and then exit.");
+		Option p = new Option("p", "pretouch", false,
+				"Pretouch the data in the image and event stores.");
 		Option a = new Option("a", "auctions", true,
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);
@@ -92,6 +94,7 @@ public class DBPrep {
 		cliOptions.addOption(u);
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
+		cliOptions.addOption(p);
 		cliOptions.addOption(t);
 
 		CommandLine cliCmd = null;
@@ -376,57 +379,59 @@ public class DBPrep {
 			}
 			threadList.clear();
 
-			/*
-			 * Pretouch the images
-			 */
-			List<Auction> allAuctions = auctionDao.getAll();
-			auctionsPerThread = (int) Math.ceil(allAuctions.size() / (1.0 * numThreads));
-			logger.info("Found " + allAuctions.size() + " auctions to preTouch in this run. auctionsPerThread = "
-					+ auctionsPerThread + "\n");
-			numRemainingAuctions = allAuctions.size();
-			startIndex = 0;
-			for (int j = 0; j < numThreads; j++) {
-				int numAuctionsToTouch = auctionsPerThread;
-				if (numAuctionsToTouch > numRemainingAuctions) {
-					numAuctionsToTouch = numRemainingAuctions;
-				}
-				int endIndex = startIndex + numAuctionsToTouch;
-				logger.debug("Thread " + j + ": pretouching " + numAuctionsToTouch + " auctions.");
-				DBPrepService dbPrepService = new DBPrepService();
-				dbPrepService.setAuctionsToPrep(allAuctions);
-				dbPrepService.setHighBidDao(highBidDao);
-				dbPrepService.setAuctionDao(auctionDao);
-				dbPrepService.setPrepStartIndex(startIndex);
-				dbPrepService.setPrepEndIndex(endIndex);
-				dbPrepService.setResetAuctions(false);
-				dbPrepService.setPretouch(true);
-				Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
-				dbPrepThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-					public void uncaughtException(Thread th, Throwable ex) {
-						logger.warn("Uncaught exception in dbPrepService: " + ex);
-						System.exit(1);
+			if (cliCmd.hasOption("p")) {
+				/*
+				 * Pretouch the images
+				 */
+				List<Auction> allAuctions = auctionDao.getAll();
+				auctionsPerThread = (int) Math.ceil(allAuctions.size() / (1.0 * numThreads));
+				logger.info("Found " + allAuctions.size() + " auctions to preTouch in this run. auctionsPerThread = "
+						+ auctionsPerThread + "\n");
+				numRemainingAuctions = allAuctions.size();
+				startIndex = 0;
+				for (int j = 0; j < numThreads; j++) {
+					int numAuctionsToTouch = auctionsPerThread;
+					if (numAuctionsToTouch > numRemainingAuctions) {
+						numAuctionsToTouch = numRemainingAuctions;
 					}
-				});
-				threadList.add(dbPrepThread);
-				dbPrepThread.start();
+					int endIndex = startIndex + numAuctionsToTouch;
+					logger.debug("Thread " + j + ": pretouching " + numAuctionsToTouch + " auctions.");
+					DBPrepService dbPrepService = new DBPrepService();
+					dbPrepService.setAuctionsToPrep(allAuctions);
+					dbPrepService.setHighBidDao(highBidDao);
+					dbPrepService.setAuctionDao(auctionDao);
+					dbPrepService.setPrepStartIndex(startIndex);
+					dbPrepService.setPrepEndIndex(endIndex);
+					dbPrepService.setResetAuctions(false);
+					dbPrepService.setPretouch(true);
+					Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+					dbPrepThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+						public void uncaughtException(Thread th, Throwable ex) {
+							logger.warn("Uncaught exception in dbPrepService: " + ex);
+							System.exit(1);
+						}
+					});
+					threadList.add(dbPrepThread);
+					dbPrepThread.start();
 
-				startIndex += numAuctionsToTouch;
-				numRemainingAuctions -= numAuctionsToTouch;
+					startIndex += numAuctionsToTouch;
+					numRemainingAuctions -= numAuctionsToTouch;
+				}
+
+				// Wait for all threads to complete
+				for (Thread thread : threadList) {
+					thread.join();
+				}
+				threadList.clear();
+
+				/*
+				 * Pretouch the bid and attendanceRecord data
+				 */
+				logger.info("Pretouching bids");
+				Iterable<Bid> bids = bidRepository.findAll();
+				logger.info("Pretouching attendanceRecords");
+				Iterable<AttendanceRecord> attendance = attendanceRecordRepository.findAll();
 			}
-
-			// Wait for all threads to complete
-			for (Thread thread : threadList) {
-				thread.join();
-			}
-			threadList.clear();
-
-			/*
-			 * Pretouch the bid and attendanceRecord data
-			 */
-			logger.info("Pretouching bids");
-			Iterable<Bid> bids = bidRepository.findAll();
-			logger.info("Pretouching attendanceRecords");
-			Iterable<AttendanceRecord> attendance = attendanceRecordRepository.findAll();
 		}
 		
 		/*

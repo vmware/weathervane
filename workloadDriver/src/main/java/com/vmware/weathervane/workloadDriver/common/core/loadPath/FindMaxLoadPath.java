@@ -196,7 +196,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 * InitialRamp intervals pass if 99% of all operations pass response-time QOS. The mix QoS
 					 * is not used in initialRamp
 					 */
-					prevIntervalPassed = (rollup.getPctPassing() >= 0.99);
+					prevIntervalPassed = (rollup.getPctPassing() >= 0.999);
 				}
 				getIntervalStatsSummaries().add(rollup);
 			}
@@ -300,15 +300,16 @@ public class FindMaxLoadPath extends LoadPath {
 							return nextInterval();
 						} else {
 							long nextRateStep = curRateStep;
+							numSucessiveIntervalsFailed = 0;
 							numSucessiveIntervalsPassed++;
-							if (numSucessiveIntervalsPassed >= 2) {
+							if (numSucessiveIntervalsPassed >= 3) {
 								/*
-								 * Have passed twice in a row, increase the rate step to possibly 
+								 * Have passed three times in a row, increase the rate step to possibly 
 								 * shorten run
 								 */
 								logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": Passed twice in a row.  Increasing nextRateStep");
 								numSucessiveIntervalsPassed = 0;
-								nextRateStep *= 1.5;
+								nextRateStep *= 1.25;
 							}
 
 							/*
@@ -318,7 +319,7 @@ public class FindMaxLoadPath extends LoadPath {
 							if ((curUsers + nextRateStep) >= minFailUsers) {
 								logger.debug("nextInterval for " + curPhase + ": " + this.getName() 
 									+ ": Reducing nextRateStep to halfway between maxPass and minFail");
-								nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) / 2.0);
+								nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) * 0.5);
 							}
 
 							long prevCurUsers = curUsers;
@@ -371,15 +372,16 @@ public class FindMaxLoadPath extends LoadPath {
 					}
 
 					long nextRateStep = curRateStep;		
-					numSucessiveIntervalsPassed--;
-					if (numSucessiveIntervalsPassed <= -2) {
+					numSucessiveIntervalsPassed = 0;
+					numSucessiveIntervalsFailed++;
+					if (numSucessiveIntervalsFailed >= 2) {
 						/*
 						 * Have failed twice in a row, increase the rate step to possibly 
 						 * shorten run
 						 */
 						logger.debug("nextInterval for " + curPhase + ": "  + this.getName() + ": Failed twice in a row.  Increasing nextRateStep");
 						nextRateStep *= 1.5;					
-						numSucessiveIntervalsPassed = 0;
+						numSucessiveIntervalsFailed = 0;
 					}
 					
 					/*
@@ -388,7 +390,7 @@ public class FindMaxLoadPath extends LoadPath {
 					 */
 					if ((curUsers - nextRateStep) <= maxPassUsers) {
 						logger.debug("nextInterval for " + curPhase + ": "  + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
-						nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) / 2.0);
+						nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) * 0.75);
 					} 
 					
 					long prevCurUsers = curUsers;

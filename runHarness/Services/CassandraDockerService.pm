@@ -241,6 +241,19 @@ sub setExternalPortNumbers {
 	}
 }
 
+sub cleanData {
+	my ($self, $users, $logHandle)   = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraDockerService");
+	my $name = $self->name;
+	$logger->debug("cleanData");
+	my ($cmdFailed, $out) = $self->host->dockerExec($logHandle, $name, "nodetool compact auction_event");
+	if ($cmdFailed) {
+		$logger->warn("Compacting Cassandra nodes failed: $cmdFailed");
+		return 0;
+	}
+	return 1;
+}
+
 sub configure {
 	my ( $self, $logPath, $users, $suffix ) = @_;
 

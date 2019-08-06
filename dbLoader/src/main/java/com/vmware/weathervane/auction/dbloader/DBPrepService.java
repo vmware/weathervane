@@ -32,7 +32,8 @@ public class DBPrepService implements Runnable {
 	private List<Auction> auctionsToPrep;
 	private int prepStartIndex;
 	private int prepEndIndex;
-	private boolean resetAuctions;
+	private boolean pretouch = false;
+	private boolean resetAuctions = false;
 	private AuctionDao auctionDao;
 	private HighBidDao highBidDao;
 	
@@ -43,81 +44,68 @@ public class DBPrepService implements Runnable {
 		for (int i = prepStartIndex; i < prepEndIndex; i++) {
 			if (resetAuctions) {
 				auctionDao.resetToFuture(auctionsToPrep.get(i));
+			} else if (isPretouch()) {
+				auctionDao.pretouchImages(auctionsToPrep.get(i));
 			} else {
 				auctionDao.setToActivated(auctionsToPrep.get(i));
 			}
 		}
 	}
 
-
-
 	public AuctionDao getAuctionDao() {
 		return auctionDao;
 	}
-
 
 	public void setAuctionDao(AuctionDao auctionDao) {
 		this.auctionDao = auctionDao;
 	}
 
-
-
 	public List<Auction> getAuctionsToPrep() {
 		return auctionsToPrep;
 	}
-
-
 
 	public void setAuctionsToPrep(List<Auction> auctionsToPrep) {
 		this.auctionsToPrep = auctionsToPrep;
 	}
 
-
-
 	public int getPrepStartIndex() {
 		return prepStartIndex;
 	}
-
-
 
 	public void setPrepStartIndex(int prepStartIndex) {
 		this.prepStartIndex = prepStartIndex;
 	}
 
-
-
 	public int getPrepEndIndex() {
 		return prepEndIndex;
 	}
-
-
 
 	public void setPrepEndIndex(int prepEndIndex) {
 		this.prepEndIndex = prepEndIndex;
 	}
 
-
-
 	public boolean isResetAuctions() {
 		return resetAuctions;
 	}
-
-
 
 	public void setResetAuctions(boolean resetAuctions) {
 		this.resetAuctions = resetAuctions;
 	}
 
-
-
 	public HighBidDao getHighBidDao() {
 		return highBidDao;
 	}
 
-
-
 	public void setHighBidDao(HighBidDao highBidDao) {
 		this.highBidDao = highBidDao;
+	}
+
+	public boolean isPretouch() {
+		return pretouch;
+	}
+
+	public void setPretouch(boolean pretouch) {
+		this.pretouch = pretouch;
 	}
 
 }

@@ -669,7 +669,6 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 						+ getOperationName() + ", behavior UUID " + _behavior.getBehaviorId() 
 						+ " Failure Reason = " + this.getFailureReason());
 				this.getUser().reset();
-				return;
 			}
 			
 			/*

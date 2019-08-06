@@ -1,5 +1,5 @@
 {
-  "description" : "k8s, micro, 1Driver, fastSC",
+  "description" : "k8s, micro, defaultSC",
 
   "configurationSize": "micro",
 
@@ -25,8 +25,8 @@
 
   "numAppInstances" : 1,
   "appInstanceCluster" : "appCluster",
-  "cassandraDataStorageClass" : "fast",
-  "postgresqlDataStorageClass" : "fast",
-  "postgresqlLogStorageClass" : "fast",
+  "cassandraDataStorageClass" : "default",
+  "postgresqlDataStorageClass" : "default",
+  "postgresqlLogStorageClass" : "default",
 
 }

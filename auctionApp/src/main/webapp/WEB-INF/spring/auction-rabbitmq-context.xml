@@ -38,16 +38,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	<rabbit:queue id="auctionEndedQueue"  />
 	<rabbit:queue id="startAuctioneerQueue"  />
 	<rabbit:queue id="newBidQueue"  />
-	
+		
 	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="2">
     	<rabbit:listener queues="auctionStartedQueue" ref="liveAuctionService" method="handleAuctionStartedMessage"  />
     	<rabbit:listener queues="auctionEndedQueue" ref="liveAuctionService" method="handleAuctionEndedMessage"  />
     	<rabbit:listener queues="startAuctioneerQueue" ref="liveAuctionService" method="handleStartAuctioneerMessage"  />
 	</rabbit:listener-container>
 	
-	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${NEWBIDQUEUECONCURRENCY}">
-    	<rabbit:listener id="newBidListenerContainer" queues="newBidQueue" 
-    		ref="liveAuctionService" method="handleNewBidMessage" />
+	<rabbit:listener-container connection-factory="rabbitConnectionFactory" concurrency="${NEWBIDQUEUECONCURRENCY}" prefetch="250">
+    	<rabbit:listener id="newBidListenerContainer" queues="newBidQueue" ref="liveAuctionService" method="handleNewBidMessage" />
 	</rabbit:listener-container>
 	
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />

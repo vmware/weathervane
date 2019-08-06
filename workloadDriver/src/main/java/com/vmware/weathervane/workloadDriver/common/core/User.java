@@ -52,7 +52,6 @@ public abstract class User implements LoadProfileChangeCallback {
 	 * The delay is 60 seconds.
 	 */
 	private static final ScheduledExecutorService _resetTimingExecutor = Executors.newScheduledThreadPool(2);
-	private static final long _resetTimeout = 60;
 	
 	/**
 	 * The id the uniquely identifies the user in all ScenarioTracks.

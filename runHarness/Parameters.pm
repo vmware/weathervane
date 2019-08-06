@@ -1616,7 +1616,7 @@ $parameters{"repeatsAtMax"} = {
 
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
-	"default"   => 6,
+	"default"   => 32,
 	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1624,7 +1624,7 @@ $parameters{"dbLoaderThreads"} = {
 
 $parameters{"dbPrepThreads"} = {
 	"type"      => "=i",
-	"default"   => 60,
+	"default"   => 128,
 	"parent"    => "dataManager",
 	"usageText" => "",
 	"showUsage" => 1,

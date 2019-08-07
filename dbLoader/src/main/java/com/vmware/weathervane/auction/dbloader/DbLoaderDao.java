@@ -369,17 +369,17 @@ public class DbLoaderDao {
 			double pctDone = 100.0 - ((totalTimeRemaining / totalDurationEstimate) * 100.0);
 
 			long duration = Math.round(totalTimeRemaining * 1000);
-			String durationString = String
-					.format("Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
-							pctDone,
-							TimeUnit.MILLISECONDS.toHours(duration),
-							TimeUnit.MILLISECONDS.toMinutes(duration)
-									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
-											.toHours(duration)),
-							TimeUnit.MILLISECONDS.toSeconds(duration)
-									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
-											.toMinutes(duration)));
-			System.out.println(durationString + messageString);
+
+			if (!Epochs.USER.equals(typeOfWork)) {
+				String durationString = String.format(
+						"Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
+						pctDone, TimeUnit.MILLISECONDS.toHours(duration),
+						TimeUnit.MILLISECONDS.toMinutes(duration)
+								- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
+						TimeUnit.MILLISECONDS.toSeconds(duration)
+								- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+				System.out.println(durationString + messageString);
+			}
 
 			/*
 			 * Adjust the time between updates to be 10% of the estimated

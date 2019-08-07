@@ -202,6 +202,8 @@ sub waitForReady {
 		} 
 		if (!($outString =~ /progress/)) {
 			$finished = 1;
+		} else {
+			sleep 30;
 		}
 	}
 }

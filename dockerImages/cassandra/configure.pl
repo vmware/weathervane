@@ -25,29 +25,6 @@ if ($clearBeforeStart) {
 	`rm -rf /data/commitlog/*`;
 }
 
-# Configure setenv.sh
-open( FILEIN,  "/cassandra.yaml" ) or die "Can't open file /cassandra.yaml: $!\n";
-open( FILEOUT, ">/etc/cassandra/conf/cassandra.yaml" ) or die "Can't open file /etc/cassandra/conf/cassandra.yaml: $!\n";
-while ( my $inline = <FILEIN> ) {
-	if ( $inline =~ /^(\s*)\-\sseeds\:/ ) {
-		print FILEOUT "${1}- seeds: \"$seeds\"\n";
-	}
-	elsif ( $inline =~ /^cluster\_name:/ ) {
-		print FILEOUT "cluster_name: '$clusterName'\n";
-	}
-	elsif ( $inline =~ /^\#listen\_address\:\slocalhost/ ) {
-		print FILEOUT "listen_address: $hostname\n";
-	}
-	elsif ( $inline =~ /^rpc\_address\:\slocalhost/ ) {
-		print FILEOUT "rpc_address: $hostname\n";
-	}
-	else {
-		print FILEOUT $inline;
-	}
-}
-close FILEIN;
-close FILEOUT;
-
 # Configure jvm.options bassed on assigned memory size
 # Heap calculations are those used by cassandra
 $memory = convertK8sMemStringToMB($memory);
@@ -66,6 +43,33 @@ while ( my $inline = <FILEIN> ) {
 	} elsif ($inline =~ /^#\-Xmn/) {
 		print FILEOUT "-Xmn${newHeapSize}M\n";
 	} else {
+		print FILEOUT $inline;
+	}
+}
+close FILEIN;
+close FILEOUT;
+
+# Configure setenv.sh
+open( FILEIN,  "/cassandra.yaml" ) or die "Can't open file /cassandra.yaml: $!\n";
+open( FILEOUT, ">/etc/cassandra/conf/cassandra.yaml" ) or die "Can't open file /etc/cassandra/conf/cassandra.yaml: $!\n";
+while ( my $inline = <FILEIN> ) {
+	if ( $inline =~ /^(\s*)\-\sseeds\:/ ) {
+		print FILEOUT "${1}- seeds: \"$seeds\"\n";
+	}
+	elsif ( $inline =~ /^cluster\_name:/ ) {
+		print FILEOUT "cluster_name: '$clusterName'\n";
+	}
+	elsif ( $inline =~ /^file\_cache\_size\_in\_mb:/ ) {
+		my $fileCacheSize = ceil($heapSize * 0.25);
+		print FILEOUT "file_cache_size_in_mb: $fileCacheSize\n";
+	}
+	elsif ( $inline =~ /^\#listen\_address\:\slocalhost/ ) {
+		print FILEOUT "listen_address: $hostname\n";
+	}
+	elsif ( $inline =~ /^rpc\_address\:\slocalhost/ ) {
+		print FILEOUT "rpc_address: $hostname\n";
+	}
+	else {
 		print FILEOUT $inline;
 	}
 }

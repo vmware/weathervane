@@ -208,9 +208,23 @@ override 'isUp' => sub {
 	return 0;
 };
 
+sub cleanData {
+	my ($self, $users, $logHandle)   = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
+	$logger->debug("cleanData");
+	my $cluster = $self->host;
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecAll($self->getImpl(), "/cleanup.sh", $self->namespace );
+	if ($cmdFailed) {
+		$logger->warn("Cleanup of Postgresql nodes failed: $cmdFailed");
+		return 0;
+	} else {
+		return 1;
+	}	
+}
+
 sub cleanLogFiles {
 	my ($self)            = @_;
-	my $logger = get_logger("Weathervane::Services::PostgresqlDockerService");
+	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("cleanLogFiles");
 
 }

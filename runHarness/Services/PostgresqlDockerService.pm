@@ -257,6 +257,19 @@ sub configure {
 
 }
 
+sub cleanData {
+	my ($self, $users, $logHandle)   = @_;
+	my $logger = get_logger("Weathervane::Services::PostgresqlService");
+	my $name = $self->name;
+	$logger->debug("cleanData");
+	my ($cmdFailed, $out) = $self->host->dockerExec($logHandle, $name, "/cleanup.sh");
+	if ($cmdFailed) {
+		$logger->warn("Cleanup on PostgreSQL nodes failed: $cmdFailed");
+		return 0;
+	}
+	return 1;
+}
+
 sub stopStatsCollection {
 	my ($self)      = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlService");

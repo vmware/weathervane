@@ -32,7 +32,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunProcedure';
 
-has '+name' => ( default => 'Prepare-Only', );
+has '+name' => ( default => 'warmpare-Only', );
 
 has 'reloadDb' => (
 	is  => 'rw',
@@ -151,9 +151,6 @@ sub run {
 	$self->clearReloadDb();
 
 	## start all of the backend services.  Data services should be up.
-	$console_logger->info("Pre-warming data services.\n");
-	$self->pretouchData($setupLogDir);
-
 	$console_logger->info("Starting backend services");
 	$self->startServices( "backend", $setupLogDir );
 	# Make sure that the services know their external port numbers

@@ -73,7 +73,7 @@ CREATE TABLE highbid (
     bidid bytea,
     preloaded boolean,
     version integer
-) with (fillfactor=25);
+);
 
 
 ALTER TABLE highbid OWNER TO auction;
@@ -144,7 +144,7 @@ ALTER TABLE fixedtimeoffset OWNER TO auction;
 CREATE TABLE hibernate_sequences (
     sequence_name character varying(255) NOT NULL,
     sequence_next_hi_value integer
-) with (fillfactor=75);
+);
 
 
 ALTER TABLE hibernate_sequences OWNER TO auction;
@@ -205,7 +205,7 @@ CREATE TABLE userdata (
     password character varying(20),
     state character varying(20),
     version integer
-) with (fillfactor=75);
+);
 
 
 ALTER TABLE userdata OWNER TO auction;

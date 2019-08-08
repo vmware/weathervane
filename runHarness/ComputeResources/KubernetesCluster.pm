@@ -835,7 +835,7 @@ sub kubernetesTopPodAllNamespaces {
 				$logger->info("kubernetesTopPodAllNamespaces top pod failed: $cmdFailed");
 			}
 			my $time;
-			$cmd = "date +%H:%M";
+			$cmd = "date -u";
 			($cmdFailed, $time) = runCmd($cmd);
 			if ($cmdFailed) {
 				$logger->info("kubernetesTopPodAllNamespaces date failed: $cmdFailed");

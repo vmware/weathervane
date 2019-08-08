@@ -395,6 +395,9 @@ sub cleanData {
 	
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	#$nosqlServersRef->[0]->cleanData($users, $logHandle);
+
+	my $dbServersRef = $self->appInstance->getAllServicesByType('dbServer');
+	$dbServersRef->[0]->cleanData($users, $logHandle);
 }
 
 sub waitForReady {

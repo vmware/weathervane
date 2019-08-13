@@ -73,6 +73,9 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	@Inject
 	ImageThumbnailRepository imageThumbnailRepository;
+	
+	@Inject
+	HighBidDao highBidDao;
 
 	public AuctionDaoJpa() {
 		super(Auction.class);
@@ -350,19 +353,12 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 					+ ". Delete the bids for item " + anItem.getId());
 			bidRepository.deleteByItemId(anItem.getId());
 
-			/*
-			 * Because cascadeType=All on this association, setting the highbid
-			 * to null should delete the associated highbid
-			 */
+			logger.info("resetToFuture. auctionId = " + auction.getId()
+			+ ". Delete the highbids for item " + anItem.getId());
 			HighBid highBid = anItem.getHighbid();
 			if (highBid != null) {
-				logger.info("resetToFuture. auctionId = " + auction.getId()
-						+ ". Setting the highBid to null for item " + anItem.getId()
-						+ ", highBid = " + highBid.getId());
 				anItem.setHighbid(null);
-				logger.info("resetToFuture. auctionId = " + auction.getId()
-						+ ". Explicitly removing the highBid for item " + anItem.getId()
-						+ ", highBid = " + highBid.getId());
+				highBidDao.delete(highBid);
 			}
 		}
 	}
@@ -370,7 +366,7 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	@Override
 	public void pretouchImages(Auction auction) {
-		logger.info("resetToFuture. auctionId = " + auction.getId());
+		logger.info("pretouchImages. auctionId = " + auction.getId());
 		// Bring the auction back into the context
 		Auction theAuction = this.get(auction.getId());
 
@@ -406,7 +402,7 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	@Override
 	public void setToActivated(Auction auction) {
-		logger.info("setToCurrent. ");
+		logger.info("setToActivated. ");
 
 		// Bring the auction back into the context
 		Auction theAuction = this.get(auction.getId());

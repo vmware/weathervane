@@ -478,7 +478,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					 * The auction has ended, but we want to keep it going.  Reset
 					 * all of the items so that they can be reused.
 					 */
-					logger.debug("startNextItem resetting items for auction " + curHighBid.getAuctionId());
+					logger.warn("Auction {} has run out of items. Resetting.", curHighBid.getAuctionId());
 					_auctioneerTx.resetItems(curHighBid.getAuctionId());
 					_auctioneerTx.deleteHighbids(curHighBid.getAuctionId());
 				}

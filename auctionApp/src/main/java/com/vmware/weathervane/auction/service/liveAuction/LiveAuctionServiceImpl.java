@@ -226,7 +226,6 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 			public Thread newThread(Runnable r) {
 				final String threadName = String.format("clientUpdateThread-%d", counter.incrementAndGet());
 				Thread newThread = new Thread(r, threadName);
-				newThread.setPriority(Thread.NORM_PRIORITY + 1);
 				return newThread;
 			}
 		});
@@ -827,7 +826,6 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 	public Boolean isMaster() {
 		return _isMaster;
 	}
-
 	
 	protected class AuctionAssignmentChangedHandler implements Consumer<String> {
 

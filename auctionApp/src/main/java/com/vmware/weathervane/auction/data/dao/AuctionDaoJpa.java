@@ -41,6 +41,7 @@ import com.vmware.weathervane.auction.data.model.User;
 import com.vmware.weathervane.auction.data.repository.event.AttendanceRecordRepository;
 import com.vmware.weathervane.auction.data.repository.event.BidRepository;
 import com.vmware.weathervane.auction.data.model.Auction.AuctionState;
+import com.vmware.weathervane.auction.data.model.HighBid.HighBidState;
 import com.vmware.weathervane.auction.data.model.Item.ItemState;
 import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
@@ -55,6 +56,9 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 
 	@Inject
 	BidRepository bidRepository;
+	
+	@Inject
+	HighBidDao highBidDao;
 
 	public AuctionDaoJpa() {
 		super(Auction.class);
@@ -393,30 +397,16 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 	}
 
 	@Override
-	public void resetItemsToFuture(Auction auction) {
-		logger.info("resetItemsToFuture. auctionId = " + auction.getId());
+	public void resetItemsToFuture(Long auctionId) {
+		logger.warn("resetItemsToFuture for auction {}", auctionId);
+		Auction auction = this.get(auctionId);
 
-		// Bring the auction into the context
-		Auction theAuction = this.get(auction.getId());
-
-		/*
-		 * Now reset all items in the auction
-		 */
-		logger.info("resetItemsToFuture. auctionId = " + auction.getId() + ". Reset the items.");
-		for (Item anItem : theAuction.getItems()) {
-			anItem.setState(ItemState.INAUCTION);
-			/*
-			 * Because cascadeType=All on this association, setting the highbid
-			 * to null should delete the associated highbid
-			 */
-			anItem.setHighbid(null);
-
-			// Delete all bids for the item
-			logger.info("resetItemsToFuture. auctionId = " + auction.getId()
-					+ ". Delete the bids for item " + anItem.getId());
-			bidRepository.deleteByItemId(anItem.getId());
-		}
-
+		Query theQuery = entityManager
+				.createQuery("update Item i set i.state = :state WHERE i.auction = :auction ");
+		theQuery.setParameter("state", ItemState.INAUCTION);
+		theQuery.setParameter("auction", auction);
+		int count = theQuery.executeUpdate();
+		logger.warn("resetItemsToFuture for auction {}, reset {} items", auctionId, count);
 	}
 
 	@Transactional

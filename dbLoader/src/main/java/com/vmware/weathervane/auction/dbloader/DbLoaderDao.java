@@ -394,8 +394,8 @@ public class DbLoaderDao {
 			 */
 			if (duration > 300000) {
 				updateIntervalMillis = (long) Math.floor(duration * 0.10);
-				if (updateIntervalMillis > 600000) {
-					updateIntervalMillis = 600000;
+				if (updateIntervalMillis > 300000) {
+					updateIntervalMillis = 300000;
 				} else if (updateIntervalMillis < 120000) {
 					updateIntervalMillis = 120000;
 				}
@@ -651,7 +651,7 @@ public class DbLoaderDao {
 			 */
 			long itemStartTimeMillis = FixedOffsetCalendarFactory.getCalendar().getTimeInMillis();
 			for (Item anItem : anAuction.getItems()) {
-				updateItemForAuction(anAuction, anItem, itemDescr, ItemState.SHIPPED, dbLoadSpec);
+				updateItemForAuction(anAuction, anItem, itemDescr, ItemState.INAUCTION, dbLoadSpec);
 
 				long itemEndTimeMillis = itemStartTimeMillis + historyMinPerItem * 60 * 1000 - 1;
 				HighBid highBid = new HighBid();
@@ -663,7 +663,6 @@ public class DbLoaderDao {
 				highBid.setAmount(anItem.getStartingBidAmount() + 1);
 				highBid.setState(HighBidState.OPEN);
 				highBid.setPreloaded(false);
-				highBidDao.save(highBid);
 
 				anItem.setHighbid(highBid);
 				itemStartTimeMillis += historyMinPerItem * 60 * 1000;
@@ -719,7 +718,7 @@ public class DbLoaderDao {
 		highBid.setBidCount(bidCount);
 		highBid.setCurrentBidTime(aBid.getKey().getBidTime());
 		highBid.setBidId(aBid.getId());
-		highBid.setState(HighBidState.OPEN);
+		highBid.setState(HighBidState.SOLD);
 		logger.debug("addHighBid for item " + anItem.getId() + ", updated highBid");
 		return highBid;
 	}

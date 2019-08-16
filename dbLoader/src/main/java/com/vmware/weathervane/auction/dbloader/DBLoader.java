@@ -345,12 +345,12 @@ public class DBLoader {
 				dbLoaderWorkEstimate.setUserWork(0.00005);
 				dbLoaderWorkEstimate.setHistoryWork(0.0032);
 				dbLoaderWorkEstimate.setFutureWork(0.001);
-				dbLoaderWorkEstimate.setCurrentWork(0.0134);
+				dbLoaderWorkEstimate.setCurrentWork(0.04);
 			} else {
 				dbLoaderWorkEstimate.setUserWork(0.00005);
 				dbLoaderWorkEstimate.setHistoryWork(0.0032);
 				dbLoaderWorkEstimate.setFutureWork(0.001);
-				dbLoaderWorkEstimate.setCurrentWork(0.0134);
+				dbLoaderWorkEstimate.setCurrentWork(0.04);
 			}
 		}
 
@@ -654,6 +654,10 @@ public class DBLoader {
 		} catch (Throwable ex) {
 			System.err.println("Couldn't save updated work estimates: " + ex.getMessage()+ ". " + messageString);
 		}
+		logger.warn("Final user work estimate: ", dbLoaderWorkEstimate.getUserWork());
+		logger.warn("Final current work estimate: ", dbLoaderWorkEstimate.getCurrentWork());
+		logger.warn("Final history work estimate: ", dbLoaderWorkEstimate.getHistoryWork());
+		logger.warn("Final future work estimate: ", dbLoaderWorkEstimate.getFutureWork());
 
 		AuctionMgmt auctionMgmt = new AuctionMgmt(0L, null);
 		auctionMgmtDao.save(auctionMgmt);

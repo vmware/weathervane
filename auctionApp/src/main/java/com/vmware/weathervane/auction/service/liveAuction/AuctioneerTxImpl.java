@@ -150,12 +150,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 				 * it can be re-auctioned at a later time.
 				 */
 				logger.info("MakeForwardProgress: auctionId = " + auctionId + ". Item " + currentItem.getId() + " was not sold" );
-				HighBid returnedHighBid = new HighBid(highBid);
-				highBidDao.delete(highBid);
 				currentItem.setState(ItemState.INAUCTION);
-				currentItem.setHighbid(null);
-				
-				return returnedHighBid;
 			}
 			return highBid;
 			
@@ -168,17 +163,8 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	@Override
 	@Transactional
 	public void resetItems(Long auctionId) {
-		Auction currentAuction = auctionDao.get(auctionId);
-		auctionDao.resetItemsToFuture(currentAuction);
-	}
-
-	@Override
-	@Transactional
-	public void deleteHighbids(Long auctionId) {
-		Auction currentAuction = auctionDao.get(auctionId);
-		highBidDao.deleteByAuction(currentAuction);
-	}
-	
+		auctionDao.resetItemsToFuture(auctionId);
+	}	
 
 	@Override
 	@Transactional
@@ -231,7 +217,11 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		 * and eventually final, state of bidding on this item is always 
 		 * tracked in this record
 		 */
-		HighBid newHighBid = new HighBid();
+		HighBid newHighBid = nextItem.getHighbid();
+		if (newHighBid == null) {
+			newHighBid = new HighBid();
+			nextItem.setHighbid(newHighBid);
+		}
 		newHighBid.setAmount(nextItem.getStartingBidAmount());
 		newHighBid.setBidCount(1);
 		newHighBid.setState(HighBidState.OPEN);
@@ -242,11 +232,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
 		newHighBid.setBidId(UUID.randomUUID());		
-		
-		nextItem.setHighbid(newHighBid);
-		
-		highBidDao.save(newHighBid);
-		
+				
 		return newHighBid;
 
 	}
@@ -369,6 +355,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 	@Override
 	@Transactional
 	public HighBid startAuction(long auctionId) throws InvalidStateException, AuctionNoItemsException {
+		
 		Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
 		/*
 		 * Get the auction again to make sure that it is up to date and to
@@ -434,7 +421,11 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		 * and eventually final, state of bidding on this item is always 
 		 * tracked in this record
 		 */
-		HighBid newHighBid = new HighBid();
+		HighBid newHighBid = firstItem.getHighbid();
+		if (newHighBid == null) {
+			newHighBid = new HighBid();
+			firstItem.setHighbid(newHighBid);
+		}
 		newHighBid.setAmount(firstItem.getStartingBidAmount());
 		newHighBid.setBidCount(1);
 		newHighBid.setState(HighBidState.OPEN);
@@ -445,11 +436,7 @@ public class AuctioneerTxImpl implements AuctioneerTx {
 		newHighBid.setPreloaded(false);
 		newHighBid.setCurrentBidTime(now);
 		newHighBid.setBidId(UUID.randomUUID());		
-		
-		firstItem.setHighbid(newHighBid);
-		
-		highBidDao.save(newHighBid);
-		
+						
 		return newHighBid;
 
 	}

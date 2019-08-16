@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+rm -rf /tmp/isReady
+
 if [ ! -s "/mnt/dbData/postgresql/PG_VERSION" ]; then
   MODE="firstrun"
 else
@@ -53,7 +55,11 @@ perl /configure.pl
 
 # Start postgresql
 echo "Starting PostgreSQL"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/postgres -D /mnt/dbData/postgresql 
+sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl start -D /mnt/dbData/postgresql 
+
+while /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432 ; [ $? -ne 0 ]; do
+    echo "Waiting for PostgreSQL to be ready"
+done
 
 # Reindex
 echo "Reindex"
@@ -67,3 +73,5 @@ echo "Force vacuum"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
 echo "Force checkpoint"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"
+
+touch /tmp/isReady

@@ -179,8 +179,9 @@ public class ClientBidUpdater {
 							&& (newHighBid.getLastBidCount() == 1))
 					) {
 				logger.info(
-						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}",
-						curHighBid.getLastBidCount(), newHighBid.getLastBidCount());
+						"handleHighBidMessage: using existing bid because curBidCount {} is higher than newBidCount {}. " 
+								+ "curHighBid = {}, newHighBid = {}",
+						curHighBid.getLastBidCount(), newHighBid.getLastBidCount(), curHighBid, newHighBid);
 				newHighBid = curHighBid;
 				itemId = newHighBid.getItemId();
 			}

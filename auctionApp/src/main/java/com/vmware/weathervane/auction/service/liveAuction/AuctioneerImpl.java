@@ -480,7 +480,7 @@ public class AuctioneerImpl implements Auctioneer, Runnable {
 					 */
 					logger.warn("Auction {} has run out of items. Resetting.", curHighBid.getAuctionId());
 					_auctioneerTx.resetItems(curHighBid.getAuctionId());
-					_auctioneerTx.deleteHighbids(curHighBid.getAuctionId());
+					logger.warn("Auction {} has run out of items. Done Resetting.", curHighBid.getAuctionId());
 				}
 			} catch (ObjectOptimisticLockingFailureException ex) {
 				logger.info("startNextItem threw ObjectOptimisticLockingFailureException with message "

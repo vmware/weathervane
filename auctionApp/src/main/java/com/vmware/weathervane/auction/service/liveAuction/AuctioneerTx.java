@@ -73,6 +73,4 @@ public interface AuctioneerTx {
 
 	void resetItems(Long auctionId);
 
-	void deleteHighbids(Long auctionId);
-
 }

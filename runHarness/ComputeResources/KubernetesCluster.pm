@@ -519,6 +519,7 @@ sub kubernetesGetSizeForPVC {
 sub kubernetesAreAllPodRunningWithNum {
 	my ( $self, $podLabelString, $namespace, $num ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesAreAllPodRunningWithNum podLabelString $podLabelString, namespace $namespace, num $num");
 
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
@@ -550,6 +551,22 @@ sub kubernetesAreAllPodRunningWithNum {
 	}
 	
 	foreach my $status (@stati) { 
+		if ($status eq "Pending") {
+			# check if Pending status is due to FailedScheduling, which will prevent the pod from achieving "Running" status
+			$cmd = "kubectl describe pod --selector=$podLabelString --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | grep -A 4 Events";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+			} else {
+				$logger->debug("Command: $cmd");
+				$logger->debug("Output: $outString");
+				if ($outString =~ /FailedScheduling/) {
+					$console_logger->error("Error running kubernetes pod : FailedScheduling podLabelString $podLabelString, namespace $namespace");
+					$logger->debug("kubernetesAreAllPodRunningWithNum FailedScheduling podLabelString $podLabelString, namespace $namespace, output:\n$outString");
+					return (0, "FailedScheduling");
+				}
+			}
+		}
 		if ($status ne "Running") {
 			$logger->debug("kubernetesAreAllPodRunningWithNum: Found a non-running pod: $status");
 			return 0;

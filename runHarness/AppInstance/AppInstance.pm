@@ -751,7 +751,11 @@ sub waitForServicesRunning {
 				my $servicesRef = $self->getAllServicesByType($serviceType);
 				if ($#{$servicesRef} >= 0) {
 					foreach my $serviceRef (@$servicesRef) {
-						$allIsRunning &= $serviceRef->isRunning($logFile);
+						my ($serviceIsRunning, $errorStr) = $serviceRef->isRunning($logFile);
+						if (!$serviceIsRunning && defined $errorStr) {
+							return 0; #short circuit waiting, retries, and sleeps in cases like FailedScheduling
+						}
+						$allIsRunning &= $serviceIsRunning;
 						if (!$allIsRunning) {
 							last;  #short circuit checking all services
 						}

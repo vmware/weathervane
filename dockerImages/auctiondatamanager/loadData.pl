@@ -48,3 +48,6 @@ my $cmdString = "java $jvmopts $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${app
 				
 print "Running for appInstance $appInstanceNum: $cmdString\n";
 system($cmdString);
+
+print "Catting /images/.db*\n";
+`cat /images/.db*`;

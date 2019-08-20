@@ -256,60 +256,6 @@ if ( !( -e "$weathervaneHome/weathervane.pl" ) ) {
 	die "weathervane.pl does not exist in the current working directory.\n"
 }
 
-# For $tmpDir, use Parameters.pm default relative to weathervaneHome,
-# make sure its exists, and clean it out.
-my $tmpDir = getParamDefault('tmpDir');
-$tmpDir = $weathervaneHome . "/" . $tmpDir;
-if ( !( -e $tmpDir ) ) {
-	`mkdir $tmpDir`;
-} else {
-	`rm -r $tmpDir/* 2>&1`;
-}
-
-# Set up the loggers
-my $console_logger = get_logger("Console");
-$console_logger->level($INFO);
-my $layout   = Log::Log4perl::Layout::PatternLayout->new("%d{E MMM d HH:mm:ss yyyy}: %m%n");
-my $appender = Log::Log4perl::Appender->new(
-	"Log::Dispatch::File",
-	name     => "rootConsoleFile",
-	filename => "$tmpDir/console.log",
-	mode     => "write",
-);
-$appender->layout($layout);
-$console_logger->add_appender($appender);
-$appender = Log::Log4perl::Appender->new(
-	"Log::Dispatch::Screen",
-	name   => "rootConsoleScreen",
-	stderr => 0,
-);
-$appender->layout($layout);
-$console_logger->add_appender($appender);
-
-my $weathervane_logger = get_logger("Weathervane");
-$weathervane_logger->level($DEBUG);
-$layout   = Log::Log4perl::Layout::PatternLayout->new("%d %p> %F{1}:%L %M - %m%n");
-$appender = Log::Log4perl::Appender->new(
-	"Log::Dispatch::File",
-	name     => "rootDebugFile",
-	filename => "$tmpDir/debug.log",
-	mode     => "write",
-);
-$console_logger->add_appender($appender); #also send console_logger output to debug log
-$weathervane_logger->add_appender($appender);
-$appender->layout($layout);
-$appender = Log::Log4perl::Appender->new(
-	"Log::Dispatch::Screen",
-	name      => "rootWeathervaneScreen",
-	stderr    => 0,
-);
-$appender->threshold($WARN); #don't spam screen with DEBUG/INFO levels if they are enabled
-$weathervane_logger->add_appender($appender);
-$appender->layout($layout);
-
-tie *STDERR, "StderrToLogerror", category => "Console";
-my $logger = get_logger("Weathervane");
-
 # read in the command-line options
 my %paramCommandLine = ();
 my @paramStrings     = ();
@@ -382,9 +328,6 @@ foreach my $key ( keys %$paramConfig ) {
 
 my $paramsHashRef = mergeParameters( \%paramCommandLine, $paramConfig );
 
-# $tmpdir was set above, add to $paramsHashRef
-setParamValue( $paramsHashRef, 'tmpDir', $tmpDir );
-
 # Read in the fixed configuration
 open( FIXEDCONFIGFILE, "<$weathervaneHome/runHarness/fixedConfigs.json" ) or die "Couldn't Open fixedConfigs.json: $!\n";
 $paramJson = "";
@@ -393,16 +336,6 @@ while (<FIXEDCONFIGFILE>) {
 }
 close FIXEDCONFIGFILE;
 my $fixedConfigs = $json->decode($paramJson);
-
-# Update logger levels based on config
-if ( getParamValue( $paramsHashRef, "loggers" ) ) {
-	my $loggersHashRef = getParamValue( $paramsHashRef, "loggers" );
-	my @keys = keys %$loggersHashRef;
-	foreach my $loggerName ( keys %$loggersHashRef ) {
-		my $loggerInst = get_logger($loggerName);
-		$loggerInst->level( $loggersHashRef->{$loggerName} );
-	}
-}
 
 # Set dirs relative to weathervaneHome
 my $outputDir = getParamValue( $paramsHashRef, 'outputDir' );
@@ -431,12 +364,6 @@ if ( $resultsFileDir eq "" ) {
 }
 else {
 	$resultsFileDir = $weathervaneHome . "/" . $resultsFileDir;
-	if ( !( -e $resultsFileDir ) ) {
-		my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $resultsFileDir");
-		if ($cmdFailed) {
-			die "resultFileDir mkdir failed: $cmdFailed\n";
-		}
-	}
 }
 setParamValue( $paramsHashRef,  'resultsFileDir', $resultsFileDir );
 
@@ -487,6 +414,76 @@ else {
 	close SEQFILE;
 }
 
+my $tmpDir = "$outputDir/$seqnum";
+setParamValue( $paramsHashRef, 'tmpDir', $tmpDir );
+my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $tmpDir");
+if ($cmdFailed) {
+	die "tmpDir mkdir failed: $cmdFailed\n";
+}
+
+# Set up the loggers
+my $console_logger = get_logger("Console");
+$console_logger->level($INFO);
+my $layout   = Log::Log4perl::Layout::PatternLayout->new("%d{E MMM d HH:mm:ss yyyy}: %m%n");
+my $appender = Log::Log4perl::Appender->new(
+	"Log::Dispatch::File",
+	name     => "rootConsoleFile",
+	filename => "$tmpDir/console.log",
+	mode     => "write",
+);
+$appender->layout($layout);
+$console_logger->add_appender($appender);
+$appender = Log::Log4perl::Appender->new(
+	"Log::Dispatch::Screen",
+	name   => "rootConsoleScreen",
+	stderr => 0,
+);
+$appender->layout($layout);
+$console_logger->add_appender($appender);
+
+my $weathervane_logger = get_logger("Weathervane");
+$weathervane_logger->level($DEBUG);
+$layout   = Log::Log4perl::Layout::PatternLayout->new("%d %p> %F{1}:%L %M - %m%n");
+$appender = Log::Log4perl::Appender->new(
+	"Log::Dispatch::File",
+	name     => "rootDebugFile",
+	filename => "$tmpDir/debug.log",
+	mode     => "write",
+);
+$console_logger->add_appender($appender); #also send console_logger output to debug log
+$weathervane_logger->add_appender($appender);
+$appender->layout($layout);
+$appender = Log::Log4perl::Appender->new(
+	"Log::Dispatch::Screen",
+	name      => "rootWeathervaneScreen",
+	stderr    => 0,
+);
+$appender->threshold($WARN); #don't spam screen with DEBUG/INFO levels if they are enabled
+$weathervane_logger->add_appender($appender);
+$appender->layout($layout);
+
+tie *STDERR, "StderrToLogerror", category => "Console";
+my $logger = get_logger("Weathervane");
+
+# Update logger levels based on config
+if ( getParamValue( $paramsHashRef, "loggers" ) ) {
+	my $loggersHashRef = getParamValue( $paramsHashRef, "loggers" );
+	my @keys = keys %$loggersHashRef;
+	foreach my $loggerName ( keys %$loggersHashRef ) {
+		my $loggerInst = get_logger($loggerName);
+		$loggerInst->level( $loggersHashRef->{$loggerName} );
+	}
+}
+
+if ($resultsFileDir != $weathervaneHome) {
+	if ( !( -e $resultsFileDir ) ) {
+		my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $resultsFileDir");
+		if ($cmdFailed) {
+			die "resultFileDir mkdir failed: $cmdFailed\n";
+		}
+	}
+}
+
 # Copy the version file into the output directory
 my ($cmdFailed, $cmdOutput) = runCmd("cp $weathervaneHome/version.txt $tmpDir/version.txt");
 if ($cmdFailed) {
@@ -527,6 +524,8 @@ $console_logger->info("Command-line parameters:");
 foreach my $key ( keys %paramCommandLine ) {
 	$console_logger->info( "\t$key: " . $paramCommandLine{$key} );
 }
+
+$console_logger->warn( "Writing output to $tmpDir" );
 
 # if we are stopping a run, then use the singlefixed run manager
 my $stop = getParamValue( $paramsHashRef, "stop" );
@@ -1014,12 +1013,3 @@ $console_logger->info( "Running Weathervane with "
 	  . $runManager->runProcedure->name
 	  . " RunProcedure.\n" );
 $runManager->start();
-my $resultsDir = "$outputDir/$seqnum";
-my ($cmdFailed, $cmdOutput) = runCmd("mkdir -p $resultsDir");
-if ($cmdFailed) {
-	die "resultDir mkdir failed: $cmdFailed\n";
-}
-my ($cmdFailed, $cmdOutput) = runCmd("mv $tmpDir/* $resultsDir/.");
-if ($cmdFailed) {
-	die "tmpDir mv failed: $cmdFailed\n";
-}

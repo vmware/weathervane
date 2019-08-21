@@ -239,31 +239,6 @@ sub prepareData {
 	close $logHandle;
 }
 
-sub pretouchData {
-	my ( $self, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
-	my $workloadNum    = $self->appInstance->workload->instanceNum;
-	my $appInstanceNum = $self->appInstance->instanceNum;
-	my $name        = $self->name;
-	my $retVal         = 0;
-	$logger->debug( "pretouchData for workload ", $workloadNum );
-
-	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
-
-	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	# ToDo: Pretouch cassandra either here or in datamanager container
-
-	$logger->debug( "pretouchData complete for workload ", $workloadNum );
-
-	close $logHandle;
-}
-
 sub loadData {
 	my ( $self, $users, $logPath ) = @_;
 	my $console_logger   = get_logger("Console");

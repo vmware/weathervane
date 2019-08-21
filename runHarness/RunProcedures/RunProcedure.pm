@@ -364,12 +364,6 @@ sub sanityCheckServices {
 	return callBooleanMethodOnObjectsParallel1( 'sanityCheckServices', $self->workloadsRef, $cleanupLogDir );
 }
 
-sub pretouchData {
-	my ( $self, $setupLogDir ) = @_;
-	my $workloadsRef = $self->workloadsRef;
-	return callMethodOnObjectsParallel1( 'pretouchData', $self->workloadsRef, $setupLogDir );
-}
-
 sub setPortNumbers {
 	my ($self) = @_;
 	my $workloadsRef = $self->workloadsRef;

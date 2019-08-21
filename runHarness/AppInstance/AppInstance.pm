@@ -518,20 +518,6 @@ sub getFindMaxInfoString {
 	return $returnString;
 }
 
-sub pretouchData {
-	my ( $self, $setupLogDir ) = @_;
-	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
-	$logger->debug(
-		"pretouchData start ",
-		"Workload ",
-		$self->workload->instanceNum,
-		", appInstance ",
-		$self->instanceNum
-	);
-
-	$self->dataManager->pretouchData($setupLogDir);
-}
-
 sub setPortNumbers {
 	my ($self) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");

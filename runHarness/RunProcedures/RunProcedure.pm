@@ -449,6 +449,19 @@ sub stopServices {
 	callMethodOnObjectsParallel2( 'stopServices', $self->workloadsRef, $serviceTier, $setupLogDir );
 }
 
+sub stopServicesInClusters {
+	my ( $self ) = @_;
+	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$logger->debug("stopServicesInClusters");
+
+	my $clustersRef = $self->clustersRef;
+	foreach my $cluster (@$clustersRef) {
+		my $clusterName = $cluster->name;
+		$logger->debug("stopServicesInClusters for $clusterName");
+		$cluster->kubernetesDeleteAllForCluster();
+	}
+}
+
 sub stopDataManager {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");

@@ -134,8 +134,7 @@ public class Auction implements Serializable, DomainObject {
 		this.endTime = endTime;
 	}
 
-	@OneToMany(mappedBy = "auction", cascade = { javax.persistence.CascadeType.PERSIST, CascadeType.REFRESH,
-			CascadeType.MERGE })
+	@OneToMany(mappedBy = "auction", cascade = { CascadeType.PERSIST })
 	public Set<Item> getItems() {
 		return items;
 	}

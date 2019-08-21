@@ -123,10 +123,8 @@ public class ItemServiceImpl implements ItemService {
 	public CollectionRepresentation<ItemRepresentation> getItems(Long auctionId, Integer page, Integer pageSize) {
 		ArrayList<ItemRepresentation> liveItems = new ArrayList<ItemRepresentation>();
 
-		Auction theAuction = auctionDao.get(auctionId);
-		
-		// Get the total number of items for this auction
-		Long totalRecords = auctionDao.getItemCountforAuction(theAuction);
+		Auction theAuction = auctionDao.get(auctionId);		
+		Long totalRecords = 15L;
 
 		// Get all auctions and convert them to LiveAuctions
 		Integer realPage = LiveAuctionServiceConstants.getCollectionPage(page);
@@ -195,10 +193,7 @@ public class ItemServiceImpl implements ItemService {
 	public CollectionRepresentation<ItemRepresentation> getPurchasedItemsForUser(
 			long userId, Date fromDate, Date toDate, Integer page,
 			Integer pageSize) {
-
-		// Get the total number of items for this auction
-		Long totalRecords = highBidDao.getPurchasedItemCountforUser(userId);
-
+		Long totalRecords = 5L;
 		Integer realPage = LiveAuctionServiceConstants.getCollectionPage(page);
 		Integer realPageSize = LiveAuctionServiceConstants
 				.getCollectionPageSize(pageSize);

@@ -123,6 +123,7 @@ sub run {
 
 	$debug_logger->debug("stop services");
 	$self->stopDataManager($setupLogDir);		
+	$self->stopServicesInClusters();
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
 	

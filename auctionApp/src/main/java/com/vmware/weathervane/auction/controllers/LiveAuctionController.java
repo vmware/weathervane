@@ -116,14 +116,13 @@ public class LiveAuctionController extends BaseController {
 		activeAuctionGets++;
 		CollectionRepresentation<AuctionRepresentation> auctionsPage = liveAuctionService.getActiveAuctions(page, pageSize);
 		if ((auctionsPage.getResults() != null) && (auctionsPage.getResults().size() > 0)) {
-			logger.info("LiveAuctionController::getActiveAuctions.  Page = " + page + ", PageSize = " + pageSize 
-					+ ", returning totalRecords = "
-					+ auctionsPage.getTotalRecords()
-					+ ", first auctionId = "
-					+ auctionsPage.getResults().get(0).getId());
+			logger.info("LiveAuctionController::getActiveAuctions.  Page = {}, PageSize = {}, returning totalRecords = {}"
+					+ ", first auctionId = {}, missRate = {}", page, pageSize, auctionsPage.getTotalRecords(),
+					auctionsPage.getResults().get(0).getId(), liveAuctionService.getActiveAuctionsMisses() / (double) activeAuctionGets);
 		} else {
 			logger.info("LiveAuctionController::getActiveAuctions.  LiveAuctionService returned null totalRecords");
 		}
+		
 		return auctionsPage;
 	}
 

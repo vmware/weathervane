@@ -232,7 +232,12 @@ sub prepareData {
 	} 
 	
 	# Wait for the databases to finish any compaction
-	$self->waitForReady();
+	my $cmdSucceeded = $self->waitForReady();
+	if (!$cmdSucceeded) {
+		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$self->stopDataManagerContainer($logHandle);
+		return 0;		
+	}
 
 	# cleanup the databases from any previous run
 	$self->cleanData( $users, $logHandle );
@@ -370,7 +375,7 @@ sub waitForReady {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-	$nosqlServersRef->[0]->waitForReady();
+	return $nosqlServersRef->[0]->waitForReady();
 }
 
 __PACKAGE__->meta->make_immutable;

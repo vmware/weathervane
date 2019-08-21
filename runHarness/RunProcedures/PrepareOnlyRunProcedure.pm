@@ -32,7 +32,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunProcedure';
 
-has '+name' => ( default => 'warmpare-Only', );
+has '+name' => ( default => 'Prepare-Only', );
 
 has 'reloadDb' => (
 	is  => 'rw',

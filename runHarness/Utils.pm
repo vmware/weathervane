@@ -385,7 +385,10 @@ sub runCmd {
 	# cmdOutput (cmd $output if success, cmd $output if failed)
 
 	my ($cmd, $printLogOutput) = @_;
-	my $logger = get_logger("Weathervane");
+	my $logger;
+	if (Log::Log4perl->initialized()) {
+		$logger = get_logger("Weathervane");
+	}
 
 	if (!(defined $printLogOutput)) {
 		$printLogOutput = 1;
@@ -425,7 +428,7 @@ sub runCmd {
 		if (!(length $output)) {
 			$logOutput = "(failure with no output)";
 		}
-		$logger->debug("runCmd Failure ($cmd): $logOutput");
+		if ($logger) { $logger->debug("runCmd Failure ($cmd): $logOutput"); }
 		return ($logOutput, $output);
 	} else {
 		if (!(length $output)) {
@@ -434,7 +437,7 @@ sub runCmd {
 		if (!$printLogOutput) {
 			$logOutput = "";
 		}
-		$logger->debug("runCmd Success ($cmd): $logOutput");
+		if ($logger) { $logger->debug("runCmd Success ($cmd): $logOutput"); }
 		return ("", $output);
 	}
 }

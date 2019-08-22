@@ -311,10 +311,6 @@ public class DBPrep {
 		}
 		threadList.clear();
 		
-		// Need to run this after all auctions have been reset
-		logger.info("Deleting preloaded highBids\n");
-		highBidDao.deleteByPreloaded(false);
-
 		/*
 		 * Delete items that were added during the last run
 		 */

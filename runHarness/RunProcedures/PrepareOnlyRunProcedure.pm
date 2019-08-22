@@ -151,9 +151,6 @@ sub run {
 	$self->clearReloadDb();
 
 	## start all of the backend services.  Data services should be up.
-	$console_logger->info("Pre-warming data services.\n");
-	$self->pretouchData($setupLogDir);
-
 	$console_logger->info("Starting backend services");
 	$self->startServices( "backend", $setupLogDir );
 	# Make sure that the services know their external port numbers

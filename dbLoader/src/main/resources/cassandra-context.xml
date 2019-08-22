@@ -25,7 +25,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
     >
 
-<cassandra:cluster contact-points="${CASSANDRA_CONTACTPOINTS:cassandra}" port="${CASSANDRA_PORT:9042}"/>
+<cassandra:cluster contact-points="${CASSANDRA_CONTACTPOINTS:cassandra}" port="${CASSANDRA_PORT:9042}">
+  <cassandra:socket-options read-timeout-millis="120000"/>
+</cassandra:cluster>
 
 <cassandra:session id="eventSession" keyspace-name="auction_event" 
   schema-action="NONE" cassandra-converter-ref="eventConverter"/>

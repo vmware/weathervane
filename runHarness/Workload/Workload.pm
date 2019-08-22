@@ -200,11 +200,6 @@ sub getFindMaxInfoString {
 	return $returnString;
 }
 
-sub pretouchData {
-	my ( $self, $setupLogDir ) = @_;
-	return callMethodOnObjectsParallel1( 'pretouchData', $self->appInstancesRef, $setupLogDir );		
-}
-
 sub setPortNumbers {
 	my ( $self ) = @_;
 	

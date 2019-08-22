@@ -28,6 +28,8 @@ import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vmware.weathervane.auction.data.model.Auction;
+import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.util.FixedOffsetCalendarFactory;
 
 
@@ -45,7 +47,8 @@ public class DbLoaderThread implements Runnable {
 	
 	private static int currentChunkSize = 1;
 	private static int historyChunkSize = 1;
-	
+	private static int highBidsPerItem = 100;
+
 	public DbLoaderThread() {
 	}
 		
@@ -63,8 +66,29 @@ public class DbLoaderThread implements Runnable {
 			if (numAuctionsToCreate > totalAuctions) {
 				numAuctionsToCreate = totalAuctions;
 			}
-			dbLoaderDao.loadAuctionsChunk(numAuctionsToCreate, dbLoadSpec, itemDescr, allItemImages);
-			
+			List<Auction> auctions = null;
+			try {
+				auctions = dbLoaderDao.loadAuctionsChunk(numAuctionsToCreate, dbLoadSpec, itemDescr, allItemImages);
+			} catch (Throwable t) {
+				logger.warn("Caught exception when loading current auctions chunk: " + t.getMessage());
+				t.printStackTrace();
+			}
+			try {
+				/*
+				 * Now add highBids for each item in each auction
+				 */
+				for (Auction auction: auctions) {
+					for (Item item: auction.getItems()) {
+						for (int i = 1; i <= highBidsPerItem; i++) {
+							dbLoaderDao.addHighBid(item, dbLoadSpec.getTotalUsers());
+						}
+					}
+				}
+			} catch (Throwable t) {
+				logger.warn("Caught exception when adding highbids: " + t.getMessage());
+				t.printStackTrace();
+			}
+
 			totalAuctions -= numAuctionsToCreate;	
 		}
 
@@ -81,15 +105,18 @@ public class DbLoaderThread implements Runnable {
 		long totalAuctions = (long) Math.ceil(dbLoadSpec.getHistoryAuctionsPerDay() * dbLoadSpec.getHistoryDays());
 		long historySpanMillis = dbLoadSpec.getHistoryDays() * 24L * 60 * 60 * 1000; 
 		int interAuctionTimeMillis = (int) (historySpanMillis / totalAuctions);  
-		logger.info("Loading history for thread " + threadName + ". totalAuctions = " + totalAuctions + ", historySpanMillis = " + historySpanMillis + ", interactionTimeMillis = " + interAuctionTimeMillis);
+		logger.info("Loading history for thread " + threadName + ". totalAuctions = " + totalAuctions + ", historySpanMillis = " + historySpanMillis + ", interAuctionTimeMillis = " + interAuctionTimeMillis);
 
 		while (totalAuctions > 0) {
 			long numAuctionsToCreate = historyChunkSize;
 			if (numAuctionsToCreate > totalAuctions) {
 				numAuctionsToCreate = totalAuctions;
 			}
-			dbLoaderDao.loadHistoryChunk(dbLoadSpec, itemDescr, numAuctionsToCreate, auctionTime, interAuctionTimeMillis, allItemImages);
-			
+			try {
+				dbLoaderDao.loadHistoryChunk(dbLoadSpec, itemDescr, numAuctionsToCreate, auctionTime, interAuctionTimeMillis, allItemImages);
+			} catch (Throwable t) {
+				logger.warn("Caught exception when loading history chunk: " + t.getMessage());
+			}
 			totalAuctions -= numAuctionsToCreate;	
 		}
 

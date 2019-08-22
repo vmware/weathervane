@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -110,6 +111,10 @@ public class DbLoaderDao {
 
 	private static List<String> auctionNames;
 	private static List<String> auctionCategories;
+	
+	// Constants for current auction creation
+	private static int highBidsPerItem = 100;
+	private static int attendancesPerCurrentAuction = 100;
 
 	// Constants for history creation
 	private static int historyMinPerItem = 5;
@@ -227,7 +232,7 @@ public class DbLoaderDao {
 	}
 
 	private static synchronized void logWorkDone(Epochs typeOfWork, long workDone, String messageString) {
-		logger.debug("logWorkDone typeOfWork = " + typeOfWork + ", workDone = " + workDone);
+		logger.info("logWorkDone typeOfWork = " + typeOfWork + ", workDone = " + workDone);
 		double epochWorkRemaining = 0;
 		boolean firstInterval = false;
 		switch (typeOfWork) {
@@ -369,17 +374,17 @@ public class DbLoaderDao {
 			double pctDone = 100.0 - ((totalTimeRemaining / totalDurationEstimate) * 100.0);
 
 			long duration = Math.round(totalTimeRemaining * 1000);
-			String durationString = String
-					.format("Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
-							pctDone,
-							TimeUnit.MILLISECONDS.toHours(duration),
-							TimeUnit.MILLISECONDS.toMinutes(duration)
-									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
-											.toHours(duration)),
-							TimeUnit.MILLISECONDS.toSeconds(duration)
-									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
-											.toMinutes(duration)));
-			System.out.println(durationString + messageString);
+
+			if (!Epochs.USER.equals(typeOfWork)) {
+				String durationString = String.format(
+						"Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
+						pctDone, TimeUnit.MILLISECONDS.toHours(duration),
+						TimeUnit.MILLISECONDS.toMinutes(duration)
+								- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
+						TimeUnit.MILLISECONDS.toSeconds(duration)
+								- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+				System.out.println(durationString + messageString);
+			}
 
 			/*
 			 * Adjust the time between updates to be 10% of the estimated
@@ -389,8 +394,8 @@ public class DbLoaderDao {
 			 */
 			if (duration > 300000) {
 				updateIntervalMillis = (long) Math.floor(duration * 0.10);
-				if (updateIntervalMillis > 600000) {
-					updateIntervalMillis = 600000;
+				if (updateIntervalMillis > 300000) {
+					updateIntervalMillis = 300000;
 				} else if (updateIntervalMillis < 120000) {
 					updateIntervalMillis = 120000;
 				}
@@ -461,7 +466,7 @@ public class DbLoaderDao {
 	@Transactional
 	public void storeAuction(Auction anAuction, long auctioneerId) {
 
-		logger.info(Thread.currentThread().getName() + ": Storing auction for auctioneer "
+		logger.debug(Thread.currentThread().getName() + ": Storing auction for auctioneer "
 				+ auctioneerId);
 		// Get the User and make them the quctioneer
 		User theAuctioneer = null;
@@ -571,9 +576,8 @@ public class DbLoaderDao {
 	}
 
 	@Transactional
-	public void loadAuctionsChunk(Long numAuctions, DbLoadSpec dbLoadSpec, JSONArray itemDescr,
+	public List<Auction> loadAuctionsChunk(Long numAuctions, DbLoadSpec dbLoadSpec, JSONArray itemDescr,
 			List<List<ImagesHolder>> allItemImages) throws JSONException, IOException {
-
 		/*
 		 * When pre-loading current auctions, set them to start one year from
 		 * now. This will be changed when the dbPreparer sets up for the run.
@@ -585,21 +589,25 @@ public class DbLoaderDao {
 		int numImages = dbLoadSpec.getMaxImagesPerCurrentItem();
 		ImageSize[] imageSizes = convertNumSizesToImageSizes(dbLoadSpec
 				.getNumImageSizesPerCurrentItem());
+		logger.info("loadAuctionsChunk loading {} auctions", numAuctions);
 		/*
 		 *  The number of items per current auction is between 10 and 20. The
 		 *  number is randomized so that the auctions do not all run out of 
 		 *  items at the same time.
 		 */
 		long numItems = minItemsPerAuction + random.nextInt(maxItemsPerAuction - minItemsPerAuction + 1);
+		String threadName = Thread.currentThread().getName();
 
 		// Mock up some auctions
+		List<Auction> auctions = new LinkedList<Auction>();
 		for (int i = 1; i <= numAuctions; i++) {
+			logger.debug(threadName + ":loadAuctionsChunk.  Creating auction " + i);
 			int auctioneerId = randGen.nextInt(dbLoadSpec.getTotalUsers()) + 1;
 			Auction anAuction = new Auction();
 			anAuction.setCategory(auctionCategories.get(randGen.nextInt(auctionCategories.size())));
 			anAuction.setName(auctionNames.get(randGen.nextInt(auctionNames.size())));
 			anAuction.setCurrent(true);
-			anAuction.setActivated(false);
+			anAuction.setActivated(true);
 
 			// Determine the start time
 			anAuction.setStartTime(startTime);
@@ -610,28 +618,109 @@ public class DbLoaderDao {
 			 * description
 			 */
 			for (int j = 1; j <= numItems; j++) {
-
 				addItemForAuction(anAuction);
-
 			}
+			logger.debug(threadName + ":loadAuctionsChunk.  added empty items for auction " + i);
+
 			anAuction.setState(AuctionState.FUTURE);
 
 			storeAuction(anAuction, auctioneerId);
 
+			// For simplicity, attended entire auction
+			Date now = FixedOffsetCalendarFactory.getCalendar().getTime();
+			for (int j = 0; j < attendancesPerCurrentAuction; j++) {
+				// Select a random user not already selected to be the attendee
+				Long attendeeId = new Long(randGen.nextInt(dbLoadSpec.getTotalUsers()) + 1);
+
+				AttendanceRecordKey arKey = new AttendanceRecordKey();
+				arKey.setTimestamp(now);
+				arKey.setUserId(attendeeId);
+				AttendanceRecord anAttendanceRecord = new AttendanceRecord();
+				anAttendanceRecord.setAuctionId(anAuction.getId());
+				anAttendanceRecord.setKey(arKey);
+				anAttendanceRecord.setState(AttendanceRecordState.ATTENDING);
+				anAttendanceRecord.setAuctionName(anAuction.getName());
+				anAttendanceRecord.setId(UUID.randomUUID());
+				attendanceRecordRepository.save(anAttendanceRecord);
+			}
+			logger.debug(threadName + ":loadAuctionsChunk.  added attendanceRecords for auction " + i);
+
 			/*
-			 * Now update the items with the full description
+			 * Now update the items with the full description. Also create the
+			 * HighBid entries for each item
 			 */
+			long itemStartTimeMillis = FixedOffsetCalendarFactory.getCalendar().getTimeInMillis();
 			for (Item anItem : anAuction.getItems()) {
 				updateItemForAuction(anAuction, anItem, itemDescr, ItemState.INAUCTION, dbLoadSpec);
+
+				long itemEndTimeMillis = itemStartTimeMillis + historyMinPerItem * 60 * 1000 - 1;
+				HighBid highBid = new HighBid();
+				highBid.setBiddingStartTime(new Date(itemStartTimeMillis));
+				highBid.setBiddingEndTime(new Date(itemEndTimeMillis));
+				highBid.setAuction(anAuction);
+				highBid.setBidCount(0);
+				highBid.setItem(anItem);
+				highBid.setAmount(anItem.getStartingBidAmount() + 1);
+				highBid.setState(HighBidState.OPEN);
+				highBid.setPreloaded(false);
+
+				anItem.setHighbid(highBid);
+				itemStartTimeMillis += historyMinPerItem * 60 * 1000;
 			}
-			
-			logger.debug("loadAuctions calling addImagesForItems.  numImages = " + numImages);
+			logger.debug(threadName + ":loadAuctionsChunk.  added highBid and updated items for auction " + i);
+
+			logger.debug("loadAuctionsChunk calling addImagesForItems.  numImages = " + numImages);
 			addImagesForItems(anAuction, dbLoadSpec, imageSizes, numImages, allItemImages,
 					itemDescr);
+			auctions.add(anAuction);
 		}
-
+		logger.info(threadName + " created {} auctions", numAuctions);
 		logWorkDone(Epochs.CURRENT, numAuctions * numItems, dbLoadSpec.getMessageString());
+		return auctions;
 
+	}
+	
+	@Transactional
+	public HighBid addHighBid(Item anItem, int totalUsers) {
+		logger.debug("addHighBid for item " + anItem.getId());
+		HighBid highBid = highBidDao.get(anItem.getHighbid().getId());				
+		logger.debug("addHighBid for item " + anItem.getId() + ", got highBid: " + highBid);
+		long milliSecPerBid = ((historyMinPerItem - 1) * 60 * 1000) / highBidsPerItem;
+		long bidTime = highBid.getBiddingStartTime().getTime() + milliSecPerBid;
+		float bidAmount = highBid.getAmount() + historyBidIncrement;
+		int bidCount = highBid.getBidCount()+1;
+
+		// Choose a bidder from users who attended auction
+		Long bidderId = new Long(randGen.nextInt(totalUsers) + 1);
+		logger.debug("addHighBid for item " + anItem.getId() + ", chose bidderId: " + bidderId);
+
+		BidKey bidKey = new BidKey();
+		bidKey.setBidderId(bidderId);
+		bidKey.setBidTime(new Date(bidTime));
+		Bid aBid = new Bid();
+		aBid.setItemId(anItem.getId());
+		aBid.setId(UUID.randomUUID());
+		aBid.setKey(bidKey);
+		aBid.setReceivingNode(0L);
+		aBid.setBidCount(bidCount);
+		aBid.setAmount(bidAmount);
+		aBid.setState(Bid.BidState.HIGH);
+		aBid.setAuctionId(anItem.getAuction().getId());
+		bidRepository.save(aBid);
+		logger.debug("addHighBid for item " + anItem.getId() + ", saved bid: " + aBid.getId());
+		
+		User purchaser = userDao.getForUpdate(bidderId);
+		purchaser.setCreditLimit(purchaser.getCreditLimit() - bidAmount);
+		logger.debug("addHighBid for item " + anItem.getId() + ", updated bidder's creditLimit");
+		
+		highBid.setAmount(bidAmount);
+		highBid.setBidder(purchaser);
+		highBid.setBidCount(bidCount);
+		highBid.setCurrentBidTime(aBid.getKey().getBidTime());
+		highBid.setBidId(aBid.getId());
+		highBid.setState(HighBidState.SOLD);
+		logger.debug("addHighBid for item " + anItem.getId() + ", updated highBid");
+		return highBid;
 	}
 
 	/*
@@ -671,7 +760,7 @@ public class DbLoaderDao {
 			anAuction.setEndTime(endTime);
 
 			for (int j = 1; j <= itemsPerAuction; j++) {
-				logger.info(threadName + ":loadHistory.  Adding item " + j + " to auction " + i);
+				logger.debug(threadName + ":loadHistory.  Adding item " + j + " to auction " + i);
 
 				addItemForAuction(anAuction);
 			}
@@ -717,11 +806,7 @@ public class DbLoaderDao {
 			Set<Long> attendeeIds = new HashSet<Long>();
 			int numAttendanceRecords = dbLoadSpec.getHistoryAttendeesPerAuction();
 			for (int j = 0; j < numAttendanceRecords; j++) {
-				// Select a random user not already selected to be the attendee
-				Long attendeeId;
-				do {
-					attendeeId = new Long(randGen.nextInt(dbLoadSpec.getTotalUsers()) + 1);
-				} while (attendeeIds.contains(attendeeId));
+				Long attendeeId = new Long(randGen.nextInt(dbLoadSpec.getTotalUsers()) + 1);
 				attendeeIds.add(attendeeId);
 
 				AttendanceRecordKey arKey = new AttendanceRecordKey();
@@ -796,7 +881,7 @@ public class DbLoaderDao {
 			auctionTime.add(Calendar.MILLISECOND, interAuctionTimeMillis);
 
 		}
-
+		logger.info(threadName + " created {} auctions", numAuctions);
 		logWorkDone(Epochs.HISTORY, numAuctions * itemsPerAuction, dbLoadSpec.getMessageString());
 
 	}
@@ -813,7 +898,7 @@ public class DbLoaderDao {
 		
 		DateFormat dateFormatter = DateFormat.getDateInstance();
 		
-		logger.debug("loadFutureChunk loading " + numAuctions + " starting at time " 
+		logger.info("loadFutureChunk loading " + numAuctions + " starting at time " 
 				+ dateFormatter.format(auctionTime.getTime()) 
 				+", interAuctionTimeMiilis = " + interAuctionTimeMillis);
 		
@@ -833,7 +918,7 @@ public class DbLoaderDao {
 			anAuction.setStartTime(auctionTime.getTime());
 
 			for (int j = 1; j <= itemsPerAuction; j++) {
-				logger.info(threadName + ":loadFuture.  Adding item " + j + " to auction " + i);
+				logger.debug(threadName + ":loadFuture.  Adding item " + j + " to auction " + i);
 
 				addItemForAuction(anAuction);
 
@@ -859,9 +944,8 @@ public class DbLoaderDao {
 			// Add the interval to get the start time of the next auction
 			auctionTime.add(Calendar.MILLISECOND, interAuctionTimeMillis);
 		}
-
+		logger.info(threadName + " created {} auctions", numAuctions);
 		logWorkDone(Epochs.FUTURE, numAuctions * itemsPerAuction, dbLoadSpec.getMessageString());
-
 	}
 
 	protected void addImagesForItems(Auction anAuction, DbLoadSpec dbLoadSpec, ImageSize[] sizes,
@@ -929,7 +1013,6 @@ public class DbLoaderDao {
 	}
 
 	protected void addItemForAuction(Auction anAuction) {
-
 		Item anItem = new Item();
 		anAuction.addItemToAuction(anItem);
 

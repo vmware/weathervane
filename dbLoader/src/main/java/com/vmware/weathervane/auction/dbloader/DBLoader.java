@@ -213,14 +213,14 @@ public class DBLoader {
 		 */
 		long maxActiveUsers = (long) Math.ceil(theLoadSpec.getTotalUsers()
 				/ (1.0 * theLoadParams.getUsersScaleFactor()));
-		logger.debug("maxActiveUsers = {}", maxActiveUsers);
+		logger.info("maxActiveUsers = {}", maxActiveUsers);
 		long numAuctions = (long) Math.ceil(maxActiveUsers
 				/ (1.0 * theLoadParams.getUsersPerCurrentAuction()));
 		// The number of active auctions needs to be a multiple of 2
 		if ((numAuctions % 2) != 0) {
 			numAuctions++;
 		}
-		logger.debug("numAuctions = {}", numAuctions);
+		logger.info("numAuctions = {}", numAuctions);
 		
 		/*
 		 * Read in the items file and convert it into a JSON array
@@ -345,34 +345,34 @@ public class DBLoader {
 				dbLoaderWorkEstimate.setUserWork(0.00005);
 				dbLoaderWorkEstimate.setHistoryWork(0.0032);
 				dbLoaderWorkEstimate.setFutureWork(0.001);
-				dbLoaderWorkEstimate.setCurrentWork(0.0134);
+				dbLoaderWorkEstimate.setCurrentWork(0.04);
 			} else {
 				dbLoaderWorkEstimate.setUserWork(0.00005);
 				dbLoaderWorkEstimate.setHistoryWork(0.0032);
 				dbLoaderWorkEstimate.setFutureWork(0.001);
-				dbLoaderWorkEstimate.setCurrentWork(0.0134);
+				dbLoaderWorkEstimate.setCurrentWork(0.04);
 			}
 		}
 
 		// workPerxxxYyy determined by experimentation
-		logger.debug("numusers = " + theLoadSpec.getTotalUsers() + ", workPerUser = "
+		logger.info("numusers = " + theLoadSpec.getTotalUsers() + ", workPerUser = "
 				+ dbLoaderWorkEstimate.getUserWork());
 
 		long numHistoryItems = (long) Math.ceil(theLoadSpec.getHistoryDays()
 				* (theLoadSpec.getHistoryAuctionsPerDay() / numThreads))
 				* numThreads * theLoadSpec.getHistoryItemsPerAuction();
-		logger.debug("numHistoryItems = " + numHistoryItems + ", workPerHistoryItem = "
+		logger.info("numHistoryItems = " + numHistoryItems + ", workPerHistoryItem = "
 				+ dbLoaderWorkEstimate.getHistoryWork());
 
 		long numFutureItems = (long) Math.ceil(theLoadSpec.getFutureDays()
 				* (theLoadSpec.getFutureAuctionsPerDay() / numThreads))
 				* numThreads * theLoadSpec.getFutureItemsPerAuction();
-		logger.debug("numFutureItems = " + numFutureItems + ", workPerFutureItem = "
+		logger.info("numFutureItems = " + numFutureItems + ", workPerFutureItem = "
 				+ dbLoaderWorkEstimate.getFutureWork());
 
 		// 15 is the average number of items per current auction
 		long numCurrentItems = numAuctions * 15;
-		logger.debug("numCurrentItems = " + numCurrentItems + ", workPerCurrentItem = "
+		logger.info("numCurrentItems = " + numCurrentItems + ", workPerCurrentItem = "
 				+ dbLoaderWorkEstimate.getCurrentWork());
 
 		DbLoaderDao.setTotalWork(dbLoaderWorkEstimate, theLoadSpec.getTotalUsers(),
@@ -384,7 +384,7 @@ public class DBLoader {
 		 * First create all of the users. We need the user info to populate the
 		 * the auctioneer, etc. fields of auctions and items
 		 */
-		logger.debug("Loading " + theLoadSpec.getTotalUsers() + " users");
+		logger.info("Loading " + theLoadSpec.getTotalUsers() + " users");
 		long usersPerThread = (long) Math.ceil(theLoadSpec.getTotalUsers() / (1.0 * numThreads));
 		long numRemainingUsers = theLoadSpec.getTotalUsers();
 		for (int j = 0; j < numThreads; j++) {
@@ -439,125 +439,12 @@ public class DBLoader {
 						- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
 				TimeUnit.MILLISECONDS.toSeconds(duration)
 						- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-		logger.debug(durationString);
+		logger.info(durationString);
 
 		/*
 		 * Update the estimate of work-per-user
 		 */
 		dbLoaderWorkEstimate.setUserWork((duration / 1000.0) / theLoadSpec.getTotalUsers());
-
-		if (!cliCmd.hasOption("n")) {
-			/*
-			 * Now create all of the historical auctions and items.
-			 */
-			double historyAuctionsPerDayPerThread = theLoadSpec.getHistoryAuctionsPerDay()
-					/ numThreads;
-			for (int j = 0; j < numThreads; j++) {
-
-				DbLoaderThread dbLoaderService = new DbLoaderThread();
-				DbLoadSpec loadSpec = new DbLoadSpec(theLoadSpec);
-
-				loadSpec.setNumUsersToCreate(0);
-				loadSpec.setNumAuctions(0);
-				loadSpec.setHistoryAuctionsPerDay(historyAuctionsPerDayPerThread);
-				loadSpec.setFutureAuctionsPerDay(0);
-				loadSpec.setAvgStartingBid(200);
-				loadSpec.setStdDevStartingBid(200);
-				loadSpec.setImageDir(imageDirString);
-				loadSpec.setLoadImages(loadImages);
-				loadSpec.setLoadItemImages(loadItemImages);
-				loadSpec.setMessageString(messageString);
-
-				dbLoaderService.setDbLoadSpec(loadSpec);
-				dbLoaderService.setItemDescription(itemDescriptions);
-				dbLoaderService.setAllItemImages(allItemImages);
-
-				dbLoaderService.setDbLoaderDao(dbLoaderDao);
-
-				Thread dbLoaderThread = new Thread(dbLoaderService, "dbLoaderService" + j);
-				dbLoaderThread.start();
-				threadList.add(dbLoaderThread);
-			}
-
-			// Wait for all threads to complete
-			for (Thread thread : threadList) {
-				thread.join();
-			}
-
-			long historyDoneMillis = System.currentTimeMillis();
-			duration = historyDoneMillis - usersDoneMillis;
-			durationString = String
-					.format("Loading historical data took %d hours, %d min, %d sec",
-							TimeUnit.MILLISECONDS.toHours(duration),
-							TimeUnit.MILLISECONDS.toMinutes(duration)
-									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
-											.toHours(duration)),
-							TimeUnit.MILLISECONDS.toSeconds(duration)
-									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
-											.toMinutes(duration)));
-			logger.debug(durationString);
-
-			/*
-			 * Update the estimate of work-per-history-item
-			 */
-			dbLoaderWorkEstimate.setHistoryWork((duration / 1000.0) / numHistoryItems);
-
-			/*
-			 * Now create all of the future auctions and items.
-			 */
-			double futureAuctionsPerDayPerThread = theLoadSpec.getFutureAuctionsPerDay()
-					/ numThreads;
-			for (int j = 0; j < numThreads; j++) {
-
-				DbLoaderThread dbLoaderService = new DbLoaderThread();
-				DbLoadSpec loadSpec = new DbLoadSpec(theLoadSpec);
-
-				loadSpec.setNumUsersToCreate(0);
-				loadSpec.setNumAuctions(0);
-				loadSpec.setHistoryAuctionsPerDay(0);
-				loadSpec.setFutureAuctionsPerDay(futureAuctionsPerDayPerThread);
-				loadSpec.setAvgStartingBid(200);
-				loadSpec.setStdDevStartingBid(200);
-				loadSpec.setImageDir(imageDirString);
-				loadSpec.setLoadImages(loadImages);
-				loadSpec.setLoadItemImages(loadItemImages);
-				loadSpec.setMessageString(messageString);
-
-				dbLoaderService.setDbLoadSpec(loadSpec);
-				dbLoaderService.setItemDescription(itemDescriptions);
-				dbLoaderService.setAllItemImages(allItemImages);
-
-				dbLoaderService.setDbLoaderDao(dbLoaderDao);
-
-				Thread dbLoaderThread = new Thread(dbLoaderService, "dbLoaderService" + j);
-				dbLoaderThread.start();
-				threadList.add(dbLoaderThread);
-			}
-
-			// Wait for all threads to complete
-			for (Thread thread : threadList) {
-				thread.join();
-			}
-
-			long futureDoneMillis = System.currentTimeMillis();
-			duration = futureDoneMillis - historyDoneMillis;
-			durationString = String
-					.format("Loading future data took %d hours, %d min, %d sec",
-							TimeUnit.MILLISECONDS.toHours(duration),
-							TimeUnit.MILLISECONDS.toMinutes(duration)
-									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
-											.toHours(duration)),
-							TimeUnit.MILLISECONDS.toSeconds(duration)
-									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
-											.toMinutes(duration)));
-			logger.debug(durationString);
-
-		}
-
-		/*
-		 * Update the estimate of work-per-history-item
-		 */
-		dbLoaderWorkEstimate.setFutureWork((duration / 1000.0) / numFutureItems);
 
 		/*
 		 * Now create all of the auctions and items.
@@ -614,12 +501,124 @@ public class DBLoader {
 						- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
 				TimeUnit.MILLISECONDS.toSeconds(duration)
 						- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-		logger.debug(durationString);
+		logger.info(durationString);
 
 		/*
-		 * Update the estimate of work-per-history-item
+		 * Update the estimate of work-per-current-item
 		 */
 		dbLoaderWorkEstimate.setCurrentWork((duration / 1000.0) / numCurrentItems);
+
+		if (!cliCmd.hasOption("n")) {
+			/*
+			 * Now create all of the historical auctions and items.
+			 */
+			double historyAuctionsPerDayPerThread = theLoadSpec.getHistoryAuctionsPerDay()
+					/ numThreads;
+			for (int j = 0; j < numThreads; j++) {
+
+				DbLoaderThread dbLoaderService = new DbLoaderThread();
+				DbLoadSpec loadSpec = new DbLoadSpec(theLoadSpec);
+
+				loadSpec.setNumUsersToCreate(0);
+				loadSpec.setNumAuctions(0);
+				loadSpec.setHistoryAuctionsPerDay(historyAuctionsPerDayPerThread);
+				loadSpec.setFutureAuctionsPerDay(0);
+				loadSpec.setAvgStartingBid(200);
+				loadSpec.setStdDevStartingBid(200);
+				loadSpec.setImageDir(imageDirString);
+				loadSpec.setLoadImages(loadImages);
+				loadSpec.setLoadItemImages(loadItemImages);
+				loadSpec.setMessageString(messageString);
+
+				dbLoaderService.setDbLoadSpec(loadSpec);
+				dbLoaderService.setItemDescription(itemDescriptions);
+				dbLoaderService.setAllItemImages(allItemImages);
+
+				dbLoaderService.setDbLoaderDao(dbLoaderDao);
+
+				Thread dbLoaderThread = new Thread(dbLoaderService, "dbLoaderService" + j);
+				dbLoaderThread.start();
+				threadList.add(dbLoaderThread);
+			}
+
+			// Wait for all threads to complete
+			for (Thread thread : threadList) {
+				thread.join();
+			}
+
+			long historyDoneMillis = System.currentTimeMillis();
+			duration = historyDoneMillis - usersDoneMillis;
+			durationString = String
+					.format("Loading historical data took %d hours, %d min, %d sec",
+							TimeUnit.MILLISECONDS.toHours(duration),
+							TimeUnit.MILLISECONDS.toMinutes(duration)
+									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
+											.toHours(duration)),
+							TimeUnit.MILLISECONDS.toSeconds(duration)
+									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
+											.toMinutes(duration)));
+			logger.info(durationString);
+
+			/*
+			 * Update the estimate of work-per-history-item
+			 */
+			dbLoaderWorkEstimate.setHistoryWork((duration / 1000.0) / numHistoryItems);
+
+			/*
+			 * Now create all of the future auctions and items.
+			 */
+			double futureAuctionsPerDayPerThread = theLoadSpec.getFutureAuctionsPerDay()
+					/ numThreads;
+			for (int j = 0; j < numThreads; j++) {
+
+				DbLoaderThread dbLoaderService = new DbLoaderThread();
+				DbLoadSpec loadSpec = new DbLoadSpec(theLoadSpec);
+
+				loadSpec.setNumUsersToCreate(0);
+				loadSpec.setNumAuctions(0);
+				loadSpec.setHistoryAuctionsPerDay(0);
+				loadSpec.setFutureAuctionsPerDay(futureAuctionsPerDayPerThread);
+				loadSpec.setAvgStartingBid(200);
+				loadSpec.setStdDevStartingBid(200);
+				loadSpec.setImageDir(imageDirString);
+				loadSpec.setLoadImages(loadImages);
+				loadSpec.setLoadItemImages(loadItemImages);
+				loadSpec.setMessageString(messageString);
+
+				dbLoaderService.setDbLoadSpec(loadSpec);
+				dbLoaderService.setItemDescription(itemDescriptions);
+				dbLoaderService.setAllItemImages(allItemImages);
+
+				dbLoaderService.setDbLoaderDao(dbLoaderDao);
+
+				Thread dbLoaderThread = new Thread(dbLoaderService, "dbLoaderService" + j);
+				dbLoaderThread.start();
+				threadList.add(dbLoaderThread);
+			}
+
+			// Wait for all threads to complete
+			for (Thread thread : threadList) {
+				thread.join();
+			}
+
+			long futureDoneMillis = System.currentTimeMillis();
+			duration = futureDoneMillis - historyDoneMillis;
+			durationString = String
+					.format("Loading future data took %d hours, %d min, %d sec",
+							TimeUnit.MILLISECONDS.toHours(duration),
+							TimeUnit.MILLISECONDS.toMinutes(duration)
+									- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS
+											.toHours(duration)),
+							TimeUnit.MILLISECONDS.toSeconds(duration)
+									- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS
+											.toMinutes(duration)));
+			logger.info(durationString);
+
+			/*
+			 * Update the estimate of work-per-history-item
+			 */
+			dbLoaderWorkEstimate.setFutureWork((duration / 1000.0) / numFutureItems);
+		}
 
 		/*
 		 * Stop any service threads in the image store and then wait for them to
@@ -655,6 +654,10 @@ public class DBLoader {
 		} catch (Throwable ex) {
 			System.err.println("Couldn't save updated work estimates: " + ex.getMessage()+ ". " + messageString);
 		}
+		logger.warn("Final user work estimate: ", dbLoaderWorkEstimate.getUserWork());
+		logger.warn("Final current work estimate: ", dbLoaderWorkEstimate.getCurrentWork());
+		logger.warn("Final history work estimate: ", dbLoaderWorkEstimate.getHistoryWork());
+		logger.warn("Final future work estimate: ", dbLoaderWorkEstimate.getFutureWork());
 
 		AuctionMgmt auctionMgmt = new AuctionMgmt(0L, null);
 		auctionMgmtDao.save(auctionMgmt);

@@ -85,7 +85,7 @@
   "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 25,
   "appServerJdbcConnections" : 26,
-  "numAuctioneerThreads" : 1,  
+  "numAuctioneerThreads" : 6,  
   "appServerImpl" : "tomcat",
   "appServerWarmerThreadsPerServer" : 1,
   "appServerWarmerIterations" : 500,

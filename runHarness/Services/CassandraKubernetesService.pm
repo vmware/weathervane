@@ -188,6 +188,35 @@ sub cleanData {
 	}	
 }
 
+sub waitForReady {
+	my ($self)   = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
+	$logger->debug("waitForReady");
+	my $cluster = $self->host;
+	my $iterations = 120;
+	my $finished = 0;
+	while (!$finished) {
+		my ($cmdFailed, $outString) = $cluster->kubernetesExecOne($self->getImpl(), "nodetool compactionstats", $self->namespace );
+		if ($cmdFailed) {
+			$logger->warn("Getting compaction stats failed: $cmdFailed");
+			return 0;
+		} 
+		if (!($outString =~ /progress/)) {
+			$finished = 1;
+			$logger->debug("compaction finished");
+		} else {
+			$iterations--;
+			if ($iterations == 0) {
+				$logger->warn("Compaction didn't finish in allocated time for workload "
+				. $self->appInstance->workload->instanceNum . " appInstance " . $self->appInstance->instanceNum);
+				return 0;
+			}
+			sleep 30;
+		}
+	}
+	return 1;
+}
+
 sub cleanLogFiles {
 	my ($self)            = @_;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");

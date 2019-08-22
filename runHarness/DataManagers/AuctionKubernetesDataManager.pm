@@ -217,7 +217,7 @@ sub prepareData {
 		}
 	}
 
-	$console_logger->info( "Preparing auctions and warming data-services for for appInstance "
+	$console_logger->info( "Preparing auctions and warming data-services for appInstance "
 				  . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
@@ -231,6 +231,14 @@ sub prepareData {
 		return 0;
 	} 
 	
+	# Wait for the databases to finish any compaction
+	my $cmdSucceeded = $self->waitForReady();
+	if (!$cmdSucceeded) {
+		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$self->stopDataManagerContainer($logHandle);
+		return 0;		
+	}
+
 	# cleanup the databases from any previous run
 	$self->cleanData( $users, $logHandle );
 
@@ -238,41 +246,6 @@ sub prepareData {
 	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
-}
-
-sub pretouchData {
-	my ( $self, $logPath ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
-	my $workloadNum    = $self->appInstance->workload->instanceNum;
-	my $appInstanceNum = $self->appInstance->instanceNum;
-	$logger->debug( "pretouchData for workload {}, appInstance {}", $workloadNum, $appInstanceNum);
-	
-#	my $cluster = $self->host;
-#	my $namespace = $self->appInstance->namespace;
-#	
-#	my $logName = "$logPath/PretouchData_W${workloadNum}I${appInstanceNum}.log";
-#	my $logHandle;
-#	open( $logHandle, ">$logName" ) or do {
-#		$console_logger->error("Error opening $logName:$!");
-#		return 0;
-#	};
-#	print $logHandle "Exec-ing /pretouchData.sh\n";
-#	$logger->debug("Exec-ing /pretouchData.sh in cassandra-0");
-#	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("cassandra", "/pretouchData.sh", $namespace);
-#	if ($cmdFailed) {
-#		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
-#		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
-#		return 0;
-#	}
-#	else {
-#		$logger->debug( "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString" );
-#		print $logHandle "Pretouching data failed for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString\n";
-#		return 1;
-#	}
-#	$logger->debug( "pretouchData complete for workload ", $workloadNum );
-#	close $logHandle;
-#	return 1;
 }
 
 sub loadData {
@@ -386,13 +359,23 @@ sub isDataLoaded {
 	close $applog;
 }
 
-
 sub cleanData {
 	my ( $self, $users, $logHandle ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
-#	$nosqlServersRef->[0]->cleanData($users, $logHandle);
+	#$nosqlServersRef->[0]->cleanData($users, $logHandle);
+
+	my $dbServersRef = $self->appInstance->getAllServicesByType('dbServer');
+	$dbServersRef->[0]->cleanData($users, $logHandle);
+}
+
+sub waitForReady {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
+	
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	return $nosqlServersRef->[0]->waitForReady();
 }
 
 __PACKAGE__->meta->make_immutable;

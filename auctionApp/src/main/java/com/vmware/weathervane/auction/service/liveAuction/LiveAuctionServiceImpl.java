@@ -226,7 +226,6 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 			public Thread newThread(Runnable r) {
 				final String threadName = String.format("clientUpdateThread-%d", counter.incrementAndGet());
 				Thread newThread = new Thread(r, threadName);
-				newThread.setPriority(Thread.NORM_PRIORITY + 1);
 				return newThread;
 			}
 		});
@@ -374,8 +373,8 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 	@Override
 	@Cacheable(value = "activeAuctionCache")
 	public CollectionRepresentation<AuctionRepresentation> getActiveAuctions(Integer page, Integer pageSize) {
-		logger.debug("GetActiveAuctions page = " + page + ", pageSize = " + pageSize);
 		_activeAuctionsMisses++;
+		logger.info("GetActiveAuctions page = {}, pageSize = {}", page, pageSize);
 
 		ArrayList<AuctionRepresentation> liveAuctions = new ArrayList<AuctionRepresentation>();
 		CollectionRepresentation<AuctionRepresentation> colRep = new CollectionRepresentation<AuctionRepresentation>();
@@ -827,7 +826,6 @@ public class LiveAuctionServiceImpl implements LiveAuctionService {
 	public Boolean isMaster() {
 		return _isMaster;
 	}
-
 	
 	protected class AuctionAssignmentChangedHandler implements Consumer<String> {
 

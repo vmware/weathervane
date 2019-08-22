@@ -76,7 +76,7 @@
   <Service name="Catalina">
 <Executor maxThreads="100"
                   minSpareThreads="34"
-                  threadPriority = "4"
+                  threadPriority = "3"
                 name="tomcatThreadPool"
                 namePrefix="tomcat-http--"/>
    <Connector

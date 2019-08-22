@@ -219,6 +219,130 @@ sub kubernetesDelete {
 	
 }
 
+sub kubernetesDeleteAllForCluster {
+	my ( $self ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesDeleteAllForCluster");
+
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";
+	}
+
+	my $cmd;
+	my $outString;
+	my $cmdFailed;
+	$cmd = "kubectl get namespaces -o=jsonpath='{.items[*].metadata.name}' --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllForCluster get namespaces failed: $cmdFailed");
+		return 0;
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+
+	my @namespaceNames = split /\s+/, $outString;
+	if ($#namespaceNames < 0) {
+		$logger->debug("kubernetesDeleteAllForCluster: There are no namespaces.");
+		return 1;
+	}
+	my $initialRemaining = 0;
+	foreach my $namespace (@namespaceNames) {
+		if ($namespace =~ /^auctionw/) {
+			$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesDeleteAllForCluster initial get failed namespace $namespace: $cmdFailed");
+			} else {
+				$logger->debug("Command: $cmd");
+				$logger->debug("Output: $outString");
+
+				my @remaining = split /\s+/, $outString;
+				my $numRemaining = $#remaining + 1;
+				$logger->debug("kubernetesDeleteAllForCluster namespace $namespace initial remaining items : $numRemaining");
+				$initialRemaining += $numRemaining;
+				if ($numRemaining == 0) {
+					next;
+				}
+				_kubernetesDeleteAllForClusterHelper($logger, "deployment", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+				_kubernetesDeleteAllForClusterHelper($logger, "statefulset", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+				_kubernetesDeleteAllForClusterHelper($logger, "service", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+				_kubernetesDeleteAllForClusterHelper($logger, "configmap", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+			}
+		}
+	}
+
+	if ($initialRemaining == 0) {
+		$logger->debug("kubernetesDeleteAllForCluster no items found to delete.");
+		return 1;
+	}
+
+	my $loopCount = 1;
+	while ($loopCount <= 15) { # 15 x 20s = 5 minutes
+		$logger->debug("kubernetesDeleteAllForCluster wait for no items remaining, loop $loopCount");
+		my $loopExit = 1;
+		foreach my $namespace (@namespaceNames) {
+			if ($namespace =~ /^auctionw/) {
+				$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+				($cmdFailed, $outString) = runCmd($cmd);
+				if ($cmdFailed) {
+					$logger->error("kubernetesDeleteAllForCluster loop get failed namespace $namespace: $cmdFailed");
+				} else {
+					$logger->debug("Command: $cmd");
+					$logger->debug("Output: $outString");
+
+					my @remaining = split /\s+/, $outString;
+					my $numRemaining = $#remaining + 1;
+					$logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining items : $numRemaining");
+					if ($numRemaining > 0) {
+						$loopExit = 0;
+						last;
+					}
+				}
+			}
+		}
+		if ($loopExit) {
+			$logger->debug("kubernetesDeleteAllForCluster success.");
+			return 1;
+		}
+		sleep 20;
+		$loopCount++;
+	}
+	$logger->debug("kubernetesDeleteAllForCluster unsuccessful, items remain.");
+	return 0;
+}
+
+
+sub _kubernetesDeleteAllForClusterHelper {
+	my ( $logger, $type, $appendCmdStr ) = @_;
+
+	#safety check
+	if (!$appendCmdStr || !($appendCmdStr =~ /namespace=auctionw/)) {
+		$logger->error("kubernetesDeleteAllForClusterHelper invalid namespace in appendCmdStr $appendCmdStr");
+		return;
+	}
+
+	my $cmd = "kubectl get $type -o=jsonpath='{.items[*].metadata.name}' $appendCmdStr";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllForClusterHelper get $type failed: $cmdFailed");
+	} else {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+
+		my @names = split /\s+/, $outString;
+		foreach my $name (@names) {
+			$cmd = "kubectl delete $type $name $appendCmdStr";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesDeleteAllForClusterHelper delete service failed: $cmdFailed");
+			}
+		}
+	}
+}
+
 # Does a kubectl exec in the first pod where the impl label matches  
 # serviceImplName.  It does the exec in the container with the same name.
 sub kubernetesExecOne {

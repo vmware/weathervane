@@ -59,6 +59,7 @@ override 'run' => sub {
 
 	## stop the services
 	$self->stopDataManager($tmpDir);
+	$self->stopServicesInClusters();
 	my @tiers = qw(frontend backend data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $tmpDir );
 

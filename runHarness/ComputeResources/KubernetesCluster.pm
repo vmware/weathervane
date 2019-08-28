@@ -684,7 +684,7 @@ sub kubernetesAreAllPodRunningWithNum {
 			} else {
 				$logger->debug("Command: $cmd");
 				$logger->debug("Output: $outString");
-				if ($outString =~ /FailedScheduling/) {
+				if (($outString =~ /FailedScheduling/) && !($outString =~ /PersistentVolumeClaims/)){
 					$console_logger->error("Error running kubernetes pod : FailedScheduling podLabelString $podLabelString, namespace $namespace");
 					$logger->debug("kubernetesAreAllPodRunningWithNum FailedScheduling podLabelString $podLabelString, namespace $namespace, output:\n$outString");
 					return (0, "FailedScheduling");

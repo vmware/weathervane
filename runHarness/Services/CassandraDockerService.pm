@@ -119,6 +119,7 @@ sub create {
 												. "i" . $self->appInstance->instanceNum;
 	$envVarMap{"CASSANDRA_MEMORY"} = $self->getParamValue('nosqlServerMem');
 	$envVarMap{"CASSANDRA_CPUS"} = $self->getParamValue('nosqlServerCpus');
+	$envVarMap{"CASSANDRA_NUM_NODES"} = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 
 	# Create the container
 	my %portMap;

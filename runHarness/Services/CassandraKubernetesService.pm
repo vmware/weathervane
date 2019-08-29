@@ -101,6 +101,9 @@ sub configure {
 		elsif ( $inline =~ /CASSANDRA_CPUS:/ ) {
 			print FILEOUT "  CASSANDRA_CPUS: \"" . $self->getParamValue('nosqlServerCpus') ."\"\n";
 		}
+		elsif ( $inline =~ /CASSANDRA_NUM_NODES:/ ) {
+			print FILEOUT "  CASSANDRA_NUM_NODES: \"$numServers\"\n";
+		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numServers\n";
 		}

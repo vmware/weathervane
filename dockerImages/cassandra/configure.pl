@@ -81,7 +81,9 @@ close FILEOUT;
 open( FILEIN,  "/auction_cassandra.cql" ) or die "Can't open file /auction_cassandra.cql: $!\n";
 open( FILEOUT, ">/auction_cassandra_configured.cql" ) or die "Can't open file /auction_cassandra_configured.cql: $!\n";
 while ( my $inline = <FILEIN> ) {
-	if ( $inline =~ /REPLICATION/ ) {
+	if ( $inline =~ /^CREATE\sKEYSPACE\sauction\_event/ ) {
+		print FILEOUT $inline;
+		$inline = <FILEIN>;
 		if ($numNodes == 1) {
 			print FILEOUT "  WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1 };\n";			
 		} elsif ($numNodes == 2) {

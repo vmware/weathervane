@@ -31,14 +31,19 @@ CREATE INDEX highbid_state_bidder_endtime_idx ON highbid USING btree (state, bid
 
 CREATE INDEX bidcompletiondelay_bid_id_idx ON bidcompletiondelay USING btree (bidid);
 CREATE INDEX bidcompletiondelay_item_id_idx ON bidcompletiondelay USING btree (item_id);
+CREATE INDEX bidcompletiondelay_auction_id_idx ON bidcompletiondelay USING btree (auction_id);
 
 CREATE INDEX item_auction_id_idx ON item USING btree (auction_id);
-CREATE INDEX item_auction_id_id_idx ON item USING btree (auction_id,id);
+CREATE INDEX item_highbid_id_idx ON item USING btree (highbid_id);
 CREATE INDEX item_auctioneer_id_idx ON item USING btree (auctioneer_id);
+CREATE INDEX item_auction_id_id_idx ON item USING btree (auction_id,id);
 CREATE INDEX item_preloaded_idx ON item USING btree (preloaded);
 
 CREATE INDEX user_authtoken_idx ON userdata USING btree (authtoken);
 CREATE INDEX user_email_idx ON userdata USING btree (email);
 
 CREATE INDEX keyword_keyword_idx ON keyword USING btree (keyword);
+
+CREATE INDEX auction_keyword_keyword_idx ON auction_keyword USING btree (keyword_id);
+CREATE INDEX auction_keyword_auction_idx ON auction_keyword USING btree (auction_id);
 

@@ -684,7 +684,7 @@ sub kubernetesAreAllPodRunningWithNum {
 			} else {
 				$logger->debug("Command: $cmd");
 				$logger->debug("Output: $outString");
-				if ($outString =~ /FailedScheduling/) {
+				if (($outString =~ /FailedScheduling/) && !($outString =~ /PersistentVolumeClaims/)){
 					$console_logger->error("Error running kubernetes pod : FailedScheduling podLabelString $podLabelString, namespace $namespace");
 					$logger->debug("kubernetesAreAllPodRunningWithNum FailedScheduling podLabelString $podLabelString, namespace $namespace, output:\n$outString");
 					return (0, "FailedScheduling");
@@ -698,7 +698,7 @@ sub kubernetesAreAllPodRunningWithNum {
 	}
 	
 	# make sure all of the endpoints have been created in the associated service
-	$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].apiVersion}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+	$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");

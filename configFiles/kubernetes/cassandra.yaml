@@ -13,6 +13,7 @@ data:
   CASSANDRA_CLUSTER_NAME: "Auction"
   CASSANDRA_MEMORY: "16Gi"
   CASSANDRA_CPUS: "1"
+  CASSANDRA_NUM_NODES: "1"
 ---
 apiVersion: apps/v1
 kind: StatefulSet

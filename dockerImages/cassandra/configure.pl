@@ -9,6 +9,7 @@ my $seeds = $ENV{'CASSANDRA_SEEDS'};
 my $clusterName  = $ENV{'CASSANDRA_CLUSTER_NAME'};
 my $memory = $ENV{'CASSANDRA_MEMORY'};
 my $cpus = $ENV{'CASSANDRA_CPUS'};
+my $numNodes = $ENV{'CASSANDRA_NUM_NODES'};
 
 my $hostname = `hostname`;
 chomp($hostname);
@@ -68,6 +69,28 @@ while ( my $inline = <FILEIN> ) {
 	}
 	elsif ( $inline =~ /^rpc\_address\:\slocalhost/ ) {
 		print FILEOUT "rpc_address: $hostname\n";
+	}
+	else {
+		print FILEOUT $inline;
+	}
+}
+close FILEIN;
+close FILEOUT;
+
+# Configure setenv.sh
+open( FILEIN,  "/auction_cassandra.cql" ) or die "Can't open file /auction_cassandra.cql: $!\n";
+open( FILEOUT, ">/auction_cassandra_configured.cql" ) or die "Can't open file /auction_cassandra_configured.cql: $!\n";
+while ( my $inline = <FILEIN> ) {
+	if ( $inline =~ /^CREATE\sKEYSPACE\sauction\_event/ ) {
+		print FILEOUT $inline;
+		$inline = <FILEIN>;
+		if ($numNodes == 1) {
+			print FILEOUT "  WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1 };\n";			
+		} elsif ($numNodes == 2) {
+			print FILEOUT "  WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 2 };\n";			
+		} else {
+			print FILEOUT "  WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3 };\n";			
+		}
 	}
 	else {
 		print FILEOUT $inline;

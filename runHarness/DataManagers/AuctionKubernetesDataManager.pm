@@ -160,9 +160,10 @@ sub prepareDataServices {
 		# we are reloading the data
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
-	$appInstance->startServices("data", $logPath);
+	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
 
 	close $logHandle;
+	return $allIsStarted;
 }
 
 
@@ -205,7 +206,7 @@ sub prepareData {
 			# Load the data
 			$appInstance->stopServices("data", $logPath);
 			$appInstance->clearDataServicesBeforeStart($logPath);
-			$appInstance->startServices("data", $logPath);
+			$appInstance->startServices("data", $logPath, 0);
 			$appInstance->clearDataServicesAfterStart($logPath);
 
 			$retVal = $self->loadData( $users, $logPath );
@@ -246,6 +247,7 @@ sub prepareData {
 	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
+	return 1;
 }
 
 sub loadData {

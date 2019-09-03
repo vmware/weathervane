@@ -866,8 +866,8 @@ sub kubernetesGetLogs {
 	$logger->debug("Output: $outString");
 	my @names = split /\s+/, $outString;
 	if ($#names < 0) {
-		$console_logger->error("kubernetesGetLogs: There are no pods with label $serviceTypeImpl in namespace $namespace");
-		exit(-1);
+		$logger->debug("kubernetesGetLogs: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		return 0; #this can happen in the cleanupAfterFailure path
 	}
 	
 	my $maxLogLines = $self->getParamValue('maxLogLines');

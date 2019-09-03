@@ -338,6 +338,7 @@ override 'getStatsFiles' => sub {
 	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic.csv", "$destinationPath/appInstance${workloadNum}-periodic.csv" );
 	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-periodic-allSamples.csv", "$destinationPath/appInstance${workloadNum}-periodic-allSamples.csv" );
 	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=controller", "wkldcontroller", $namespace, "/tmp/appInstance${workloadNum}-loadPath1-summary.txt", "$destinationPath/appInstance${workloadNum}-loadPath1-summary.txt" );
+	$self->host->kubernetesCopyFromFirst("app=auction,tier=driver,type=node", "wklddriver", $namespace, "/tmp/gc-W${workloadNum}.log", "$destinationPath/gc-W${workloadNum}-wklddriver.log" );
 };
 
 override 'getNumActiveUsers' => sub {

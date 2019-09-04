@@ -139,9 +139,13 @@ sub run {
 		$self->setParamValue( 'redeploy', 0 );
 	}
 	
+	my $allUp;
 	# Start the data services for all AppInstances.  This happens serially so
 	# that we don't have to spawn processes and lose port number info.
-	$self->prepareDataServices($setupLogDir);	
+	$allUp = $self->prepareDataServices($setupLogDir);
+	if ( !$allUp ) {
+		$self->cleanupAfterFailure( "Could not properly start the data services for run $seqnum.  Exiting.", $seqnum, $tmpDir );
+	}
 	# Prepare the data for this run.  This happens in parallel on all appInstances
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);
@@ -153,23 +157,32 @@ sub run {
 
 	## start all of the backend services.  Data services should be up.
 	$console_logger->info("Starting backend services");
-	$self->startServices( "backend", $setupLogDir );
+	$allUp = $self->startServices( "backend", $setupLogDir );
+	if ( !$allUp ) {
+		$self->cleanupAfterFailure( "Couldn't start backend services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+	}
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	$console_logger->info("Starting frontend services");
-	$self->startServices( "frontend", $setupLogDir );
+	$allUp = $self->startServices( "frontend", $setupLogDir );
+	if ( !$allUp ) {
+		$self->cleanupAfterFailure( "Couldn't start frontend services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+	}
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	$console_logger->info("Starting infrastructure services");
-	$self->startServices( "infrastructure", $setupLogDir );
+	$allUp = $self->startServices( "infrastructure", $setupLogDir );
+	if ( !$allUp ) {
+		$self->cleanupAfterFailure( "Couldn't start instrastructure services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+	}
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
 	# Make sure that all of the services are up
 	$debug_logger->debug("Check isUp");
-	my $allUp = $self->isUp($setupLogDir);
+	$allUp = $self->isUp($setupLogDir);
 	if ( !$allUp ) {
 		$self->cleanupAfterFailure( "Couldn't start all application services for run $seqnum. Exiting.", $seqnum, $tmpDir );
 	}

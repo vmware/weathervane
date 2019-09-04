@@ -23,7 +23,7 @@ use Log::Log4perl qw(get_logger :levels);
 use Utils qw(createDebugLogger callMethodOnObjectsParallel callMethodOnObjectsParallel1 callMethodsOnObjectParallel
   callMethodsOnObjectParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
   callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 callBooleanMethodOnObjectsParallel3
-  callMethodOnObjectsParamListParallel1 callMethodOnObjects1);
+  callMethodOnObjectsParamListParallel1 callMethodOnObjects1 callBooleanMethodOnObjects2);
 use Instance;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
@@ -345,18 +345,20 @@ sub prepareDataServices {
 			}
 		}
 	}
+	my $allIsStarted;
 	if ($allK8s) {
-		callMethodOnObjectsParallel1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );		
+		$allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareDataServices', $self->workloadsRef, $setupLogDir, 1 );
 	} else {
-		callMethodOnObjects1( 'prepareDataServices', $self->workloadsRef, $setupLogDir );
+		$allIsStarted = callBooleanMethodOnObjects2( 'prepareDataServices', $self->workloadsRef, $setupLogDir, 0 );
 	}
+	return $allIsStarted;
 }
 
 sub prepareData {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$logger->debug("prepareData with logDir $setupLogDir");
-	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->workloadsRef, $setupLogDir );
+	return callBooleanMethodOnObjectsParallel2( 'prepareData', $self->workloadsRef, $setupLogDir, 1 );
 }
 
 sub sanityCheckServices {
@@ -424,15 +426,19 @@ sub startServices {
 			}
 		}
 	}
+	my $allIsStarted = 1;
 	if ($allK8s) {
-		callMethodOnObjectsParallel2( 'startServices', $self->workloadsRef, $serviceTier, $setupLogDir );		
+		$allIsStarted = callBooleanMethodOnObjectsParallel3( 'startServices', $self->workloadsRef, $serviceTier, $setupLogDir, 1 );
 	} else {
 		my $workloadsRef = $self->workloadsRef;
 		foreach my $workload (@$workloadsRef) {
-			$workload->startServices($serviceTier, $setupLogDir);
+			$allIsStarted = $workload->startServices($serviceTier, $setupLogDir, 0);
+			if (!$allIsStarted) {
+				last;
+			}
 		}
 	}
-
+	return $allIsStarted;
 }
 
 sub stopServices {

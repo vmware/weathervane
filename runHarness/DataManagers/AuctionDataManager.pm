@@ -142,7 +142,11 @@ sub prepareDataServices {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	
-	$appInstance->startServices("data", $logPath);
+	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
+	if ( !$allIsStarted ) {
+		close $logHandle;
+		return $allIsStarted;
+	}
 	
 	# Make sure that the services know their external port numbers
 	$self->appInstance->setExternalPortNumbers();	
@@ -154,7 +158,11 @@ sub prepareDataServices {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
 		$appInstance->clearDataServicesBeforeStart($logPath);
-		$appInstance->startServices("data", $logPath);
+		$allIsStarted = $appInstance->startServices("data", $logPath, 0);
+		if ( !$allIsStarted ) {
+			close $logHandle;
+			return $allIsStarted;
+		}
 		# Make sure that the services know their external port numbers
 		$self->appInstance->setExternalPortNumbers();
 
@@ -167,6 +175,7 @@ sub prepareDataServices {
 	}
 	
 	close $logHandle;
+	return 1;
 }
 
 sub prepareData {
@@ -237,6 +246,7 @@ sub prepareData {
 	$self->stopDataManagerContainer($logHandle);
 
 	close $logHandle;
+	return 1;
 }
 
 sub loadData {

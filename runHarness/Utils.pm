@@ -22,7 +22,7 @@ BEGIN {
 	@ISA = qw( Exporter);
 	@EXPORT_OK =
 	  qw( createDebugLogger callMethodOnObjectsParallel callMethodsOnObjectParallel
-	  callMethodsOnObjectParallel1 callMethodsOnObject1 callMethodOnObjects1 callMethodOnObjects2
+	  callMethodsOnObjectParallel1 callMethodsOnObject1 callMethodOnObjects1 callMethodOnObjects2 callBooleanMethodOnObjects2 
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3
 	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
@@ -377,6 +377,17 @@ sub callMethodOnObjects2 {
 	foreach my $object (@$objectsRef) {
 			$object->$method($param1, $param2);
 	}
+}
+
+sub callBooleanMethodOnObjects2 {
+	my ( $method, $objectsRef, $param1, $param2 ) = @_;
+	my $console_logger = get_logger("Console");
+
+	my $retval = 1;
+	foreach my $object (@$objectsRef) {
+			$retval &= $object->$method($param1, $param2);
+	}
+	return $retval;
 }
 
 sub runCmd {

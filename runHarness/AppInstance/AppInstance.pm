@@ -599,7 +599,7 @@ sub setLoadPathType {
 }
 
 sub startServices {
-	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my ( $self, $serviceTier, $setupLogDir, $forked ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl         = $self->getParamValue('workloadImpl');
 	
@@ -635,10 +635,14 @@ sub startServices {
 			}
 		}
 		# Don't return until all services are ready
-		$self->isRunningAndUpServices($serviceTier, $logFile);
+		my $allIsRunningAndUp = $self->isRunningAndUpServices($serviceTier, $logFile, $forked);
+		if ( !$allIsRunningAndUp ) {
+			close $logFile;
+			return 0;
+		}
 	}
 	close $logFile;
-	
+	return 1;
 }
 
 sub stopServices {
@@ -693,7 +697,7 @@ sub stopDataManager {
 }
 
 sub isRunningAndUpServices {
-	my ( $self, $serviceTier, $logFile ) = @_;
+	my ( $self, $serviceTier, $logFile, $forked ) = @_;
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $console_logger = get_logger("Console");
 	
@@ -707,7 +711,11 @@ sub isRunningAndUpServices {
 	if ( !$allIsRunning ) {
 		$console_logger->error(
 			"Couldn't bring to running all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
-		exit 1;
+		if ($forked) {
+			exit;
+		} else {
+			return 0;
+		}
 	}
 	$logger->debug(
 		"Checking that all $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
@@ -715,7 +723,11 @@ sub isRunningAndUpServices {
 	if ( !$allIsUp ) {
 		$console_logger->error(
 			"Couldn't bring up all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );
-		exit 1;
+		if ($forked) {
+			exit;
+		} else {
+			return 0;
+		}
 	}
 	$logger->debug( "All $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
 	return 1;
@@ -1459,7 +1471,7 @@ sub cleanData {
 }
 
 sub prepareDataServices {
-	my ( $self, $setupLogDir ) = @_;
+	my ( $self, $setupLogDir, $forked ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users = $self->users;
 	$logger->debug(
@@ -1469,11 +1481,15 @@ sub prepareDataServices {
 		", logDir ",            $setupLogDir
 	);
 
-	return $self->dataManager->prepareDataServices( $users, $setupLogDir );
+	my $allIsStarted = $self->dataManager->prepareDataServices( $users, $setupLogDir );
+	if (!$allIsStarted && $forked) {
+		exit;
+	}
+	return $allIsStarted;
 }
 
 sub prepareData {
-	my ( $self, $setupLogDir ) = @_;
+	my ( $self, $setupLogDir, $forked ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $users = $self->users;
 	$logger->debug(
@@ -1483,7 +1499,11 @@ sub prepareData {
 		", logDir ",            $setupLogDir
 	);
 
-	return $self->dataManager->prepareData( $users, $setupLogDir );
+	my $allIsStarted = $self->dataManager->prepareData( $users, $setupLogDir );
+	if (!$allIsStarted && $forked) {
+		exit;
+	}
+	return $allIsStarted;
 }
 
 sub loadData {

@@ -481,16 +481,14 @@ public class FindMaxLoadPath extends LoadPath {
 		 * from findFirstMax
 		 */
 		minFailUsers = maxPassUsers + 1;
-		maxPassUsers = 0;
 		
 		curPhaseRepeats = numQosPeriods - 1;
-		if (curPhaseRepeats == 0) {
-			curPhaseRepeats = 1; //run at least one interval if numQosPeriods is 1
-		} else if (curPhaseRepeats < 0) {
+		if (curPhaseRepeats <= 0) {
 			loadPathComplete(true);
 			return;
 		}
 		numRepeatsPassed = 0;
+		maxPassUsers = 0;
 		maxPassIntervalName = "";
 		
 		if (prevCurUsers != curUsers) {

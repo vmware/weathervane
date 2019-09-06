@@ -481,7 +481,6 @@ public class FindMaxLoadPath extends LoadPath {
 		 * from findFirstMax
 		 */
 		minFailUsers = maxPassUsers + 1;
-		maxPassUsers = 0;
 		
 		curPhaseRepeats = numQosPeriods - 1;
 		if (curPhaseRepeats <= 0) {
@@ -489,6 +488,7 @@ public class FindMaxLoadPath extends LoadPath {
 			return;
 		}
 		numRepeatsPassed = 0;
+		maxPassUsers = 0;
 		maxPassIntervalName = "";
 		
 		if (prevCurUsers != curUsers) {

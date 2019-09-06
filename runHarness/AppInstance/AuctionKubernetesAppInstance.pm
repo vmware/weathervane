@@ -73,7 +73,7 @@ override 'getDeployedConfiguration' => sub {
 };
 
 override 'startServices' => sub {
-	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my ( $self, $serviceTier, $setupLogDir, $forked ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AuctionKubernetesAppInstance");
 	my $users  = $self->dataManager->getParamValue('maxUsers');
 	my $impl         = $self->getParamValue('workloadImpl');
@@ -115,11 +115,14 @@ override 'startServices' => sub {
 		}
 		
 		# Don't return until all services are ready
-		$self->isRunningAndUpServices($serviceTier, $logFile);
+		my $allIsRunningAndUp = $self->isRunningAndUpServices($serviceTier, $logFile, $forked);
+		if ( !$allIsRunningAndUp ) {
+			close $logFile;
+			return 0;
+		}
 	}
-	
 	close $logFile;
-	
+	return 1;
 };
 
 override 'cleanup' => sub {

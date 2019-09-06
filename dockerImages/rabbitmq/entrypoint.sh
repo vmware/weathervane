@@ -19,6 +19,12 @@ trap 'sigusr1' USR1
 echo "Add weathervane domain to resolv.conf" 
 perl /updateResolveConf.pl
 
+newuid=$((4096 + RANDOM))
+olduid=$(id -u rabbitmq)
+echo "Assigning random uid $newuid to rabbitmq user with uid $olduid"
+usermod -u $newuid rabbitmq
+find / -user $olduid  -exec chown -h $newuid {} \;
+
 echo "Set file permissions" 
 chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
 chmod 600 /var/lib/rabbitmq/.erlang.cookie

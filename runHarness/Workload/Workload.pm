@@ -21,8 +21,8 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use Instance;
 use Utils qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callBooleanMethodOnObjectsParallel1
-  callBooleanMethodOnObjectsParallel2 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2
-  callMethodsOnObject1 callMethodOnObjects1);
+  callBooleanMethodOnObjectsParallel3 callBooleanMethodOnObjectsParallel2 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2
+  callBooleanMethodOnObjects2);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -90,12 +90,16 @@ sub cleanData {
 }
 
 sub prepareData {
-	my ( $self, $setupLogDir ) = @_;
-	return callBooleanMethodOnObjectsParallel1( 'prepareData', $self->appInstancesRef, $setupLogDir );
+	my ( $self, $setupLogDir, $forked ) = @_;
+	my $allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareData', $self->appInstancesRef, $setupLogDir, 1 );
+	if (!$allIsStarted && $forked) {
+		exit;
+	}
+	return $allIsStarted;
 }
 
 sub prepareDataServices {
-	my ( $self, $setupLogDir ) = @_;
+	my ( $self, $setupLogDir, $forked ) = @_;
 	# If the driver is running on Kubernetes clusters, then
 	# we can do the prepare in parallel
 	# If all of the dataManagers are running on Kubernetes clusters, then
@@ -108,11 +112,16 @@ sub prepareDataServices {
 			$allK8s = 0;
 		}
 	}
+	my $allIsStarted;
 	if ($allK8s) {
-		callMethodOnObjectsParallel1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
+		$allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareDataServices', $self->appInstancesRef, $setupLogDir, 1 );
 	} else {
-		callMethodOnObjects1( 'prepareDataServices', $self->appInstancesRef, $setupLogDir );		
+		$allIsStarted = callBooleanMethodOnObjects2( 'prepareDataServices', $self->appInstancesRef, $setupLogDir, 0 );
 	}
+	if (!$allIsStarted && $forked) {
+		exit;
+	}
+	return $allIsStarted;
 }
 
 sub clearReloadDb {
@@ -289,7 +298,7 @@ sub setLoadPathType {
 }
 
 sub startServices {
-	my ( $self, $serviceTier, $setupLogDir ) = @_;
+	my ( $self, $serviceTier, $setupLogDir, $forked ) = @_;
 	# If all of the dataManagers are running on Kubernetes clusters, then
 	# we can do the start in parallel
 	my $allK8s = 1;
@@ -300,13 +309,24 @@ sub startServices {
 			$allK8s = 0;
 		}
 	}
+	my $allIsStarted = 1;
 	if ($allK8s) {
-		callMethodOnObjectsParallel2( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir );
+		$allIsStarted = callBooleanMethodOnObjectsParallel3( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir, 1 );
+		if (!$allIsStarted && $forked) {
+			exit;
+		}
 	} else {
 		foreach my $appInstance (@$appInstancesRef) {
-			$appInstance->startServices($serviceTier, $setupLogDir);
+			$allIsStarted = $appInstance->startServices($serviceTier, $setupLogDir, 0);
+			if (!$allIsStarted) {
+				if ($forked) {
+					exit;
+				}
+				last;
+			}
 		}
 	}
+	return $allIsStarted;
 }
 
 sub stopServices {

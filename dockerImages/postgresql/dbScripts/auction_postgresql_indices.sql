@@ -23,6 +23,7 @@ CREATE INDEX auction_current_activated_idx ON auction USING btree (current, acti
 CREATE INDEX auction_keyword_auction_idx ON auction_keyword USING btree (auction_id);
 CREATE INDEX auction_keyword_keyword_idx ON auction_keyword USING btree (keyword_id);
 
+CREATE INDEX highbid_preloaded_idx ON highbid USING btree (preloaded);
 CREATE INDEX highbid_bidder_id_idx ON highbid USING btree (bidder_id);
 CREATE INDEX highbid_item_id_idx ON highbid USING btree (item_id);
 CREATE INDEX highbid_auction_id_idx ON highbid USING btree (auction_id);

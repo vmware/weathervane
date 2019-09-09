@@ -109,7 +109,7 @@
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "750m",
-  "nosqlServerMem" : "32Gi",
+  "nosqlServerMem" : "24Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "100Gi",
   

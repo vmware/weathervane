@@ -1024,7 +1024,7 @@ $parameters{"runStrategy"} = {
 
 $parameters{"configurationSize"} = {
 	"type"      => "=s",
-	"default"   => "small",
+	"default"   => "micro",
 	"parent"    => "runManager",
 	"usageText" => "",
 	"showUsage" => 1,
@@ -1267,7 +1267,7 @@ $parameters{"stopOnFailure"} = {
 
 $parameters{"numAppInstances"} = {
 	"type"      => "=i",
-	"default"   => 0,
+	"default"   => 1,
 	"parent"    => "workload",
 	"isa"       => "appInstance",
 	"usageText" => "",

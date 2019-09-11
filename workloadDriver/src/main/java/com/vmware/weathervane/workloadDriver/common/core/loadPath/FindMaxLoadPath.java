@@ -323,6 +323,11 @@ public class FindMaxLoadPath extends LoadPath {
 							}
 
 							long prevCurUsers = curUsers;
+
+							long logRateStep = nextRateStep;
+							nextRateStep = niceRound(nextRateStep, false);
+							logger.debug("nextInterval rounding rateStep from "+logRateStep+ " to "+nextRateStep+ " during increase");
+
 							curRateStep = nextRateStep;
 							curUsers += curRateStep;
 														
@@ -392,8 +397,13 @@ public class FindMaxLoadPath extends LoadPath {
 						logger.debug("nextInterval for " + curPhase + ": "  + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
 						nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) * 0.75);
 					} 
-					
+
 					long prevCurUsers = curUsers;
+
+					long logRateStep = nextRateStep;
+					nextRateStep = niceRound(nextRateStep, false);
+					logger.debug("nextInterval rounding rateStep from "+logRateStep+ " to "+nextRateStep+ " during decrease");
+
 					curRateStep = nextRateStep;
 					logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": curRateStep = {}, curUsers = {}, minUsers = {}", curRateStep, curUsers, getMinUsers());
 					if ((curUsers - nextRateStep) <= getMinUsers()) {
@@ -462,13 +472,18 @@ public class FindMaxLoadPath extends LoadPath {
 			}
 		}
 	}
-		
+
 	private void moveToVerifyMax() {
 		/*
 		 * When moving to VERIFYMAX, the initial rateStep is findMaxStopPct*maxPassUsers, 
 		 */
 		long prevCurUsers = curUsers;
 		curRateStep = (long) Math.ceil(maxPassUsers * getFindMaxStopPct());
+
+		long logRateStep = curRateStep;
+		curRateStep = niceRound(curRateStep, true); //round down to ensure the stop pct is not exceeded
+		logger.debug("moveToVerifyMax rounding rateStep from "+logRateStep+ " to "+curRateStep);
+
 		curUsers = maxPassUsers;
 
 		intervalNum = 0;
@@ -513,6 +528,11 @@ public class FindMaxLoadPath extends LoadPath {
 		 */
 		long prevCurUsers = curUsers;
 		curRateStep = curUsers / 10;
+
+		long logRateStep = curRateStep;
+		curRateStep = niceRound(curRateStep, false);
+		logger.debug("moveToFindFirstMax rounding rateStep from "+logRateStep+ " to "+curRateStep);
+
 		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
@@ -561,6 +581,34 @@ public class FindMaxLoadPath extends LoadPath {
 				passed = true;
 			}
 			loadPathComplete(passed);
+		}
+	}
+
+	private long niceRound(long number, boolean alwaysRoundDown) {
+		long originalNumber = number;
+		long tensMultiplier = 1;
+
+		while (number > 100 && tensMultiplier < 100) {
+			number /= 10;
+			tensMultiplier *= 10;
+		}
+		long rounder;
+		if (number >= 100) {
+			rounder = 10;
+		} else if (number >= 40) {
+			rounder = 4;
+		} else if (number >= 20) {
+			rounder = 2;
+		} else {
+			rounder = 1;
+		}
+		long roundDown = (number / rounder) * rounder * tensMultiplier;
+		long roundUp = roundDown + rounder * tensMultiplier;
+
+		if (alwaysRoundDown || (originalNumber - roundDown < roundUp - originalNumber)) {
+			return roundDown;
+		} else {
+			return roundUp;
 		}
 	}
 

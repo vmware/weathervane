@@ -707,7 +707,7 @@ sub isRunningAndUpServices {
 	# Make sure that all of the services are running and up (ready for requests)
 	$logger->debug(
 		"Checking that all $serviceTier services are running for appInstance $appInstanceNum of workload $workloadNum." );
-	my $allIsRunning = $self->waitForServicesRunning($serviceTier, 15, 20, 15, $logFile);
+	my $allIsRunning = $self->waitForServicesRunning($serviceTier, 15, 40, 15, $logFile);
 	if ( !$allIsRunning ) {
 		$console_logger->error(
 			"Couldn't bring to running all $serviceTier services for appInstance $appInstanceNum of workload $workloadNum." );

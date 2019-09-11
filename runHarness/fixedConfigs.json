@@ -52,6 +52,10 @@
   "nosqlServerMem" : "2Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "20Gi",
+
+  "dbLoaderThreads" : 8,
+  "dbPrepThreads" : 128,
+  "dbLoaderJvmOpts" : "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 },
 
 "small" : {
@@ -112,7 +116,10 @@
   "nosqlServerMem" : "32Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "100Gi",
-  
+
+  "dbLoaderThreads" : 16,
+  "dbPrepThreads" : 128,
+  "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 },
 
 "medium" : {
@@ -173,7 +180,10 @@
   "nosqlServerMem" : "32Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "200Gi",
-  
+
+  "dbLoaderThreads" : 16,
+  "dbPrepThreads" : 128,
+  "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 },
 
 "large" : {
@@ -234,7 +244,10 @@
   "nosqlServerMem" : "32Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "300Gi",
-  
+
+  "dbLoaderThreads" : 16,
+  "dbPrepThreads" : 128,
+  "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 },
 
 

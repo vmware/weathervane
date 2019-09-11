@@ -68,7 +68,7 @@ our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
 our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunWithScaling',
-							'findMaxMultiAI', 'findMaxMultiRun', 'single', 'findMax' );
+							'findMaxMultiAI', 'findMaxMultiRun', 'single' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 # These are all of the workload profiles that are supported for each workload
@@ -78,7 +78,7 @@ our %workloadProfiles = (
 
 # These are all of the appInstance sizes that are supported for each workload
 our %appInstanceSizes = (
-	"auction" => ["custom", "small", "medium", "large"],
+	"auction" => ["micro", "small", "medium"],
 	);
 
 # Define a ServiceType to be one of a set of strings

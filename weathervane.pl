@@ -639,8 +639,16 @@ $console_logger->info("Run Configuration has $numWorkloads workloads.");
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
-	# Overwrite the workload's parameters with those specified by the configuration size.
 	my $configSize = $workloadParamHashRef->{'configurationSize'};
+	# Check that the configurationSize is one of those allowed for this workload
+	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
+	my $validSizesRef = $WeathervaneTypes::appInstanceSizes{$workloadImpl};
+	if (!($configSize ~~  @$validSizesRef)) {
+			$console_logger->error("Error: For workload " . $workloadNum . ", "
+				. $configSize . " is not a valid configurationSize.  Valid sizes are: @$validSizesRef");
+			exit(1);		
+	}
+	# Overwrite the workload's parameters with those specified by the configuration size.
 	if ($configSize ne "custom") {
 		my @configKeys = keys $fixedConfigs;
 		if (!($configSize ~~ @configKeys)) {
@@ -651,7 +659,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		my $config = $fixedConfigs->{$configSize};
 		foreach my $key (keys %$config) {
 			if ($key eq "numDrivers") {
-				# If the user set the number of driver, then use that value.
+				# If the user set the number of drivers, then use that value.
 				# Otherwise the number of drivers is the number in the
 				# fixed config times the number of appInstances
 				if (!$workloadParamHashRef->{"numDrivers"} && ($#{$workloadParamHashRef->{"drivers"}} < 0)) {
@@ -668,8 +676,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 	}
 
-	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
-
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
 	$workload->instanceNum($workloadNum);
 	if ( $numWorkloads > 1 ) {
@@ -685,6 +691,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	if ($numDefault > 0) {
 		if ($#{$instancesListRef} >= 0) {
 			$console_logger->info("Specifying both numAppInstances > 1 and the appInstances parameter is not supported.");
+			$console_logger->info("If using the custom configurationSize, you must set numAppInstances to 0.");
 			exit -1;
 		}
 		$appInstanceParamHashRefs = 

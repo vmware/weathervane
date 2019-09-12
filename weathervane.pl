@@ -691,7 +691,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	if ($numDefault > 0) {
 		if ($#{$instancesListRef} >= 0) {
 			$console_logger->info("Specifying both numAppInstances > 1 and the appInstances parameter is not supported.");
-			$console_logger->info("If using the custom configurationSize, you must set numAppInstances to 0.");
+			$console_logger->info("If using appInstances, you must set numAppInstances to 0.");
 			exit -1;
 		}
 		$appInstanceParamHashRefs = 

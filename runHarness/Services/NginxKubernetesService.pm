@@ -48,11 +48,19 @@ sub configure {
 	if ( $self->getParamValue('nginxWorkerConnections') ) {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
-	my $perServerConnections = floor( 50000.0 / $self->appInstance->getTotalNumOfServiceType('appServer') );
+
+	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
+	# The default setting for net.ipv4.ip_local_port_range on most Linux distros gives 28231 port numbers.
+	# As a result, we need to limit the number of connections to any back-end server to less than this 
+	# number to avoid running out of ports.  
+	# If there are no bid servers in the config, then the servers will appear twice, so we
+	# need to divide the number of connections in half
+	my $perServerConnections = 28000;
+	if (!$numAuctionBidServers) {
+		$perServerConnections = 14000;
+	}
 
 	my $numWebServers = $self->appInstance->getTotalNumOfServiceType('webServer');
-	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
-
 	open( FILEIN,  "$configDir/kubernetes/nginx.yaml" ) or die "$configDir/kubernetes/nginx.yaml: $!\n";
 	open( FILEOUT, ">/tmp/nginx-$namespace.yaml" )             or die "Can't open file /tmp/nginx-$namespace.yaml: $!\n";
 	

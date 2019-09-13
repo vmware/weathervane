@@ -22,6 +22,7 @@ use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 use Utils qw(runCmd);
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -552,6 +553,42 @@ sub kubernetesGetNodeIPs {
 	}
 
 	return \@ips;	
+}
+
+sub kubernetesGetNodeIPsForPodSelector {
+	my ( $self, $selector ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetNodeIPsForPodSelector ");
+
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	my $cmd;
+	$cmd = "kubectl get pod --selector=$selector --all-namespaces --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.hostIP}'";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesGetNodeIPsForPodSelector failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @ips = split /\s/, $outString;
+	if ($#ips < 0) {
+		$logger->warn("kubernetesGetNodeIPsForPodSelector: There are no node IPs");
+	}
+	
+	# Remove duplicates
+	my @uniqueIps;
+	for my $ip (@ips) {
+		if (!($ip ~~ @uniqueIps)) {
+			push @uniqueIps, $ip;
+		}
+	}
+	return \@uniqueIps;	
 }
 
 sub kubernetesGetNodePortForPortNumber {

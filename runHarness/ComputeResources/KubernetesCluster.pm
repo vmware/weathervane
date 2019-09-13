@@ -94,10 +94,10 @@ sub kubernetesCreateNamespace {
 	$logger->debug("Output: $outString");
 }
 
-sub kubernetesGetPods {
+sub kubernetesGetAll {
 	my ( $self, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesGetPods in namespace $namespace");
+	$logger->debug("kubernetesGetAll in namespace $namespace");
 
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
 	my $context = $self->getParamValue('kubeconfigContext');
@@ -107,10 +107,10 @@ sub kubernetesGetPods {
 	}
 	
 	my $cmd;
-	$cmd = "kubectl get pod --namespace=$namespace -o wide --kubeconfig=$kubeconfigFile $contextString";
+	$cmd = "kubectl get all --namespace=$namespace -o wide --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesGetPods failed: $cmdFailed");
+		$logger->error("kubernetesGetAll failed: $cmdFailed");
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");

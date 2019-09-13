@@ -325,7 +325,13 @@ public class FindMaxLoadPath extends LoadPath {
 							long prevCurUsers = curUsers;
 							curRateStep = nextRateStep;
 							curUsers += curRateStep;
-														
+
+							long logCurUsers = curUsers;
+							curUsers = niceRound(curUsers, 0, minFailUsers);
+							if (logCurUsers != curUsers) {
+								logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during increase");
+							}
+
 							/*
 							 * Generate the intervals to ramp-up to the next curUsers
 							 */
@@ -392,7 +398,7 @@ public class FindMaxLoadPath extends LoadPath {
 						logger.debug("nextInterval for " + curPhase + ": "  + this.getName() + ": Reducing nextRateStep to halfway between maxPass and minFail");
 						nextRateStep = (long) Math.ceil((minFailUsers - maxPassUsers) * 0.75);
 					} 
-					
+
 					long prevCurUsers = curUsers;
 					curRateStep = nextRateStep;
 					logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": curRateStep = {}, curUsers = {}, minUsers = {}", curRateStep, curUsers, getMinUsers());
@@ -401,6 +407,13 @@ public class FindMaxLoadPath extends LoadPath {
 						logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": (curUsers - nextRateStep) <= minUsers, set curUsers to minUsers");
 					} else {
 						curUsers -= curRateStep;
+						
+						long logCurUsers = curUsers;
+						curUsers = niceRound(curUsers, maxPassUsers, 0);
+						if (logCurUsers != curUsers) {
+							logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during decrease");
+						}
+						
 						logger.debug("nextInterval for " + curPhase + ": " + this.getName() + ": (curUsers - nextRateStep) > minUsers, set curUsers to {}", curUsers);
 					}
 
@@ -462,7 +475,7 @@ public class FindMaxLoadPath extends LoadPath {
 			}
 		}
 	}
-		
+
 	private void moveToVerifyMax() {
 		/*
 		 * When moving to VERIFYMAX, the initial rateStep is findMaxStopPct*maxPassUsers, 
@@ -513,10 +526,17 @@ public class FindMaxLoadPath extends LoadPath {
 		 */
 		long prevCurUsers = curUsers;
 		curRateStep = curUsers / 10;
+
 		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
 			curUsers += curRateStep;
+		}
+		
+		long logCurUsers = curUsers;
+		curUsers = niceRound(curUsers, 0, prevCurUsers);
+		if (logCurUsers != curUsers) {
+			logger.debug("moveToFindFirstMax rounding curUsers from "+logCurUsers+ " to "+curUsers);
 		}
 
 		intervalNum = 0;
@@ -562,6 +582,62 @@ public class FindMaxLoadPath extends LoadPath {
 			}
 			loadPathComplete(passed);
 		}
+	}
+
+	// round to nice numbers by at most 2% and 1000
+	// meeting or exceeding the limits will return the original number, limits <= 0 are ignored
+	private long niceRound(long number, long lowerLimit, long upperLimit) {
+		long originalNumber = number;
+		long tensMultiplier = 1;
+		
+		while (number > 1000 && tensMultiplier < 100) {
+			number /= 10;
+			tensMultiplier *= 10;
+		}
+		long rounder;
+		if (number >= 246) {
+			rounder = 10;
+		} else if (tensMultiplier > 1 && number >= 130) { //don't insert odds at the least significant digit
+			rounder = 5;
+		} else if (tensMultiplier == 1 && number >= 100) {
+			rounder = 4;
+		} else if (number >= 50) {
+			rounder = 2;
+		} else {
+			rounder = 1;
+		}
+        long roundDown = (number / rounder) * rounder * tensMultiplier;
+        long roundUp = roundDown + rounder * tensMultiplier;
+
+        if (originalNumber - roundDown < roundUp - originalNumber) {
+        	if (lowerLimit > 0 && roundDown <= lowerLimit) {
+        		// try to round to a middle 
+        		if (rounder >= 2) {
+        			rounder /= 2;
+        			if (rounder == 5 && tensMultiplier == 1) rounder = 4;  // don't insert odds at the least significant digit
+        			roundDown += rounder * tensMultiplier; 
+        			if (roundDown > lowerLimit && (upperLimit <= 0 || roundDown < upperLimit) && roundDown < roundUp) {
+        				return roundDown;
+        			}
+        		}
+        		return originalNumber;
+        	}
+        	return roundDown;
+        } else {
+        	if (upperLimit > 0 && roundUp >= upperLimit) {
+        		// try to round to a middle 
+        		if (rounder >= 2) {
+        			rounder /= 2;
+        			if (rounder == 5 && tensMultiplier == 1) rounder = 4;  // don't insert odds at the least significant digit 
+        			roundUp -= rounder * tensMultiplier; 
+        			if (roundUp < upperLimit && (roundUp > lowerLimit) && roundUp > roundDown) {
+        				return roundUp;
+        			}
+        		}
+        		return originalNumber;
+        	}
+        	return roundUp;
+        }
 	}
 
 	private void loadPathComplete(boolean passed) {

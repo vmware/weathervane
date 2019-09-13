@@ -556,7 +556,7 @@ sub kubernetesGetNodeIPs {
 }
 
 sub kubernetesGetNodeIPsForPodSelector {
-	my ( $self, $selector ) = @_;
+	my ( $self, $selector, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetNodeIPsForPodSelector ");
 
@@ -568,7 +568,7 @@ sub kubernetesGetNodeIPsForPodSelector {
 	}
 
 	my $cmd;
-	$cmd = "kubectl get pod --selector=$selector --all-namespaces --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.hostIP}'";
+	$cmd = "kubectl get pod --selector=$selector  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.hostIP}'";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodeIPsForPodSelector failed: $cmdFailed");

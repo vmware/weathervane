@@ -126,8 +126,8 @@
   "driverControllerCpus" : "300m",
   "driverControllerMem" : "1500Mi",
 
-  "numWebServers" : 2,
-  "webServerCpus" : "2",
+  "numWebServers" : 4,
+  "webServerCpus" : "1000m",
   "webServerMem"  : "10Gi",
   "webServerImpl" : "nginx",
 

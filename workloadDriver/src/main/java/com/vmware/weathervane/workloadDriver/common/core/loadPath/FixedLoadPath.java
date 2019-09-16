@@ -18,7 +18,6 @@ package com.vmware.weathervane.workloadDriver.common.core.loadPath;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,13 +70,9 @@ public class FixedLoadPath extends LoadPath {
 	@JsonIgnore
 	private String firstFailIntervalName = null;
 	
-	/*
-	 * Use a semaphore to prevent returning stats interval until we have determined
-	 * the next load interval
-	 */
 	@JsonIgnore
-	private final Semaphore statsIntervalAvailable = new Semaphore(0, true);
-	
+	private boolean statsIntervalComplete = false;
+		
 	@JsonIgnore
 	private UniformLoadInterval curStatsInterval;
 
@@ -94,12 +89,6 @@ public class FixedLoadPath extends LoadPath {
 		long startUsers = (long) Math.ceil(Math.abs(users) / ((numIntervals - 1) * 1.0));
 		rampupIntervals.addAll(generateRampIntervals("rampUp", rampUp, timeStep, startUsers, users));
 		
-		curStatsInterval = new UniformLoadInterval();
-		curStatsInterval.setName("RampUp");
-		curStatsInterval.setDuration(rampUp);
-		curStatsInterval.setUsers(users);
-		statsIntervalAvailable.release();
-
 		curStatusInterval.setName("RampUp");
 		curStatusInterval.setDuration(rampUp);
 		curStatusInterval.setStartUsers(0L);
@@ -108,7 +97,20 @@ public class FixedLoadPath extends LoadPath {
 
 	@JsonIgnore
 	@Override
+	public boolean isStatsIntervalComplete() {
+		return statsIntervalComplete;
+	}
+
+	@JsonIgnore
+	@Override
+	public UniformLoadInterval getCurStatsInterval() {
+		return curStatsInterval;
+	}
+	
+	@JsonIgnore
+	@Override
 	public UniformLoadInterval getNextInterval() {
+		statsIntervalComplete = false;
 
 		UniformLoadInterval nextInterval = null;
 		if (Phase.RAMPUP.equals(curPhase)) {
@@ -118,6 +120,13 @@ public class FixedLoadPath extends LoadPath {
 				nextInterval = getNextInterval();
 			} else {
 				nextInterval = rampupIntervals.pop();
+				if (rampupIntervals.isEmpty()) {
+					statsIntervalComplete = true;
+					curStatsInterval = new UniformLoadInterval();
+					curStatsInterval.setName("RampUp");
+					curStatsInterval.setDuration(rampUp);
+					curStatsInterval.setUsers(users);
+				}
 			}
 		} else if (Phase.WARMUP.equals(curPhase)) {
 			if (curPhaseInterval == 0 ) {
@@ -126,12 +135,12 @@ public class FixedLoadPath extends LoadPath {
 				nextInterval.setDuration(warmUp);
 				nextInterval.setUsers(users);
 
+				statsIntervalComplete = true;
 				curStatusInterval.setName("WARMUP-" + curPhaseInterval);
 				curStatusInterval.setDuration(warmUp);
 				curStatusInterval.setStartUsers(users);
 				curStatusInterval.setEndUsers(users);
 				curStatsInterval = nextInterval;
-				statsIntervalAvailable.release();
 				
 				curPhaseInterval++;
 			} else {
@@ -184,8 +193,8 @@ public class FixedLoadPath extends LoadPath {
 				curStatusInterval.setStartUsers(users);
 				curStatusInterval.setEndUsers(users);
 
+				statsIntervalComplete = true;
 				curStatsInterval = nextInterval;
-				statsIntervalAvailable.release();						
 			}	
 		} else if (Phase.RAMPDOWN.equals(curPhase)) {
 			nextInterval = new UniformLoadInterval();
@@ -193,10 +202,11 @@ public class FixedLoadPath extends LoadPath {
 			nextInterval.setDuration(rampDown);
 			nextInterval.setUsers(users);
 
+			statsIntervalComplete = true;
+			curStatsInterval = new UniformLoadInterval();
 			curStatsInterval.setName("RampDown");
 			curStatsInterval.setDuration(rampDown);
 			curStatsInterval.setUsers(users);
-			statsIntervalAvailable.release();
 
 			curStatusInterval.setName("RampDown");
 			curStatusInterval.setDuration(rampDown);
@@ -234,16 +244,6 @@ public class FixedLoadPath extends LoadPath {
 		
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
-	}
-
-	@JsonIgnore
-	@Override
-	public LoadInterval getNextStatsInterval() {
-		logger.debug("getNextStatsInterval");
-
-		statsIntervalAvailable.acquireUninterruptibly();
-		logger.debug("getNextStatsInterval returning interval: " + curStatsInterval);
-		return curStatsInterval;
 	}
 
 	@Override

@@ -15,11 +15,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.vmware.weathervane.workloadDriver.common.core.loadPath;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(value = "uniform")
 public class UniformLoadInterval extends LoadInterval {
 	private long users;
+	
+	@JsonIgnore
+	private boolean endOfStatsInterval = false;
 	
 	public UniformLoadInterval() {
 		
@@ -42,6 +46,14 @@ public class UniformLoadInterval extends LoadInterval {
 		this.users = users;
 	}
 	
+	public boolean isEndOfStatsInterval() {
+		return endOfStatsInterval;
+	}
+
+	public void setEndOfStatsInterval(boolean endOfStatsInterval) {
+		this.endOfStatsInterval = endOfStatsInterval;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("UniformLoadInterval: ");

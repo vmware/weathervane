@@ -88,7 +88,7 @@ public class Run {
 			System.exit(1);
 		}
 		
-		executorService = Executors.newScheduledThreadPool(4 * Runtime.getRuntime().availableProcessors());
+		executorService = Executors.newScheduledThreadPool(4 * workloads.size());
 		
 		/*
 		 * Convert all of the host names to lower case

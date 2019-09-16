@@ -60,7 +60,7 @@
   "numDrivers" : 4,
   "driverJvmOpts" : "-Xmx4G -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "1000m",
-  "driverMem" : "6500Mi",
+  "driverMem" : "4500Mi",
   "driverControllerJvmOpts" : "-Xmx1g -Xms1g -XX:+AlwaysPreTouch",
   "driverControllerCpus" : "300m",
   "driverControllerMem" : "1500Mi",

@@ -30,9 +30,9 @@ while ( my $inline = <FILEIN> ) {
 
 		# Add the balancer lines for each app server
 		foreach my $appServer (@appServers) {
-			print FILEOUT "      server $appServer max_fails=0 ;\n";
+			print FILEOUT "      server $appServer max_fails=0 max_conns=$perServerConnections ;\n";
 		}
-		print FILEOUT "      keepalive 1000;";
+		print FILEOUT "      keepalive 10000;";
 		print FILEOUT "    }\n";
 	}
 	elsif ( $inline =~ /[^\$]upstream\sbid/ ) {
@@ -45,15 +45,15 @@ while ( my $inline = <FILEIN> ) {
 		if ($#bidServers >= 0) {
 			# Add the balancer lines for each bid server
 			foreach my $bidServer (@bidServers) {
-				print FILEOUT "      server $bidServer max_fails=0 ;\n";
+				print FILEOUT "      server $bidServer max_fails=0 max_conns=$perServerConnections ;\n";
 			}
 		} else {
 			# if no bid server, then bid requests go to app servers
 			foreach my $appServer (@appServers) {
-				print FILEOUT "      server $appServer max_fails=0 ;\n";
+				print FILEOUT "      server $appServer max_fails=0 max_conns=$perServerConnections ;\n";
 			}			
 		}
-		print FILEOUT "      keepalive 1000;";
+		print FILEOUT "      keepalive 10000;";
 		print FILEOUT "    }\n";
 	}
 	elsif ( $inline =~ /^\s*worker_connections\s/ ) {

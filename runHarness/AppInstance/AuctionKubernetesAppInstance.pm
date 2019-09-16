@@ -153,7 +153,7 @@ override 'getEdgeAddrsRef' => sub {
 	} else {
 		# Using NodePort service for ingress
 		# Get the IP addresses of the nginx-ingress in this appInstance's namespace
-		my $ipAddrsRef = $cluster->kubernetesGetNodeIPsForPodSelector("type=webServer", $self->namespace);
+		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
 		if ($#{$ipAddrsRef} < 0) {
 			$logger->error("There are no IP addresses for the Kubernetes nodes");
 			exit 1;

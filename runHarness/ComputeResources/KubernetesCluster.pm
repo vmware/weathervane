@@ -538,8 +538,9 @@ sub kubernetesGetNodeIPs {
 	  $contextString = "--context=$context";	
 	}
 
+	# First try to get all nodes with label wvrole=sut
 	my $cmd;
-	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector=wvrole=sut -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
@@ -549,7 +550,19 @@ sub kubernetesGetNodeIPs {
 	
 	my @ips = split /\s/, $outString;
 	if ($#ips < 0) {
-		$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+		# There are no nodes labeled wvrole=sut, instead get all nodes except master nodes
+		$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector='!node-role.kubernetes.io/master' -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+		($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
+		}
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+		@ips = split /\s/, $outString;
+		
+		if ($#ips < 0) {
+			$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+		}
 	}
 
 	return \@ips;	

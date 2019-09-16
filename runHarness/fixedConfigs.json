@@ -57,7 +57,7 @@
 "small" : {
   "users" : 2000,
   "maxUsers" : 20000,
-  "numDrivers" : 4,
+  "numDrivers" : 3,
   "driverJvmOpts" : "-Xmx4G -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "1000m",
   "driverMem" : "4500Mi",

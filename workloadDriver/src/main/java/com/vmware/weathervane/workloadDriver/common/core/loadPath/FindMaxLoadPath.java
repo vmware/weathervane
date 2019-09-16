@@ -19,7 +19,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,13 +116,12 @@ public class FindMaxLoadPath extends LoadPath {
 	private final long rampIntervalSec = 120;
 	@JsonIgnore
 	private final long warmupIntervalSec = 180;
-	
-	/*
-	 * Use a semaphore to prevent returning stats interval until we have determined
-	 * the next load interval
-	 */
+
 	@JsonIgnore
-	private final Semaphore statsIntervalAvailable = new Semaphore(0, true);
+	private boolean statsIntervalComplete = false;
+		
+	@JsonIgnore
+	private UniformLoadInterval curStatsInterval = new UniformLoadInterval();
 
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts,
@@ -141,7 +139,7 @@ public class FindMaxLoadPath extends LoadPath {
 		curInterval.setDuration(initialRampIntervalSec);
 		
 		/*
-		 * Set up the curStatsInterval
+		 * Set up the curStatusInterval
 		 */
 		curStatusInterval.setName("InitialRamp-0");
 		curStatusInterval.setDuration(initialRampIntervalSec);
@@ -154,13 +152,12 @@ public class FindMaxLoadPath extends LoadPath {
 	public UniformLoadInterval getNextInterval() {
 
 		logger.debug("getNextInterval ");
+		statsIntervalComplete = false;
 		if (Phase.INITIALRAMP.equals(curPhase)) {
 			curInterval = getNextInitialRampInterval();			
 		} else {
 			curInterval = nextInterval();
 		}
-
-		statsIntervalAvailable.release();
 		return curInterval;
 	}
 
@@ -232,6 +229,11 @@ public class FindMaxLoadPath extends LoadPath {
 		curStatusInterval.setStartUsers(curUsers);
 		curStatusInterval.setEndUsers(curUsers);
 		curStatusInterval.setDuration(nextIntervalDuration);
+		
+		statsIntervalComplete = true;
+		curStatsInterval.setName(nextInterval.getName());
+		curStatsInterval.setUsers(curUsers);
+		curStatsInterval.setDuration(nextIntervalDuration);
 
 		logger.debug("getNextInitialRampInterval returning interval: " + nextInterval);
 		return nextInterval;
@@ -446,6 +448,11 @@ public class FindMaxLoadPath extends LoadPath {
 				curStatusInterval.setEndUsers(curUsers);
 				curStatusInterval.setDuration(warmupIntervalSec);
 				
+				statsIntervalComplete = true;
+				curStatsInterval.setName(nextInterval.getName());
+				curStatsInterval.setUsers(curUsers);
+				curStatsInterval.setDuration(warmupIntervalSec);
+				
 				nextSubInterval = SubInterval.STEADY;
 				return nextInterval;
 			} else if (SubInterval.STEADY.equals(nextSubInterval)) {
@@ -467,7 +474,12 @@ public class FindMaxLoadPath extends LoadPath {
 				curStatusInterval.setStartUsers(curUsers);
 				curStatusInterval.setEndUsers(curUsers);
 				curStatusInterval.setDuration(getQosPeriodSec());
-				
+
+				statsIntervalComplete = true;
+				curStatsInterval.setName(nextInterval.getName());
+				curStatsInterval.setUsers(curUsers);
+				curStatsInterval.setDuration(getQosPeriodSec());
+
 				nextSubInterval = SubInterval.DECISION;
 				return nextInterval;
 			} else {
@@ -664,13 +676,14 @@ public class FindMaxLoadPath extends LoadPath {
 
 	@JsonIgnore
 	@Override
-	public LoadInterval getNextStatsInterval() {
-		logger.debug("getNextStatsInterval");
+	public boolean isStatsIntervalComplete() {
+		return statsIntervalComplete;
+	}
 
-		statsIntervalAvailable.acquireUninterruptibly();
-
-		logger.debug("getNextStatsInterval returning interval: " + curInterval);
-		return curInterval;
+	@JsonIgnore
+	@Override
+	public UniformLoadInterval getCurStatsInterval() {
+		return curStatsInterval;
 	}
 	
 	@Override

@@ -36,6 +36,12 @@ public class RampToMaxLoadPath extends LoadPath {
 	private long intervalDuration;
 	private long rampIntervalDuration = 180;
 	
+	@JsonIgnore
+	private boolean statsIntervalComplete = false;
+		
+	@JsonIgnore
+	private UniformLoadInterval curStatsInterval = new UniformLoadInterval();
+
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber,
 			RestTemplate restTemplate, ScheduledExecutorService executorService) {
@@ -57,12 +63,14 @@ public class RampToMaxLoadPath extends LoadPath {
 
 	@JsonIgnore
 	@Override
-	public LoadInterval getNextStatsInterval() {
-		logger.debug("getNextStatsInterval");
-		UniformLoadInterval nextStatsInterval = new UniformLoadInterval();
+	public boolean isStatsIntervalComplete() {
+		return statsIntervalComplete;
+	}
 
-		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
-		return nextStatsInterval;
+	@JsonIgnore
+	@Override
+	public UniformLoadInterval getCurStatsInterval() {
+		return curStatsInterval;
 	}
 
 	@Override

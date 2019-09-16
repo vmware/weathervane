@@ -42,13 +42,19 @@ public class IntervalLoadPath extends LoadPath {
 	private int nextIntervalIndex = 0;
 	
 	@JsonIgnore
-	private int nextStatsIntervalIndex = 0;
+	private int curStatsIntervalIndex = 0;
 	
 	@JsonIgnore
 	private long maxPassUsers = 0;
 	
 	@JsonIgnore
 	private String maxPassIntervalName = null;
+
+	@JsonIgnore
+	private boolean statsIntervalComplete = false;
+		
+	@JsonIgnore
+	private UniformLoadInterval curStatsInterval = new UniformLoadInterval();
 	
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, int portNumber, RestTemplate restTemplate, 
@@ -79,6 +85,7 @@ public class IntervalLoadPath extends LoadPath {
 						+ ", users = " + users);
 				UniformLoadInterval newInterval = new UniformLoadInterval(users, interval.getDuration());
 				newInterval.setName(interval.getName());
+				newInterval.setEndOfStatsInterval(true);
 				uniformIntervals.add(newInterval);
 				previousIntervalEndUsers = users;
 			} else if (interval instanceof RampLoadInterval) {
@@ -122,7 +129,7 @@ public class IntervalLoadPath extends LoadPath {
 				}
 				
 				long totalDuration = 0;
-				for (long i =0; i < numIntervals; i++) {
+				for (long i = 0; i < numIntervals; i++) {
 					long curUsers = startUsers + (i * usersPerInterval);
 					if (endUsers < startUsers) {
 						if (curUsers < endUsers) {
@@ -146,6 +153,9 @@ public class IntervalLoadPath extends LoadPath {
 					+ ", adjustedUsers = " + curUsers);
 
 					newInterval.setName(interval.getName());
+					if ((i+1) == numIntervals) {
+						newInterval.setEndOfStatsInterval(true);
+					}
 					uniformIntervals.add(newInterval);
 
 					totalDuration += timeStep;
@@ -162,6 +172,7 @@ public class IntervalLoadPath extends LoadPath {
 	public UniformLoadInterval getNextInterval() {
 		
 		logger.debug("getNextInterval, nextIntervalIndex = " + nextIntervalIndex);
+		statsIntervalComplete = false;
 		if ((uniformIntervals == null) || (uniformIntervals.size() == 0)) {
 			logger.debug("getNextInterval returning null");
 			return null;
@@ -195,64 +206,67 @@ public class IntervalLoadPath extends LoadPath {
 			nextIntervalIndex++;
 		}
 		
+		if (nextInterval.isEndOfStatsInterval()) {
+			statsIntervalComplete = true;
+			LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
+			curStatsInterval.setDuration(curLoadInterval.getDuration());
+			curStatsInterval.setName(curLoadInterval.getName());
+			if (curLoadInterval instanceof UniformLoadInterval) {
+				UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
+				curStatsInterval.setUsers(uniformInterval.getUsers());
+			} else if (curLoadInterval instanceof RampLoadInterval) {
+				RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
+				curStatsInterval.setUsers(rampInterval.getEndUsers());			
+			}
+		}
+		
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 
 	}
 
-	
 	@JsonIgnore
 	@Override
-	public LoadInterval getNextStatsInterval() {
-		logger.debug("getNextStatsInterval, nextStatsIntervalIndex = " + nextStatsIntervalIndex);
-		
-		if (nextStatsIntervalIndex != 0) {
-			int curIntervalIndex = nextStatsIntervalIndex - 1;
-			String curIntervalName = loadIntervals.get(curIntervalIndex).getName();			
-			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-			boolean prevIntervalPassed = false;
-			if (rollup != null) {
-				prevIntervalPassed = rollup.isIntervalPassed();			
-				long startUsers = rollup.getStartActiveUsers();
-				long endUsers = rollup.getEndActiveUsers();
+	public boolean isStatsIntervalComplete() {
+		return statsIntervalComplete;
+	}
 
-				// Only non-ramp intervals can be passing
-				if ((startUsers == endUsers) && prevIntervalPassed && (endUsers > maxPassUsers)) {
-					maxPassUsers = endUsers;
-					maxPassIntervalName = curIntervalName;
-				}
-				
-				getIntervalStatsSummaries().add(rollup);
+	@JsonIgnore
+	@Override
+	public UniformLoadInterval getCurStatsInterval() {
+		String curIntervalName = loadIntervals.get(curStatsIntervalIndex).getName();			
+		StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+		boolean prevIntervalPassed = false;
+		if (rollup != null) {
+			prevIntervalPassed = rollup.isIntervalPassed();			
+			long startUsers = rollup.getStartActiveUsers();
+			long endUsers = rollup.getEndActiveUsers();
+
+			// Only non-ramp intervals can be passing
+			if ((startUsers == endUsers) && prevIntervalPassed && (endUsers > maxPassUsers)) {
+				maxPassUsers = endUsers;
+				maxPassIntervalName = curIntervalName;
 			}
-
-		}
-		
-		LoadInterval nextStatsInterval;
-		if (nextStatsIntervalIndex >= loadIntervals.size()) {
-			/*
-			 * At end of intervals.  keep returning last interval 
-			 */
-			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex-1);			
-		} else {
-			nextStatsInterval = loadIntervals.get(nextStatsIntervalIndex);
 			
-
-			nextStatsIntervalIndex++;			
+			getIntervalStatsSummaries().add(rollup);
 		}
 		
-		curStatusInterval.setName(nextStatsInterval.getName());
-		curStatusInterval.setDuration(nextStatsInterval.getDuration());
-		if (nextStatsInterval instanceof UniformLoadInterval) {
-			UniformLoadInterval uniformInterval = (UniformLoadInterval) nextStatsInterval;
+		LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
+		curStatusInterval.setName(curLoadInterval.getName());
+		curStatusInterval.setDuration(curLoadInterval.getDuration());
+		if (curLoadInterval instanceof UniformLoadInterval) {
+			UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
 			curStatusInterval.setStartUsers(uniformInterval.getUsers());
 			curStatusInterval.setEndUsers(uniformInterval.getUsers());			
-		} else if (nextStatsInterval instanceof RampLoadInterval) {
-			RampLoadInterval rampInterval = (RampLoadInterval) nextStatsInterval;
+		} else if (curLoadInterval instanceof RampLoadInterval) {
+			RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
 			curStatusInterval.setStartUsers(rampInterval.getStartUsers());
 			curStatusInterval.setEndUsers(rampInterval.getEndUsers());			
 		}
-		logger.debug("getNextStatsInterval returning interval: " + nextStatsInterval);
-		return nextStatsInterval;
+
+		curStatsIntervalIndex++;
+		
+		return curStatsInterval;
 	}
 
 	@Override

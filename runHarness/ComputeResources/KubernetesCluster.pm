@@ -22,6 +22,7 @@ use Log::Log4perl qw(get_logger);
 
 use namespace::autoclean;
 use Utils qw(runCmd);
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -93,10 +94,10 @@ sub kubernetesCreateNamespace {
 	$logger->debug("Output: $outString");
 }
 
-sub kubernetesGetPods {
+sub kubernetesGetAll {
 	my ( $self, $namespace ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesGetPods in namespace $namespace");
+	$logger->debug("kubernetesGetAll in namespace $namespace");
 
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
 	my $context = $self->getParamValue('kubeconfigContext');
@@ -106,10 +107,10 @@ sub kubernetesGetPods {
 	}
 	
 	my $cmd;
-	$cmd = "kubectl get pod --namespace=$namespace -o wide --kubeconfig=$kubeconfigFile $contextString";
+	$cmd = "kubectl get all --namespace=$namespace -o wide --kubeconfig=$kubeconfigFile $contextString";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesGetPods failed: $cmdFailed");
+		$logger->error("kubernetesGetAll failed: $cmdFailed");
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -537,8 +538,9 @@ sub kubernetesGetNodeIPs {
 	  $contextString = "--context=$context";	
 	}
 
+	# First try to get all nodes with label wvrole=sut
 	my $cmd;
-	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector=wvrole=sut -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
@@ -548,10 +550,58 @@ sub kubernetesGetNodeIPs {
 	
 	my @ips = split /\s/, $outString;
 	if ($#ips < 0) {
-		$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+		# There are no nodes labeled wvrole=sut, instead get all nodes except master nodes
+		$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector='!node-role.kubernetes.io/master' -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+		($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
+		}
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+		@ips = split /\s/, $outString;
+		
+		if ($#ips < 0) {
+			$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+		}
 	}
 
 	return \@ips;	
+}
+
+sub kubernetesGetNodeIPsForPodSelector {
+	my ( $self, $selector, $namespace ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesGetNodeIPsForPodSelector ");
+
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	my $cmd;
+	$cmd = "kubectl get pod --selector=$selector  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.hostIP}'";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesGetNodeIPsForPodSelector failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	my @ips = split /\s/, $outString;
+	if ($#ips < 0) {
+		$logger->warn("kubernetesGetNodeIPsForPodSelector: There are no node IPs");
+	}
+	
+	# Remove duplicates
+	my @uniqueIps;
+	for my $ip (@ips) {
+		if (!($ip ~~ @uniqueIps)) {
+			push @uniqueIps, $ip;
+		}
+	}
+	return \@uniqueIps;	
 }
 
 sub kubernetesGetNodePortForPortNumber {

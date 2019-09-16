@@ -121,10 +121,6 @@ spec:
         envFrom:
         - configMapRef:
             name: tomcat-config
-        resources:
-          requests:
-            cpu: 100m
-            memory: 500Mi
         livenessProbe:
           exec:
             command:

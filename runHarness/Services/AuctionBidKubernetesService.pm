@@ -99,11 +99,21 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAuctionBidServers\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('auctionBidServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('auctionBidServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			print FILEOUT $inline;
+			print FILEOUT "$indent  requests:\n";
+			print FILEOUT "$indent    cpu: " . $self->getParamValue('auctionBidServerCpus') . "\n";
+			print FILEOUT "$indent    memory: " . $self->getParamValue('auctionBidServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  limits:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('auctionBidServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('auctionBidServerMem') . "\n";						
+			}
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /livenessProbe/));
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

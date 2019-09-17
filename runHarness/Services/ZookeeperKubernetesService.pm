@@ -66,11 +66,21 @@ sub configure {
 		if ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-			print FILEOUT "            cpu: " . $self->getParamValue('coordinationServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-			print FILEOUT "            memory: " . $self->getParamValue('coordinationServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			print FILEOUT $inline;
+			print FILEOUT "$indent  requests:\n";
+			print FILEOUT "$indent    cpu: " . $self->getParamValue('coordinationServerCpus') . "\n";
+			print FILEOUT "$indent    memory: " . $self->getParamValue('coordinationServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  limits:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('coordinationServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('coordinationServerMem') . "\n";						
+			}
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /apiVersion/));
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');

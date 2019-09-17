@@ -79,7 +79,7 @@ sub configure {
 			}
 			do {
 				$inline = <FILEIN>;
-			} while(!($inline =~ /apiVersion/));
+			} while(!($inline =~ /\-\-\-/));
 			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {

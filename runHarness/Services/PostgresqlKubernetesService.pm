@@ -119,11 +119,21 @@ sub configure {
 			}
 			print FILEOUT "  POSTGRESMAXCONNECTIONS: \"$maxConn\"\n";
 		}
-		elsif ( $inline =~ /(\s+)cpu:/ ) {
-			print FILEOUT "${1}cpu: " . $self->getParamValue('dbServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /(\s+)memory:/ ) {
-			print FILEOUT "${1}memory: " . $self->getParamValue('dbServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			print FILEOUT $inline;
+			print FILEOUT "$indent  requests:\n";
+			print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
+			print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  limits:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";						
+			}
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /livenessProbe/));
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

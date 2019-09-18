@@ -96,11 +96,21 @@ sub configure {
 				print FILEOUT $inline;		
 			}
 		}
-		elsif ( $inline =~ /(\s+)cpu:/ ) {
-			print FILEOUT "${1}cpu: " . $self->getParamValue('webServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /(\s+)memory:/ ) {
-			print FILEOUT "${1}memory: " . $self->getParamValue('webServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			print FILEOUT $inline;
+			print FILEOUT "$indent  requests:\n";
+			print FILEOUT "$indent    cpu: " . $self->getParamValue('webServerCpus') . "\n";
+			print FILEOUT "$indent    memory: " . $self->getParamValue('webServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  limits:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('webServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('webServerMem') . "\n";						
+			}
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /livenessProbe/));
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

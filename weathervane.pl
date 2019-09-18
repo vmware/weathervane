@@ -500,6 +500,14 @@ open PARAMCOMMANDLINEFILE, ">$tmpDir/paramCommandLine.save";
 print PARAMCOMMANDLINEFILE $json->encode(\%paramCommandLine);
 close PARAMCOMMANDLINEFILE;
 
+# Save the fixedConfigs.conf file
+$saveConfigFile = $tmpDir . "/fixedConfigs.json.save";
+($cmdFailed, $cmdOutput) = runCmd("cp $weathervaneHome/runHarness/fixedConfigs.json $saveConfigFile");
+if ($cmdFailed) {
+	die "fixedConfigs cp failed: $cmdFailed\n";
+}
+
+
 # Check for a request for the help text
 my $help = getParamValue( $paramsHashRef, "help" );
 if ($help) {

@@ -112,11 +112,21 @@ sub configure {
 		}
 		elsif ( $inline =~ /weathervane\-tomcat/ ) {
 			do {
-				if ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\scpu:/ ) {
-					print FILEOUT "            cpu: " . $self->getParamValue('appServerCpus') . "\n";
-				}
-				elsif ( $inline =~ /\s\s\s\s\s\s\s\s\s\s\s\smemory:/ ) {
-					print FILEOUT "            memory: " . $self->getParamValue('appServerMem') . "\n";
+				if ( $inline =~ /(\s+)resources/ )  {
+					my $indent = $1;
+					print FILEOUT $inline;
+					print FILEOUT "$indent  requests:\n";
+					print FILEOUT "$indent    cpu: " . $self->getParamValue('appServerCpus') . "\n";
+					print FILEOUT "$indent    memory: " . $self->getParamValue('appServerMem') . "\n";
+					if ($self->getParamValue('useAppServerLimits') || $self->getParamValue('useKubernetesLimits')) {
+						print FILEOUT "$indent  limits:\n";
+						print FILEOUT "$indent    cpu: " . $self->getParamValue('appServerCpus') . "\n";
+						print FILEOUT "$indent    memory: " . $self->getParamValue('appServerMem') . "\n";						
+					}
+					do {
+						$inline = <FILEIN>;
+					} while(!($inline =~ /livenessProbe/));
+					print FILEOUT $inline;			
 				}
 				elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 					print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";

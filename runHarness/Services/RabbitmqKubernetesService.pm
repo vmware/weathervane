@@ -86,11 +86,21 @@ sub configure {
 		elsif ( $inline =~ /RABBITMQ_MEMORY:/ ) {
 			print FILEOUT "  RABBITMQ_MEMORY: \"$totalMemory$totalMemoryUnit\"\n";
 		}
-		elsif ( $inline =~ /^(\s+)cpu:/ ) {
-			print FILEOUT "${1}cpu: " . $self->getParamValue('msgServerCpus') . "\n";
-		}
-		elsif ( $inline =~ /^(\s+)memory:/ ) {
-			print FILEOUT "${1}memory: " . $self->getParamValue('msgServerMem') . "\n";
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			print FILEOUT $inline;
+			print FILEOUT "$indent  requests:\n";
+			print FILEOUT "$indent    cpu: " . $self->getParamValue('msgServerCpus') . "\n";
+			print FILEOUT "$indent    memory: " . $self->getParamValue('msgServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  limits:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('msgServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('msgServerMem') . "\n";						
+			}
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /livenessProbe/));
+			print FILEOUT $inline;			
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";

@@ -1151,6 +1151,22 @@ $parameters{"dockerNamespace"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"useAppServerLimits"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"useKubernetesLimits"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerCpuShares"} = {
 	"type"      => "=i",
 	"default"   => 0,

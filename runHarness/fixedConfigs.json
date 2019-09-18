@@ -2,7 +2,7 @@
  
 "micro" : {
   "users" : 200,
-  "maxUsers" : 2000,
+  "maxUsers" : 4000,
   "numDrivers" : 1,
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+UseParallelGC -XX:ParallelGCThreads=2  -XX:+AlwaysPreTouch",
   "driverCpus" : "500m",
@@ -60,7 +60,7 @@
 
 "small" : {
   "users" : 2000,
-  "maxUsers" : 20000,
+  "maxUsers" : 30000,
   "numDrivers" : 3,
   "driverJvmOpts" : "-Xmx4G -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "1000m",

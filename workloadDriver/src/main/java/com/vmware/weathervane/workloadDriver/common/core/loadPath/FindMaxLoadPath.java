@@ -131,7 +131,7 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
 
 		this.maxUsers = workload.getMaxUsers();
-		this.initialRampRateStep = maxUsers / 20;
+		this.initialRampRateStep = maxUsers / 40;
 		
 		curInterval= new UniformLoadInterval();
 		curInterval.setUsers(initialRampRateStep);
@@ -329,7 +329,7 @@ public class FindMaxLoadPath extends LoadPath {
 							curUsers += curRateStep;
 
 							long logCurUsers = curUsers;
-							curUsers = niceRound(curUsers, 0, minFailUsers);
+							curUsers = niceRound(curUsers, maxPassUsers, minFailUsers);
 							if (logCurUsers != curUsers) {
 								logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during increase");
 							}
@@ -411,7 +411,7 @@ public class FindMaxLoadPath extends LoadPath {
 						curUsers -= curRateStep;
 						
 						long logCurUsers = curUsers;
-						curUsers = niceRound(curUsers, maxPassUsers, 0);
+						curUsers = niceRound(curUsers, maxPassUsers, minFailUsers);
 						if (logCurUsers != curUsers) {
 							logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during decrease");
 						}

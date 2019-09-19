@@ -329,7 +329,7 @@ public class FindMaxLoadPath extends LoadPath {
 							curUsers += curRateStep;
 
 							long logCurUsers = curUsers;
-							curUsers = niceRound(curUsers, 0, minFailUsers);
+							curUsers = niceRound(curUsers, maxPassUsers, minFailUsers);
 							if (logCurUsers != curUsers) {
 								logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during increase");
 							}
@@ -411,7 +411,7 @@ public class FindMaxLoadPath extends LoadPath {
 						curUsers -= curRateStep;
 						
 						long logCurUsers = curUsers;
-						curUsers = niceRound(curUsers, maxPassUsers, 0);
+						curUsers = niceRound(curUsers, maxPassUsers, minFailUsers);
 						if (logCurUsers != curUsers) {
 							logger.debug("nextInterval rounding curUsers from "+logCurUsers+ " to "+curUsers+ " during decrease");
 						}
@@ -601,15 +601,15 @@ public class FindMaxLoadPath extends LoadPath {
 	private long niceRound(long number, long lowerLimit, long upperLimit) {
 		long originalNumber = number;
 		long tensMultiplier = 1;
-		
+
 		while (number > 1000 && tensMultiplier < 100) {
 			number /= 10;
 			tensMultiplier *= 10;
 		}
 		long rounder;
-		if (number >= 246) {
+		if (number >= 250) {
 			rounder = 10;
-		} else if (tensMultiplier > 1 && number >= 130) { //don't insert odds at the least significant digit
+		} else if (tensMultiplier > 1 && number >= 200) {
 			rounder = 5;
 		} else if (tensMultiplier == 1 && number >= 100) {
 			rounder = 4;
@@ -618,38 +618,51 @@ public class FindMaxLoadPath extends LoadPath {
 		} else {
 			rounder = 1;
 		}
-        long roundDown = (number / rounder) * rounder * tensMultiplier;
-        long roundUp = roundDown + rounder * tensMultiplier;
+		long roundDown = (number / rounder) * rounder * tensMultiplier;
+		long roundUp = roundDown + rounder * tensMultiplier;
+		//logger.debug("niceRound o:"+originalNumber+" ll:"+lowerLimit+" ul:"+upperLimit+" r:"+rounder+" t:"+tensMultiplier+" rd:"+roundDown+ " ru:"+roundUp);
 
-        if (originalNumber - roundDown < roundUp - originalNumber) {
-        	if (lowerLimit > 0 && roundDown <= lowerLimit) {
-        		// try to round to a middle 
-        		if (rounder >= 2) {
-        			rounder /= 2;
-        			if (rounder == 5 && tensMultiplier == 1) rounder = 4;  // don't insert odds at the least significant digit
-        			roundDown += rounder * tensMultiplier; 
-        			if (roundDown > lowerLimit && (upperLimit <= 0 || roundDown < upperLimit) && roundDown < roundUp) {
-        				return roundDown;
-        			}
-        		}
-        		return originalNumber;
-        	}
-        	return roundDown;
-        } else {
-        	if (upperLimit > 0 && roundUp >= upperLimit) {
-        		// try to round to a middle 
-        		if (rounder >= 2) {
-        			rounder /= 2;
-        			if (rounder == 5 && tensMultiplier == 1) rounder = 4;  // don't insert odds at the least significant digit 
-        			roundUp -= rounder * tensMultiplier; 
-        			if (roundUp < upperLimit && (roundUp > lowerLimit) && roundUp > roundDown) {
-        				return roundUp;
-        			}
-        		}
-        		return originalNumber;
-        	}
-        	return roundUp;
-        }
+		if (originalNumber - roundDown < roundUp - originalNumber) {
+			if ((lowerLimit <= 0 || roundDown > lowerLimit) && (upperLimit <= 0 || roundDown < upperLimit)) {
+				return roundDown;
+			}
+		} else {
+			if ((upperLimit <= 0 || roundUp < upperLimit) && (lowerLimit <= 0 || roundUp > lowerLimit)) {
+				return roundUp;
+			}
+			// limits prevent roundUp, try roundDown instead
+			if ((lowerLimit <= 0 || roundDown > lowerLimit) && (upperLimit <= 0 || roundDown < upperLimit)) {
+				return roundDown;
+			}
+		}
+
+		// find a middle number within restrictive limits
+		long rangeStart = lowerLimit;
+		long rangeEnd = upperLimit;
+		if (lowerLimit <= 0) {
+			rangeStart = roundDown;
+		}
+		if (upperLimit <= 0) {
+			rangeEnd = roundUp;
+		}
+		long rangeDelta = rangeEnd - rangeStart;
+		long adder = rounder * tensMultiplier / 2;
+
+		if (adder == rangeDelta && adder > 1) {
+			// an edge case where conflicting rounding and limits should pick a simple mid point
+			adder /= 2;
+		}
+		while (rangeDelta < adder && adder > 1) {
+			// reduce until a middle number can be calculated within small range limits
+			adder /= 2;
+		}
+		long middleNumber = rangeStart + adder;
+		if ((lowerLimit <= 0 || middleNumber > lowerLimit) && (upperLimit <= 0 || middleNumber < upperLimit)) {
+			return middleNumber;
+		}
+
+		// give up and return the original number
+		return originalNumber;
 	}
 
 	private void loadPathComplete(boolean passed) {

@@ -955,7 +955,7 @@ $parameters{"warmUp"} = {
 };
 $parameters{"numQosPeriods"} = {
 	"type"    => "=i",
-	"default" => "3",
+	"default" => "1",
 	"parent"  => "runProc",
 	"usageText" => "The number of QoS periods that the workload must pass without any failure.",
 	"showUsage" => 1,
@@ -1153,7 +1153,7 @@ $parameters{"dockerNamespace"} = {
 
 $parameters{"useAppServerLimits"} = {
 	"type"      => "!",
-	"default"   => JSON::true,
+	"default"   => JSON::false,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

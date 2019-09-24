@@ -40,6 +40,7 @@ public class FindMaxLoadPath extends LoadPath {
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
 	private double findMaxStopPct = 0.01;
+	private long initialRampRateStep = 1000;
 
 	/*
 	 * Phases in a findMax run: - INITIALRAMP: Use short intervals to ramp up until
@@ -89,9 +90,6 @@ public class FindMaxLoadPath extends LoadPath {
 	private String maxPassIntervalName = "";
 
 	@JsonIgnore
-	private long initialRampRateStep = 1000;
-
-	@JsonIgnore
 	private long curRateStep;
 	
 	@JsonIgnore
@@ -131,10 +129,9 @@ public class FindMaxLoadPath extends LoadPath {
 		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
 
 		this.maxUsers = workload.getMaxUsers();
-		this.initialRampRateStep = maxUsers / 40;
 		
 		curInterval= new UniformLoadInterval();
-		curInterval.setUsers(initialRampRateStep);
+		curInterval.setUsers(getInitialRampRateStep());
 		curInterval.setName("prerun");
 		curInterval.setDuration(initialRampIntervalSec);
 		
@@ -205,12 +202,12 @@ public class FindMaxLoadPath extends LoadPath {
 		 * If we have reached max users, or the previous interval failed, then to go to
 		 * the FINDFIRSTMAX phase
 		 */
-		if (!prevIntervalPassed || ((curUsers + initialRampRateStep) > maxUsers)) {
+		if (!prevIntervalPassed || ((curUsers + getInitialRampRateStep()) > maxUsers)) {
 			moveToNextPhase();
 			return nextInterval();
 		}
 		
-		curUsers += initialRampRateStep;
+		curUsers += getInitialRampRateStep();
 		long nextIntervalDuration = initialRampIntervalSec;
 		/*
 		 *  If number of users is less than 1000, then double the
@@ -731,6 +728,14 @@ public class FindMaxLoadPath extends LoadPath {
 
 	public double getFindMaxStopPct() {
 		return findMaxStopPct;
+	}
+
+	public long getInitialRampRateStep() {
+		return initialRampRateStep;
+	}
+
+	public void setInitialRampRateStep(long initialRampRateStep) {
+		this.initialRampRateStep = initialRampRateStep;
 	}
 
 	@Override

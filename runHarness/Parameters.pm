@@ -967,6 +967,13 @@ $parameters{"qosPeriodSec"} = {
 	"usageText" => "The length of a QoS period.",
 	"showUsage" => 0,
 };
+$parameters{"initialRampRateStep"} = {
+	"type"    => "=i",
+	"default" => "1000",
+	"parent"  => "runProc",
+	"usageText" => "The step size for the initialRamp of FindMaxSingleRun.",
+	"showUsage" => 0,
+};
 $parameters{"exitOnFirstFailure"} = {
 	"type"    => "!",
 	"default" => JSON::false,

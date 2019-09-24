@@ -475,6 +475,7 @@ sub createRunConfigHash {
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"initialRampRateStep"} = $self->getParamValue('initialRampRateStep');
 			$loadPath->{"findMaxStopPct"} = $self->getParamValue('findMaxStopPct');
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {

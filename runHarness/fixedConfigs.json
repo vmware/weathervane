@@ -3,6 +3,7 @@
 "micro" : {
   "users" : 200,
   "maxUsers" : 4000,
+  "initialRampRateStep" : 100,
   "numDrivers" : 1,
   "driverJvmOpts" : "-Xmx1G -Xms1g -XX:+UseParallelGC -XX:ParallelGCThreads=2  -XX:+AlwaysPreTouch",
   "driverCpus" : "500m",
@@ -61,6 +62,7 @@
 "small" : {
   "users" : 2000,
   "maxUsers" : 30000,
+  "initialRampRateStep" : 1000,
   "numDrivers" : 3,
   "driverJvmOpts" : "-Xmx4G -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "1000m",
@@ -125,6 +127,7 @@
 "medium" : {
   "users" : 10000,
   "maxUsers" : 50000,
+  "initialRampRateStep" : 2500,
   "numDrivers" : 8,
   "driverJvmOpts" : "-Xmx4G -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "1000m",
@@ -189,6 +192,7 @@
 "large" : {
   "users" : 20000,
   "maxUsers" : 100000,
+  "initialRampRateStep" : 5000,
   "numDrivers" : 12,
   "driverJvmOpts" : "-Xmx6G -Xms6g -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
   "driverCpus" : "2",

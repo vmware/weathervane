@@ -274,7 +274,8 @@ public class ClientBidUpdater {
 			 * Send the highBid back if the bidCount is 1 to tell the auctioneer
 			 * to start the watchdog timer 
 			 */
-			if ((highBidRepresentation.getLastBidCount() == 1) && !_sentWakeUpBid) {
+			if ((highBidRepresentation != null) &&
+				(highBidRepresentation.getLastBidCount() == 1) && !_sentWakeUpBid) {
 				_rabbitTemplate.convertAndSend(BidServiceImpl.liveAuctionExchangeName, 
 						BidServiceImpl.newBidRoutingKey + highBidRepresentation.getAuctionId(), 
 						highBidRepresentation);

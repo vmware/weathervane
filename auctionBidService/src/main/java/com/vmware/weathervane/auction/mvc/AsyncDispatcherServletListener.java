@@ -40,6 +40,7 @@ public class AsyncDispatcherServletListener implements AsyncListener {
 	@Override
 	public void onError(AsyncEvent event) throws IOException {
         logger.warn("Error in async request " + event.getThrowable().toString());
+        event.getThrowable().printStackTrace();
         handleTimeoutOrError(event, "Error processing " + event.getThrowable().getMessage());
 	}
 

@@ -955,7 +955,7 @@ $parameters{"warmUp"} = {
 };
 $parameters{"numQosPeriods"} = {
 	"type"    => "=i",
-	"default" => "3",
+	"default" => "1",
 	"parent"  => "runProc",
 	"usageText" => "The number of QoS periods that the workload must pass without any failure.",
 	"showUsage" => 1,
@@ -965,6 +965,13 @@ $parameters{"qosPeriodSec"} = {
 	"default" => "300",
 	"parent"  => "runProc",
 	"usageText" => "The length of a QoS period.",
+	"showUsage" => 0,
+};
+$parameters{"initialRampRateStep"} = {
+	"type"    => "=i",
+	"default" => "1000",
+	"parent"  => "runProc",
+	"usageText" => "The step size for the initialRamp of FindMaxSingleRun.",
 	"showUsage" => 0,
 };
 $parameters{"exitOnFirstFailure"} = {
@@ -1153,7 +1160,7 @@ $parameters{"dockerNamespace"} = {
 
 $parameters{"useAppServerLimits"} = {
 	"type"      => "!",
-	"default"   => JSON::true,
+	"default"   => JSON::false,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

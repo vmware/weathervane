@@ -1,5 +1,5 @@
 {
-  "description" : "k8s, micro, defaultSC",
+  "description" : "micro, defaultSC",
 
   "configurationSize": "micro",
 
@@ -23,7 +23,6 @@
 
   "driverCluster" : "driverCluster",
 
-  "numAppInstances" : 1,
   "appInstanceCluster" : "appCluster",
   "cassandraDataStorageClass" : "default",
   "postgresqlDataStorageClass" : "default",

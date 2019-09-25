@@ -32,7 +32,7 @@ while ( my $inline = <FILEIN> ) {
 		foreach my $appServer (@appServers) {
 			print FILEOUT "      server $appServer max_fails=0 max_conns=$perServerConnections ;\n";
 		}
-		print FILEOUT "      keepalive 10000;";
+		print FILEOUT "      keepalive 1000;";
 		print FILEOUT "    }\n";
 	}
 	elsif ( $inline =~ /[^\$]upstream\sbid/ ) {
@@ -53,7 +53,7 @@ while ( my $inline = <FILEIN> ) {
 				print FILEOUT "      server $appServer max_fails=0 max_conns=$perServerConnections ;\n";
 			}			
 		}
-		print FILEOUT "      keepalive 10000;";
+		print FILEOUT "      keepalive 1000;";
 		print FILEOUT "    }\n";
 	}
 	elsif ( $inline =~ /^\s*worker_connections\s/ ) {

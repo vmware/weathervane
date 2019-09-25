@@ -1,5 +1,5 @@
 {
-  "description" : "k8s, small, 6Driver, fastSC",
+  "description" : "small, fastSC",
 
   "configurationSize": "small",
 
@@ -23,7 +23,6 @@
 
   "driverCluster" : "driverCluster",
 
-  "numAppInstances" : 1,
   "appInstanceCluster" : "appCluster",
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",

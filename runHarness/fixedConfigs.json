@@ -16,6 +16,7 @@
   "webServerCpus" : "200m",
   "webServerMem"  : "600Mi",
   "webServerImpl" : "nginx",
+  "nginxCacheVolumeSize" : "1Gi",
 
   "numAuctionBidServers" : 0,
   
@@ -75,6 +76,7 @@
   "webServerCpus" : "1000m",
   "webServerMem"  : "10Gi",
   "webServerImpl" : "nginx",
+  "nginxCacheVolumeSize" : "10Gi",
 
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "1300m",
@@ -140,6 +142,7 @@
   "webServerCpus" : "1000m",
   "webServerMem"  : "10Gi",
   "webServerImpl" : "nginx",
+  "nginxCacheVolumeSize" : "10Gi",
 
   "numAuctionBidServers" : 3,
   "auctionBidServerCpus" : "2",
@@ -205,6 +208,7 @@
   "webServerCpus" : "2",
   "webServerMem"  : "10Gi",
   "webServerImpl" : "nginx",
+  "nginxCacheVolumeSize" : "10Gi",
 
   "numAuctionBidServers" : 6,
   "auctionBidServerCpus" : "2",

@@ -49,6 +49,13 @@ sub configure {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
 
+	my $dataVolumeSize = $self->getParamValue("nginxCacheVolumeSize");
+	# Convert the cache size notation from Kubernetes to Nginx
+	my $cacheMaxSize = $dataVolumeSize;
+	$cacheMaxSize =~ s/Gi/g/i;
+	$cacheMaxSize =~ s/Mi/m/i;
+	$cacheMaxSize =~ s/Ki/k/i;
+
 	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 	# The default setting for net.ipv4.ip_local_port_range on most Linux distros gives 28231 port numbers.
 	# As a result, we need to limit the number of connections to any back-end server to less than this 
@@ -71,6 +78,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /PERSERVERCONNECTIONS:/ ) {
 			print FILEOUT "  PERSERVERCONNECTIONS: \"$perServerConnections\"\n";
+		}
+		elsif ( $inline =~ /CACHEMAXSIZE:/ ) {
+			print FILEOUT "  CACHEMAXSIZE: \"$cacheMaxSize\"\n";
 		}
 		elsif ( $inline =~ /KEEPALIVETIMEOUT:/ ) {
 			print FILEOUT "  KEEPALIVETIMEOUT: \"" . $self->getParamValue('nginxKeepaliveTimeout') . "\"\n";
@@ -122,6 +132,30 @@ sub configure {
 		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numWebServers\n";
+		}
+		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if ( $inline =~ /(\s+)name:\snginx\-cache/ ) {
+					print FILEOUT $inline;
+					while ( my $inline = <FILEIN> ) {
+						if ( $inline =~ /(\s+)storageClassName:/ ) {
+							my $storageClass = $self->getParamValue("nginxCacheStorageClass");
+							print FILEOUT "${1}storageClassName: $storageClass\n";
+							last;
+						} elsif ($inline =~ /^(\s+)storage:/ ) {
+							print FILEOUT "${1}storage: $dataVolumeSize\n";
+						} else {
+							print FILEOUT $inline;
+						}	
+					}
+				} elsif ( $inline =~ /\-\-\-/ ) {
+					print FILEOUT $inline;
+					last;
+				} else {
+					print FILEOUT $inline;					
+				}
+			}
 		}
 		else {
 			print FILEOUT $inline;

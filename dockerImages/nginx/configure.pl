@@ -6,6 +6,7 @@ my $workerConnections    = $ENV{'WORKERCONNECTIONS'};
 my $perServerConnections = $ENV{'PERSERVERCONNECTIONS'};
 my $keepaliveTimeout     = $ENV{'KEEPALIVETIMEOUT'};
 my $maxKeepaliveRequests = $ENV{'MAXKEEPALIVEREQUESTS'};
+my $cacheMaxSize     = $ENV{'CACHEMAXSIZE'};
 my $appServersString     = $ENV{'APPSERVERS'};
 my @appServers           = split( /,/, $appServersString );
 my $bidServersString     = $ENV{'BIDSERVERS'};
@@ -56,14 +57,17 @@ while ( my $inline = <FILEIN> ) {
 		print FILEOUT "      keepalive 1000;";
 		print FILEOUT "    }\n";
 	}
-	elsif ( $inline =~ /^\s*worker_connections\s/ ) {
-		print FILEOUT "    worker_connections " . $workerConnections . ";\n";
+	elsif ( $inline =~ /^(\s*)proxy_cache_path\s/ ) {
+		print FILEOUT "${1}proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=one:100m max_size=" . $cacheMaxSize . " inactive=2h;\n";
 	}
-	elsif ( $inline =~ /^\s*keepalive_timeout\s/ ) {
-		print FILEOUT "    keepalive_timeout " . $keepaliveTimeout . ";\n";
+	elsif ( $inline =~ /^(\s*)worker_connections\s/ ) {
+		print FILEOUT "${1}worker_connections " . $workerConnections . ";\n";
 	}
-	elsif ( $inline =~ /^\s*keepalive_requests\s/ ) {
-		print FILEOUT "    keepalive_requests " . $maxKeepaliveRequests . ";\n";
+	elsif ( $inline =~ /^(\s*)keepalive_timeout\s/ ) {
+		print FILEOUT "${1}keepalive_timeout " . $keepaliveTimeout . ";\n";
+	}
+	elsif ( $inline =~ /^(\s*)keepalive_requests\s/ ) {
+		print FILEOUT "${1}keepalive_requests " . $maxKeepaliveRequests . ";\n";
 	}
 	else {
 		print FILEOUT $inline;

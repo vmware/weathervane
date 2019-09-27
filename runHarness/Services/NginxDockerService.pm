@@ -45,7 +45,12 @@ override 'create' => sub {
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";
 	
-	my %volumeMap;		
+	my %volumeMap;
+	if ($self->getParamValue('nginxUseNamedVolumes') || $host->getParamValue('vicHost')) {
+		$volumeMap{"/var/cache/nginx"} = $self->getParamValue('nginxCacheVolume');
+	}
+	
+		
 	my %envVarMap;
 	my $users = $self->appInstance->getUsers();
 	my $workerConnections = ceil( $self->getParamValue('frontendConnectionMultiplier') * $users / ( $self->appInstance->getTotalNumOfServiceType('webServer') * 1.0 ) );

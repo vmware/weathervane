@@ -24,6 +24,7 @@ sigusr1()
 trap 'sigterm' TERM
 trap 'sigusr1' USR1
 
+rm -rf /var/cache/nginx/*
 chown -R nginx:nginx /var/cache/nginx
 
 perl /updateResolveConf.pl

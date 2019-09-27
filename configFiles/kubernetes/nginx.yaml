@@ -29,6 +29,7 @@ metadata:
     type: webServer
     impl: nginx
 spec:
+  serviceName: nginx
   replicas: 1
   selector:
     matchLabels:

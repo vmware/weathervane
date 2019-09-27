@@ -167,8 +167,15 @@ sub configure {
 	close FILEIN;
 	close FILEOUT;
 	
-		
-
+	# Delete the pvc for nginxCacheVolume
+	# if the size doesn't match the requested size.  
+	# This is to make sure that we are running the
+	# correct configuration size
+	my $cluster = $self->host;
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("nginx-cache-nginx-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDeleteAllWithLabelAndResourceType("impl=nginx,type=webServer", "pvc", $self->namespace);
+	}
 }
 
 override 'isUp' => sub {

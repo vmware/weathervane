@@ -172,8 +172,13 @@ public abstract class LoadPath implements Runnable {
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		changeActiveUsers(users);
-
+		try {
+			changeActiveUsers(users);
+		} catch (Throwable t) {
+			logger.warn("LoadPath {} got throwable when notifying hosts of change in active users: {}", 
+							this.getName(), t.getMessage());
+		}
+		
 		long wait = nextInterval.getDuration();
 		logger.debug("run: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {

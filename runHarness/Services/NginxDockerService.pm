@@ -74,6 +74,19 @@ override 'create' => sub {
 	}
 	$envVarMap{'PERSERVERCONNECTIONS'} = $perServerConnections;
 	
+	my $dataVolumeSize = $self->getParamValue("nginxCacheVolumeSize");
+	# Convert the cache size notation from Kubernetes to Nginx. Also need to 
+	# make the cache size 90% of the volume size to ensure that it doesn't 
+	# fill up. To do this we step down to the next smaller unit size
+	$dataVolumeSize =~ /(\d+)([^\d]+)/;
+	my $cacheMagnitude = ceil(1024 * $1 * 0.90);
+	my $cacheUnit = $2;	
+	$cacheUnit =~ s/Gi/m/i;
+	$cacheUnit =~ s/Mi/k/i;
+	$cacheUnit =~ s/Ki//i;
+	my $cacheMaxSize = "$cacheMagnitude$cacheUnit";
+	$envVarMap{'CACHEMAXSIZE'} = $cacheMaxSize;
+	
 	$envVarMap{'KEEPALIVETIMEOUT'} = $self->getParamValue('nginxKeepaliveTimeout');
 	$envVarMap{'MAXKEEPALIVEREQUESTS'} = $self->getParamValue('nginxMaxKeepaliveRequests');
 	$envVarMap{'IMAGESTORETYPE'} = $self->getParamValue('imageStoreType');

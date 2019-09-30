@@ -54,7 +54,7 @@ sub configure {
 	# make the cache size 95% of the volume size to ensure that it doesn't 
 	# fill up. To do this we step down to the next smaller unit size
 	$dataVolumeSize =~ /(\d+)([^\d]+)/;
-	my $cacheMagnitude = 1024 * $1 * 0.95;
+	my $cacheMagnitude = ceil(1024 * $1 * 0.95);
 	my $cacheUnit = $2;	
 	$cacheUnit =~ s/Gi/m/i;
 	$cacheUnit =~ s/Mi/k/i;

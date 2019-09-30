@@ -50,11 +50,16 @@ sub configure {
 	}
 
 	my $dataVolumeSize = $self->getParamValue("nginxCacheVolumeSize");
-	# Convert the cache size notation from Kubernetes to Nginx
-	my $cacheMaxSize = $dataVolumeSize;
-	$cacheMaxSize =~ s/Gi/g/i;
-	$cacheMaxSize =~ s/Mi/m/i;
-	$cacheMaxSize =~ s/Ki/k/i;
+	# Convert the cache size notation from Kubernetes to Nginx. Also need to 
+	# make the cache size 95% of the volume size to ensure that it doesn't 
+	# fill up. To do this we step down to the next smaller unit size
+	$dataVolumeSize =~ /(\d+)([^\d]+)/;
+	my $cacheMagnitude = 1024 * $1 * 0.95;
+	my $cacheUnit = $2;	
+	$cacheUnit =~ s/Gi/m/i;
+	$cacheUnit =~ s/Mi/k/i;
+	$cacheUnit =~ s/Ki//i;
+	my $cacheMaxSize = "$cacheMagnitude$cacheUnit";
 
 	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 	# The default setting for net.ipv4.ip_local_port_range on most Linux distros gives 28231 port numbers.

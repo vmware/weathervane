@@ -27,5 +27,6 @@
   "cassandraDataStorageClass" : "default",
   "postgresqlDataStorageClass" : "default",
   "postgresqlLogStorageClass" : "default",
+  "nginxCacheStorageClass" : "default",
 
 }

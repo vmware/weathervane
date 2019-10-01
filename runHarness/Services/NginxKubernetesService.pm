@@ -49,6 +49,18 @@ sub configure {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
 
+	my $dataVolumeSize = $self->getParamValue("nginxCacheVolumeSize");
+	# Convert the cache size notation from Kubernetes to Nginx. Also need to 
+	# make the cache size 90% of the volume size to ensure that it doesn't 
+	# fill up. To do this we step down to the next smaller unit size
+	$dataVolumeSize =~ /(\d+)([^\d]+)/;
+	my $cacheMagnitude = ceil(1024 * $1 * 0.90);
+	my $cacheUnit = $2;	
+	$cacheUnit =~ s/Gi/m/i;
+	$cacheUnit =~ s/Mi/k/i;
+	$cacheUnit =~ s/Ki//i;
+	my $cacheMaxSize = "$cacheMagnitude$cacheUnit";
+
 	my $numAuctionBidServers = $self->appInstance->getTotalNumOfServiceType('auctionBidServer');
 	# The default setting for net.ipv4.ip_local_port_range on most Linux distros gives 28231 port numbers.
 	# As a result, we need to limit the number of connections to any back-end server to less than this 
@@ -71,6 +83,9 @@ sub configure {
 		}
 		elsif ( $inline =~ /PERSERVERCONNECTIONS:/ ) {
 			print FILEOUT "  PERSERVERCONNECTIONS: \"$perServerConnections\"\n";
+		}
+		elsif ( $inline =~ /CACHEMAXSIZE:/ ) {
+			print FILEOUT "  CACHEMAXSIZE: \"$cacheMaxSize\"\n";
 		}
 		elsif ( $inline =~ /KEEPALIVETIMEOUT:/ ) {
 			print FILEOUT "  KEEPALIVETIMEOUT: \"" . $self->getParamValue('nginxKeepaliveTimeout') . "\"\n";
@@ -123,6 +138,30 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numWebServers\n";
 		}
+		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
+			print FILEOUT $inline;
+			while ( my $inline = <FILEIN> ) {
+				if ( $inline =~ /(\s+)name:\snginx\-cache/ ) {
+					print FILEOUT $inline;
+					while ( my $inline = <FILEIN> ) {
+						if ( $inline =~ /(\s+)storageClassName:/ ) {
+							my $storageClass = $self->getParamValue("nginxCacheStorageClass");
+							print FILEOUT "${1}storageClassName: $storageClass\n";
+							last;
+						} elsif ($inline =~ /^(\s+)storage:/ ) {
+							print FILEOUT "${1}storage: $dataVolumeSize\n";
+						} else {
+							print FILEOUT $inline;
+						}	
+					}
+				} elsif ( $inline =~ /\-\-\-/ ) {
+					print FILEOUT $inline;
+					last;
+				} else {
+					print FILEOUT $inline;					
+				}
+			}
+		}
 		else {
 			print FILEOUT $inline;
 		}
@@ -133,8 +172,15 @@ sub configure {
 	close FILEIN;
 	close FILEOUT;
 	
-		
-
+	# Delete the pvc for nginxCacheVolume
+	# if the size doesn't match the requested size.  
+	# This is to make sure that we are running the
+	# correct configuration size
+	my $cluster = $self->host;
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("nginx-cache-nginx-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
+		$cluster->kubernetesDeleteAllWithLabelAndResourceType("impl=nginx,type=webServer", "pvc", $self->namespace);
+	}
 }
 
 override 'isUp' => sub {

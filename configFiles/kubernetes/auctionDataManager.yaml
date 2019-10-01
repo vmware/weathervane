@@ -63,9 +63,4 @@ spec:
           periodSeconds: 10
         envFrom:
         - configMapRef:
-            name: auctiondatamanager-config
-        resources:
-          requests:
-            cpu: 500m
-            memory: 2200Mi
-            
+            name: auctiondatamanager-config            

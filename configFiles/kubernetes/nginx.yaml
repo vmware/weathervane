@@ -13,13 +13,14 @@ data:
   KEEPALIVETIMEOUT: "120"
   MAXKEEPALIVEREQUESTS: "1000"
   IMAGESTORETYPE: "mongodb"
+  CACHEMAXSIZE: "10g"
   HTTPPORT: "80"
   HTTPSPORT: "443"
   APPSERVERS: "tomcat:8080"
   BIDSERVERS: "tomcat:8080"
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: nginx
   labels:
@@ -28,6 +29,7 @@ metadata:
     type: webServer
     impl: nginx
 spec:
+  serviceName: nginx
   replicas: 1
   selector:
     matchLabels:
@@ -103,6 +105,18 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
+        volumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+  volumeClaimTemplates:
+  - metadata:
+      name: nginx-cache
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: fast
 ---
 apiVersion: v1
 kind: Service

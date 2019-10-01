@@ -2342,6 +2342,38 @@ $parameters{"cassandraDataVolumeSize"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"nginxUseNamedVolumes"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"nginxCacheStorageClass"} = {
+	"type"      => "=s",
+	"default"   => "fast",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nginxCacheVolume"} = {
+	"type"      => "=s",
+	"default"   => "nginxCache",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"nginxCacheVolumeSize"} = {
+	"type"      => "=s",
+	"default"   => "10Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"rampupInterval"} = {
 	"type"      => "=i",
 	"default"   => 10,

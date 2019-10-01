@@ -27,5 +27,6 @@
   "cassandraDataStorageClass" : "fast",
   "postgresqlDataStorageClass" : "fast",
   "postgresqlLogStorageClass" : "fast",
+  "nginxCacheStorageClass" : "fast",
 
 }

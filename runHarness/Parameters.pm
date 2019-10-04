@@ -2272,7 +2272,7 @@ $parameters{"postgresqlLogVolumeSize"} = {
 
 $parameters{"postgresqlDataStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "fast",
+	"default"   => "weathervaneSC",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2280,7 +2280,7 @@ $parameters{"postgresqlDataStorageClass"} = {
 
 $parameters{"postgresqlLogStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "fast",
+	"default"   => "weathervaneSC",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2320,7 +2320,7 @@ $parameters{"cassandraUseNamedVolumes"} = {
 
 $parameters{"cassandraDataStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "fast",
+	"default"   => "weathervaneSC",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2352,7 +2352,7 @@ $parameters{"nginxUseNamedVolumes"} = {
 
 $parameters{"nginxCacheStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "fast",
+	"default"   => "weathervaneSC",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

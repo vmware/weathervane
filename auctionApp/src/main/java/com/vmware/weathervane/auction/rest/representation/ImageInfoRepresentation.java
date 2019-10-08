@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.weathervane.auction.data.imageStore.model.ImageInfo;
+import com.vmware.weathervane.auction.rest.representation.Representation.RestAction;
 
 public class ImageInfoRepresentation extends Representation implements Serializable {
 
@@ -74,21 +75,17 @@ public class ImageInfoRepresentation extends Representation implements Serializa
 
 		Map<RestAction, String> itemImageLinks = new HashMap<Representation.RestAction, String>();
 
-		String urlPath;
+		String urlPath = "item/" + Long.toString(theImageInfo.getKey().getEntityid())
+		+ "/image/" + theImageInfo.getKey().getImageId().toString();
 		if (cacheable) {
-			urlPath = ReadItemImageCacheablePath;
-		} else {
-			urlPath = ReadItemImagePath;
+			urlPath = urlPath + "/cacheable";
 		}
-		
+
 		/*
 		 *  Create the REST url that the application will understand.
 		 */
-		Map<String, String> replacements = new HashMap<String, String>();
 		// Link for READ image
-		replacements.put("itemId", Long.toString(theImageInfo.getKey().getEntityid()));
-		replacements.put("imageId", theImageInfo.getKey().getImageId().toString());
-		itemImageLinks.put(RestAction.READ, replaceTokens(urlPath, replacements));
+		itemImageLinks.put(RestAction.READ, urlPath);
 
 		return itemImageLinks;
 	}

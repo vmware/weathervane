@@ -26,6 +26,7 @@ import com.vmware.weathervane.auction.data.model.Condition;
 import com.vmware.weathervane.auction.data.model.HighBid;
 import com.vmware.weathervane.auction.data.model.Item;
 import com.vmware.weathervane.auction.data.model.Item.ItemState;
+import com.vmware.weathervane.auction.rest.representation.Representation.RestAction;
 
 public class ItemRepresentation extends Representation implements Serializable {
 
@@ -131,17 +132,11 @@ public class ItemRepresentation extends Representation implements Serializable {
 
 		Map<RestAction, String> itemLinks = new HashMap<Representation.RestAction, String>();
 
-		String path = null;
-		Map<String, String> replacements = new HashMap<String, String>();
-
-		replacements.put("itemId", theItem.getId().toString());
-
 		// Link for READ item
-		path = replaceTokens(ReadItemPath, replacements);
+		String path = "item/" + theItem.getId().toString();
 		itemLinks.put(RestAction.READ, path);
 
 		// Link for UPDATE item
-		path = replaceTokens(UpdateItemPath, replacements);
 		itemLinks.put(RestAction.UPDATE, path);
 
 		return itemLinks;

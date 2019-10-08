@@ -1160,7 +1160,7 @@ $parameters{"dockerNamespace"} = {
 
 $parameters{"useAppServerLimits"} = {
 	"type"      => "!",
-	"default"   => JSON::false,
+	"default"   => JSON::true,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

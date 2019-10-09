@@ -53,7 +53,7 @@
   "nosqlServerCpus" : "30m",
   "nosqlServerMem" : "1500Mi",
   "nosqlServerImpl" : "cassandra",
-  "cassandraDataVolumeSize" : "20Gi",
+  "cassandraDataVolumeSize" : "10Gi",
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,

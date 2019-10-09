@@ -26,6 +26,12 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'VIHost';
 
+has 'esxtopPid' => (
+	is  => 'rw',
+	isa => 'Int',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();
@@ -33,7 +39,10 @@ override 'initialize' => sub {
 
 sub stopStatsCollection {
 	my ($self) = @_;
-
+	if ($self->esxtopPid) {
+		kill 'KILL', $self->esxtopPid;
+		$self->esxtopPid = 0;
+	}
 }
 
 sub startStatsCollection {
@@ -44,12 +53,16 @@ sub startStatsCollection {
 	my $hostname         = $self->name;
 	$logger->debug("Starting stats collection for ESXi Host " . $hostname);
 	
-	
-	my $pid              = fork();
-	if ( $pid == 0 ) {
+	$self->esxtopPid(fork());
+	if ( $self->esxtopPid == 0 ) {
 		my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 		my $console_logger = get_logger("Console");
-		my $cmdString = "ssh -o 'StrictHostKeyChecking no' root\@$hostname esxtop -a -b -d  $intervalLengthSec -n $numIntervals > /tmp/${hostname}_esxtop.csv 2>/tmp/${hostname}_esxtop.stderr &";
+		my $cmdString;
+		if ($numIntervals) {
+			$cmdString = "ssh -o 'StrictHostKeyChecking no' root\@$hostname esxtop -a -b -d  $intervalLengthSec -n $numIntervals > /tmp/${hostname}_esxtop.csv 2>/tmp/${hostname}_esxtop.stderr &";
+		} else {
+			$cmdString = "ssh -o 'StrictHostKeyChecking no' root\@$hostname esxtop -a -b -d  $intervalLengthSec -n infinity > /tmp/${hostname}_esxtop.csv 2>/tmp/${hostname}_esxtop.stderr &";			
+		}
 		$logger->debug("esxtop command for $hostname is: " . $cmdString);
 		my $cmdOut = `$cmdString`;
 		if ( -z "/tmp/${hostname}_esxtop.stderr" ) {

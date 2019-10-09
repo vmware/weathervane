@@ -166,7 +166,7 @@ my @builtinWorlds = (
 	"chardevlogger", "vmkiscsid", "sfcb-HTTP-Daemo", "nfsgssd", "clomd",
 	"cmmdsd", "vsanSoapServer", "epd", "osfsd", "python", "dhclient-uw", 
 	"ioFilterVPServer", "hostdCgiServer", "vsanTraceReader", "rm", 
-	"tail", "awk",
+	"tail", "awk", "nicmgmtd"
 );
 
 # This structure is a hash from a category for which we collect together related
@@ -328,7 +328,7 @@ sub parseEsxtopCmdline {
 			if ( $worldname =~ /(.+)\.\d+/ ) {
 				$worldname = $1;
 			}
-			my @worldMatch = grep /$worldname/, @builtinWorlds;
+			my @worldMatch = grep {$_ =~ /\Q$worldname/ || ($worldname =~ /\Q$_/)} @builtinWorlds;
 			if ( $#worldMatch == -1 ) {
 				if ( ( $vmPrefix eq '' ) || ( $worldname =~ /$vmPrefix/ ) ) {
 					push @vms, $worldname;

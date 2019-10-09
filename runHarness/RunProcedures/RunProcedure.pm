@@ -552,10 +552,26 @@ sub startStatsCollection {
 
 	if ( $logLevel >= 4 ) {
 		$console_logger->info("Starting performance statistics collection on virtual-infrastructure hosts.\n");
+		my $usingFindMaxLoadPathType = 0;
+		my $workloadsRef = $self->workloadsRef;
+		foreach my $workload (@$workloadsRef) {
+			my $appInstancesRef = $workload->appInstancesRef;
+			foreach my $appInstance (@$appInstancesRef) {
+				my $loadPathType = $appInstance->getParamValue('loadPathType');
+				if ( $loadPathType eq "findmax" ) {
+					$usingFindMaxLoadPathType = 1;
+					last;
+				}
+			}
+		}
 
 		# Start starts collection on virtual infrastructure
 		my $virtualInfrastructure = $self->virtualInfrastructure;
-		$virtualInfrastructure->startStatsCollection( $intervalLengthSec, $numIntervals );
+		if ($usingFindMaxLoadPathType) {
+			$virtualInfrastructure->startStatsCollection( $intervalLengthSec, 0 );
+		} else {
+			$virtualInfrastructure->startStatsCollection( $intervalLengthSec, $numIntervals );			
+		}
 	}
 
 }

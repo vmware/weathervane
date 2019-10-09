@@ -138,11 +138,11 @@
   "driverControllerCpus" : "300m",
   "driverControllerMem" : "1500Mi",
 
-  "numWebServers" : 4,
-  "webServerCpus" : "100m",
-  "webServerMem"  : "10Gi",
+  "numWebServers" : 6,
+  "webServerCpus" : "50m",
+  "webServerMem"  : "5500i",
   "webServerImpl" : "nginx",
-  "nginxCacheVolumeSize" : "10Gi",
+  "nginxCacheVolumeSize" : "5Gi",
 
   "numAuctionBidServers" : 3,
   "auctionBidServerCpus" : "130m",

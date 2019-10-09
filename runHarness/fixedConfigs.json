@@ -140,7 +140,7 @@
 
   "numWebServers" : 6,
   "webServerCpus" : "50m",
-  "webServerMem"  : "5500i",
+  "webServerMem"  : "5500Mi",
   "webServerImpl" : "nginx",
   "nginxCacheVolumeSize" : "5Gi",
 

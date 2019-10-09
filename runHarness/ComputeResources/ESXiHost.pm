@@ -41,7 +41,7 @@ sub stopStatsCollection {
 	my ($self) = @_;
 	if ($self->esxtopPid) {
 		kill 'KILL', $self->esxtopPid;
-		$self->esxtopPid = 0;
+		$self->esxtopPid(0);
 	}
 }
 

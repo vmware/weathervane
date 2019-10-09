@@ -166,7 +166,10 @@ my @builtinWorlds = (
 	"chardevlogger", "vmkiscsid", "sfcb-HTTP-Daemo", "nfsgssd", "clomd",
 	"cmmdsd", "vsanSoapServer", "epd", "osfsd", "python", "dhclient-uw", 
 	"ioFilterVPServer", "hostdCgiServer", "vsanTraceReader", "rm", 
-	"tail", "awk", "nicmgmtd", "IORETRY_IngressLFHelper"
+	"tail", "awk", "nicmgmtd", "IORETRY_IngressLFHelper", "hyperbus",
+	"mpa", "nestdb-server", "netcpa", "nsxa", "nsx-ctxteng", "nsx-da",
+	"nsx-exporter", "nsx-sfhc", "nsx-support-bundle-client", 
+	"vShield-Endpoint-Mux"
 );
 
 # This structure is a hash from a category for which we collect together related

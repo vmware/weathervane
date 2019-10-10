@@ -16,7 +16,7 @@
   "webServerCpus" : "20m",
   "webServerMem"  : "600Mi",
   "webServerImpl" : "nginx",
-  "nginxCacheVolumeSize" : "2Gi",
+  "nginxCacheVolumeSize" : "1250Mi",
 
   "numAuctionBidServers" : 0,
   
@@ -53,7 +53,7 @@
   "nosqlServerCpus" : "30m",
   "nosqlServerMem" : "1500Mi",
   "nosqlServerImpl" : "cassandra",
-  "cassandraDataVolumeSize" : "20Gi",
+  "cassandraDataVolumeSize" : "10Gi",
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,
@@ -146,7 +146,7 @@
 
   "numAuctionBidServers" : 3,
   "auctionBidServerCpus" : "130m",
-  "auctionBidServerMem" : "5500Gi",
+  "auctionBidServerMem" : "5500Mi",
   "auctionBidServerJvmOpts" : "-Xmx5G -Xms5G -XX:+UseG1GC -XX:ParallelGCThreads=2 -XX:MaxGCPauseMillis=50 -XX:+AlwaysPreTouch ",
   "auctionBidServerThreads" : 100,
   "auctionBidServerJdbcConnections" : 101,
@@ -155,7 +155,7 @@
   
   "numAppServers" : 3,
   "appServerCpus" :"2000m",
-  "appServerMem" : "4500Gi",
+  "appServerMem" : "4500Mi",
   "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch ",
   "appServerThreads" : 100,
   "appServerJdbcConnections" : 101,

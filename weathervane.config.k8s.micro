@@ -1,5 +1,5 @@
 {
-  "description" : "micro, defaultSC",
+  "description" : "micro",
 
   "configurationSize": "micro",
 
@@ -24,9 +24,9 @@
   "driverCluster" : "driverCluster",
 
   "appInstanceCluster" : "appCluster",
-  "cassandraDataStorageClass" : "default",
-  "postgresqlDataStorageClass" : "default",
-  "postgresqlLogStorageClass" : "default",
-  "nginxCacheStorageClass" : "default",
+  "cassandraDataStorageClass" : "weathervaneSC",
+  "postgresqlDataStorageClass" : "weathervaneSC",
+  "postgresqlLogStorageClass" : "weathervaneSC",
+  "nginxCacheStorageClass" : "weathervaneSC",
 
 }

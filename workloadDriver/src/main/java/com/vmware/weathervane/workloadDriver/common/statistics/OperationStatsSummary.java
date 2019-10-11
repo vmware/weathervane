@@ -127,20 +127,13 @@ public class OperationStatsSummary {
 		this.totalNumRTOps += that.totalNumRTOps;
 		this.totalNumFailedRT += that.totalNumFailedRT;
 		this.totalNumFailed += that.totalNumFailed;
-		
-		Set<String> allFailureStrings = new HashSet<String>();
-		allFailureStrings.addAll(this.failureStringCounts.keySet());
-		allFailureStrings.addAll(that.getFailureStringCounts().keySet());
-		for (String failureString : allFailureStrings) {
+		for (String failureString : that.getFailureStringCounts().keySet()) {
 			if (this.failureStringCounts.containsKey(failureString)) {
-				if (that.getFailureStringCounts().containsKey(failureString)) {
-					this.failureStringCounts.put(failureString, 
-							this.failureStringCounts.get(failureString)+that.getFailureStringCounts().get(failureString));
-				}
+				this.failureStringCounts.put(failureString, 
+						this.failureStringCounts.get(failureString) + that.getFailureStringCounts().get(failureString));
 			} else {
 				this.failureStringCounts.put(failureString, that.getFailureStringCounts().get(failureString));
 			}
-
 		}
 		
 		this.totalResponseTime += that.totalResponseTime;

@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
  */
 public class Representation {
 
+	private static Pattern pattern = Pattern.compile("\\{(.+?)\\}");
+
 	public enum RestAction {
 		CREATE, READ, UPDATE, DELETE
 	};
@@ -64,7 +66,6 @@ public class Representation {
 	}
 
 	protected static String replaceTokens(String text, Map<String, String> replacements) {
-		Pattern pattern = Pattern.compile("\\{(.+?)\\}");
 		Matcher matcher = pattern.matcher(text);
 		StringBuffer buffer = new StringBuffer();
 		while (matcher.find()) {

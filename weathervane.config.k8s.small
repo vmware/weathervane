@@ -1,5 +1,5 @@
 {
-  "description" : "small, fastSC",
+  "description" : "small",
 
   "configurationSize": "small",
 
@@ -24,9 +24,9 @@
   "driverCluster" : "driverCluster",
 
   "appInstanceCluster" : "appCluster",
-  "cassandraDataStorageClass" : "fast",
-  "postgresqlDataStorageClass" : "fast",
-  "postgresqlLogStorageClass" : "fast",
-  "nginxCacheStorageClass" : "fast",
+  "cassandraDataStorageClass" : "weathervaneSC",
+  "postgresqlDataStorageClass" : "weathervaneSC",
+  "postgresqlLogStorageClass" : "weathervaneSC",
+  "nginxCacheStorageClass" : "weathervaneSC",
 
 }

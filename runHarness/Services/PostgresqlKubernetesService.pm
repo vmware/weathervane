@@ -121,15 +121,20 @@ sub configure {
 		}
 		elsif ( $inline =~ /(\s+)resources/ )  {
 			my $indent = $1;
-			print FILEOUT $inline;
-			print FILEOUT "$indent  requests:\n";
-			print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
-			print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";
+			if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT $inline;
+			}
+			if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+				print FILEOUT "$indent  requests:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";
+			}
 			if ($self->getParamValue('useKubernetesLimits')) {
 				print FILEOUT "$indent  limits:\n";
 				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
 				print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";						
 			}
+			
 			do {
 				$inline = <FILEIN>;
 			} while(!($inline =~ /livenessProbe/));

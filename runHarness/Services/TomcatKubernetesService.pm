@@ -114,15 +114,21 @@ sub configure {
 			do {
 				if ( $inline =~ /(\s+)resources/ )  {
 					my $indent = $1;
-					print FILEOUT $inline;
-					print FILEOUT "$indent  requests:\n";
-					print FILEOUT "$indent    cpu: " . $self->getParamValue('appServerCpus') . "\n";
-					print FILEOUT "$indent    memory: " . $self->getParamValue('appServerMem') . "\n";
-					if ($self->getParamValue('useAppServerLimits') || $self->getParamValue('useKubernetesLimits')) {
+					if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+						print FILEOUT $inline;
+					}
+					if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+						print FILEOUT "$indent  requests:\n";
+						print FILEOUT "$indent    cpu: " . $self->getParamValue('appServerCpus') . "\n";
+						print FILEOUT "$indent    memory: " . $self->getParamValue('appServerMem') . "\n";
+					}
+					if ($self->getParamValue('useKubernetesLimits') ||
+						($self->getParamValue('useKubernetesRequests') && $self->getParamValue('useAppServerLimits'))) {
 						print FILEOUT "$indent  limits:\n";
 						print FILEOUT "$indent    cpu: " . $self->getParamValue('appServerCpus') . "\n";
 						print FILEOUT "$indent    memory: " . $self->getParamValue('appServerMem') . "\n";						
 					}
+
 					do {
 						$inline = <FILEIN>;
 					} while(!($inline =~ /livenessProbe/));

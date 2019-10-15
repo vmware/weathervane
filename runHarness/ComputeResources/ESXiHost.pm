@@ -52,7 +52,7 @@ sub startStatsCollection {
 	
 	my $hostname         = $self->name;
 	my $configDir        = $self->getParamValue('configDir');
-	my $cmdString = "scp -o 'StrictHostKeyChecking no' scp $configDir/esxtop/wv.esxtoprc $hostname:.";
+	my $cmdString = "scp -o 'StrictHostKeyChecking no' $configDir/esxtop/wv.esxtoprc $hostname:. 2>&1";
 	$logger->debug("Command to copy esxtoprc to $hostname: " . $cmdString);
 	my $cmdOut = `$cmdString`;
 	$logger->debug("Copied wv.esxtoprc to $hostname. cmdOut is: " . $cmdOut);

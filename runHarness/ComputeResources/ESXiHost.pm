@@ -50,6 +50,16 @@ sub startStatsCollection {
 	my $console_logger   = get_logger("Console");
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 	
+	# Stop any old Weathervane-started esxtop processes
+	my $oldPidLines = `ps x | grep -E "sh -c.*wv.esx" | grep -v grep`;
+	$logger->debug("Killing old esxtop processes.  Found: " . $oldPidLines);
+	my @oldPidLines = split /\n/, $oldPidLines; 
+	foreach my $line (@oldPidLines) {
+		$line =~ /^(\d+)\s/;
+		$logger->debug("Killing old esxtop process $1");
+		`kill -9 $1`;
+	}
+	
 	my $hostname         = $self->name;
 	my $configDir        = $self->getParamValue('configDir');
 	my $cmdString = "scp -o 'StrictHostKeyChecking no' $configDir/esxtop/wv.esxtoprc $hostname:. 2>&1";

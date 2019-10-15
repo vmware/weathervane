@@ -252,6 +252,7 @@ sub printResults {
 		writeCSVFiles();
 		analyzePctUsedData();
 	}
+	printCpuSummaryCsvs($csvFilePrefix);
 
 	close CSVFILE;
 	if ($doReport) {
@@ -1173,4 +1174,62 @@ sub printHeader {
 	return @returnHeaders;
 }
 
+sub printCpuSummaryCsvs {
+
+	my ( $csvFilePrefix ) = @_;
+
+	# Find the column numbers for node CPU Totals 
+	my $totalCPU;
+	my @columnNums = (0);
+	foreach my $column ( @{ $categoryToColumnList{"Physical Cpu"} } ) {
+		if ( $headers[$column] =~ /.*Total.*\%/ ) {
+			push @columnNums, $column;
+		}
+	}
+			
+	my $CSVFILE;
+	open $CSVFILE, ">${csvFilePrefix}_nodeCpu.csv" or die "Can't open ${csvFilePrefix}_nodeCpu.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+	# Column numbers for VM CPU %Used
+	@columnNums = (0);
+	foreach my $vmname (@vms) {
+		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[1];	
+	}
+	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuUsed.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+	# Column numbers for VM CPU %Ready
+	@columnNums = (0);
+	foreach my $vmname (@vms) {
+		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[6];	
+	}
+	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuUsed.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+}
 1;

@@ -98,6 +98,16 @@ sub startStatsCollection {
 		$host->startStatsCollection( $intervalLengthSec, $numIntervals );
 	}
 	
+	# Stop any old Weathervane-started esxtop processes
+	my $oldPidLines = `ps x | grep -E "ssh.*wv.esx" | grep -v "sh -c" | grep -v grep`;
+	$logger->debug("Killing old esxtop processes.  Found: " . $oldPidLines);
+	my @oldPidLines = split /\n/, $oldPidLines; 
+	foreach my $line (@oldPidLines) {
+		$line =~ /^\s*(\d+)\s/;
+		$logger->debug("Killing old esxtop process $1");
+		`kill -9 $1`;
+	}
+	
 	# start stats collection on all VI hosts
 	$hostsRef = $self->hosts;
 	foreach my $host (@$hostsRef) {

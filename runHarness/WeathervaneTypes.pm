@@ -78,7 +78,7 @@ our %workloadProfiles = (
 
 # These are all of the appInstance sizes that are supported for each workload
 our %appInstanceSizes = (
-	"auction" => ["micro", "small", "medium"],
+	"auction" => ["micro", "small", "smallLowCpu", "medium"],
 	);
 
 # Define a ServiceType to be one of a set of strings

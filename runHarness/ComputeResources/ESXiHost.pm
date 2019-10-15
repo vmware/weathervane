@@ -55,7 +55,7 @@ sub startStatsCollection {
 	$logger->debug("Killing old esxtop processes.  Found: " . $oldPidLines);
 	my @oldPidLines = split /\n/, $oldPidLines; 
 	foreach my $line (@oldPidLines) {
-		$line =~ /^(\d+)\s/;
+		$line =~ /^\s*(\d+)\s/;
 		$logger->debug("Killing old esxtop process $1");
 		`kill -9 $1`;
 	}

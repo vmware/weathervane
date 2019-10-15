@@ -1188,7 +1188,7 @@ sub printCpuSummaryCsvs {
 	}
 			
 	my $CSVFILE;
-	open $CSVFILE, ">${csvFilePrefix}_nodeCpu.csv" or die "Can't open ${csvFilePrefix}_nodeCpu.csv: $!";
+	open $CSVFILE, ">${csvFilePrefix}_hostCpu.csv" or die "Can't open ${csvFilePrefix}_hostCpu.csv: $!";
 	# First print the headers (row 0)
 	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
 	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value

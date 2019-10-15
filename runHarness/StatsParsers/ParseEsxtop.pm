@@ -1220,7 +1220,7 @@ sub printCpuSummaryCsvs {
 	foreach my $vmname (@vms) {
 		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[6];	
 	}
-	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuUsed.csv: $!";
+	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuReady.csv: $!";
 	# First print the headers (row 0)
 	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
 	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value

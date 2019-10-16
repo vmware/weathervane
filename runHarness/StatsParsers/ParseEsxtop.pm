@@ -1202,7 +1202,7 @@ sub printCpuSummaryCsvs {
 	# Column numbers for VM CPU %Used
 	@columnNums = (0);
 	foreach my $vmname (@vms) {
-		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[1];	
+		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[2];	
 	}
 	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuUsed.csv: $!";
 	# First print the headers (row 0)

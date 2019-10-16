@@ -105,7 +105,8 @@ sub startStatsCollection {
 	foreach my $line (@oldPidLines) {
 		$line =~ /^\s*(\d+)\s/;
 		$logger->debug("Killing old esxtop process $1");
-		`kill -9 $1`;
+		my $out = `kill -9 $1 2>&1`;
+		$logger->debug("Output from killing old esxtop process $1: $out");
 	}
 	
 	# start stats collection on all VI hosts

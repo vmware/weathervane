@@ -61,9 +61,9 @@ while /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432 ; [ $? -ne 0 ]; do
     echo "Waiting for PostgreSQL to be ready"
 done
 
-# Reindex
-echo "Reindex"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "reindex database auction;"
+# Recreate indices
+echo "Recreate indices"
+sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql
 
 # Force a vacuum and checkpoint
 echo "Force vacuum full"

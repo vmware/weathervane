@@ -151,6 +151,11 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";
 		}
+		elsif ( $inline =~ /(\s+)key\:\swvw1i1/ ) {
+			my $workloadNum    = $self->appInstance->workload->instanceNum;
+			my $appInstanceNum = $self->appInstance->instanceNum;
+			print FILEOUT "${1}- key: wvw${workloadNum}i${appInstanceNum}\n";
+		}
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
 			print FILEOUT $inline;
 			while ( my $inline = <FILEIN> ) {

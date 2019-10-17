@@ -66,9 +66,6 @@ echo "Recreate indices"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql
 
 # Force a vacuum and checkpoint
-echo "Force vacuum full"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum full;"
-# Force a vacuum and checkpoint
 echo "Force vacuum"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
 echo "Force checkpoint"

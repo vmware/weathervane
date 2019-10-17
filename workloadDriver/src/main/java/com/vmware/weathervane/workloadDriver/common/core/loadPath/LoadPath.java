@@ -203,12 +203,31 @@ public abstract class LoadPath implements Runnable {
 			HttpEntity<ChangeUsersMessage> msgEntity = new HttpEntity<ChangeUsersMessage>(changeUsersMessage,
 					requestHeaders);
 			String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/" + workloadName + "/users";
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-					BasicResponse.class);
-
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting changeUsers message to " + url);
+			
+			boolean succeeded = false;
+			int tries = 5;
+			while (!succeeded && (tries > 0)) {
+				ResponseEntity<BasicResponse> responseEntity = null;
+				try {
+					tries--;
+					responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
+				} catch (Throwable t) {
+					if (tries > 0) {
+						logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
+								hostname, this.getName(), t.getMessage());
+					} else {
+						throw t;
+					}
+				}
+				
+				if (responseEntity != null) {
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting changeUsers message to " + url);
+					} else {
+						succeeded = true;
+					}
+				}
 			}
 		}
 

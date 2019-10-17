@@ -159,7 +159,7 @@ sub configure {
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
-		elsif ( $inline =~ /(\s+)key\:\swvw1i1/ ) {
+		elsif ( $inline =~ /(\s+)\-\skey\:\swvw1i1/ ) {
 			my $workloadNum    = $self->appInstance->workload->instanceNum;
 			my $appInstanceNum = $self->appInstance->instanceNum;
 			print FILEOUT "${1}- key: wvw${workloadNum}i${appInstanceNum}\n";

@@ -1174,6 +1174,14 @@ $parameters{"useKubernetesLimits"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"useKubernetesRequests"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerCpuShares"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -2272,7 +2280,7 @@ $parameters{"postgresqlLogVolumeSize"} = {
 
 $parameters{"postgresqlDataStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "weathervaneSC",
+	"default"   => "weathervanesc",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2280,7 +2288,7 @@ $parameters{"postgresqlDataStorageClass"} = {
 
 $parameters{"postgresqlLogStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "weathervaneSC",
+	"default"   => "weathervanesc",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2320,7 +2328,7 @@ $parameters{"cassandraUseNamedVolumes"} = {
 
 $parameters{"cassandraDataStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "weathervaneSC",
+	"default"   => "weathervanesc",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -2352,7 +2360,7 @@ $parameters{"nginxUseNamedVolumes"} = {
 
 $parameters{"nginxCacheStorageClass"} = {
 	"type"      => "=s",
-	"default"   => "weathervaneSC",
+	"default"   => "weathervanesc",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

@@ -172,13 +172,13 @@ sub run {
 	# Make sure that the services know their external port numbers
 	$self->setExternalPortNumbers();
 
-	$console_logger->info("Starting infrastructure services");
-	$allUp = $self->startServices( "infrastructure", $setupLogDir );
-	if ( !$allUp ) {
-		$self->cleanupAfterFailure( "Couldn't start instrastructure services for run $seqnum. Exiting.", $seqnum, $tmpDir );
-	}
+#	$console_logger->info("Starting infrastructure services");
+#	$allUp = $self->startServices( "infrastructure", $setupLogDir );
+#	if ( !$allUp ) {
+#		$self->cleanupAfterFailure( "Couldn't start instrastructure services for run $seqnum. Exiting.", $seqnum, $tmpDir );
+#	}
 	# Make sure that the services know their external port numbers
-	$self->setExternalPortNumbers();
+#	$self->setExternalPortNumbers();
 
 	# Make sure that all of the services are up
 	$debug_logger->debug("Check isUp");

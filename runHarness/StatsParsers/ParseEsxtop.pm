@@ -166,7 +166,10 @@ my @builtinWorlds = (
 	"chardevlogger", "vmkiscsid", "sfcb-HTTP-Daemo", "nfsgssd", "clomd",
 	"cmmdsd", "vsanSoapServer", "epd", "osfsd", "python", "dhclient-uw", 
 	"ioFilterVPServer", "hostdCgiServer", "vsanTraceReader", "rm", 
-	"tail", "awk",
+	"tail", "awk", "nicmgmtd", "IORETRY_IngressLFHelper", "hyperbus",
+	"mpa", "nestdb-server", "netcpa", "nsxa", "nsx-ctxteng", "nsx-da",
+	"nsx-exporter", "nsx-sfhc", "nsx-support-bundle-client", 
+	"vShield-Endpoint-Mux"
 );
 
 # This structure is a hash from a category for which we collect together related
@@ -249,6 +252,7 @@ sub printResults {
 		writeCSVFiles();
 		analyzePctUsedData();
 	}
+	printCpuSummaryCsvs($csvFilePrefix);
 
 	close CSVFILE;
 	if ($doReport) {
@@ -328,7 +332,7 @@ sub parseEsxtopCmdline {
 			if ( $worldname =~ /(.+)\.\d+/ ) {
 				$worldname = $1;
 			}
-			my @worldMatch = grep /$worldname/, @builtinWorlds;
+			my @worldMatch = grep {$_ =~ /\Q$worldname/ || ($worldname =~ /\Q$_/)} @builtinWorlds;
 			if ( $#worldMatch == -1 ) {
 				if ( ( $vmPrefix eq '' ) || ( $worldname =~ /$vmPrefix/ ) ) {
 					push @vms, $worldname;
@@ -1170,4 +1174,62 @@ sub printHeader {
 	return @returnHeaders;
 }
 
+sub printCpuSummaryCsvs {
+
+	my ( $csvFilePrefix ) = @_;
+
+	# Find the column numbers for node CPU Totals 
+	my $totalCPU;
+	my @columnNums = (0);
+	foreach my $column ( @{ $categoryToColumnList{"Physical Cpu"} } ) {
+		if ( $headers[$column] =~ /.*Total.*\%/ ) {
+			push @columnNums, $column;
+		}
+	}
+			
+	my $CSVFILE;
+	open $CSVFILE, ">${csvFilePrefix}_hostCpu.csv" or die "Can't open ${csvFilePrefix}_hostCpu.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+	# Column numbers for VM CPU %Used
+	@columnNums = (0);
+	foreach my $vmname (@vms) {
+		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[2];	
+	}
+	open $CSVFILE, ">${csvFilePrefix}_vmCpuUsed.csv" or die "Can't open ${csvFilePrefix}_vmCpuUsed.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+	# Column numbers for VM CPU %Ready
+	@columnNums = (0);
+	foreach my $vmname (@vms) {
+		push @columnNums, $vmToColumnList{$vmname}->{ "Group Cpu" }->[7];	
+	}
+	open $CSVFILE, ">${csvFilePrefix}_vmCpuReady.csv" or die "Can't open ${csvFilePrefix}_vmCpuReady.csv: $!";
+	# First print the headers (row 0)
+	map( print( $CSVFILE $headers[$_], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+	print $CSVFILE $headers[ $columnNums[ $#columnNums ] ], "\n";    # No comma on last value
+
+	for ( my $j = 1 ; $j < $numRows ; $j++ ) {
+		map( print( $CSVFILE ${ $dataColumns[$_] }[$j], "," ), @columnNums[ 0 .. $#columnNums - 1 ] );
+		print $CSVFILE ${ $dataColumns[ $columnNums[ $#columnNums ] ] }[$j], "\n";    # No comma on last value
+	}
+	close $CSVFILE;	
+	
+}
 1;

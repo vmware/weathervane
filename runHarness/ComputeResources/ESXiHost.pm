@@ -26,6 +26,12 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'VIHost';
 
+has 'esxtopPid' => (
+	is  => 'rw',
+	isa => 'Int',
+	default => 0,
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();
@@ -33,44 +39,37 @@ override 'initialize' => sub {
 
 sub stopStatsCollection {
 	my ($self) = @_;
-
+	if ($self->esxtopPid) {
+		kill 'KILL', $self->esxtopPid;
+		$self->esxtopPid(0);
+	}
 }
 
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $console_logger   = get_logger("Console");
 	my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
-	
+		
 	my $hostname         = $self->name;
+	my $configDir        = $self->getParamValue('configDir');
+	my $cmdString = "scp -o 'StrictHostKeyChecking no' $configDir/esxtop/wv.esxtoprc $hostname:. 2>&1";
+	$logger->debug("Command to copy esxtoprc to $hostname: " . $cmdString);
+	my $cmdOut = `$cmdString`;
+	$logger->debug("Copied wv.esxtoprc to $hostname. cmdOut is: " . $cmdOut);
+	
 	$logger->debug("Starting stats collection for ESXi Host " . $hostname);
-	
-	
-	my $pid              = fork();
-	if ( $pid == 0 ) {
+	$self->esxtopPid(fork());
+	if ( $self->esxtopPid == 0 ) {
 		my $logger         = get_logger("Weathervane::Hosts::ESXiHost");
 		my $console_logger = get_logger("Console");
-		my $cmdString = "ssh -o 'StrictHostKeyChecking no' root\@$hostname esxtop -a -b -d  $intervalLengthSec -n $numIntervals > /tmp/${hostname}_esxtop.csv 2>/tmp/${hostname}_esxtop.stderr &";
+		
+		if (!$numIntervals) {
+			# If numIntervals == 0, then run for a maximum of 4 hours
+			$numIntervals = (4 * 60 * 60) / $intervalLengthSec;
+		}
+		$cmdString = "ssh -o 'StrictHostKeyChecking no' root\@$hostname esxtop -c wv.esxtoprc -b -d  $intervalLengthSec -n $numIntervals > /tmp/${hostname}_esxtop.csv 2>/tmp/${hostname}_esxtop.stderr";
 		$logger->debug("esxtop command for $hostname is: " . $cmdString);
-		my $cmdOut = `$cmdString`;
-		if ( -z "/tmp/${hostname}_esxtop.stderr" ) {
-			$logger->debug("esxtop started successfully for $hostname. cmdOut is: " . $cmdOut);
-		}
-		else {
-			$logger->debug("esxtop did not start successfully for $hostname. cmdOut is: " . $cmdOut);
-
-			# An error occurred when running esxtop
-			my $errorContents = "";
-			{
-				local $/ = undef;
-				open FILE, "/tmp/${hostname}_esxtop.stderr"
-				  or die "Couldn't open /tmp/${hostname}_esxtop.stderr: $!";
-				$errorContents = <FILE>;
-				close FILE;
-			}
-			$console_logger->error(
-				"Could not start esxtop on $hostname. Error is:\n",
-				$errorContents );
-		}
+		$cmdOut = `$cmdString`;
 		exit;
 	}
 }

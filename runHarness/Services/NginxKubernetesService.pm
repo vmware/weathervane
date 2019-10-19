@@ -167,10 +167,10 @@ sub configure {
 				}
 			}
 		}
-		elsif ( $inline =~ /(\s+)\-\skey\:\swvw1i1/ ) {
+		elsif ( $inline =~ /(\s+)\-\skey\:\swvauctionw1i1/ ) {
 			my $workloadNum    = $self->appInstance->workload->instanceNum;
 			my $appInstanceNum = $self->appInstance->instanceNum;
-			print FILEOUT "${1}- key: wvw${workloadNum}i${appInstanceNum}\n";
+			print FILEOUT "${1}- key: wvauctionw${workloadNum}i${appInstanceNum}\n";
 		}
 		else {
 			print FILEOUT $inline;

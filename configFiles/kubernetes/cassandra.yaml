@@ -62,7 +62,7 @@ spec:
           - weight: 100
             preference:
               matchExpressions:
-              - key: wvw1i1
+              - key: wvauctionw1i1
                 operator: Exists
       terminationGracePeriodSeconds: 1800
       containers:

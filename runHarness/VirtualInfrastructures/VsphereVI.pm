@@ -100,7 +100,7 @@ sub startStatsCollection {
 	
 	# Stop any old Weathervane-started esxtop processes
 	my $oldPidLines = `ps x | grep -E "ssh.*wv.esx" | grep -v "sh -c" | grep -v grep`;
-	$logger->debug("Killing old esxtop processes.  Found: " . $oldPidLines);
+	$logger->debug("Killing old esxtop processes.  Found:\n" . $oldPidLines);
 	my @oldPidLines = split /\n/, $oldPidLines; 
 	foreach my $line (@oldPidLines) {
 		$line =~ /^\s*(\d+)\s/;

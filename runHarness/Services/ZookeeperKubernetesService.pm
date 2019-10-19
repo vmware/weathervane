@@ -92,6 +92,11 @@ sub configure {
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
+		elsif ( $inline =~ /(\s+)\-\skey\:\swvauctionw1i1/ ) {
+			my $workloadNum    = $self->appInstance->workload->instanceNum;
+			my $appInstanceNum = $self->appInstance->instanceNum;
+			print FILEOUT "${1}- key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+		}
 		elsif ( $inline =~ /ZK_SERVERS:/ ) {
 			print FILEOUT "  ZK_SERVERS: \"$servers\"\n";
 		}

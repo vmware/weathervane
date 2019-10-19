@@ -59,7 +59,7 @@ spec:
           - weight: 100
             preference:
               matchExpressions:
-              - key: wvw1i1
+              - key: wvauctionw1i1
                 operator: Exists
       containers:
       - image: repository/weathervane-rabbitmq:1.2.0

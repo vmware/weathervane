@@ -199,7 +199,7 @@
   "driverControllerMem" : "1500Mi",
 
   "numWebServers" : 2,
-  "webServerCpus" : "55",
+  "webServerCpus" : "55m",
   "webServerMem"  : "5500Mi",
   "webServerImpl" : "nginx",
   "nginxCacheVolumeSize" : "5Gi",

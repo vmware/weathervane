@@ -479,7 +479,7 @@ sub createRunConfigHash {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
-			$loadPath->{"type"}          = "findmax";
+			$loadPath->{"type"}          = "syncedfindmax";
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');

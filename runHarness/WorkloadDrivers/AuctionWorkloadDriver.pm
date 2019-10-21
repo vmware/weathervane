@@ -396,6 +396,15 @@ sub createRunConfigHash {
 	$runRef->{"statsOutputDirName"} = "/tmp";
 
 	$runRef->{"workloads"} = [];
+	
+	my $loadPathController = {};
+	my $loadPathType = $self->workload->getParamValue('loadPathType');
+	if ( $loadPathType eq "fixed" ) {
+		$loadPathController->{"type"} = "anypass";
+	} else {
+		$loadPathController->{"type"} = "allpass";		
+	}
+	$runRef->{"loadPathController"} = $loadPathController;
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	foreach my $appInstance (@$appInstancesRef) {
@@ -423,7 +432,7 @@ sub createRunConfigHash {
 		
 
 		# Add the loadPath to the workload
-		my $loadPathType = $appInstance->getParamValue('loadPathType');
+		$loadPathType = $appInstance->getParamValue('loadPathType');
 		my $loadPath     = {};
 		$loadPath->{'name'}            = "loadPath" . $instanceNum;
 		$loadPath->{"isStatsInterval"} = JSON::true;

@@ -13,40 +13,54 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.core.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
-@JsonSubTypes({ @Type(value = UniformLoadInterval.class, name = "uniform"), 
-				@Type(value = RampLoadInterval.class, name = "ramp")
-})
-public abstract class LoadInterval {
-	private Long duration = null;
-
-	private String name;
+@JsonTypeName(value = "uniform")
+public class UniformLoadInterval extends LoadInterval {
+	private long users;
 	
-	public void initialize() {
+	@JsonIgnore
+	private boolean endOfStatsInterval = false;
+	
+	public UniformLoadInterval() {
 		
 	}
-
-	public Long getDuration() {
-		return duration;
+	
+	public UniformLoadInterval(UniformLoadInterval that) {
+		this.users = that.users;
+		this.setDuration(that.getDuration());
 	}
 
-	public void setDuration(Long duration) {
-		this.duration = duration;
+	public UniformLoadInterval(long users, long duration) {
+		this.users = users;
+		this.setDuration(duration);
+	}
+	
+	public long getUsers() {
+		return users;
+	}
+	public void setUsers(long users) {
+		this.users = users;
+	}
+	
+	public boolean isEndOfStatsInterval() {
+		return endOfStatsInterval;
 	}
 
-	public String getName() {
-		return name;
+	public void setEndOfStatsInterval(boolean endOfStatsInterval) {
+		this.endOfStatsInterval = endOfStatsInterval;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	@Override
+	public String toString() {
+		StringBuilder theStringBuilder = new StringBuilder("UniformLoadInterval: ");
+		theStringBuilder.append("; duration: " + getDuration()); 
+		theStringBuilder.append("; users: " + users); 
+		
+		return theStringBuilder.toString();
 	}
 
 }

@@ -35,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionWorkload;
-import com.vmware.weathervane.workloadDriver.common.core.loadPath.LoadPath;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath.LoadPath;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathController;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
@@ -93,6 +94,9 @@ public abstract class Workload implements UserFactory {
 
 	@JsonIgnore
 	protected int nodeNumber;
+	
+	@JsonIgnore
+	private LoadPathController LoadPathController;
 
 	@JsonIgnore
 	private List<Operation> operations = null;
@@ -113,7 +117,7 @@ public abstract class Workload implements UserFactory {
 	 * Used to initialize the master workload in the RunService
 	 */
 	public void initialize(String runName, Run run, List<String> hosts, String statsHostName, int statsPortNumber, 
-			RestTemplate restTemplate, ScheduledExecutorService executorService) {
+			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		logger.debug("Initialize workload: " + this.toString());
 
 		if (getLoadPath() == null) {
@@ -131,6 +135,7 @@ public abstract class Workload implements UserFactory {
 		this.hosts = hosts;
 		this.statsHostName = statsHostName;
 		this.statsPortNumber = statsPortNumber;
+		this.LoadPathController = loadPathController;
 		this.restTemplate = restTemplate;
 		this.executorService = executorService;
 		
@@ -177,7 +182,8 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * LoadPaths run locally
 		 */
-		getLoadPath().initialize(runName, name, this, hosts, statsHostName, statsPortNumber, restTemplate, executorService);
+		getLoadPath().initialize(runName, name, this, loadPathController, 
+				hosts, statsHostName, statsPortNumber, restTemplate, executorService);
 
 		state = WorkloadState.INITIALIZED;
 	}

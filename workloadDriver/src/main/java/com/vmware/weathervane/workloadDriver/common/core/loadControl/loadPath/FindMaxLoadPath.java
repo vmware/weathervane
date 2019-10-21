@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.core.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -28,6 +28,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
 import com.vmware.weathervane.workloadDriver.common.core.WorkloadStatus;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.RampLoadInterval;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.UniformLoadInterval;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathController;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 @JsonTypeName(value = "findmax")
@@ -122,9 +125,11 @@ public class FindMaxLoadPath extends LoadPath {
 	private UniformLoadInterval curStatsInterval = new UniformLoadInterval();
 
 	@Override
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts,
+	public void initialize(String runName, String workloadName, Workload workload, 
+			LoadPathController loadPathController, List<String> hosts,
 			String statsHostName, int portNumber, RestTemplate restTemplate, ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, workload, hosts, statsHostName, portNumber, restTemplate,
+		super.initialize(runName, workloadName, workload, loadPathController,
+				hosts, statsHostName, portNumber, restTemplate,
 				executorService);
 		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
 

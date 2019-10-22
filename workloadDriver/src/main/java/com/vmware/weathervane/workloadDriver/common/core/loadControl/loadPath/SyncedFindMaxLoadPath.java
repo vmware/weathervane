@@ -149,22 +149,21 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	}
 
 	@Override
-	protected String intervalComplete() {
+	protected IntervalCompleteResult intervalComplete() {
 		logger.debug("intervalComplete: " + this.getName());
 		statsIntervalComplete = false;
 		if (Phase.INITIALRAMP.equals(curPhase)) {
-			initialRampIntervalComplete();			
+			return initialRampIntervalComplete();			
 		} else {
-			otherIntervalComplete();
+			return otherIntervalComplete();
 		}
-		return curInterval.getName();
 	}
 	
 	@JsonIgnore
 	@Override
 	public UniformLoadInterval getNextIntervalSynced(boolean passed) {
 
-		logger.debug("getNextInterval: " + this.getName());
+		logger.debug("getNextIntervalSynced: " + this.getName());
 		statsIntervalComplete = false;
 		if (Phase.INITIALRAMP.equals(curPhase)) {
 			curInterval = getNextInitialRampInterval(passed);			
@@ -180,19 +179,23 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		/* 
 		 * This method is not used
 		 */
+		logger.warn("getNextInterval: " + this.getName());
 		return curInterval;
 	}
 
 	@JsonIgnore
-	private void initialRampIntervalComplete() {
-		logger.debug("initialRampIntervalComplete " + this.getName());
-
+	private IntervalCompleteResult initialRampIntervalComplete() {
+		logger.debug("initialRampIntervalComplete loadPath {}, intervalNum {}",
+				this.getName(), intervalNum);
+		IntervalCompleteResult result = new IntervalCompleteResult();
+		result.setIntervalName(curInterval.getName());
+		result.setDecisionInterval(true);
 		/*
 		 * If this is not the first interval then we need to select the number of users
 		 * based on the results of the previous interval.
 		 */
 		boolean prevIntervalPassed = true;
-		if (intervalNum != 1) {
+		if (intervalNum > 1) {
 			String curIntervalName = curInterval.getName();
 
 			/*
@@ -219,7 +222,8 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		logger.debug("initialRampIntervalComplete " + this.getName() 
 			+ ": Interval " + intervalNum + " prevIntervalPassed = "
 			+ prevIntervalPassed);
-		loadPathController.postIntervalResult(getName(), curInterval.getName(), prevIntervalPassed);
+		result.setPassed(prevIntervalPassed);
+		return result;
 	}
 
 	@JsonIgnore
@@ -268,43 +272,31 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	}
 
 	@JsonIgnore
-	private void otherIntervalComplete() {
-		intervalNum++;
-		if (loadPathComplete) {
-			this.intervalResult(curInterval.getName(), true);
-		}
-		
-		if (!rampIntervals.isEmpty()) {
-			/*
-			 * When there are ramp intervals, we don't have a synced result, so we just call
-			 * intervalResult directly to cause the loadPath to continue
-			 */
-			this.intervalResult(curInterval.getName(), true);
+	private IntervalCompleteResult otherIntervalComplete() {
+		IntervalCompleteResult result = new IntervalCompleteResult();
+		result.setIntervalName(curInterval.getName());
+		if (loadPathComplete || !SubInterval.DECISION.equals(nextSubInterval)) {
+			result.setDecisionInterval(false);
+			result.setPassed(true);
 		} else {
-			if (SubInterval.RAMP.equals(nextSubInterval)) {
-				this.intervalResult(curInterval.getName(), true);
-			} else if (SubInterval.WARMUP.equals(nextSubInterval)) {
-				this.intervalResult(curInterval.getName(), true);
-			} else if (SubInterval.DECISION.equals(nextSubInterval)) {
-				logger.debug("nextInterval {}: In Decision for interval {}", getName(), curInterval.getName());
-				/*
-				 * Based on pass/fail of previous run, maxPass, minFail,
-				 * maxUsers, and minUsers, we need to decide on next value
-				 * for curPhase, curUsers, and curRateStep
-				 */
-				String curIntervalName = curInterval.getName();
-				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-				boolean prevIntervalPassed = false;
-				if (rollup != null) {
-					prevIntervalPassed = rollup.isIntervalPassed();
-					getIntervalStatsSummaries().add(rollup);
-				}
-				logger.debug("otherIntervalComplete " + this.getName() 
-				+ ": Interval " + intervalNum + " prevIntervalPassed = "
-				+ prevIntervalPassed);
-				loadPathController.postIntervalResult(getName(), curInterval.getName(), prevIntervalPassed);
+			logger.debug("nextInterval {}: In Decision for interval {}", getName(), curInterval.getName());
+			/*
+			 * Based on pass/fail of previous run, maxPass, minFail, maxUsers, and minUsers,
+			 * we need to decide on next value for curPhase, curUsers, and curRateStep
+			 */
+			String curIntervalName = curInterval.getName();
+			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+			boolean prevIntervalPassed = false;
+			if (rollup != null) {
+				prevIntervalPassed = rollup.isIntervalPassed();
+				getIntervalStatsSummaries().add(rollup);
 			}
-		}
+			logger.debug("otherIntervalComplete " + this.getName() + ": Interval " + intervalNum
+					+ " prevIntervalPassed = " + prevIntervalPassed);
+			result.setDecisionInterval(true);
+			result.setPassed(prevIntervalPassed);
+		} 
+		return result;
 	}
 
 	@JsonIgnore

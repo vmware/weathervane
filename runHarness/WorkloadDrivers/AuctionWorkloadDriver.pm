@@ -1882,8 +1882,17 @@ sub getResultMetrics {
 	my ($self) = @_;
 	tie( my %metrics, 'Tie::IxHash' );
 
-	$metrics{"opsSec"}         = $self->opsSec;
-	$metrics{"overallAvgRTRT"} = $self->overallAvgRT;
+	my $totalUsers       = 0;
+	my $appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstanceRef (@$appInstancesRef) {
+		my $appInstanceNum = $appInstanceRef->instanceNum;
+		if ($self->passAll->{$appInstanceNum}) {
+			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
+		}
+	}
+
+	$metrics{"WvUsers"}         = $totalUsers;
+	$metrics{"Average Response-Time"} = $self->overallAvgRT;
 
 	return \%metrics;
 }

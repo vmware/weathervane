@@ -185,7 +185,7 @@ override 'run' => sub {
 		'runNum'                => $seqnum,
 		'resultsSummaryHashRef' => $csvHashRef,
 
-		#		'metricsHashRef'        => $self->workloadDriver->getResultMetrics(),
+		'metricsHashRef'        => $self->workloadDriver->getResultMetrics(),
 		'isRunError' => $isRunError,
 	);
 

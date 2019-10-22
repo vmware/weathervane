@@ -46,8 +46,7 @@
   "dbServerCpus" : "60m",
   "dbServerMem" : "1000Mi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "2Gi",
-  "postgresqlLogVolumeSize" : "2Gi",
+  "postgresqlVolumeSize" : "4Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "300m",
@@ -108,8 +107,7 @@
   "dbServerCpus" : "6m",
   "dbServerMem" : "1000Mi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "2Gi",
-  "postgresqlLogVolumeSize" : "2Gi",
+  "postgresqlVolumeSize" : "4Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "30m",
@@ -176,8 +174,7 @@
   "dbServerCpus" : "375m",
   "dbServerMem" : "8Gi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "5Gi",
-  "postgresqlLogVolumeSize" : "5Gi",
+  "postgresqlVolumeSize" : "10Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "640m",
@@ -244,8 +241,7 @@
   "dbServerCpus" : "38m",
   "dbServerMem" : "8Gi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "5Gi",
-  "postgresqlLogVolumeSize" : "5Gi",
+  "postgresqlVolumeSize" : "10Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "64m",
@@ -312,8 +308,7 @@
   "dbServerCpus" : "200m",
   "dbServerMem" : "16Gi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "40Gi",
-  "postgresqlLogVolumeSize" : "40Gi",
+  "postgresqlVolumeSize" : "40Gi",
 
   "numNosqlServers" : 3, 
   "nosqlServerCpus" : "200m",
@@ -380,8 +375,7 @@
   "dbServerCpus" : "2",
   "dbServerMem" : "8Gi",
   "dbServerImpl" : "postgresql",
-  "postgresqlDataVolumeSize" : "50Gi",
-  "postgresqlLogVolumeSize" : "50Gi",
+  "postgresqlVolumeSize" : "60Gi",
 
   "numNosqlServers" : 5, 
   "nosqlServerCpus" : "2",

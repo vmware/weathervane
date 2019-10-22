@@ -11,7 +11,10 @@ fi
 
 if [ "$MODE" == 'firstrun' ]; then
   # Make postgres own PGDATA
+  mkdir -p /mnt/dbData/postgresql
+  mkdir -p /mnt/dbLogs/postgresql
   chown -R postgres:postgres /mnt/dbData/postgresql
+  chown -R postgres:postgres /mnt/dbLogs/postgresql
   rm -rf /mnt/dbData/postgresql/*
 
   # Setup postgres

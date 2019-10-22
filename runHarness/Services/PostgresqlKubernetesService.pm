@@ -86,8 +86,7 @@ sub configure {
 		$totalMemoryUnit = "kB";
 	}
 
-	my $dataVolumeSize = $self->getParamValue('postgresqlDataVolumeSize');
-	my $logVolumeSize = $self->getParamValue('postgresqlLogVolumeSize');
+	my $volumeSize = $self->getParamValue('postgresqlVolumeSize');
 	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/postgresql.yaml" ) or die "$configDir/kubernetes/postgresql.yaml: $!\n";
@@ -159,28 +158,15 @@ sub configure {
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
 			print FILEOUT $inline;
 			while ( my $inline = <FILEIN> ) {
-				if ( $inline =~ /(\s+)name:\spostgresql\-data/ ) {
+				if ( $inline =~ /(\s+)name:\spostgresql/ ) {
 					print FILEOUT $inline;
 					while ( my $inline = <FILEIN> ) {
 						if ( $inline =~ /(\s+)storageClassName:/ ) {
-							my $storageClass = $self->getParamValue("postgresqlDataStorageClass");
+							my $storageClass = $self->getParamValue("postgresqlStorageClass");
 							print FILEOUT "${1}storageClassName: $storageClass\n";
 							last;
 						} elsif ($inline =~ /^(\s+)storage:/ ) {
-							print FILEOUT "${1}storage: $dataVolumeSize\n";
-						} else {
-							print FILEOUT $inline;
-						}	
-					}
-				} elsif ( $inline =~ /(\s+)name:\spostgresql\-logs/ ) {
-					print FILEOUT $inline;
-					while ( my $inline = <FILEIN> ) {
-						if ( $inline =~ /(\s+)storageClassName:/ ) {
-							my $storageClass = $self->getParamValue("postgresqlLogStorageClass");
-							print FILEOUT "${1}storageClassName: $storageClass\n";
-							last;
-						} elsif ($inline =~ /^(\s+)storage:/ ) {
-							print FILEOUT "${1}storage: $logVolumeSize\n";
+							print FILEOUT "${1}storage: $volumeSize\n";
 						} else {
 							print FILEOUT $inline;
 						}	
@@ -207,15 +193,10 @@ sub configure {
 	# This is to make sure that we are running the
 	# correct configuration size
 	my $cluster = $self->host;
-	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-data-postgresql-0", $self->namespace);
-	if (($curPvcSize ne "") && ($curPvcSize ne $dataVolumeSize)) {
-		$cluster->kubernetesDelete("pvc", "postgresql-data-postgresql-0", $self->namespace);
+	my $curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-postgresql-0", $self->namespace);
+	if (($curPvcSize ne "") && ($curPvcSize ne $volumeSize)) {
+		$cluster->kubernetesDelete("pvc", "postgresql-postgresql-0", $self->namespace);
 	}	
-	$curPvcSize = $cluster->kubernetesGetSizeForPVC("postgresql-logs-postgresql-0", $self->namespace);
-	if (($curPvcSize ne "") && ($curPvcSize ne $logVolumeSize)) {
-		$cluster->kubernetesDelete("pvc", "postgresql-logs-postgresql-0", $self->namespace);
-	}	
-
 }
 
 override 'isUp' => sub {

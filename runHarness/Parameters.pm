@@ -1645,6 +1645,22 @@ $parameters{"repeatsAtMax"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"dbLoaderCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"dbLoaderMem"} = {
+	"type"      => "=s",
+	"default"   => "2500Mi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
 	"default"   => 8,

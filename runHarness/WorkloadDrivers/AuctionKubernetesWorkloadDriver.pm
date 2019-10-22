@@ -180,6 +180,20 @@ sub configureWkldController {
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
+		elsif ( $inline =~ /(\s+)resources/ )  {
+			my $indent = $1;
+			if ($self->getParamValue('useKubernetesRequests')) {
+				print FILEOUT $inline;
+				print FILEOUT "$indent  requests:\n";
+				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbLoaderCpus') . "\n";
+				print FILEOUT "$indent    memory: " . $self->getParamValue('dbLoaderMem') . "\n";
+			}
+
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /envFrom/));
+			print FILEOUT $inline;			
+		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
 			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
 			if (!$useLoadbalancer) {

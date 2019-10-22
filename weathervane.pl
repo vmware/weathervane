@@ -779,7 +779,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $numDrivers = $numSecondaries + 1;
 	$console_logger->info("Workload $workloadNum has $numDrivers workload-driver nodes");
-	$console_logger->info("Workload $workloadNum has $numAppInstances application instances.");
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {

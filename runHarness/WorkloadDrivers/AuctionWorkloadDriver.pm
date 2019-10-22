@@ -1186,12 +1186,17 @@ sub startRun {
 	}
 
 	my $usingFindMaxLoadPathType = 0;
+	my $usingSyncedFindMaxLoadPathType = 0;
 	my $usingFixedLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		if ( $loadPathType eq "findmax" ) {
 			$usingFindMaxLoadPathType = 1;
+			last;
+		}
+		if ( $loadPathType eq "syncedfindmax" ) {
+			$usingSyncedFindMaxLoadPathType = 1;
 			last;
 		}
 		if ($loadPathType eq "fixed" ) {
@@ -1299,7 +1304,8 @@ sub startRun {
 					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
 				
-				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
+				if ($usingFindMaxLoadPathType || 
+						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
 
@@ -1327,6 +1333,7 @@ sub startRun {
 							||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
+							$reportedSynced = 0;
 							my $nameStr = $self->parseNameStr($endIntervalName);
 							# Don't print end message for InitialRamp intervals
 							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
@@ -1354,11 +1361,16 @@ sub startRun {
 						}
 					}
 
-					if ($curInterval && (!(defined $curIntervalNames[$appInstanceNum]) ||  !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
+					if ($curInterval && 
+					    (!(defined $curIntervalNames[$appInstanceNum]) || !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
 						$curIntervalNames[$appInstanceNum] = $curIntervalName;
 						my $nameStr = $self->parseNameStr($curIntervalName);
-						$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");
-
+						if ($usingSyncedFindMaxLoadPathType && !$reportedSynced) {
+							$console_logger->info("   Start: $nameStr for all instances, duration:" . $curInterval->{'duration'} . "s.");
+							$reportedSynced = 1;
+						} else {
+							$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");							
+						}
 						if ( ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
 								|| ($curIntervalName =~ /QOS\-(\d+)/)) {
 							$statsRunning[$appInstanceNum] = 1;

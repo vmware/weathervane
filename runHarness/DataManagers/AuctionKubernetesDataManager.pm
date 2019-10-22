@@ -108,7 +108,6 @@ sub startDataManagerContainer {
 				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbLoaderCpus') . "\n";
 				print FILEOUT "$indent    memory: " . $self->getParamValue('dbLoaderMem') . "\n";
 			}
-
 			do {
 				$inline = <FILEIN>;
 			} while(!($inline =~ /envFrom/));

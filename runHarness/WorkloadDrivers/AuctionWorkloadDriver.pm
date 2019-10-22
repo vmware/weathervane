@@ -1293,7 +1293,7 @@ sub startRun {
 		if ( $res->is_success ) {
 			$endRunStatus = $json->decode( $res->content );
 
-			my $reportedSynced = 0;
+			# print the messages for the end of the previous interval
 			my $workloadStati = $endRunStatus->{'workloadStati'};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
@@ -1359,6 +1359,22 @@ sub startRun {
 							}
 						}
 					}
+				}
+			}
+
+			# Now print the messages for the start of the next interval
+			my $reportedSynced = 0;
+			foreach my $workloadStatus (@$workloadStati) {
+				my $wkldName = $workloadStatus->{'name'};
+				my $curInterval = $workloadStatus->{'curInterval'};
+				my $curIntervalName;
+				if ($curInterval) {
+					$curIntervalName = $curInterval->{'name'};
+				}
+				if ($usingFindMaxLoadPathType || 
+						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
+					$wkldName =~ /appInstance(\d+)/;
+					my $appInstanceNum = $1;
 
 					if ($curInterval && 
 					    (!(defined $curIntervalNames[$appInstanceNum]) || !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {

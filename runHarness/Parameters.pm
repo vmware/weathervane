@@ -2262,7 +2262,7 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"postgresqlDataVolume"} = {
+$parameters{"postgresqlVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlData",
 	"parent"    => "appInstance",
@@ -2270,7 +2270,7 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataVolumeSize"} = {
+$parameters{"postgresqlVolumeSize"} = {
 	"type"      => "=s",
 	"default"   => "5GB",
 	"parent"    => "appInstance",
@@ -2278,31 +2278,7 @@ $parameters{"postgresqlDataVolumeSize"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlLogVolume"} = {
-	"type"      => "=s",
-	"default"   => "postgresqlLogs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "5GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlDataStorageClass"} = {
-	"type"      => "=s",
-	"default"   => "weathervanesc",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogStorageClass"} = {
+$parameters{"postgresqlStorageClass"} = {
 	"type"      => "=s",
 	"default"   => "weathervanesc",
 	"parent"    => "appInstance",

@@ -78,8 +78,7 @@ override 'create' => sub {
 	# Map the log and data volumes to the appropriate host directories
 	my %volumeMap;
 	if ($self->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
-		$volumeMap{"/mnt/dbData/postgresql"} = $self->getParamValue('postgresqlDataVolume');
-		$volumeMap{"/mnt/dbLogs/postgresql"} = $self->getParamValue('postgresqlLogVolume');
+		$volumeMap{"/mnt"} = $self->getParamValue('postgresqlVolume');
 	}
 
 	my %envVarMap;

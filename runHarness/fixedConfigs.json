@@ -57,7 +57,9 @@
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,
-  "dbLoaderJvmOpts" : "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
+  "dbLoaderCpus" : "1000m",
+  "dbLoaderMem" : "2000Mi",
+  "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
 "microLowCpu" : {
@@ -117,7 +119,9 @@
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,
-  "dbLoaderJvmOpts" : "-Xmx4g -Xms4g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
+  "dbLoaderCpus" : "1000m",
+  "dbLoaderMem" : "2000Mi",
+  "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
 "small" : {
@@ -183,6 +187,8 @@
 
   "dbLoaderThreads" : 16,
   "dbPrepThreads" : 128,
+  "dbLoaderCpus" : "2000m",
+  "dbLoaderMem" : "9000Mi",
   "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
@@ -249,6 +255,8 @@
 
   "dbLoaderThreads" : 16,
   "dbPrepThreads" : 128,
+  "dbLoaderCpus" : "2000m",
+  "dbLoaderMem" : "9000Mi",
   "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
@@ -315,6 +323,8 @@
 
   "dbLoaderThreads" : 16,
   "dbPrepThreads" : 128,
+  "dbLoaderCpus" : "2000m",
+  "dbLoaderMem" : "9000Mi",
   "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
@@ -381,6 +391,8 @@
 
   "dbLoaderThreads" : 16,
   "dbPrepThreads" : 128,
+  "dbLoaderCpus" : "2000m",
+  "dbLoaderMem" : "9000Mi",
   "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:+AlwaysPreTouch",
 },
 

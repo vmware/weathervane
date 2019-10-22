@@ -1333,7 +1333,6 @@ sub startRun {
 							||  !($statsSummary->{"intervalName"} eq $lastIntervalNames[$appInstanceNum])) {
 							my $endIntervalName = $statsSummary->{"intervalName"};
 							$lastIntervalNames[$appInstanceNum] = $endIntervalName;
-							$reportedSynced = 0;
 							my $nameStr = $self->parseNameStr($endIntervalName);
 							# Don't print end message for InitialRamp intervals
 							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
@@ -1365,9 +1364,11 @@ sub startRun {
 					    (!(defined $curIntervalNames[$appInstanceNum]) || !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
 						$curIntervalNames[$appInstanceNum] = $curIntervalName;
 						my $nameStr = $self->parseNameStr($curIntervalName);
-						if ($usingSyncedFindMaxLoadPathType && !$reportedSynced) {
-							$console_logger->info("   Start: $nameStr for all instances, duration:" . $curInterval->{'duration'} . "s.");
-							$reportedSynced = 1;
+						if ($usingSyncedFindMaxLoadPathType) {
+							if (!$reportedSynced) {
+								$console_logger->info("   Start: $nameStr for all instances, duration:" . $curInterval->{'duration'} . "s.");
+								$reportedSynced = 1;
+							}
 						} else {
 							$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");							
 						}

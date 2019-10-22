@@ -25,8 +25,25 @@ public abstract class SyncedLoadPath extends LoadPath {
 		}
 		
 		// Notify the loadPath that the interval is complete
-		curIntervalName = this.intervalComplete();
+		IntervalCompleteResult result = this.intervalComplete(); 
+		curIntervalName = result.getIntervalName();
+		logger.debug("run for run {}, workload {}, loadPath {}: "
+				+ "intervalComplete returned curIntervalName {}, decisionInterval {}, passed {}",
+				runName, workloadName, getName(), curIntervalName, result.isDecisionInterval(),
+				result.isPassed());
 		
+		if (result.isDecisionInterval()) {
+			/*
+			 * Post the result to the loadPathController
+			 */
+			loadPathController.postIntervalResult(getName(), curIntervalName, result.isPassed());
+		} else {
+			/*
+			 * Invoke the steps to get the next interval directly
+			 */
+			this.intervalResult(curIntervalName, result.isPassed());
+		}
+
 	}
 	
 	@Override
@@ -48,6 +65,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 			status.setLoadPathName(this.getName());
 
 			workload.loadPathComplete(status);
+			return;
 		}
 		
 		UniformLoadInterval nextInterval = this.getNextIntervalSynced(intervalResult);
@@ -79,8 +97,33 @@ public abstract class SyncedLoadPath extends LoadPath {
 		}
 	}
 
-	protected abstract String intervalComplete();
+	protected abstract IntervalCompleteResult intervalComplete();
 
 	protected abstract UniformLoadInterval getNextIntervalSynced(boolean passed);
+	
+	protected class IntervalCompleteResult {
+		private String intervalName;
+		private boolean decisionInterval;
+		private boolean passed;
+		public String getIntervalName() {
+			return intervalName;
+		}
+		public void setIntervalName(String intervalName) {
+			this.intervalName = intervalName;
+		}
+		public boolean isDecisionInterval() {
+			return decisionInterval;
+		}
+		public void setDecisionInterval(boolean decisionInterval) {
+			this.decisionInterval = decisionInterval;
+		}
+		public boolean isPassed() {
+			return passed;
+		}
+		public void setPassed(boolean passed) {
+			this.passed = passed;
+		}
+		
+	}
 
 }

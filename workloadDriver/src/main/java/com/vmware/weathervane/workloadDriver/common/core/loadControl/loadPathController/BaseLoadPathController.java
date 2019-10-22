@@ -4,8 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class BaseLoadPathController implements LoadPathController {
-	
+	private static final Logger logger = LoggerFactory.getLogger(BaseLoadPathController.class);
+
 	private Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
 	private int numWatchers = 0;
 	private Map<String, Integer> numIntervalResults = new HashMap<>();
@@ -13,8 +17,12 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	
 	@Override
 	public void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher) {
+		logger.debug("registerIntervalResultCallback for loadPath {}", name);
+
 		watchers.put(name, watcher);
-		numWatchers = numWatchers++;
+		numWatchers++;
+		logger.debug("registerIntervalResultCallback for loadPath {}, numWatchers = {}", 
+				name, numWatchers);
 	}
 
 	@Override
@@ -29,7 +37,11 @@ public abstract class BaseLoadPathController implements LoadPathController {
 					combineIntervalResults(intervalResults.get(intervalName), passed));
 		}
 		numIntervalResults.put(intervalName, curNumResults);
+		logger.debug("postIntervalResult for loadPath {}, interval {}, curNumResults {}, result: {}",
+				loadPathName, intervalName, curNumResults, intervalResults.get(intervalName));
 		if (curNumResults == numWatchers) {
+			logger.debug("postIntervalResult notifying watchers for interval {} with result {}", 
+					intervalName, intervalResults.get(intervalName));
 			notifyWatchers(intervalName, intervalResults.get(intervalName));
 		}
 	}

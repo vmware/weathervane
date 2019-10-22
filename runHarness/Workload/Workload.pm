@@ -659,6 +659,11 @@ sub redeploy {
 	close $applog;
 }
 
+sub getResultMetrics {
+	my ( $self ) = @_;
+	return $self->primaryDriver->getResultMetrics();
+}
+
 sub getWorkloadStatsSummary {
 	my ( $self, $tmpDir ) = @_;
 	tie( my %csv, 'Tie::IxHash' );

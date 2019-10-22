@@ -986,6 +986,27 @@ sub printCsv {
 
 }
 
+sub getResultMetrics {
+	my ( $self ) = @_;
+	tie( my %csv, 'Tie::IxHash' );
+
+	my $WvUsers = 0;
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		my $metricsRef = $workload->getResultMetrics();
+		$WvUsers += $metricsRef->{"WvUsers"};
+	}
+	$csv{"WvUsers"}         = $WvUsers;
+	
+	foreach my $workload (@$workloadsRef) {
+		my $metricsRef = $workload->getResultMetrics();
+		my $workloadNum = $workload->instanceNum;
+		$csv{"Workload ${workloadNum} Average Response-Time"} = $metricsRef->{"Average Response-Time"};
+	}
+	
+	return \%csv;
+}
+
 sub getStatsSummary {
 	my ( $self, $seqnum, $tmpDir ) = @_;
 	my $logger              = get_logger("Weathervane::RunProcedures::RunProcedure");

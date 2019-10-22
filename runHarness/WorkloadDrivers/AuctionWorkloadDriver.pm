@@ -475,11 +475,11 @@ sub createRunConfigHash {
 			}
 
 		}
-		elsif ( $loadPathType eq "findmax" ) {
+		elsif (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
-			$loadPath->{"type"}          = "syncedfindmax";
+			$loadPath->{"type"}          = $loadPathType;
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
@@ -1288,6 +1288,7 @@ sub startRun {
 		if ( $res->is_success ) {
 			$endRunStatus = $json->decode( $res->content );
 
+			my $reportedSynced = 0;
 			my $workloadStati = $endRunStatus->{'workloadStati'};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};

@@ -1366,7 +1366,7 @@ sub startRun {
 						my $nameStr = $self->parseNameStr($curIntervalName);
 						if ($usingSyncedFindMaxLoadPathType) {
 							if (!$reportedSynced) {
-								$console_logger->info("   Start: $nameStr for all instances, duration:" . $curInterval->{'duration'} . "s.");
+								$console_logger->info("   Start: $nameStr per appInstance, duration:" . $curInterval->{'duration'} . "s.");
 								$reportedSynced = 1;
 							}
 						} else {

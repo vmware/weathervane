@@ -167,10 +167,18 @@ sub configure {
 				}
 			}
 		}
-		elsif ( $inline =~ /(\s+)\-\skey\:\swvauctionw1i1/ ) {
-			my $workloadNum    = $self->appInstance->workload->instanceNum;
-			my $appInstanceNum = $self->appInstance->instanceNum;
-			print FILEOUT "${1}- key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+		elsif ( $inline =~ /^(\s+)nodeAffinity/ ) {
+			print FILEOUT $inline;			
+			if ($self->getParamValue('instanceNodeLabels')) {
+				my $workloadNum    = $self->appInstance->workload->instanceNum;
+				my $appInstanceNum = $self->appInstance->instanceNum;
+				my $indent = $1;
+          		print FILEOUT "${indent}  requiredDuringSchedulingIgnoredDuringExecution:\n";
+            	print FILEOUT "${indent}    nodeSelectorTerms:\n";
+            	print FILEOUT "${indent}    - matchExpressions:\n";
+            	print FILEOUT "${indent}      - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+            	print FILEOUT "${indent}        operator: Exists\n";
+			}
 		}
 		else {
 			print FILEOUT $inline;

@@ -160,15 +160,16 @@ sub configure {
 				}
 			}
 		}
-		elsif ( $inline =~ /^(\s+)nodeAffinity/ ) {
-			print FILEOUT $inline;			
+		elsif ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
+			my $indent = $1;
+			print FILEOUT $inline;
+			do {
+				$inline = <FILEIN>;
+				print FILEOUT $inline;			
+			} while(!($inline =~ /matchExpressions/));
 			if ($self->getParamValue('instanceNodeLabels')) {
 				my $workloadNum    = $self->appInstance->workload->instanceNum;
 				my $appInstanceNum = $self->appInstance->instanceNum;
-				my $indent = $1;
-          		print FILEOUT "${indent}  requiredDuringSchedulingIgnoredDuringExecution:\n";
-            	print FILEOUT "${indent}    nodeSelectorTerms:\n";
-            	print FILEOUT "${indent}    - matchExpressions:\n";
             	print FILEOUT "${indent}      - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
             	print FILEOUT "${indent}        operator: Exists\n";
 			}

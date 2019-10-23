@@ -779,7 +779,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $numDrivers = $numSecondaries + 1;
 	$console_logger->info("Workload $workloadNum has $numDrivers workload-driver nodes");
-	$console_logger->info("Workload $workloadNum has $numAppInstances application instances.");
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
@@ -805,12 +804,42 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		exit(-1);
 	}
 
+	# Check if all instances have the same configuration, and if 
+	# so only print configuration once to the console
+	my $allAiSameConfig = 1;
+	my $commonConfigSize = "";
+	foreach my $appInstanceParamHashRef (@$appInstanceParamHashRefs) {
+		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
+		if (!$commonConfigSize) {
+			$commonConfigSize = $configSize;
+		} else {
+			if ($configSize ne $commonConfigSize) {
+				$allAiSameConfig = 0;
+				last;
+			}
+		}
+	}
+	if ($allAiSameConfig && ($commonConfigSize ne "custom")) {
+		$console_logger->info("Workload $workloadNum has $numAppInstances $commonConfigSize application instances:");
+		my $appInstanceParamHashRef = $appInstanceParamHashRefs->[0];
+		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
+		foreach my $serviceType (@$serviceTypesRef) {
+			my @services;
+			my $numScvInstances      = $appInstanceParamHashRef->{ "num" . ucfirst($serviceType) . "s" };
+			$console_logger->info( "\t$numScvInstances " . ucfirst($serviceType) . "s" );
+		}		
+	} else {
+		$console_logger->info("Workload $workloadNum has $numAppInstances application instances.");
+	}
+
 	# Create the appInstances and add them to the workload
 	my @appInstances;
 	my $appInstanceNum = 1;    # Count appInstances so that each gets a unique suffix
 	foreach my $appInstanceParamHashRef (@$appInstanceParamHashRefs) {
-		$console_logger->info("Workload $workloadNum, Application Instance $appInstanceNum configuration:");
-
+		if (!$allAiSameConfig || ($commonConfigSize eq "custom")) {
+			$console_logger->info("Workload $workloadNum, Application Instance $appInstanceNum configuration:");
+		}
+		
 		my $users = shift @usersList;
 		if ( defined $users ) {
 			$appInstanceParamHashRef->{'users'} = $users;
@@ -875,8 +904,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 					$logger->debug($tmp);
 				}
 			}
-			$console_logger->info( "\t$numScvInstances " . ucfirst($serviceType) . "s" );
-
+			if (!$allAiSameConfig || ($commonConfigSize eq "custom")) {
+				$console_logger->info( "\t$numScvInstances " . ucfirst($serviceType) . "s" );
+			}
+			
 			# Create the service instances and add them to the appInstance
 			my $svcNum = 1;
 			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {

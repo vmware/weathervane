@@ -587,6 +587,7 @@ $parameters{"useLoadBalancer"} = {
 	"showUsage" => 1,
 };
 
+
 $parameters{"dockerHost"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1034,6 +1035,14 @@ $parameters{"configurationSize"} = {
 	"default"   => "micro",
 	"parent"    => "runManager",
 	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"instanceNodeLabels"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, the appInstances will only run on Kubernetes nodes with the appropriate label, e.g. wvauctionw1i1=",
 	"showUsage" => 1,
 };
 
@@ -1645,6 +1654,22 @@ $parameters{"repeatsAtMax"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"dbLoaderCpus"} = {
+	"type"      => "=s",
+	"default"   => "1",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"dbLoaderMem"} = {
+	"type"      => "=s",
+	"default"   => "2500Mi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
 $parameters{"dbLoaderThreads"} = {
 	"type"      => "=i",
 	"default"   => 8,
@@ -2246,7 +2271,7 @@ $parameters{"postgresqlUseNamedVolumes"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"postgresqlDataVolume"} = {
+$parameters{"postgresqlVolume"} = {
 	"type"      => "=s",
 	"default"   => "postgresqlData",
 	"parent"    => "appInstance",
@@ -2254,7 +2279,7 @@ $parameters{"postgresqlDataVolume"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlDataVolumeSize"} = {
+$parameters{"postgresqlVolumeSize"} = {
 	"type"      => "=s",
 	"default"   => "5GB",
 	"parent"    => "appInstance",
@@ -2262,31 +2287,7 @@ $parameters{"postgresqlDataVolumeSize"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlLogVolume"} = {
-	"type"      => "=s",
-	"default"   => "postgresqlLogs",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogVolumeSize"} = {
-	"type"      => "=s",
-	"default"   => "5GB",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlDataStorageClass"} = {
-	"type"      => "=s",
-	"default"   => "weathervanesc",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlLogStorageClass"} = {
+$parameters{"postgresqlStorageClass"} = {
 	"type"      => "=s",
 	"default"   => "weathervanesc",
 	"parent"    => "appInstance",

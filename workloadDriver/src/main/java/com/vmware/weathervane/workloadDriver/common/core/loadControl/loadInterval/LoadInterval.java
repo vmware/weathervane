@@ -13,55 +13,40 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.core.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 
-@JsonTypeName(value = "ramp")
-public class RampLoadInterval extends LoadInterval {
-	private Long startUsers = null;
-	private Long endUsers = null;
-	private Long timeStep = 15L;
+@JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
+@JsonSubTypes({ @Type(value = UniformLoadInterval.class, name = "uniform"), 
+				@Type(value = RampLoadInterval.class, name = "ramp")
+})
+public abstract class LoadInterval {
+	private Long duration = null;
+
+	private String name;
 	
-	public Long getStartUsers() {
-		return startUsers;
-	}
-
-
-	public void setStartUsers(Long startUsers) {
-		this.startUsers = startUsers;
-	}
-
-
-	public Long getEndUsers() {
-		return endUsers;
-	}
-
-
-	public void setEndUsers(Long endUsers) {
-		this.endUsers = endUsers;
-	}
-
-
-	public Long getTimeStep() {
-		return timeStep;
-	}
-
-
-	public void setTimeStep(Long timeStep) {
-		this.timeStep = timeStep;
-	}
-
-
-	@Override
-	public String toString() {
-		StringBuilder theStringBuilder = new StringBuilder("RampLoadInterval: ");
-		theStringBuilder.append("; duration: " + getDuration()); 
-		theStringBuilder.append("; startUsers: " + startUsers); 
-		theStringBuilder.append("; endUsers: " + endUsers); 
-		theStringBuilder.append("; timeStep: " + timeStep); 
+	public void initialize() {
 		
-		return theStringBuilder.toString();
+	}
+
+	public Long getDuration() {
+		return duration;
+	}
+
+	public void setDuration(Long duration) {
+		this.duration = duration;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 }

@@ -63,12 +63,6 @@ spec:
                 operator: In
                 values:
                 - sut
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-              - key: wvauctionw1i1
-                operator: Exists
       containers:
       - image: repository/weathervane-postgresql:1.2.0
         name: postgresql
@@ -77,10 +71,8 @@ spec:
         - configMapRef:
             name: postgresql-config
         volumeMounts:
-        - name: postgresql-data
-          mountPath: /mnt/dbData/postgresql
-        - name: postgresql-logs
-          mountPath: /mnt/dbLogs/postgresql
+        - name: postgresql
+          mountPath: /mnt
         ports: 
         - containerPort: 5432
           name: postgresqlport
@@ -115,16 +107,7 @@ spec:
           timeoutSeconds: 1        
   volumeClaimTemplates:
   - metadata:
-      name: postgresql-data
-    spec:
-      resources: 
-        requests:
-          storage: 20Gi
-      accessModes:
-      - ReadWriteOnce
-      storageClassName: fast
-  - metadata:
-      name: postgresql-logs
+      name: postgresql
     spec:
       resources: 
         requests:

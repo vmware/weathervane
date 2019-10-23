@@ -13,7 +13,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.core.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +36,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.RampLoadInterval;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.UniformLoadInterval;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathController;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathIntervalResultWatcher;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.ChangeUsersMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
@@ -46,10 +50,11 @@ import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollu
 @JsonSubTypes({ 
 	@Type(value = IntervalLoadPath.class, name = "interval"), 
 	@Type(value = FindMaxLoadPath.class, name = "findmax"), 
+	@Type(value = SyncedFindMaxLoadPath.class, name = "syncedfindmax"), 
 	@Type(value = FixedLoadPath.class, name = "fixed"), 
 	@Type(value = RampToMaxLoadPath.class, name = "ramptomax")
 })
-public abstract class LoadPath implements Runnable {
+public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatcher {
 	private static final Logger logger = LoggerFactory.getLogger(LoadPath.class);
 
 	private String name;
@@ -97,6 +102,9 @@ public abstract class LoadPath implements Runnable {
 	protected Workload workload = null;
 
 	@JsonIgnore
+	protected LoadPathController loadPathController = null;
+
+	@JsonIgnore
 	private ScheduledExecutorService executorService = null;
 	
 	@JsonIgnore
@@ -111,13 +119,16 @@ public abstract class LoadPath implements Runnable {
 	@JsonIgnore
 	protected List<StatsSummaryRollup> intervalStatsSummaries = new ArrayList<StatsSummaryRollup>();
 
-	public void initialize(String runName, String workloadName, Workload workload, List<String> hosts, String statsHostName, 
+	public void initialize(String runName, String workloadName, Workload workload, 
+			LoadPathController loadPathController,  List<String> hosts, String statsHostName, 
 			int portNumber, RestTemplate restTemplate, 
 			ScheduledExecutorService executorService) {
 		logger.debug("initialize for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		this.runName = runName;
 		this.workloadName = workloadName;
 		this.workload = workload;
+		this.loadPathController = loadPathController;
+		loadPathController.registerIntervalResultCallback(name, this);
 		this.executorService = executorService;
 		this.hosts = hosts;
 		this.statsHostName = statsHostName;
@@ -129,7 +140,7 @@ public abstract class LoadPath implements Runnable {
 	public void start() {
 		logger.debug("start for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 
-		if (isStatsInterval) {
+		if (getIsStatsInterval()) {
 			/*
 			 * This loadPath should also generate statsIntervalComplete messages
 			 * for every interval in the load path. Start a watcher to send the
@@ -139,7 +150,7 @@ public abstract class LoadPath implements Runnable {
 			statsTracker = new StatsIntervalTracker();
 		}
 
-		executorService.execute(this);
+		getExecutorService().execute(this);
 
 	}
 
@@ -154,8 +165,8 @@ public abstract class LoadPath implements Runnable {
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
 		 */
-		if (isStatsInterval && this.isStatsIntervalComplete()) {
-			statsTracker.statsIntervalComplete();
+		if (getIsStatsInterval() && this.isStatsIntervalComplete()) {
+			getStatsTracker().statsIntervalComplete();
 		}
 		
 		UniformLoadInterval nextInterval = this.getNextInterval();
@@ -183,7 +194,7 @@ public abstract class LoadPath implements Runnable {
 		logger.debug("run: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {
 			logger.debug("run: sleeping for  " + wait + " seconds");
-			executorService.schedule(this, wait, TimeUnit.SECONDS);
+			getExecutorService().schedule(this, wait, TimeUnit.SECONDS);
 		}
 	}
 
@@ -279,6 +290,15 @@ public abstract class LoadPath implements Runnable {
 		} else {
 			return response.getStatsSummaryRollup();
 		}
+	}
+
+	@Override
+	public void intervalResult(String intervalName, boolean intervalResult) {
+		/*
+		 * Base implementation for loadPath types that don't use the global
+		 * interval result.  We just log the result.
+		 */
+		logger.debug("intervalResult for interval {} = {}", intervalName, intervalResult);
 	}
 
 	protected class StatsIntervalTracker {
@@ -450,6 +470,14 @@ public abstract class LoadPath implements Runnable {
 
 	public void setCurStatusInterval(RampLoadInterval curStatusInterval) {
 		this.curStatusInterval = curStatusInterval;
+	}
+
+	public StatsIntervalTracker getStatsTracker() {
+		return statsTracker;
+	}
+
+	public ScheduledExecutorService getExecutorService() {
+		return executorService;
 	}
 
 }

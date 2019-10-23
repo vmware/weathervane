@@ -998,12 +998,6 @@ sub getResultMetrics {
 	}
 	$csv{"WvUsers"}         = $WvUsers;
 	
-	foreach my $workload (@$workloadsRef) {
-		my $metricsRef = $workload->getResultMetrics();
-		my $workloadNum = $workload->instanceNum;
-		$csv{"Workload ${workloadNum} Average Response-Time"} = $metricsRef->{"Average Response-Time"};
-	}
-	
 	return \%csv;
 }
 

@@ -67,7 +67,8 @@ our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
-our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunWithScaling',
+our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunAsync', 
+							'findMaxSingleRunWithScaling',
 							'findMaxMultiAI', 'findMaxMultiRun', 'single' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 

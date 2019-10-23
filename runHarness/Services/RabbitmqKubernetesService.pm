@@ -110,10 +110,19 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";
 		}
-		elsif ( $inline =~ /(\s+)\-\skey\:\swvauctionw1i1/ ) {
-			my $workloadNum    = $self->appInstance->workload->instanceNum;
-			my $appInstanceNum = $self->appInstance->instanceNum;
-			print FILEOUT "${1}- key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+		elsif ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
+			my $indent = $1;
+			print FILEOUT $inline;
+			do {
+				$inline = <FILEIN>;
+				print FILEOUT $inline;			
+			} while(!($inline =~ /matchExpressions/));
+			if ($self->getParamValue('instanceNodeLabels')) {
+				my $workloadNum    = $self->appInstance->workload->instanceNum;
+				my $appInstanceNum = $self->appInstance->instanceNum;
+           	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+           	    print FILEOUT "${indent}      operator: Exists\n";
+			}
 		}
 		else {
 			print FILEOUT $inline;

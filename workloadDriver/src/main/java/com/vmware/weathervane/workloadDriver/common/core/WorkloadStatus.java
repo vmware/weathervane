@@ -17,7 +17,7 @@ package com.vmware.weathervane.workloadDriver.common.core;
 
 import java.util.List;
 
-import com.vmware.weathervane.workloadDriver.common.core.loadPath.RampLoadInterval;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.RampLoadInterval;
 import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollup;
 
 public class WorkloadStatus {

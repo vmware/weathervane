@@ -13,52 +13,53 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package com.vmware.weathervane.workloadDriver.common.core.loadPath;
+package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName(value = "uniform")
-public class UniformLoadInterval extends LoadInterval {
-	private long users;
+@JsonTypeName(value = "ramp")
+public class RampLoadInterval extends LoadInterval {
+	private Long startUsers = null;
+	private Long endUsers = null;
+	private Long timeStep = 15L;
 	
-	@JsonIgnore
-	private boolean endOfStatsInterval = false;
-	
-	public UniformLoadInterval() {
-		
-	}
-	
-	public UniformLoadInterval(UniformLoadInterval that) {
-		this.users = that.users;
-		this.setDuration(that.getDuration());
+	public Long getStartUsers() {
+		return startUsers;
 	}
 
-	public UniformLoadInterval(long users, long duration) {
-		this.users = users;
-		this.setDuration(duration);
-	}
-	
-	public long getUsers() {
-		return users;
-	}
-	public void setUsers(long users) {
-		this.users = users;
-	}
-	
-	public boolean isEndOfStatsInterval() {
-		return endOfStatsInterval;
+
+	public void setStartUsers(Long startUsers) {
+		this.startUsers = startUsers;
 	}
 
-	public void setEndOfStatsInterval(boolean endOfStatsInterval) {
-		this.endOfStatsInterval = endOfStatsInterval;
+
+	public Long getEndUsers() {
+		return endUsers;
 	}
+
+
+	public void setEndUsers(Long endUsers) {
+		this.endUsers = endUsers;
+	}
+
+
+	public Long getTimeStep() {
+		return timeStep;
+	}
+
+
+	public void setTimeStep(Long timeStep) {
+		this.timeStep = timeStep;
+	}
+
 
 	@Override
 	public String toString() {
-		StringBuilder theStringBuilder = new StringBuilder("UniformLoadInterval: ");
+		StringBuilder theStringBuilder = new StringBuilder("RampLoadInterval: ");
 		theStringBuilder.append("; duration: " + getDuration()); 
-		theStringBuilder.append("; users: " + users); 
+		theStringBuilder.append("; startUsers: " + startUsers); 
+		theStringBuilder.append("; endUsers: " + endUsers); 
+		theStringBuilder.append("; timeStep: " + timeStep); 
 		
 		return theStringBuilder.toString();
 	}

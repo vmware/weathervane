@@ -290,6 +290,7 @@ sub setLoadPathType {
 	my ( $self, $loadPathType ) = @_;
 	my $logger         = get_logger("Weathervane::Workload::Workload");
 	$logger->debug("setLoadPathType for all appInstances to $loadPathType");
+	$self->setParamValue('loadPathType', $loadPathType);
 
 	my $appInstanceRef = $self->appInstancesRef;
 	foreach my $appInstance (@$appInstanceRef) {
@@ -656,6 +657,11 @@ sub redeploy {
 	callMethodOnObjectsParallel1( 'redeploy', $self->appInstancesRef, $applog );
 
 	close $applog;
+}
+
+sub getResultMetrics {
+	my ( $self ) = @_;
+	return $self->primaryDriver->getResultMetrics();
 }
 
 sub getWorkloadStatsSummary {

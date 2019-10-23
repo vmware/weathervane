@@ -37,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathController;
 import com.vmware.weathervane.workloadDriver.common.exceptions.TooManyUsersException;
 import com.vmware.weathervane.workloadDriver.common.representation.ActiveUsersResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
@@ -60,6 +61,8 @@ public class Run {
 	private String statsHost;
 
 	private List<Workload> workloads;	
+	
+	private LoadPathController loadPathController;
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
@@ -131,7 +134,7 @@ public class Run {
 		 */
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
-			workload.initialize(name, this, hosts, statsHost, portNumber, restTemplate, executorService);
+			workload.initialize(name, this, hosts, statsHost, portNumber, loadPathController, restTemplate, executorService);
 		}
 		
 		state = RunState.INITIALIZED;
@@ -327,6 +330,14 @@ public class Run {
 
 	public void setStatsOutputDirName(String statsOutputDirName) {
 		this.statsOutputDirName = statsOutputDirName;
+	}
+
+	public LoadPathController getLoadPathController() {
+		return loadPathController;
+	}
+
+	public void setLoadPathController(LoadPathController loadPathController) {
+		this.loadPathController = loadPathController;
 	}
 
 	@Override

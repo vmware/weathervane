@@ -24,9 +24,8 @@
   "driverCluster" : "driverCluster",
 
   "appInstanceCluster" : "appCluster",
-  "cassandraDataStorageClass" : "weathervaneSC",
-  "postgresqlDataStorageClass" : "weathervaneSC",
-  "postgresqlLogStorageClass" : "weathervaneSC",
-  "nginxCacheStorageClass" : "weathervaneSC",
+  "cassandraDataStorageClass" : "weathervanesc",
+  "postgresqlStorageClass" : "weathervanesc",
+  "nginxCacheStorageClass" : "weathervanesc",
 
 }

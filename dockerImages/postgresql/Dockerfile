@@ -17,8 +17,7 @@ COPY clearAfterStart.sh /clearAfterStart.sh
 COPY pgdg-93-centos.repo /etc/yum/repos.d/pgdg-93-centos.repo
 COPY RPM-GPG-KEY-PGDG-93 /etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
 
-RUN mkdir -p /mnt/dbLogs/postgresql && \
-	mkdir -p /mnt/dbData/postgresql && \
+RUN mkdir -p /mnt && \
 	echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo && \
 	yum install -y postgresql${PG_MAJOR_PKG} && \
 	yum install -y postgresql${PG_MAJOR_PKG}-server && \

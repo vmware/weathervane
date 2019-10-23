@@ -396,6 +396,15 @@ sub createRunConfigHash {
 	$runRef->{"statsOutputDirName"} = "/tmp";
 
 	$runRef->{"workloads"} = [];
+	
+	my $loadPathController = {};
+	my $loadPathType = $self->workload->getParamValue('loadPathType');
+	if ( $loadPathType eq "fixed" ) {
+		$loadPathController->{"type"} = "anypass";
+	} else {
+		$loadPathController->{"type"} = "allpass";		
+	}
+	$runRef->{"loadPathController"} = $loadPathController;
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	foreach my $appInstance (@$appInstancesRef) {
@@ -423,7 +432,7 @@ sub createRunConfigHash {
 		
 
 		# Add the loadPath to the workload
-		my $loadPathType = $appInstance->getParamValue('loadPathType');
+		$loadPathType = $appInstance->getParamValue('loadPathType');
 		my $loadPath     = {};
 		$loadPath->{'name'}            = "loadPath" . $instanceNum;
 		$loadPath->{"isStatsInterval"} = JSON::true;
@@ -466,11 +475,11 @@ sub createRunConfigHash {
 			}
 
 		}
-		elsif ( $loadPathType eq "findmax" ) {
+		elsif (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
 			$logger->debug(
 "configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
 			);
-			$loadPath->{"type"}          = "findmax";
+			$loadPath->{"type"}          = $loadPathType;
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
 			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
@@ -1177,12 +1186,17 @@ sub startRun {
 	}
 
 	my $usingFindMaxLoadPathType = 0;
+	my $usingSyncedFindMaxLoadPathType = 0;
 	my $usingFixedLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		if ( $loadPathType eq "findmax" ) {
 			$usingFindMaxLoadPathType = 1;
+			last;
+		}
+		if ( $loadPathType eq "syncedfindmax" ) {
+			$usingSyncedFindMaxLoadPathType = 1;
 			last;
 		}
 		if ($loadPathType eq "fixed" ) {
@@ -1279,6 +1293,7 @@ sub startRun {
 		if ( $res->is_success ) {
 			$endRunStatus = $json->decode( $res->content );
 
+			# print the messages for the end of the previous interval
 			my $workloadStati = $endRunStatus->{'workloadStati'};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
@@ -1289,7 +1304,8 @@ sub startRun {
 					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
 				
-				if ($usingFindMaxLoadPathType || $usingFixedLoadPathType) {
+				if ($usingFindMaxLoadPathType || 
+						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
 
@@ -1343,14 +1359,38 @@ sub startRun {
 							}
 						}
 					}
+				}
+			}
 
-					if ($curInterval && (!(defined $curIntervalNames[$appInstanceNum]) ||  !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
+			# Now print the messages for the start of the next interval
+			my $reportedSynced = 0;
+			foreach my $workloadStatus (@$workloadStati) {
+				my $wkldName = $workloadStatus->{'name'};
+				my $curInterval = $workloadStatus->{'curInterval'};
+				my $curIntervalName;
+				if ($curInterval) {
+					$curIntervalName = $curInterval->{'name'};
+				}
+				if ($usingFindMaxLoadPathType || 
+						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
+					$wkldName =~ /appInstance(\d+)/;
+					my $appInstanceNum = $1;
+
+					if ($curInterval && 
+					    (!(defined $curIntervalNames[$appInstanceNum]) || !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
 						$curIntervalNames[$appInstanceNum] = $curIntervalName;
 						my $nameStr = $self->parseNameStr($curIntervalName);
-						$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");
-
-						if ( ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
-								|| ($curIntervalName =~ /QOS\-(\d+)/)) {
+						if ($usingSyncedFindMaxLoadPathType) {
+							if (!$reportedSynced) {
+								$console_logger->info("   Start: $nameStr per appInstance, duration:" . $curInterval->{'duration'} . "s.");
+								$reportedSynced = 1;
+							}
+						} else {
+							$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");							
+						}
+						if ( ($curIntervalName =~ /FINDFIRSTMAX\-(\d+)/)
+								|| ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
+								|| ($curIntervalName =~ /QOS\-(\d+)/) ) {
 							$statsRunning[$appInstanceNum] = 1;
 							$logger->debug("   [$wkldName] Starting performance statistics on workload.");
 							$self->workload->startStatsCollection($tmpDir);
@@ -1860,8 +1900,17 @@ sub getResultMetrics {
 	my ($self) = @_;
 	tie( my %metrics, 'Tie::IxHash' );
 
-	$metrics{"opsSec"}         = $self->opsSec;
-	$metrics{"overallAvgRTRT"} = $self->overallAvgRT;
+	my $totalUsers       = 0;
+	my $appInstancesRef = $self->workload->appInstancesRef;
+	foreach my $appInstanceRef (@$appInstancesRef) {
+		my $appInstanceNum = $appInstanceRef->instanceNum;
+		if ($self->passAll->{$appInstanceNum}) {
+			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
+		}
+	}
+
+	$metrics{"WvUsers"}         = $totalUsers;
+	$metrics{"Average Response-Time"} = $self->overallAvgRT;
 
 	return \%metrics;
 }

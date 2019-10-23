@@ -58,12 +58,6 @@ spec:
                 operator: In
                 values:
                 - sut
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-              - key: wvauctionw1i1
-                operator: Exists
       terminationGracePeriodSeconds: 1800
       containers:
       - image: repository/weathervane-cassandra:1.2.0

@@ -67,12 +67,6 @@ spec:
                 operator: In
                 values:
                 - sut
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            preference:
-              matchExpressions:
-              - key: wvauctionw1i1
-                operator: Exists
       containers:
       - image: repository/weathervane-tomcat:1.2.0
         name: tomcat

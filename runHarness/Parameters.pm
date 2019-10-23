@@ -587,6 +587,7 @@ $parameters{"useLoadBalancer"} = {
 	"showUsage" => 1,
 };
 
+
 $parameters{"dockerHost"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1034,6 +1035,14 @@ $parameters{"configurationSize"} = {
 	"default"   => "micro",
 	"parent"    => "runManager",
 	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"instanceNodeLabels"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, the appInstances will only run on Kubernetes nodes with the appropriate label, e.g. wvauctionw1i1=",
 	"showUsage" => 1,
 };
 

@@ -535,6 +535,8 @@ sub startStatsCollection {
 	}
 
 	if ( $logLevel >= 2 ) {
+		$console_logger->info("Starting performance statistics collection on hosts.\n");
+
 		# Start collection on hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
@@ -549,6 +551,7 @@ sub startStatsCollection {
 	}
 
 	if ( $logLevel >= 4 ) {
+		$console_logger->info("Starting performance statistics collection on virtual-infrastructure hosts.\n");
 		my $usingFindMaxLoadPathType = 0;
 		my $workloadsRef = $self->workloadsRef;
 		foreach my $workload (@$workloadsRef) {
@@ -591,6 +594,8 @@ sub stopStatsCollection {
 	}
 
 	if ( $logLevel >= 2 ) {
+		$console_logger->info("Stopping performance statistics collection on hosts.\n");
+
 		# stops collection on hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
@@ -605,6 +610,7 @@ sub stopStatsCollection {
 	}
 
 	if ( $logLevel >= 4 ) {
+
 		# Start stops collection on virtual infrastructure
 		my $virtualInfrastructure = $self->virtualInfrastructure;
 		$virtualInfrastructure->stopStatsCollection();

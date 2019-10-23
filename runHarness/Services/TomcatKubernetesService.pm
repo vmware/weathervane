@@ -169,8 +169,8 @@ sub configure {
 			if ($self->getParamValue('instanceNodeLabels')) {
 				my $workloadNum    = $self->appInstance->workload->instanceNum;
 				my $appInstanceNum = $self->appInstance->instanceNum;
-            	print FILEOUT "${indent}      - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
-            	print FILEOUT "${indent}        operator: Exists\n";
+           	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+           	    print FILEOUT "${indent}      operator: Exists\n";
 			}
 		}
 		else {

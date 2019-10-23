@@ -178,7 +178,7 @@ sub runWorkloads {
 		my $appInstancesRef = $workload->appInstancesRef;
 		foreach my $appInstance (@$appInstancesRef) {
 			my $loadPathType = $appInstance->getParamValue('loadPathType');
-			if ( $loadPathType eq "findmax" ) {
+			if (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
 				$usingFindMaxLoadPathType = 1;
 				last;
 			}
@@ -535,8 +535,6 @@ sub startStatsCollection {
 	}
 
 	if ( $logLevel >= 2 ) {
-		$console_logger->info("Starting performance statistics collection on hosts.\n");
-
 		# Start collection on hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
@@ -551,14 +549,13 @@ sub startStatsCollection {
 	}
 
 	if ( $logLevel >= 4 ) {
-		$console_logger->info("Starting performance statistics collection on virtual-infrastructure hosts.\n");
 		my $usingFindMaxLoadPathType = 0;
 		my $workloadsRef = $self->workloadsRef;
 		foreach my $workload (@$workloadsRef) {
 			my $appInstancesRef = $workload->appInstancesRef;
 			foreach my $appInstance (@$appInstancesRef) {
 				my $loadPathType = $appInstance->getParamValue('loadPathType');
-				if ( $loadPathType eq "findmax" ) {
+				if (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
 					$usingFindMaxLoadPathType = 1;
 					last;
 				}
@@ -594,8 +591,6 @@ sub stopStatsCollection {
 	}
 
 	if ( $logLevel >= 2 ) {
-		$console_logger->info("Stopping performance statistics collection on hosts.\n");
-
 		# stops collection on hosts.
 		my $hostsRef = $self->hostsRef;
 		foreach my $host (@$hostsRef) {
@@ -610,7 +605,6 @@ sub stopStatsCollection {
 	}
 
 	if ( $logLevel >= 4 ) {
-
 		# Start stops collection on virtual infrastructure
 		my $virtualInfrastructure = $self->virtualInfrastructure;
 		$virtualInfrastructure->stopStatsCollection();

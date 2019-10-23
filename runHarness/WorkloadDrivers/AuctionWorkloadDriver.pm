@@ -1388,8 +1388,9 @@ sub startRun {
 						} else {
 							$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");							
 						}
-						if ( ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
-								|| ($curIntervalName =~ /QOS\-(\d+)/)) {
+						if ( ($curIntervalName =~ /FINDFIRSTMAX\-(\d+)/)
+								|| ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
+								|| ($curIntervalName =~ /QOS\-(\d+)/) ) {
 							$statsRunning[$appInstanceNum] = 1;
 							$logger->debug("   [$wkldName] Starting performance statistics on workload.");
 							$self->workload->startStatsCollection($tmpDir);

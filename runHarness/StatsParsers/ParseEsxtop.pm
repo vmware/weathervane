@@ -371,7 +371,7 @@ sub parseEsxtopCmdline {
 		# We deal with VMs seperately, because they have sub-categories
 		my $foundCategory = 0;
 		foreach my $vmname (@vms) {
-			if ( $header =~ /$vmname\)/ ) {
+			if ( $header =~ /$vmname/ ) {
 
 				# header has vmname in it.  Put it in the right category
 				#print "Found $header for $vmname\n";

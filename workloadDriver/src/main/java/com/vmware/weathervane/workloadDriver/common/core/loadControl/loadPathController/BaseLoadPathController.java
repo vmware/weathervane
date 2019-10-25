@@ -32,20 +32,19 @@ public abstract class BaseLoadPathController implements LoadPathController {
 			curNumResults = 1;
 			intervalResults.put(intervalName, passed);
 		} else {
-			curNumResults = numIntervalResults.get(intervalName) + 1;			
+			curNumResults = numIntervalResults.get(intervalName) + 1;
+			boolean isLastInInterval = false;
+			if (curNumResults == numWatchers) {
+				isLastInInterval = true;
+			}
+			intervalResults.put(intervalName, 
+					combineIntervalResults(intervalResults.get(intervalName), passed, isLastInInterval));
 		}
 		numIntervalResults.put(intervalName, curNumResults);
 
-		boolean isLastInInterval = false;
+		logger.debug("postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
+				loadPathName, intervalName, passed, curNumResults, numWatchers, intervalResults.get(intervalName));
 		if (curNumResults == numWatchers) {
-			isLastInInterval = true;
-		}
-		intervalResults.put(intervalName, 
-				combineIntervalResults(intervalResults.get(intervalName), passed, isLastInInterval));
-
-		logger.debug("postIntervalResult for loadPath {}, interval {}, curNumResults {}, result: {}",
-				loadPathName, intervalName, curNumResults, intervalResults.get(intervalName));
-		if (isLastInInterval) {
 			logger.debug("postIntervalResult notifying watchers for interval {} with result {}", 
 					intervalName, intervalResults.get(intervalName));
 			notifyWatchers(intervalName, intervalResults.get(intervalName));

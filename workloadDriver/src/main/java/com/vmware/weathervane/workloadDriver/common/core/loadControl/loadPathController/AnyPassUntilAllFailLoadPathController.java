@@ -1,13 +1,19 @@
 package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(value = "anypassuntilfail")
 public class AnyPassUntilAllFailLoadPathController extends BaseLoadPathController {
+	private static final Logger logger = LoggerFactory.getLogger(AnyPassUntilAllFailLoadPathController.class);
 	private boolean allFailed = false;
 
 	@Override
 	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult, boolean isLastInInverval) {
+		logger.debug("combineIntervalResults previousResult = {}, latestResult = {}, isLastInInverval = {}", 
+				previousResult, latestResult, isLastInInverval);
 		boolean combinedValue = false;
 		if (allFailed) {
 			/*
@@ -21,6 +27,7 @@ public class AnyPassUntilAllFailLoadPathController extends BaseLoadPathControlle
 				allFailed = true;
 			}
 		}
+		logger.debug("combineIntervalResults combinedValue = {}", combinedValue);
 		return combinedValue;
 	}
 

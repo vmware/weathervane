@@ -12,8 +12,8 @@ public class AnyPassUntilAllFailLoadPathController extends BaseLoadPathControlle
 
 	@Override
 	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult, boolean isLastInInverval) {
-		logger.debug("combineIntervalResults previousResult = {}, latestResult = {}, isLastInInverval = {}", 
-				previousResult, latestResult, isLastInInverval);
+		logger.debug("combineIntervalResults previousResult = {}, latestResult = {}, isLastInInverval = {}, allFailed = {}", 
+				previousResult, latestResult, isLastInInverval, allFailed);
 		boolean combinedValue = false;
 		if (allFailed) {
 			/*

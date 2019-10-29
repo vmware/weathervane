@@ -668,10 +668,6 @@ sub getWorkloadStatsSummary {
 	my ( $self, $tmpDir ) = @_;
 	tie( my %csv, 'Tie::IxHash' );
 
-	$csv{'workload'} = $self->getParamValue('workloadImpl');
-
-	$csv{'workloadProfile'} = $self->getParamValue( 'workloadProfile' );
-
 	$self->primaryDriver->getWorkloadStatsSummary( \%csv, $tmpDir );
 
 	return \%csv;

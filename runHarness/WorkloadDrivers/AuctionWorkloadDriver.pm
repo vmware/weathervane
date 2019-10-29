@@ -1928,26 +1928,53 @@ sub getWorkloadStatsSummary {
 	my $overallAvgRT = 0;
 
 	my $numPassingAi = 0;
+	my $numTotalAi = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
+	$numTotalAi = scalar @$appInstancesRef;
+
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
 		if ($self->passAll->{$appInstanceNum}) {
 			$numPassingAi++;
+		}
+		# Summary fields are computed across all AIs, both passing and failing
+		{
+			# todo this solution works. It seems like uninitialized variables are messing up output in 
+			# the results.csv for the per-AI stats. These also need to be set to NA? Or this could be
+			# a separate bug.
+			no warnings 'uninitialized';
 			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
 			$opsSec       += $self->opsSec->{$appInstanceNum};
 			$httpReqSec   += $self->reqSec->{$appInstanceNum};
 			$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
 		}
+
 	}
 	
-	$csvRef->{"users-total"}       = $totalUsers;
-	$csvRef->{"opsSec-total"}       = $opsSec;
-	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
-	if ($numPassingAi > 0) {
-		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
+	#printf("passing AI ".$numPassingAi." total AI ".$numTotalAi."\n\n"); #&&&
+			
+	if ($numPassingAi == $numTotalAi) { # If all AIs pass, the run passes
+		$csvRef->{"Pass"}				= "Y";
+		printf("\nPassed Run\n");
 	} else {
-		$csvRef->{"overallAvgRT-total"} = 0;		
+		$csvRef->{"Pass"}				= "N";
+		printf("\nFailed Run\n");
 	}
+
+	# If this is a failed findMax run, print "NA" for summary fields
+	if ( ($csvRef->{"Pass"} eq "N") && ($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "findmax") ) {
+		$csvRef->{"WvUsers"}       = "NA";
+		$csvRef->{"opsSec-total"}       = "NA";
+		$csvRef->{"httpReqSec-total"}   = "NA";
+		$csvRef->{"overallAvgRT-total"} = "NA";
+	} else { 
+		$csvRef->{"WvUsers"}      	 = $totalUsers;
+		$csvRef->{"opsSec-total"}       = $opsSec;
+		$csvRef->{"httpReqSec-total"}   = $httpReqSec;
+		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numTotalAi;
+		
+	}
+	
 	$appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;

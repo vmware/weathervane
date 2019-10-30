@@ -1939,26 +1939,19 @@ sub getWorkloadStatsSummary {
 		}
 		# Summary fields are computed across all AIs, both passing and failing
 		{
-			# todo this solution works. It seems like uninitialized variables are messing up output in 
-			# the results.csv for the per-AI stats. These also need to be set to NA? Or this could be
-			# a separate bug.
+			# Uninitialized warnings can occur if this is a failed findmax run. Summary fields will be output as "NA"
 			no warnings 'uninitialized';
 			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
 			$opsSec       += $self->opsSec->{$appInstanceNum};
 			$httpReqSec   += $self->reqSec->{$appInstanceNum};
 			$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
 		}
-
 	}
-	
-	#printf("passing AI ".$numPassingAi." total AI ".$numTotalAi."\n\n"); #&&&
 			
 	if ($numPassingAi == $numTotalAi) { # If all AIs pass, the run passes
 		$csvRef->{"Pass"}				= "Y";
-		printf("\nPassed Run\n");
 	} else {
 		$csvRef->{"Pass"}				= "N";
-		printf("\nFailed Run\n");
 	}
 
 	# If this is a failed findMax run, print "NA" for summary fields
@@ -1972,7 +1965,6 @@ sub getWorkloadStatsSummary {
 		$csvRef->{"opsSec-total"}       = $opsSec;
 		$csvRef->{"httpReqSec-total"}   = $httpReqSec;
 		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numTotalAi;
-		
 	}
 	
 	$appInstancesRef = $self->workload->appInstancesRef;

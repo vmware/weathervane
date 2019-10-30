@@ -1193,11 +1193,11 @@ sub startRun {
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
-		if ( $loadPathType eq "findmax" ) {
+		if ( $self->getParamValue('runStrategy') eq "findMaxSingleRun" ) {
 			$usingFindMaxLoadPathType = 1;
 			last;
 		}
-		if ( $loadPathType eq "syncedfindmax" ) {
+		if ( $self->getParamValue('runStrategy') eq "findMaxSingleRunSync" ) {
 			$usingSyncedFindMaxLoadPathType = 1;
 			last;
 		}

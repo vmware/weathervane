@@ -199,7 +199,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	}
 
 	public void changeActiveUsers(long numUsers) {
-		logger.debug("changeActiveUsers to " + numUsers);
+		logger.debug("changeActiveUsers for loadPath {} to {}", name, numUsers);
 		numActiveUsers = numUsers;
 		for (String hostname : hosts) {
 			/*
@@ -343,6 +343,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 				BasicResponse response = responseEntity.getBody();
 				if (responseEntity.getStatusCode() != HttpStatus.OK) {
 					logger.error("Error posting statsIntervalComplete message to " + url);
+				} else {
+					logger.debug("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
+							+ ", workload " + workloadName + " to host " + hostname);
 				}
 			}
 			intervalStartUsers = intervalEndUsers;

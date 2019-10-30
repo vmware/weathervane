@@ -26,7 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <logger name="com.vmware" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.http" level="WARN" />
-    <logger name="com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController" level="DEBUG" />
+    <logger name="com.vmware.weathervane.workloadDriver.common.core.loadControl" level="DEBUG" />
     <logger name="com.vmware.weathervane.workloadDriver.common.core.User" level="WARN" />
 
   <root level="warn">

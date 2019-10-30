@@ -399,11 +399,7 @@ sub createRunConfigHash {
 	
 	my $loadPathController = {};
 	my $loadPathType = $self->workload->getParamValue('loadPathType');
-	if ( $loadPathType eq "fixed" ) {
-		$loadPathController->{"type"} = "anypass";
-	} else {
-		$loadPathController->{"type"} = "allpass";		
-	}
+	$loadPathController->{"type"} = "allpass";		
 	$runRef->{"loadPathController"} = $loadPathController;
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;

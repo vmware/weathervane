@@ -79,7 +79,7 @@ public class StatsSummary {
 			double rtLimitPctile = behaviorSpec.getResponseTimeLimitPercentile(operationIndex);
 			boolean useRt = behaviorSpec.getUseResponseTime(operationIndex);
 			double rqdMixPct = behaviorSpec.getMixPercentage(operationIndex);
-			double mixTolerance = behaviorSpec.getMixPercentageTolerance();
+			double mixTolerance = behaviorSpec.getMixPercentageTolerance(operationIndex);
 			double allowedFailurePercent = behaviorSpec.getAllowedFailurePercent(operationIndex);
 			opNameToStatsMap.put(operationName,
 					new OperationStatsSummary(operationName, operationIndex, rtLimit,

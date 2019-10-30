@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseLoadPathController implements LoadPathController {
 	private static final Logger logger = LoggerFactory.getLogger(BaseLoadPathController.class);
 
-	private Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
-	private int numWatchers = 0;
-	private Map<String, Integer> numIntervalResults = new HashMap<>();
-	private Map<String, Boolean> intervalResults = new HashMap<>();
+	protected Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
+	protected int numWatchers = 0;
+	protected Map<String, Integer> numIntervalResults = new HashMap<>();
+	protected Map<String, Boolean> intervalResults = new HashMap<>();
 	
 	@Override
 	public void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher) {

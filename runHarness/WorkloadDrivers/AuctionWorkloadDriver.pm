@@ -399,9 +399,9 @@ sub createRunConfigHash {
 	
 	my $loadPathController = {};
 	my $loadPathType = $self->workload->getParamValue('loadPathType');
-	if ($loadPathType eq "syncedfindmax") {
+	if ($self->getParamValue('runStrategy') eq "findMaxSingleRunSync") {
 		$loadPathController->{"type"} = "anypassuntilfail";
-    } elsif ($loadPathType eq "findmax") {
+    } elsif ($self->getParamValue('runStrategy') eq "findMaxSingleRun") {
         $loadPathController->{"type"} = "syncuntilfail";      
     } else {
         $loadPathController->{"type"} = "allpass";      

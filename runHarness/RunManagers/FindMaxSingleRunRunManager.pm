@@ -59,11 +59,7 @@ override 'start' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
 	
-	if ($self->getParamValue('runStrategy') eq "findMaxSingleRun") {
-		$self->runProcedure->setLoadPathType("findmax");
-	} else {
-		$self->runProcedure->setLoadPathType("syncedfindmax");
-	}
+    $self->runProcedure->setLoadPathType("syncedfindmax");
 	$console_logger->info($self->name . " starting run.");
 
 	my $runResult = $self->runProcedure->run();

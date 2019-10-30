@@ -1043,7 +1043,7 @@ sub initializeRun {
 	  $retryCount = 0;
 	  $success = 0;
 	  do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
+		$logger->debug("Sending POST to $url.  content = $contents");
 		$res = $ua->request($req);
 		$logger->debug(
 			"Response status line: " . $res->status_line . " for url " . $url );

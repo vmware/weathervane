@@ -62,6 +62,8 @@ public class StatsSummary {
 	
 	public StatsSummary(String workloadName, List<Operation> operations, BehaviorSpec behaviorSpec,
 							String targetName, String hostname, String statsIntervalSpecName) {
+		logger.debug("StatsSummary constructor: workload {}, target {}, hostname {}, statsIntervalSpecName", 
+				workloadName, targetName, hostname, statsIntervalSpecName);
 		this.workloadName = workloadName;
 		this.operations = operations;
 		this.targetName = targetName;
@@ -73,6 +75,8 @@ public class StatsSummary {
 		 * for stats for every op, even if there have been no instances
 		 */
 		for (Operation op : operations) {
+			logger.debug("StatsSummary constructor: creating OperationStatsSummary for {}",
+					op.getOperationName());
 			String operationName = op.getOperationName();
 			int operationIndex = op.getOperationIndex();
 			long rtLimit = behaviorSpec.getResponseTimeLimit(operationIndex);

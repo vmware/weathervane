@@ -8,8 +8,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
 @JsonSubTypes({ 
 	@Type(value = AllMustPassLoadPathController.class, name = "allpass"), 
-	@Type(value = AnyPassUntilAllFailLoadPathController.class, name = "anypassuntilfail"), 
-	@Type(value = SyncUntilAllFailThenAsyncLoadPathController.class, name = "syncuntilfail"), 
+	@Type(value = AnyPassUntilHalfFailLoadPathController.class, name = "anypassuntilhalffail"), 
+	@Type(value = SyncUntilHalfFailThenAsyncLoadPathController.class, name = "syncuntilhalffail"), 
 })
 public interface LoadPathController {
 	/**

@@ -319,6 +319,10 @@ public class BehaviorSpec
 		return mixPercentageTolerance[i];
 	}
 
+	public Double[] getMixPercentageTolerance() {
+		return mixPercentageTolerance;
+	}
+
 	public void setMixPercentageTolerance(Double[] mixPercentageTolerance) {
 		this.mixPercentageTolerance = mixPercentageTolerance;
 	}

@@ -5,15 +5,17 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName(value = "syncuntilfail")
-public class SyncUntilAllFailThenAsyncLoadPathController extends BaseLoadPathController {
-	private static final Logger logger = LoggerFactory.getLogger(SyncUntilAllFailThenAsyncLoadPathController.class);
-	private boolean allFailed = false;
+@JsonTypeName(value = "syncuntilhalffail")
+public class SyncUntilHalfFailThenAsyncLoadPathController extends BaseLoadPathController {
+	private static final Logger logger = LoggerFactory.getLogger(SyncUntilHalfFailThenAsyncLoadPathController.class);
+	private boolean runAsync = false;
+	private int numPassed = 0;
+	private int numFailed = 0;
 
 	@Override
 	public synchronized void postIntervalResult(String loadPathName, String intervalName, boolean passed) {
 		
-		if (allFailed) {
+		if (runAsync) {
 			/*
 			 * Once all loadPaths fail an interval, we treat this as an async
 			 * loadPath and just return to each loadPath its own result
@@ -41,6 +43,8 @@ public class SyncUntilAllFailThenAsyncLoadPathController extends BaseLoadPathCon
 			if (curNumResults == numWatchers) {
 				logger.debug("postIntervalResult notifying watchers for interval {} with result {}", intervalName,
 						intervalResults.get(intervalName));
+				numPassed = 0;
+				numFailed = 0;
 				notifyWatchers(intervalName, intervalResults.get(intervalName));
 			}
 		}
@@ -49,10 +53,21 @@ public class SyncUntilAllFailThenAsyncLoadPathController extends BaseLoadPathCon
 	@Override
 	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult, boolean isLastInInverval) {
 		logger.debug("combineIntervalResults previousResult = {}, latestResult = {}, isLastInInverval = {}, allFailed = {}", 
-				previousResult, latestResult, isLastInInverval, allFailed);
+				previousResult, latestResult, isLastInInverval, runAsync);
+		if (latestResult) {
+			numPassed++;
+		} else {
+			numFailed++;
+		}
+	
 		boolean combinedValue = previousResult || latestResult;
-		if (isLastInInverval && !combinedValue) {
-			allFailed = true;
+		if (isLastInInverval && (numFailed >= numPassed)) {
+			/*
+			 * Switch to running async when more instances fail in
+			 * an interval than pass 
+			 */
+			runAsync = true;
+			combinedValue = false;
 		}
 		logger.debug("combineIntervalResults combinedValue = {}", combinedValue);
 		return combinedValue;

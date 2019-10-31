@@ -1408,7 +1408,7 @@ sub startRun {
             	my $duration = $nameStringToDuration{$nameStr};
             	my $outString = "   Start: $nameStr ";
             	if (($#{$instancesListRef} + 1) == $numAppInstances) {
-            		$outString .= " per appInstance, ";
+            		$outString .= "per appInstance, ";
             	} else {
                     $outString .= "for appInstance";          		
                     if ($#{$instancesListRef} > 1) {

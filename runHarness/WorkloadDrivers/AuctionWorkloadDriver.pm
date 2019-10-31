@@ -1368,7 +1368,6 @@ sub startRun {
             my %nameStringToInstances = (); 
             my %nameStringToDuration = (); 
             # Collect up instance with identical messages for the start of the next interval
-            my $numAppInstances = $#{$workloadStati};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
 				my $curInterval = $workloadStatus->{'curInterval'};
@@ -1403,17 +1402,23 @@ sub startRun {
 				}
 			}        
             # Now print the messages for the start of the next interval
+            my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	my $duration = $nameStringToDuration{$nameStr};
-            	my $outString = "   Start: $nameStr for appInstance";
-                if ($#{$instancesListRef} > 1) {
-            	   $outString .= "s";
-                }	
-                $outString .= " ";
-           		foreach my $instanceNum (@{$instancesListRef}) {
-          			$outString .= "$instanceNum,";
-           		}
+            	my $outString = "   Start: $nameStr ";
+            	if (($#{$instancesListRef} + 1) == $numAppInstances) {
+            		$outString .= " per appInstance, ";
+            	} else {
+                    $outString .= "for appInstance";          		
+                    if ($#{$instancesListRef} > 1) {
+                       $outString .= "s";
+                    }   
+                    $outString .= " ";
+                    foreach my $instanceNum (@{$instancesListRef}) {
+                       $outString .= "$instanceNum,";
+                    }
+            	}
            		$outString .= " duration:${duration}s.";
            		$console_logger->info($outString);
            	}

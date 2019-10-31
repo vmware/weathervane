@@ -1413,7 +1413,7 @@ sub startRun {
             		}
             	} else {
                     $outString .= " for appInstance";          		
-                    if ($#{$instancesListRef} > 1) {
+                    if ($#{$instancesListRef} > 0) {
                        $outString .= "s";
                     }   
                     $outString .= " ";

@@ -1406,13 +1406,13 @@ sub startRun {
             foreach my $nameStr (keys %nameStringToInstances) {
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	my $duration = $nameStringToDuration{$nameStr};
-            	my $outString = "   Start: $nameStr ";
+            	my $outString = "   Start: $nameStr";
             	if (($#{$instancesListRef} + 1) == $numAppInstances) {
             		if (!$usingFixedLoadPathType) {
-                        $outString .= "per appInstance,";            			
+                        $outString .= " per appInstance,";            			
             		}
             	} else {
-                    $outString .= "for appInstance";          		
+                    $outString .= " for appInstance";          		
                     if ($#{$instancesListRef} > 1) {
                        $outString .= "s";
                     }   

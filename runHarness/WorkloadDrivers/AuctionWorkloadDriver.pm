@@ -400,9 +400,9 @@ sub createRunConfigHash {
 	my $loadPathController = {};
 	my $loadPathType = $self->workload->getParamValue('loadPathType');
 	if ($self->getParamValue('runStrategy') eq "findMaxSingleRunSync") {
-		$loadPathController->{"type"} = "anypassuntilfail";
+		$loadPathController->{"type"} = "anypassuntilhalffail";
     } elsif ($self->getParamValue('runStrategy') eq "findMaxSingleRun") {
-        $loadPathController->{"type"} = "syncuntilfail";      
+        $loadPathController->{"type"} = "syncuntilhalffail";      
     } else {
         $loadPathController->{"type"} = "allpass";      
 	}
@@ -1364,8 +1364,11 @@ sub startRun {
 				}
 			}
 
-			# Now print the messages for the start of the next interval
-			my $reportedSynced = 0;
+            # map of a an output string to an arrayRef of instances with that string 
+            my %nameStringToInstances = (); 
+            my %nameStringToDuration = (); 
+            # Collect up instance with identical messages for the start of the next interval
+            my $numAppInstances = $#{$workloadStati};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
 				my $curInterval = $workloadStatus->{'curInterval'};
@@ -1382,14 +1385,13 @@ sub startRun {
 					    (!(defined $curIntervalNames[$appInstanceNum]) || !($curIntervalName eq $curIntervalNames[$appInstanceNum]))) {
 						$curIntervalNames[$appInstanceNum] = $curIntervalName;
 						my $nameStr = $self->parseNameStr($curIntervalName);
-						if ($usingSyncedFindMaxLoadPathType) {
-							if (!$reportedSynced) {
-								$console_logger->info("   Start: $nameStr per appInstance, duration:" . $curInterval->{'duration'} . "s.");
-								$reportedSynced = 1;
-							}
-						} else {
-							$console_logger->info("   [$wkldName] Start: $nameStr, duration:" . $curInterval->{'duration'} . "s.");							
+						if (!exists($nameStringToInstances{$nameStr})) {
+							$nameStringToInstances{$nameStr} = [];
 						}
+                        # Save the instance num of all instance with the same output string
+						push @{$nameStringToInstances{$nameStr}}, $appInstanceNum;
+						$nameStringToDuration{$nameStr} = $curInterval->{'duration'};
+						
 						if ( ($curIntervalName =~ /FINDFIRSTMAX\-(\d+)/)
 								|| ($curIntervalName =~ /VERIFYMAX\-(\d+)\-ITERATION\-(\d+)/)
 								|| ($curIntervalName =~ /QOS\-(\d+)/) ) {
@@ -1399,7 +1401,23 @@ sub startRun {
 						}
 					}
 				}
-			}
+			}        
+            # Now print the messages for the start of the next interval
+            foreach my $nameStr (keys %nameStringToInstances) {
+            	my $instancesListRef = $nameStringToInstances{$nameStr};
+            	my $duration = $nameStringToDuration{$nameStr};
+            	my $outString = "   Start: $nameStr for appInstance";
+                if ($#{$instancesListRef} > 1) {
+            	   $outString .= "s";
+                }	
+                $outString .= " ";
+           		foreach my $instanceNum (@{$instancesListRef}) {
+          			$outString .= "$instanceNum,";
+           		}
+           		$outString .= " duration:${duration}s.";
+           		$console_logger->info($outString);
+           	}
+
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
 				$endRunStatusRaw = $res->content;
 				$runCompleted = 1;

@@ -1409,7 +1409,7 @@ sub startRun {
             	my $outString = "   Start: $nameStr ";
             	if (($#{$instancesListRef} + 1) == $numAppInstances) {
             		if (!$usingFixedLoadPathType) {
-                        $outString .= "per appInstance, ";            			
+                        $outString .= "per appInstance,";            			
             		}
             	} else {
                     $outString .= "for appInstance";          		

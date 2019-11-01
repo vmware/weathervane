@@ -36,10 +36,12 @@ public class AnyPassUntilHalfFailLoadPathController extends BaseLoadPathControll
 			if (isLastInInverval && (numFailed >= numPassed)) {
 				allMustPass = true;
 				combinedValue = false;
-				numPassed = 0;
-				numFailed = 0;
 			} else {
 				combinedValue = previousResult || latestResult;							
+			}
+			if (isLastInInverval) {
+				numPassed = 0;
+				numFailed = 0;
 			}
 		}
 		logger.debug("combineIntervalResults combinedValue = {}", combinedValue);

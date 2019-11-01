@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseLoadPathController implements LoadPathController {
 	private static final Logger logger = LoggerFactory.getLogger(BaseLoadPathController.class);
 
-	private Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
-	private int numWatchers = 0;
-	private Map<String, Integer> numIntervalResults = new HashMap<>();
-	private Map<String, Boolean> intervalResults = new HashMap<>();
+	protected Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
+	protected int numWatchers = 0;
+	protected Map<String, Integer> numIntervalResults = new HashMap<>();
+	protected Map<String, Boolean> intervalResults = new HashMap<>();
 	
 	@Override
 	public void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher) {
@@ -33,12 +33,17 @@ public abstract class BaseLoadPathController implements LoadPathController {
 			intervalResults.put(intervalName, passed);
 		} else {
 			curNumResults = numIntervalResults.get(intervalName) + 1;
+			boolean isLastInInterval = false;
+			if (curNumResults == numWatchers) {
+				isLastInInterval = true;
+			}
 			intervalResults.put(intervalName, 
-					combineIntervalResults(intervalResults.get(intervalName), passed));
+					combineIntervalResults(intervalResults.get(intervalName), passed, isLastInInterval));
 		}
 		numIntervalResults.put(intervalName, curNumResults);
-		logger.debug("postIntervalResult for loadPath {}, interval {}, curNumResults {}, result: {}",
-				loadPathName, intervalName, curNumResults, intervalResults.get(intervalName));
+
+		logger.debug("postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
+				loadPathName, intervalName, passed, curNumResults, numWatchers, intervalResults.get(intervalName));
 		if (curNumResults == numWatchers) {
 			logger.debug("postIntervalResult notifying watchers for interval {} with result {}", 
 					intervalName, intervalResults.get(intervalName));
@@ -46,7 +51,8 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		}
 	}
 	
-	protected abstract boolean combineIntervalResults(boolean previousResult, boolean latestResult);
+	protected abstract boolean combineIntervalResults(boolean previousResult, 
+									boolean latestResult, boolean isLastInInterval);
 	
 	protected void notifyWatchers(String intervalName, boolean passed) {
 		for (Entry<String, LoadPathIntervalResultWatcher> entry : watchers.entrySet()) {

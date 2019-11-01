@@ -69,7 +69,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 		}
 		
 		UniformLoadInterval nextInterval = this.getNextIntervalSynced(intervalResult);
-		logger.debug("run nextInterval = " + nextInterval);
+		logger.debug("intervalResult: nextInterval = " + nextInterval);
 		long users = nextInterval.getUsers();
 
 		/*
@@ -85,12 +85,12 @@ public abstract class SyncedLoadPath extends LoadPath {
 		try {
 			changeActiveUsers(users);
 		} catch (Throwable t) {
-			logger.warn("LoadPath {} got throwable when notifying hosts of change in active users: {}", 
+			logger.warn("intervalResult: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
 							this.getName(), t.getMessage());
 		}
 		
 		long wait = nextInterval.getDuration();
-		logger.debug("run: interval duration is " + wait + " seconds");
+		logger.debug("intervalResult: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {
 			logger.debug("run: sleeping for  " + wait + " seconds");
 			getExecutorService().schedule(this, wait, TimeUnit.SECONDS);

@@ -1128,11 +1128,11 @@ $parameters{"configFile"} = {
 };
 
 $parameters{"responseTimePassingPercentile"} = {
-	"type"      => "=f",
-	"default"   => 0,
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
+    "type"      => "=f",
+    "default"   => 0,
+    "parent"    => "workload",
+    "usageText" => "",
+    "showUsage" => 0,
 };
 
 # stats collection script call-out variables
@@ -2605,14 +2605,6 @@ $parameters{"minimumUsers"} = {
 	"type"      => "=i",
 	"default"   => 60,
 	"parent"    => "runManager",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"proportionTolerance"} = {
-	"type"      => "=f",
-	"default"   => 0.1,
-	"parent"    => "workloadDriver",
 	"usageText" => "",
 	"showUsage" => 0,
 };

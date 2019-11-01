@@ -16,9 +16,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.vmware.weathervane.workloadDriver.common.statistics;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +54,7 @@ public class OperationStatsSummary {
 			long responseTimeLimit, double responseTimeLimitPercentile, 
 			boolean useResponseTime, double requiredMixPct, double mixTolerance,
 			double allowedFailurePercent) {
+		logger.debug("Creating new operationStatsSummary: " + this);
 		this.operationIndex = operationIndex;
 		this.operationName = operationName;
 		this.responseTimeLimit = responseTimeLimit;

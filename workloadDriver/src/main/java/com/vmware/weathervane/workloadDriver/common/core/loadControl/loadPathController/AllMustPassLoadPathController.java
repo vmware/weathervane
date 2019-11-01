@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public class AllMustPassLoadPathController extends BaseLoadPathController {
 
 	@Override
-	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult) {
+	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult, boolean isLastInInverval) {
 		return previousResult && latestResult;
 	}
 

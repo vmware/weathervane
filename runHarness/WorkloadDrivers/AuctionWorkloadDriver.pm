@@ -1955,26 +1955,45 @@ sub getWorkloadStatsSummary {
 	my $overallAvgRT = 0;
 
 	my $numPassingAi = 0;
+	my $numTotalAi = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
+	$numTotalAi = $#$appInstancesRef + 1;
+
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
 		if ($self->passAll->{$appInstanceNum}) {
 			$numPassingAi++;
+		}
+		# Summary fields are computed across all AIs, both passing and failing
+		{
+			# Uninitialized warnings can occur if this is a failed findmax run. Summary fields will be output as "NA"
+			no warnings 'uninitialized';
 			$totalUsers   += $self->maxPassUsers->{$appInstanceNum};
 			$opsSec       += $self->opsSec->{$appInstanceNum};
 			$httpReqSec   += $self->reqSec->{$appInstanceNum};
 			$overallAvgRT += $self->overallAvgRT->{$appInstanceNum};
 		}
 	}
-	
-	$csvRef->{"users-total"}       = $totalUsers;
-	$csvRef->{"opsSec-total"}       = $opsSec;
-	$csvRef->{"httpReqSec-total"}   = $httpReqSec;
-	if ($numPassingAi > 0) {
-		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numPassingAi;
+			
+	if ($numPassingAi == $numTotalAi) { # If all AIs pass, the run passes
+		$csvRef->{"Pass"}				= "Y";
 	} else {
-		$csvRef->{"overallAvgRT-total"} = 0;		
+		$csvRef->{"Pass"}				= "N";
 	}
+
+	# If this is a failed findMax run, print "NA" for summary fields
+	if ( ($csvRef->{"Pass"} eq "N") && (($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "findmax") || ($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "syncedfindmax")) ) {
+		$csvRef->{"WvUsers"}       = "NA";
+		$csvRef->{"opsSec-total"}       = "NA";
+		$csvRef->{"httpReqSec-total"}   = "NA";
+		$csvRef->{"overallAvgRT-total"} = "NA";
+	} else { 
+		$csvRef->{"WvUsers"}      	 = $totalUsers;
+		$csvRef->{"opsSec-total"}       = $opsSec;
+		$csvRef->{"httpReqSec-total"}   = $httpReqSec;
+		$csvRef->{"overallAvgRT-total"} = $overallAvgRT / $numTotalAi;
+	}
+	
 	$appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;

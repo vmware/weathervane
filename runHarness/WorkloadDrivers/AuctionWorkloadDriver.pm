@@ -1930,7 +1930,7 @@ sub getWorkloadStatsSummary {
 	my $numPassingAi = 0;
 	my $numTotalAi = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
-	$numTotalAi = scalar @$appInstancesRef;
+	$numTotalAi = $#$appInstancesRef + 1;
 
 	foreach my $appInstanceRef (@$appInstancesRef) {
 		my $appInstanceNum = $appInstanceRef->instanceNum;
@@ -1955,7 +1955,7 @@ sub getWorkloadStatsSummary {
 	}
 
 	# If this is a failed findMax run, print "NA" for summary fields
-	if ( ($csvRef->{"Pass"} eq "N") && ($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "findmax") ) {
+	if ( ($csvRef->{"Pass"} eq "N") && (($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "findmax") || ($self->workload->appInstancesRef->[0]->getParamValue('loadPathType') eq "syncedfindmax")) ) {
 		$csvRef->{"WvUsers"}       = "NA";
 		$csvRef->{"opsSec-total"}       = "NA";
 		$csvRef->{"httpReqSec-total"}   = "NA";

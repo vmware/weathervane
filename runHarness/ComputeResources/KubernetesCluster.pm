@@ -87,7 +87,7 @@ override 'getConfigFiles' => sub {
     }
     close FILEOUT;
 
-    $cmd = "kubectl describe pod --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
+    $cmd = "kubectl describe pod --all-namespaces --selector=app=auction --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
@@ -101,7 +101,7 @@ override 'getConfigFiles' => sub {
     }
     close FILEOUT;
 
-    $cmd = "kubectl get all --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
+    $cmd = "kubectl get all --all-namespaces -o wide --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
         $logger->error("kubernetesGetAll failed: $cmdFailed");

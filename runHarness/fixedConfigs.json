@@ -151,7 +151,7 @@
   
   "numAppServers" : 1,
   "appServerCpus" :"2000m",
-  "appServerMem" : "4500Mi",
+  "appServerMem" : "5000Mi",
   "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch ",
   "appServerThreads" : 100,
   "appServerJdbcConnections" : 101,
@@ -218,7 +218,7 @@
   
   "numAppServers" : 1,
   "appServerCpus" :"2000m",
-  "appServerMem" : "4500Mi",
+  "appServerMem" : "5000Mi",
   "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch ",
   "appServerThreads" : 100,
   "appServerJdbcConnections" : 101,

@@ -327,6 +327,10 @@ foreach my $k8sConfig (@$k8sConfigFilesRef) {
 my $configMountString = "-v $configFile:/root/weathervane/weathervane.config";
 my $resultsMountString = "-v $resultsFile:/root/weathervane/weathervaneResults.csv";
 
+my $tz = `date +%Z`;
+chomp($tz);
+my $tzEnvString = "-e TZ=$tz";
+
 # Stop an existing run harness container
 if (dockerExists("weathervane")) {
     `docker rm -vf weathervane`;
@@ -342,7 +346,7 @@ if ($backgroundScript) {
 print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.\n";
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
-my $cmdString = "docker run --name weathervane --net host --rm -d -w /root/weathervane " 
+my $cmdString = "docker run --name weathervane --net host $tzEnvString --rm -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString " 
 		. "$outputMountString $tmpMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";

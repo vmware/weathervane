@@ -886,30 +886,55 @@ sub getConfigFiles {
 
 	my $baseDestinationPath = $tmpDir . "/configuration";
 	my $destinationPath;
-
+    
+    $logger->debug("getConfigFiles: logLevel = " . $self->getParamValue('logLevel'));
 	if ( $self->getParamValue('logLevel') >= 1 ) {
 
-		# get config files from hosts.
-		my $hostsRef = $self->hostsRef;
-		foreach my $host (@$hostsRef) {
-			$pid = fork();
-			if ( !defined $pid ) {
-				$logger->error("Couldn't fork a process: $!");
-				exit(-1);
-			}
-			elsif ( $pid == 0 ) {
-				$destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
-				if ( !( -e $destinationPath ) ) {
-					`mkdir -p $destinationPath`;
-				}
+        # get config files from hosts.
+        my $hostsRef = $self->hostsRef;
+        $logger->debug("getConfigFiles: There are " . ($#$hostsRef + 1) .  " hosts");
+        foreach my $host (@$hostsRef) {
+            $pid = fork();
+            if ( !defined $pid ) {
+                $logger->error("Couldn't fork a process: $!");
+                exit(-1);
+            }
+            elsif ( $pid == 0 ) {
+                $destinationPath = $baseDestinationPath . "/hosts/" . $host->name;
+                if ( !( -e $destinationPath ) ) {
+                    `mkdir -p $destinationPath`;
+                }
 
-				$host->getConfigFiles($destinationPath);
-				exit;
-			}
-			else {
-				push @pids, $pid;
-			}
-		}
+                $host->getConfigFiles($destinationPath);
+                exit;
+            }
+            else {
+                push @pids, $pid;
+            }
+        }
+
+        # get config files from hosts.
+        my $clustersRef = $self->clustersRef;
+        $logger->debug("getConfigFiles: There are " . ($#$clustersRef + 1) .  "clusters");
+        foreach my $cluster (@$clustersRef) {
+            $pid = fork();
+            if ( !defined $pid ) {
+                $logger->error("Couldn't fork a process: $!");
+                exit(-1);
+            }
+            elsif ( $pid == 0 ) {
+                $destinationPath = $baseDestinationPath . "/clusters/" . $cluster->name;
+                if ( !( -e $destinationPath ) ) {
+                    `mkdir -p $destinationPath`;
+                }
+
+                $cluster->getConfigFiles($destinationPath);
+                exit;
+            }
+            else {
+                push @pids, $pid;
+            }
+        }
 
 		$pid = fork();
 		if ( !defined $pid ) {

@@ -1357,7 +1357,7 @@ sub startRun {
 									chop($successStr);
 								}
 								my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
-								$console_logger->info("   [$wkldName] Ended: $nameStr${metricsStr}.");
+								$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 							}
 						}
 					}
@@ -1404,24 +1404,22 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
+            	my $instancesString = "[appInstance";
             	my $instancesListRef = $nameStringToInstances{$nameStr};
-            	my $duration = $nameStringToDuration{$nameStr};
-            	my $outString = "   Start: $nameStr";
-            	if (($#{$instancesListRef} + 1) == $numAppInstances) {
-            		if (!$usingFixedLoadPathType) {
-                        $outString .= " per appInstance,";            			
-            		}
+            	if ($#{$instancesListRef} == 0) {
+            		$instancesString .= ": " . $instancesListRef->[0];
+            	} elsif (($#{$instancesListRef} + 1) == $numAppInstances) {
+                    $instancesString .= "s: all";                                  			
             	} else {
-                    $outString .= " for appInstance";          		
-                    if ($#{$instancesListRef} > 0) {
-                       $outString .= "s";
-                    }   
-                    $outString .= " ";
+                    $instancesString .= "s: ";
                     foreach my $instanceNum (@{$instancesListRef}) {
-                       $outString .= "$instanceNum,";
+                       $instancesString .= "$instanceNum,";
                     }
+                    chop($instancesString);
             	}
-           		$outString .= " duration:${duration}s.";
+            	$instancesString .= "]";
+                my $duration = $nameStringToDuration{$nameStr};
+                my $outString = "   $instancesString Start: $nameStr, duration:${duration}s.";
            		$console_logger->info($outString);
            	}
 

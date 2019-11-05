@@ -47,16 +47,101 @@ override 'initialize' => sub {
 };
 
 override 'registerService' => sub {
-	my ( $self, $serviceRef ) = @_;
-	my $console_logger = get_logger("Console");
-	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	my $servicesRef    = $self->servicesRef;
+    my ( $self, $serviceRef ) = @_;
+    my $console_logger = get_logger("Console");
+    my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+    my $servicesRef    = $self->servicesRef;
 
-	my $name = $serviceRef->name;
-	$logger->debug( "Registering service $name with cluster ", $self->name );
+    my $name = $serviceRef->name;
+    $logger->debug( "Registering service $name with cluster ", $self->name );
 
-	push @$servicesRef, $serviceRef;
+    push @$servicesRef, $serviceRef;
 
+};
+
+override 'getConfigFiles' => sub {
+    my ( $self, $destinationPath ) = @_;
+    my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+    my $name = $self->name;
+    $logger->debug("getConfigFiles: cluster = $name");
+   
+    my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+    my $context = $self->getParamValue('kubeconfigContext');
+    my $contextString = "";
+    if ($context) {
+      $contextString = "--context=$context";    
+    }
+    
+    my $cmd;
+    $cmd = "kubectl get pod --all-namespaces --selector=app=auction -o wide --sort-by='{.spec.nodeName}' --kubeconfig=$kubeconfigFile $contextString";
+    my ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    $logger->debug("Output: $outString");
+    open( FILEOUT, ">$destinationPath/" . "$name-GetAllPods.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAllPods.txt: $!\n";   
+    my @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close FILEOUT;
+
+    $cmd = "kubectl describe pod --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    $logger->debug("Output: $outString");
+    open( FILEOUT, ">$destinationPath/" . "$name-DescribePods.txt" ) or die "Can't open file $destinationPath/" . "$name-DescribePods.txt: $!\n";   
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close FILEOUT;
+
+    $cmd = "kubectl get all --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    $logger->debug("Output: $outString");
+    open( FILEOUT, ">$destinationPath/" . "$name-GetAll.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAll.txt: $!\n";   
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close FILEOUT;
+
+    $cmd = "kubectl get pvc --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    $logger->debug("Output: $outString");
+    open( FILEOUT, ">$destinationPath/" . "$name-GetAllPVC.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAllPVC.txt: $!\n";   
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close FILEOUT;
+
+    $cmd = "kubectl describe node --kubeconfig=$kubeconfigFile $contextString";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    $logger->debug("Output: $outString");
+    open( FILEOUT, ">$destinationPath/" . "$name-DescribeNode.txt" ) or die "Can't open file $destinationPath/" . "$name-DescribeNode.txt: $!\n";   
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close FILEOUT;
 };
 
 sub kubernetesCreateNamespace {

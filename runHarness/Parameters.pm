@@ -962,11 +962,18 @@ $parameters{"numQosPeriods"} = {
 	"showUsage" => 1,
 };
 $parameters{"qosPeriodSec"} = {
-	"type"    => "=i",
-	"default" => "300",
-	"parent"  => "runProc",
-	"usageText" => "The length of a QoS period.",
-	"showUsage" => 0,
+    "type"    => "=i",
+    "default" => "300",
+    "parent"  => "runProc",
+    "usageText" => "The length of a QoS period.",
+    "showUsage" => 0,
+};
+$parameters{"maxPassHint"} = {
+    "type"    => "=i",
+    "default" => "0",
+    "parent"  => "runProc",
+    "usageText" => "A hint about the number of users expected to pass per-instance.",
+    "showUsage" => 0,
 };
 $parameters{"initialRampRateStep"} = {
 	"type"    => "=i",

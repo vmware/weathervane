@@ -483,7 +483,8 @@ sub createRunConfigHash {
 			);
 			$loadPath->{"type"}          = $loadPathType;
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
-			$loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
+            $loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
+            $loadPath->{"maxPassHint"} = $self->getParamValue('maxPassHint');
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 			$loadPath->{"initialRampRateStep"} = $self->getParamValue('initialRampRateStep');

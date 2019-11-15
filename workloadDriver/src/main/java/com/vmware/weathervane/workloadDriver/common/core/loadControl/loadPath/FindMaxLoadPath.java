@@ -39,6 +39,7 @@ public class FindMaxLoadPath extends LoadPath {
 
 	private long maxUsers;
 	private long minUsers;
+	private long maxPassHint = 0;
 
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
@@ -147,6 +148,7 @@ public class FindMaxLoadPath extends LoadPath {
 		curStatusInterval.setDuration(initialRampIntervalSec);
 		curStatusInterval.setStartUsers(0L);
 		curStatusInterval.setEndUsers(0L);
+		
 	}
 
 	@JsonIgnore
@@ -192,13 +194,13 @@ public class FindMaxLoadPath extends LoadPath {
 				 */
 				if (intervalNum != 2) {
 					/*
-					 * InitialRamp intervals pass if 99% of all operations pass response-time QOS. The mix QoS
-					 * is not used in initialRamp
+					 * InitialRamp intervals pass if 99% of all operations pass 
+					 * response-time QOS. The mix QoS is not used in initialRamp
 					 */
 					prevIntervalPassed = (rollup.getPctPassing() >= 0.999);
 				}
 				getIntervalStatsSummaries().add(rollup);
-			}
+			}			
 			logger.debug("getNextInitialRampInterval " + this.getName() 
 					+ ": Interval " + intervalNum + " prevIntervalPassed = "
 					+ prevIntervalPassed);
@@ -208,12 +210,17 @@ public class FindMaxLoadPath extends LoadPath {
 		 * If we have reached max users, or the previous interval failed, then to go to
 		 * the FINDFIRSTMAX phase
 		 */
-		if (!prevIntervalPassed || ((curUsers + getInitialRampRateStep()) > maxUsers)) {
+		if (((getMaxPassHint() > 0) && (curUsers == getMaxPassHint())) || 
+				((getMaxPassHint() == 0) && !prevIntervalPassed) || 
+				((curUsers + getInitialRampRateStep()) > maxUsers)) {
 			moveToNextPhase();
 			return nextInterval();
 		}
 		
 		curUsers += getInitialRampRateStep();
+		if ((getMaxPassHint() > 0) && (curUsers > getMaxPassHint())) {
+			curUsers = getMaxPassHint();
+		}
 		long nextIntervalDuration = initialRampIntervalSec;
 		/*
 		 *  If number of users is less than 1000, then double the
@@ -551,9 +558,13 @@ public class FindMaxLoadPath extends LoadPath {
 		 * When moving to FINDFIRSTMAX, the initial rateStep is 1/10 of curUsers
 		 */
 		long prevCurUsers = curUsers;
-		curRateStep = curUsers / 10;
+		if (getMaxPassHint() == 0) {
+			curRateStep = curUsers / 10;
+			curUsers -= curRateStep;
+		} else {
+			curRateStep = curUsers / 100;
+		}
 
-		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
 			curUsers += curRateStep;
@@ -753,6 +764,14 @@ public class FindMaxLoadPath extends LoadPath {
 
 	public void setInitialRampRateStep(long initialRampRateStep) {
 		this.initialRampRateStep = initialRampRateStep;
+	}
+
+	public long getMaxPassHint() {
+		return maxPassHint;
+	}
+
+	public void setMaxPassHint(long maxPassHint) {
+		this.maxPassHint = maxPassHint;
 	}
 
 	@Override

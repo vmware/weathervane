@@ -207,8 +207,8 @@ public class FindMaxLoadPath extends LoadPath {
 		}
 
 		/*
-		 * If we have reached max users, or the previous interval failed, then to go to
-		 * the FINDFIRSTMAX phase
+		 * If we have reached max users, or the previous interval failed, or maxPassHint
+		 * is set and we are at that value, then to go to the FINDFIRSTMAX phase
 		 */
 		if (((getMaxPassHint() > 0) && (curUsers == getMaxPassHint())) || 
 				((getMaxPassHint() == 0) && !prevIntervalPassed) || 

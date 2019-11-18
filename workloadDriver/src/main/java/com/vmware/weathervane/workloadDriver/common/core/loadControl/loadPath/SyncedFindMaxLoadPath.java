@@ -39,6 +39,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	private long maxUsers;
 	private long minUsers;
+	private long maxPassHint = 0;
 
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
@@ -218,11 +219,18 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 				}
 				getIntervalStatsSummaries().add(rollup);
 			}
-		} 
+		} 		
+		if (((getMaxPassHint() > 0) && (curUsers == getMaxPassHint())) || 
+				((getMaxPassHint() == 0) && !prevIntervalPassed) || 
+				((curUsers + getInitialRampRateStep()) > maxUsers)) {
+			result.setPassed(false);
+		} else {
+			result.setPassed(true);			
+		}
+		
 		logger.debug("initialRampIntervalComplete " + this.getName() 
 			+ ": Interval " + intervalNum + " prevIntervalPassed = "
 			+ prevIntervalPassed);
-		result.setPassed(prevIntervalPassed);
 		return result;
 	}
 
@@ -234,15 +242,18 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		logger.debug("getNextInitialRampInterval " + this.getName() + ": interval " + intervalNum);
 
 		/*
-		 * If we have reached max users, or the previous interval failed, then to go to
+		 * If the previous interval failed, then to go to
 		 * the FINDFIRSTMAX phase
 		 */
-		if (!prevIntervalPassed || ((curUsers + getInitialRampRateStep()) > maxUsers)) {
+		if (!prevIntervalPassed) {
 			moveToNextPhase();
 			return nextInterval(prevIntervalPassed);
 		}
 		
 		curUsers += getInitialRampRateStep();
+		if ((getMaxPassHint() > 0) && (curUsers > getMaxPassHint())) {
+			curUsers = getMaxPassHint();
+		}
 		long nextIntervalDuration = initialRampIntervalSec;
 		/*
 		 *  If number of users is less than 1000, then double the
@@ -597,9 +608,13 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		 * When moving to FINDFIRSTMAX, the initial rateStep is 1/10 of curUsers
 		 */
 		long prevCurUsers = curUsers;
-		curRateStep = curUsers / 10;
+		if (getMaxPassHint() == 0) {
+			curRateStep = curUsers / 10;
+			curUsers -= curRateStep;
+		} else {
+			curRateStep = curUsers / 100;
+		}
 
-		curUsers -= curRateStep;
 		if (curUsers <= 0) {
 			curRateStep /= 2;
 			curUsers += curRateStep;
@@ -799,6 +814,14 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	public void setInitialRampRateStep(long initialRampRateStep) {
 		this.initialRampRateStep = initialRampRateStep;
+	}
+
+	public long getMaxPassHint() {
+		return maxPassHint;
+	}
+
+	public void setMaxPassHint(long maxPassHint) {
+		this.maxPassHint = maxPassHint;
 	}
 
 	@Override

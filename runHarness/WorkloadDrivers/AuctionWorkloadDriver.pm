@@ -409,6 +409,8 @@ sub createRunConfigHash {
 	$runRef->{"loadPathController"} = $loadPathController;
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
+	my $maxPassHint = ceil($self->getParamValue('maxPassHint') / $numAppInstances);
+	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;
 		my $users       = $appInstance->getUsers();
@@ -484,7 +486,7 @@ sub createRunConfigHash {
 			$loadPath->{"type"}          = $loadPathType;
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
             $loadPath->{"minUsers"} = $self->getParamValue('minimumUsers');
-            $loadPath->{"maxPassHint"} = $self->getParamValue('maxPassHint');
+            $loadPath->{"maxPassHint"} = $maxPassHint;
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
 			$loadPath->{"initialRampRateStep"} = $self->getParamValue('initialRampRateStep');

@@ -16,12 +16,12 @@
 # is required between the parameters to the runWeathervane.pl script and
 # the command-line parameters.  The description parameter can be added to any run
 # to capture relevant information about the run or the SUT.
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed --users=500 --description="run on cluster1"
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed --users=1000 
+#./runWeathervane.pl --configFile weathervane.config.cluster1 -- --runStrategy=fixed --users=500 --description="run on cluster1"
+#./runWeathervane.pl --configFile weathervane.config.cluster1 -- --runStrategy=fixed --users=1000 
 
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # even if the configuration file specifies the fixed runStrategy.
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun
+#./runWeathervane.pl --configFile weathervane.config.cluster2 -- --runStrategy=findMaxSingleRun
 
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # with a different number of application instances.
@@ -30,6 +30,12 @@
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # with a different configuration size.
 #./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun --configurationSize=small
+
+# If you define multiple possible SUT clusters in the kubernetesClusters section 
+# of your configuration file, then you can use the appInstanceCluster parameter
+# asd a command-line option to specify which to use as the SUT,
+#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster1
+#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster2
 
 # You can add as many additional invocations as desired in this file.  They will 
 # run sequentially.

@@ -33,9 +33,9 @@
 
 # If you define multiple possible SUT clusters in the kubernetesClusters section 
 # of your configuration file, then you can use the appInstanceCluster parameter
-# asd a command-line option to specify which to use as the SUT,
-#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster1
-#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster2
+# asd a command-line option to specify which to use as the SUT.
+#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster1 --description="Using cluster1"
+#./runWeathervane.pl --configFile weathervane.config.manyClusters -- --appInstanceCluster=cluster2 --description="Using cluster2"
 
 # You can add as many additional invocations as desired in this file.  They will 
 # run sequentially.

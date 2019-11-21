@@ -697,8 +697,6 @@ $parameters{"nosqlServerHosts"} = {
 	"showUsage" => 0,
 };
 
-
-
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -962,11 +960,18 @@ $parameters{"numQosPeriods"} = {
 	"showUsage" => 1,
 };
 $parameters{"qosPeriodSec"} = {
-	"type"    => "=i",
-	"default" => "300",
-	"parent"  => "runProc",
-	"usageText" => "The length of a QoS period.",
-	"showUsage" => 0,
+    "type"    => "=i",
+    "default" => "300",
+    "parent"  => "runProc",
+    "usageText" => "The length of a QoS period.",
+    "showUsage" => 0,
+};
+$parameters{"maxPassHint"} = {
+    "type"    => "=i",
+    "default" => "0",
+    "parent"  => "runProc",
+    "usageText" => "A hint about the number of users expected to pass per-instance.",
+    "showUsage" => 0,
 };
 $parameters{"initialRampRateStep"} = {
 	"type"    => "=i",
@@ -1287,14 +1292,6 @@ $parameters{"auctionBidServerPerformanceMonitor"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-$parameters{"mustPass"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 $parameters{"stopOnFailure"} = {

@@ -697,8 +697,6 @@ $parameters{"nosqlServerHosts"} = {
 	"showUsage" => 0,
 };
 
-
-
 $parameters{"virtualInfrastructure"} = {
 	"type"      => "hash",
 	"default"   => {},
@@ -1294,14 +1292,6 @@ $parameters{"auctionBidServerPerformanceMonitor"} = {
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,
-};
-
-$parameters{"mustPass"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 1,
 };
 
 $parameters{"stopOnFailure"} = {

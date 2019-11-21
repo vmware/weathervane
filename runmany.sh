@@ -14,13 +14,22 @@
 # These invocations override the runStrategy and number of users set in the 
 # configuration file using command-line parameters. Notice that the --
 # is required between the parameters to the runWeathervane.pl script and
-# the command-line parameters.
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed --users=500 
+# the command-line parameters.  The description parameter can be added to any run
+# to capture relevant information about the run or the SUT.
+#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed --users=500 --description="run on cluster1"
 #./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed --users=1000 
 
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # even if the configuration file specifies the fixed runStrategy.
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=fixed
+#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun
+
+# The following invocation can be used to run the findMaxSingleRun runStrategy, 
+# with a different number of application instances.
+#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun --numApplicationInstances=2
+
+# The following invocation can be used to run the findMaxSingleRun runStrategy, 
+# with a different configuration size.
+#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun --configurationSize=small
 
 # You can add as many additional invocations as desired in this file.  They will 
 # run sequentially.

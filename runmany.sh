@@ -25,7 +25,7 @@
 
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # with a different number of application instances.
-#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun --numApplicationInstances=2
+#./runWeathervane.pl --configFile weathervane.config -- --runStrategy=findMaxSingleRun --numAppInstances=2
 
 # The following invocation can be used to run the findMaxSingleRun runStrategy, 
 # with a different configuration size.

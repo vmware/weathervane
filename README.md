@@ -87,5 +87,4 @@ information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Weathervane is available under the the [BSD 2-clause "Simplified"
-License](LICENSE.txt).
+Weathervane is available under the the [BSD 2-clause License](LICENSE.txt).

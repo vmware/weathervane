@@ -8,8 +8,6 @@ Contributors and users are encouraged to collaborate using the following resourc
 
 - [Slack](https://vmwarecode.slack.com/messages/weathervane): This is the primary community channel. If you don't have an @vmware.com or @emc.com email, please sign up at https://code.vmware.com/web/code/join to get a Slack invite.
 
-- [Gitter](https://gitter.im/vmware/weathervane): Gitter is monitored but go to slack if you need a response quickly.
-
 If you have an idea or plan for a specific contribution to the Weathervane project, it would be best if you start by opening an issue on the Weathervane project, and label it with the kind/contribution label.  The Weathervane code base consists of many components that are interrelated in complex ways, and we would be happy to work with potential contributors to ensure that you have all of the information necessary to succeed.
 
 ## Acceptable Change Guidelines
@@ -30,14 +28,14 @@ It is good practice to open an issue for any change that you are considering for
 
 ### Changes which will not be accepted at this time:
 
-* Changes to the Auction application which affect the performance of existing configurations.  Even though there are certainly changes that could be made to the Auction application that would improve performance or scalability, the current intent of the Weathervane project is to maintain performance consistency for all releases in the 1.x release lineage.  At some point we will create a new branch for a 2.x release, and at that point optimizations  or even complete rewrites for the Auction application will be considered.  
+* Changes to the Auction application which affect the performance of existing configurations.  Even though there are certainly changes that could be made to the Auction application that would improve performance or scalability, the current intent of the Weathervane project is to maintain performance consistency for all releases in the 2.x release lineage.  At some point we will create a new branch for a 3.x release, and at that point optimizations  or even complete rewrites for the Auction application will be considered.  
 * Changes which create compatibility issues with existing configuration files.
 * Changes which would change the performance results for existing deployments or configuration files.
-* Any other change which affects compatibility with existing releases. Changes which affect compatibility may be considered in the future when we open a branch for work on a 2.0 release.
+* Any other change which affects compatibility with existing releases. Changes which affect compatibility may be considered in the future when we open a branch for work on a 3.0 release.
 
-As you can see from the above lists, we will be accepting only performance-neutral changes only on the 1.x branch. Performance neutral does not mean that in your runs of Weathervane you cannot tune the various services involved in a Weathervane deployment.  What you do on your own runs is totally up to you.  However, we will not accept changes to the configuration defaults for existing services that would result in performance changes.  
+As you can see from the above lists, we will be accepting only performance-neutral changes only on the 2.x branch. Performance neutral does not mean that in your runs of Weathervane you cannot tune the various services involved in a Weathervane deployment.  What you do on your own runs is totally up to you.  However, we will not accept changes to the configuration defaults for existing services that would result in performance changes.  
 
-We will accept changes to support the addition of new service implementations, such as new database servers, that may give better performance than those currently supported. The goal of performance neutral is to ensure that users can rerun identical configurations with any release from the 1.x branch and still get the same results.  Note that this does mean that once a new service implementation is incorporated into Weathervane we will not accept changes that affect the performance of that service using the default settings.  We will allow the addition of new tuning parameters for any service as long as the default is the same as for the initial release on which that service was introduced.
+We will accept changes to support the addition of new service implementations, such as new database servers, that may give better performance than those currently supported. The goal of performance neutral is to ensure that users can rerun identical configurations with any release from the 2.x branch and still get the same results.  Note that this does mean that once a new service implementation is incorporated into Weathervane we will not accept changes that affect the performance of that service using the default settings.  We will allow the addition of new tuning parameters for any service as long as the default is the same as for the initial release on which that service was introduced.
 
 ## Developer Documentation
 

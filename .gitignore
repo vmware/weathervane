@@ -3,6 +3,8 @@ output
 dist
 .xslx
 .csv
+.DS_Store
+.accept-weathervane
 
 # Created by https://www.gitignore.io/api/java,perl,gradle,eclipse,emacs
 

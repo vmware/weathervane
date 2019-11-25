@@ -109,11 +109,7 @@ Most uses of Weathervane might [use](#configuring-clusters) multiple clusters or
     * `git clone https://github.com/vmware/weathervane`
     * This will create a directory called weathervane in the current directory.
 1. Change into the weathervane directory:
-  
-    - `cd weathervane`
-1. Select the correct git branch for Weathervane 2.0:
-	- `git checkout 2.0-dev`
-    - ToDo: update or remove this once master contains 2.0.
+      - `cd weathervane`
 
     
 #### Create the Weathervane Docker Images
@@ -296,10 +292,6 @@ is accessible to the Kubernetes clusters and the client.
 Weathervane includes a script to build the images and push them to
 either a Docker Hub account or a private Docker repository.
 This script should be run from the weathervane directory.
-
-First select the correct git branch for Weathervane 2.0:
-- `git checkout 2.0-dev`
-- ToDo: update or remove this once master contains 2.0.
 
 The process using a Docker Hub account is as follows:
 * `./buildDockerImages.pl --username yourUserName`

@@ -16,7 +16,7 @@ For the purposes of Weathervane, the major version will be incremented only when
 ## Branching Strategy
 
 The approach taken by the Weathervane team to branching is as follows:
-- The master branch always contains the most recent major version. Currently, the master branch is on the 1.x.y release train.
+- The master branch always contains the most recent major version. Currently, the master branch is on the 2.x.y release train.
 - All work that encompasses bug-fixes or small feature enhancements will be merged into the master branch and be included in the next official release.  Basically, anything that is done by a single person in a topic branch, and that passes all of the acceptance criteria, will be merged into master. The merge point will be tagged with an appropriate version number.  Note that this implies that even members of the Weathervane project team will integrate changes to the master branch via pull requests.
 - Any work that will require multiple collaborators, and whose goal is acceptable to the project maintainers, will go into a new branch off of master. We will require an Issue be opened and discussed before creating a new branch.
   - If a branch involves contributors who are not members of the Weathervane project team, their work will still need to be integrated into the branches using pull requests.  Members of the Weathervane team may push directly into a non-master branch.
@@ -27,5 +27,3 @@ The approach taken by the Weathervane team to branching is as follows:
 ## Release Strategy
 
 The Weathervane team will generate release packages for each minor release.  In addition, a release package will be generated for patch releases which fix significant bugs, or upon request.  Otherwise we expect users to update by pulling from the Weathervane repository.
-
-Note that Weathervane release packages will not contain pre-compiled binaries.  You will need to build Weathervane after unpacking a Weathervane release.  The build process is documented in the [Weathervane User's Guide](weathervane_users_guide.pdf).

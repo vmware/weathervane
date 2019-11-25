@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# Copyright 2017-2019 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
 # This script is used to add the weathervane domain to
 # The search line of /etc/resolv.conf
 open( FILEIN, "/etc/resolv.conf" )

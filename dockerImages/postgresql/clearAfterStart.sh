@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright 2017-2019 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
 
 echo "Clearing auction database"
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d postgres -f /dbScripts/auction_postgresql_database.sql

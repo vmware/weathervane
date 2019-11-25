@@ -1,3 +1,5 @@
+# Copyright 2017-2019 VMware, Inc.
+# SPDX-License-Identifier: BSD-2-Clause
 FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 

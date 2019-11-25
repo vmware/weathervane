@@ -1,4 +1,7 @@
 --
+-- Copyright 2017-2019 VMware, Inc.
+-- SPDX-License-Identifier: BSD-2-Clause
+-- 
 -- Create primary key, foreign key, and other constraints for auction tables
 -- Run as auction user
 --

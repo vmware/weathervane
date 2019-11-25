@@ -1,4 +1,4 @@
-FROM hrosenbe/weathervane-centos7:2.0.0
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo

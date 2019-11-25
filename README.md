@@ -38,6 +38,11 @@ Weathervane.  Weathervane can place a significant load on system resources that
 can impact the performance of unrelated workloads.  As a result Weathervane is
 not intended to be used in active production environments.
 
+## Previous Versions
+
+Weathervane 1.x is still available on the 
+[1.x branch](https://github.com/vmware/weathervane/tree/1.x).
+
 ## Getting Started
 
 You can get started with Weathervane 2.0 by following the instructions in the 

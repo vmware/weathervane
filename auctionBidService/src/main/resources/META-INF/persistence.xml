@@ -1,4 +1,8 @@
 <persistence xmlns="http://java.sun.com/xml/ns/persistence" version="1.0">
+<!--
+Copyright 2017-2019 VMware, Inc.
+SPDX-License-Identifier: BSD-2-Clause
+-->
 
   <persistence-unit name="auctionPU" transaction-type="RESOURCE_LOCAL">
      <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>

@@ -6,6 +6,7 @@ MAINTAINER hrosenbe@vmware.com
 COPY apache-tomcat-bid /opt/apache-tomcat-bid
 COPY apache-tomcat-bid /root/apache-tomcat-bid
 COPY entrypoint.sh /entrypoint.sh
+COPY generateCert.sh /generateCert.sh
 COPY configure.pl /configure.pl
 
 ENV CATALINA_BASE /opt/apache-tomcat-bid
@@ -24,6 +25,8 @@ RUN yum install -y java-1.8.0-openjdk && \
 	mkdir /opt/apache-tomcat-bid/work && \
 	mkdir /opt/apache-tomcat-bid/temp && \
 	mkdir /opt/apache-tomcat-bid/logs && \
-    chmod +x /entrypoint.sh 
+    chmod +x /generateCert.sh && \
+    chmod +x /entrypoint.sh && \
+    mkdir -p /etc/pki/tls
 
 ENTRYPOINT ["/entrypoint.sh"]   

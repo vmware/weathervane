@@ -5,6 +5,7 @@ MAINTAINER hrosenbe@vmware.com
 
 COPY apache-tomcat-auction1 /opt/apache-tomcat-auction1
 COPY apache-tomcat-auction1 /root/apache-tomcat-auction1
+COPY generateCert.sh /generateCert.sh
 COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 
@@ -23,6 +24,8 @@ RUN yum install -y java-1.8.0-openjdk && \
 	mkdir /opt/apache-tomcat-auction1/work && \
 	mkdir /opt/apache-tomcat-auction1/temp && \
 	mkdir /opt/apache-tomcat-auction1/logs && \
-    chmod +x /entrypoint.sh 
+    chmod +x /generateCert.sh && \
+    chmod +x /entrypoint.sh && \
+    mkdir -p /etc/pki/tls
 
 ENTRYPOINT ["/entrypoint.sh"]   

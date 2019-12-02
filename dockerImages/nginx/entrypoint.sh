@@ -31,6 +31,9 @@ chown -R nginx:nginx /var/cache/nginx
 
 perl /updateResolveConf.pl
 
+# Generate a self-signed certificate for nginx
+./generateCert.sh
+
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else

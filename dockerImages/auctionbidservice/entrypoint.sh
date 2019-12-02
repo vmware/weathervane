@@ -23,6 +23,9 @@ trap 'sigusr1' USR1
 
 perl /updateResolveConf.pl
 
+# Generate a keystore for tomcat
+./generateCert.sh
+
 rm -f /opt/apache-tomcat-bid/logs/* 
 perl /configure.pl
 

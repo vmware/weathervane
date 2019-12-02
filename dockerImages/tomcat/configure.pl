@@ -95,7 +95,7 @@ while ( my $inline = <FILEIN> ) {
 			# output an ssl connector and a redirect connector
 			print FILEOUT "port=\"$httpsPort\"\n";
 			print FILEOUT "scheme=\"https\" secure=\"true\" SSLEnabled=\"true\"\n";
-			print FILEOUT "keystoreFile=\"/etc/pki/tls/weathervane.jks\" keystorePass=\"weathervane\"\n";
+			print FILEOUT "keystoreFile=\"/etc/pki/tls/weathervane.p12\" keystorePass=\"weathervane\"\n";
 			print FILEOUT "clientAuth=\"false\" sslProtocol=\"TLS\"/>\n";
 
 			# Connector for http traffic

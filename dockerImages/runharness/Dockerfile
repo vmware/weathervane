@@ -22,7 +22,6 @@ RUN yum install -y perl-App-cpanminus && \
 	yum install -y docker-client && \
 	yum install -y gettext && \
 	yum install -y kubectl && \
-	chmod -R 600 /root/.ssh && \
 	chmod +x /root/weathervane/weathervane.pl && \
 	cpanm -n YAML && \
 	cpanm -n Config::Simple && \

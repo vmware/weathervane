@@ -5,7 +5,6 @@ MAINTAINER Hal Rosenberg <hrosenbe@vmware.com>
 
 COPY sysctl.conf /etc/sysctl.conf
 COPY updateResolveConf.pl /updateResolveConf.pl
-COPY ssh /root/.ssh
 
 RUN \
   chmod +x /updateResolveConf.pl && \
@@ -18,8 +17,8 @@ RUN \
   yum -y install emacs && \
   yum -y install bind-utils && \
   yum -y install openssh-clients && \
+  yum -y install openssl && \
   yum -y clean all && \
-  chmod 600 /root/.ssh/* && \
   mkdir -p /etc/pki/tls/certs && \
   mkdir -p /etc/pki/tls/private 
  

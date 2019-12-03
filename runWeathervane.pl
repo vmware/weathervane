@@ -292,6 +292,12 @@ if (!(-e $resultsFile)) {
 	die "The file $resultsFile must be an ordinary file";
 }
 
+my $homeDir = $ENV{'HOME'};
+my $sshMountString = "";
+if ((-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
+    $sshMountString = "-v $homeDir/.ssh:/root/.ssh";
+}
+
 my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];
 my $dockerNamespace = $retRef->[1];
@@ -337,7 +343,7 @@ print "Starting Weathervane Run-Harness.  Pulling container image may take a few
 
 my $cmdString = "docker run --name weathervane --net host $tzEnvString --rm -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString " 
-		. "$outputMountString $tmpMountString " 
+		. "$outputMountString $tmpMountString $sshMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
 my $dockerId = `$cmdString`;
 

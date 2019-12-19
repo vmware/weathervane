@@ -10,6 +10,7 @@ package BuildDocker;
 use strict;
 use Getopt::Long;
 use Term::ReadKey;
+use Cwd qw(getcwd);
 
 sub usage {
 	print "Usage: ./buildDockerImages.pl [options] [imageNames]\n";
@@ -229,10 +230,22 @@ my $fileout;
 my $logFile = "buildDockerImages.log";
 open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n";
 
+my $version = `cat version.txt`;
+chomp($version);
+
 # Build the executables
 print "Building the executables.\n";
 print $fileout "Building the executables.\n";
-runAndLog($fileout, "./gradlew release");
+
+# Create a .gradle directory and map it into the container
+# This will speed susequent builds
+my $cwd = getcwd();
+`mkdir -p $cwd/.gradle`;
+my $cmdString = "docker run --name weathervane-builder --rm "
+              . "-v $cwd/.gradle:/root/.gradle " 
+              . "-v $cwd:/root/weathervane -w /root/weathervane " 
+              . "--entrypoint /root/weathervane/gradlew openjdk:8 release";
+runAndLog($fileout, $cmdString);
 my $exitValue=$? >> 8;
 if ($exitValue) {
 	print "Error: Building failed with exitValue $exitValue, check $logFile.\n";
@@ -243,9 +256,6 @@ if ($exitValue) {
 print "Setting up the Docker images.\n";
 print $fileout "Setting up the Docker images.\n";
 setupForBuild($fileout);
-
-my $version = `cat version.txt`;
-chomp($version);
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }

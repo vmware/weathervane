@@ -238,7 +238,7 @@ print "Building the executables.\n";
 print $fileout "Building the executables.\n";
 
 # Create a .gradle directory and map it into the container
-# This will speed susequent builds
+# This will speed subsequent builds
 my $cwd = getcwd();
 `mkdir -p $cwd/.gradle`;
 my $cmdString = "docker run --name weathervane-builder --rm "

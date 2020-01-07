@@ -914,7 +914,7 @@ $parameters{"maxUsers"} = {
 	"default" => 0,
 	"parent"  => "appInstance",
 	"usageText" =>
-"This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load.\n",
+"This parameter controls how much data is pre-loaded into the data services.\nIt is the maximum number of simulated users that will be used for this data-load per-instance.\n",
 	"showUsage" => 1,
 };
 
@@ -959,7 +959,7 @@ $parameters{"maxPassHint"} = {
     "type"    => "=i",
     "default" => "0",
     "parent"  => "runProc",
-    "usageText" => "A hint about the number of users expected to pass per-instance.",
+    "usageText" => "A hint about the number of users expected to pass for all instances.",
     "showUsage" => 0,
 };
 $parameters{"initialRampRateStep"} = {

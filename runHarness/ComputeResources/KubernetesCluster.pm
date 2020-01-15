@@ -600,6 +600,30 @@ sub kubernetesGetLbIP {
 	return ($cmdFailed, $ip);
 }
 
+sub kubernetesGetServiceIP {
+    my ( $self, $svcName, $namespace ) = @_;
+    my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+    $logger->debug("kubernetesGetLbIP for $svcName");
+
+    my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+    my $context = $self->getParamValue('kubeconfigContext');
+    my $contextString = "";
+    if ($context) {
+      $contextString = "--context=$context";    
+    }
+
+    my $cmd;
+    $cmd = "kubectl get svc $svcName --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString -o=jsonpath=\"{.spec.clusterIP}\"";
+    $logger->debug("Command: $cmd");
+    my ($cmdFailed, $ip) = runCmd($cmd);
+    if ($cmdFailed) {
+        $logger->error("Error getting IP for $svcName service: error = $cmdFailed");
+        return ($cmdFailed, $ip);
+    }
+    $logger->debug("Called kubernetesGetServiceIP for $svcName: Returning IP $ip");
+    return ($cmdFailed, $ip);
+}
+
 sub kubernetesGetNodeIPs {
 	my ( $self ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

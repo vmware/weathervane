@@ -70,10 +70,6 @@ spec:
             - /loadData.pl
           initialDelaySeconds: 15
           periodSeconds: 10
-        resources:
-          requests:
-            cpu: 1
-            memory: 8Gi
         envFrom:
         - configMapRef:
             name: auctiondatamanager-config            

@@ -53,8 +53,18 @@ override 'getControllerURL' => sub {
 		my $cluster = $self->host;
 		my $hostname;
 		my $port;
-		$logger->debug("getControllerURL: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
-		if ($cluster->getParamValue('useLoadBalancer')) {
+        my $appIngressMethod = $self->getParamValue("appIngressMethod");
+        $logger->debug("getControllerURL: appIngressMethod = $appIngressMethod");
+        if ($appIngressMethod eq "none") {
+        # Get the ip address for the wkldcontr0ller service in this namespace
+          my ($cmdFailed, $ip) = $cluster->kubernetesGetServiceIP("wkldcontroller", $self->namespace);
+          if ($cmdFailed)   {
+            $logger->error("Error getting IP for wkldcontroller service: error = $cmdFailed");
+          } else {
+             $hostname = $ip;
+             $port = 80;
+          }                                 
+        } elsif ($appIngressMethod eq "loadbalancer") {
 	  		my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
 			if ($cmdFailed)	{
 			  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
@@ -170,12 +180,14 @@ sub configureWkldController {
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
-			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
-			if (!$useLoadbalancer) {
-				print FILEOUT "${1}type: NodePort\n";				
-			} else {
-				print FILEOUT $inline;		
-			}
+            my $appIngressMethod = $self->getParamValue("appIngressMethod");
+            if ($appIngressMethod eq "none") {
+                print FILEOUT "${1}type: ClusterIP\n";                              
+            } elsif ($appIngressMethod eq "loadbalancer") {
+                print FILEOUT $inline;      
+            } else {
+                print FILEOUT "${1}type: NodePort\n";               
+            }
 		}
 		else {
 			print FILEOUT $inline;

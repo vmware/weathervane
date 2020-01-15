@@ -11,11 +11,12 @@ metadata:
     impl: cassandra
 data:
   CLEARBEFORESTART: "0"
-  CASSANDRA_SEEDS: "cassandra-0.cassandra.default.svc.cluster.local"
+  CASSANDRA_SEEDS: "cassandra-0.cassandra"
   CASSANDRA_CLUSTER_NAME: "Auction"
   CASSANDRA_MEMORY: "16Gi"
   CASSANDRA_CPUS: "1"
   CASSANDRA_NUM_NODES: "1"
+  CASSANDRA_USE_IP: "TRUE"
 ---
 apiVersion: apps/v1
 kind: StatefulSet

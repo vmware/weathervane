@@ -131,30 +131,37 @@ override 'getEdgeAddrsRef' => sub {
 	
 	my $wwwIpAddrsRef = [];
 	
-	$logger->debug("getEdgeAddrsRef: useLoadBalancer = " . $cluster->getParamValue('useLoadBalancer'));
-	if ($cluster->getParamValue('useLoadBalancer')) {
-	  	my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
-		if ($cmdFailed)	{
+	my $appIngressMethod = $self->getParamValue("appIngressMethod");
+    $logger->debug("getEdgeAddrsRef: appIngressMethod = $appIngressMethod");
+	if ($appIngressMethod eq "none") {
+        # Get the ip address for the nginx service in this namespace
+          my ($cmdFailed, $ip) = $cluster->kubernetesGetServiceIP("nginx", $self->namespace);
+          if ($cmdFailed)   {
+            $logger->error("Error getting IP for nginx service: error = $cmdFailed");
+          } else {
+            push @$wwwIpAddrsRef, [$ip, 80, 443];
+          }                                 
+	} elsif ($appIngressMethod eq "loadbalancer") {
+	   	  my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("nginx", $self->namespace);
+		  if ($cmdFailed)	{
 			$logger->error("Error getting IP for frontend loadbalancer: error = $cmdFailed");
-	  	} else {
-			push @$wwwIpAddrsRef, [$ip, 80, 443];
-	  	}							
-	} else {
-		# Using NodePort service for ingress
-		# Get the IP addresses of the nginx-ingress in this appInstance's namespace
-		my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-		if ($#{$ipAddrsRef} < 0) {
-			$logger->error("There are no IP addresses for the Kubernetes nodes");
-			exit 1;
-		}
+	      } else {
+		    push @$wwwIpAddrsRef, [$ip, 80, 443];
+	  	  }	
+   	} else {
+	  # Using NodePort service for ingress
+	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+	  if ($#{$ipAddrsRef} < 0) {
+	  	 $logger->error("There are no IP addresses for the Kubernetes nodes");
+		 exit 1;
+	  }	
+      my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
+	  my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
 	
-		my $httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
-		my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
-	
-		foreach my $ipAddr (@$ipAddrsRef) {
-			push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
-		}
-	}
+	  foreach my $ipAddr (@$ipAddrsRef) {
+	  	push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							
+	  }
+    }
 	return $wwwIpAddrsRef;
 };
 

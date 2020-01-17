@@ -11,7 +11,7 @@ use Log::Log4perl qw(get_logger);
 use Instance;
 use Utils qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callBooleanMethodOnObjectsParallel1
   callBooleanMethodOnObjectsParallel3 callBooleanMethodOnObjectsParallel2 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2
-  callBooleanMethodOnObjects2);
+  callBooleanMethodOnObjects2 callBooleanMethodOnObjectsParallel2BatchDelay callBooleanMethodOnObjectsParallel3BatchDelay);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -103,7 +103,7 @@ sub prepareDataServices {
 	}
 	my $allIsStarted;
 	if ($allK8s) {
-		$allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareDataServices', $self->appInstancesRef, $setupLogDir, 1 );
+		$allIsStarted = callBooleanMethodOnObjectsParallel2BatchDelay( 'prepareDataServices', $self->appInstancesRef, $setupLogDir, 1, 10, 60);
 	} else {
 		$allIsStarted = callBooleanMethodOnObjects2( 'prepareDataServices', $self->appInstancesRef, $setupLogDir, 0 );
 	}
@@ -301,7 +301,7 @@ sub startServices {
 	}
 	my $allIsStarted = 1;
 	if ($allK8s) {
-		$allIsStarted = callBooleanMethodOnObjectsParallel3( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir, 1 );
+		$allIsStarted = callBooleanMethodOnObjectsParallel3BatchDelay( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir, 1, 10, 60 );
 		if (!$allIsStarted && $forked) {
 			exit;
 		}

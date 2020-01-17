@@ -94,11 +94,11 @@ sub configure {
 		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
             my $appIngressMethod = $self->getParamValue("appIngressMethod");
-			if ($appIngressMethod eq "none") {
+			if ($appIngressMethod eq "clusterip") {
                 print FILEOUT "${1}type: ClusterIP\n";               			  	
 			} elsif ($appIngressMethod eq "loadbalancer") {
                 print FILEOUT $inline;      
-	   	    } else {
+	   	    } elsif ($appIngressMethod eq "nodeport") {
                 print FILEOUT "${1}type: NodePort\n";               
 			}
 		}

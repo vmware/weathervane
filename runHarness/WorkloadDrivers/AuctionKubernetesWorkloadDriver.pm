@@ -55,7 +55,7 @@ override 'getControllerURL' => sub {
 		my $port;
         my $appIngressMethod = $self->getParamValue("appIngressMethod");
         $logger->debug("getControllerURL: appIngressMethod = $appIngressMethod");
-        if ($appIngressMethod eq "none") {
+        if ($appIngressMethod eq "clusterip") {
         # Get the ip address for the wkldcontr0ller service in this namespace
           my ($cmdFailed, $ip) = $cluster->kubernetesGetServiceIP("wkldcontroller", $self->namespace);
           if ($cmdFailed)   {
@@ -72,7 +72,7 @@ override 'getControllerURL' => sub {
 		        $hostname = $ip;
 			    $port = 80;
 		  	}
-		} else {
+		} elsif ($appIngressMethod eq "nodeport") {
 			# Using NodePort service for ingress
 			# Get the IP addresses of the nodes 
 			my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
@@ -181,11 +181,11 @@ sub configureWkldController {
 		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
             my $appIngressMethod = $self->getParamValue("appIngressMethod");
-            if ($appIngressMethod eq "none") {
+            if ($appIngressMethod eq "clusterip") {
                 print FILEOUT "${1}type: ClusterIP\n";                              
             } elsif ($appIngressMethod eq "loadbalancer") {
                 print FILEOUT $inline;      
-            } else {
+            } elsif ($appIngressMethod eq "nodeport") {
                 print FILEOUT "${1}type: NodePort\n";               
             }
 		}

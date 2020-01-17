@@ -533,7 +533,7 @@ $parameters{"appIngressMethod"} = {
     "type"      => "=s",
     "default"   => "loadbalancer",
     "parent"    => "workload",
-    "usageText" => "Specifies the method to be used to enable ingress to the Weathervane Auction application.  Valid values are: loadbalancer, nodeport, and none.",
+    "usageText" => "Specifies the method to be used to enable ingress to the Weathervane Auction application.  Valid values are: loadbalancer, nodeport, and clusterip.",
     "showUsage" => 1,
 };
 

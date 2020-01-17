@@ -73,7 +73,7 @@ our %appInstanceSizes = (
 
 # These are the allowed values for appIngressMethod
 our %appIngressMethods = (
-    "auction" => ["loadbalancer", "nodeport", "none",],
+    "auction" => ["loadbalancer", "nodeport", "clusterip",],
     );
 
 # Define a ServiceType to be one of a set of strings

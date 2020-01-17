@@ -133,7 +133,7 @@ override 'getEdgeAddrsRef' => sub {
 	
 	my $appIngressMethod = $self->getParamValue("appIngressMethod");
     $logger->debug("getEdgeAddrsRef: appIngressMethod = $appIngressMethod");
-	if ($appIngressMethod eq "none") {
+	if ($appIngressMethod eq "clusterip") {
         # Get the ip address for the nginx service in this namespace
           my ($cmdFailed, $ip) = $cluster->kubernetesGetServiceIP("nginx", $self->namespace);
           if ($cmdFailed)   {
@@ -148,7 +148,7 @@ override 'getEdgeAddrsRef' => sub {
 	      } else {
 		    push @$wwwIpAddrsRef, [$ip, 80, 443];
 	  	  }	
-   	} else {
+   	} elsif ($appIngressMethod eq "nodeport") {
 	  # Using NodePort service for ingress
 	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
 	  if ($#{$ipAddrsRef} < 0) {

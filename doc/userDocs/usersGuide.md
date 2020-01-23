@@ -1416,7 +1416,7 @@ best control over pod placement.
 This section discusses requirements for running Weathervane on a laptop or workstation using a 
 Kubernetes cluster created with [Minikube](https://minikube.sigs.k8s.io/docs/start/).
 
-### Cluster Requirements
+#### Cluster Requirements
 
 In order to run Weathervane with a single Micro instance, you must create your Minikube 
 cluster with at least 3 cpus and 8GB of memory.  In addition, the default-storageclass 
@@ -1430,7 +1430,7 @@ Note that even with this cluster configuration, Minikube may have trouble runnin
 depending on how much memory is configured on the laptop and what else is 
 running.
 
-### Weathervane Configuration
+#### Weathervane Configuration
 
 In order to run Weathervane on Minikube, you need to use the following configuration 
 parameter values:
@@ -1481,3 +1481,7 @@ configuration file you should:
 }
 ```
 
+#### Cleaning Up
+
+Before deleting your Minikube cluster, you should follow the instructions [above](#task-clean) 
+for releasing the storage resources allocated by Weathervane.

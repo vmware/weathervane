@@ -22,7 +22,7 @@
   "driverCluster" : "driverCluster",
 
   "appInstanceCluster" : "appCluster",
-  "appIngressMethod" : "loadBalancer",
+  "appIngressMethod" : "loadbalancer",
 
   "cassandraDataStorageClass" : "weathervanesc",
   "postgresqlStorageClass" : "weathervanesc",

@@ -15,7 +15,6 @@ use List::Util qw[min max];
 use StatsParsers::ParseGC qw( parseGCLog );
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 use Log::Log4perl qw(get_logger);
-use Utils;
 use Tie::IxHash;
 use LWP;
 use JSON;
@@ -50,40 +49,7 @@ override 'getControllerURL' => sub {
 	my ( $self ) = @_;
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	if (!$self->controllerUrl) {
-		my $cluster = $self->host;
-		my $hostname;
-		my $port;
-        my $appIngressMethod = $self->getParamValue("appIngressMethod");
-        $logger->debug("getControllerURL: appIngressMethod = $appIngressMethod");
-        if ($appIngressMethod eq "clusterip") {
-        # Get the ip address for the wkldcontr0ller service in this namespace
-          my ($cmdFailed, $ip) = $cluster->kubernetesGetServiceIP("wkldcontroller", $self->namespace);
-          if ($cmdFailed)   {
-            $logger->error("Error getting IP for wkldcontroller service: error = $cmdFailed");
-          } else {
-             $hostname = $ip;
-             $port = 80;
-          }                                 
-        } elsif ($appIngressMethod eq "loadbalancer") {
-	  		my ($cmdFailed, $ip) = $cluster->kubernetesGetLbIP("wkldcontroller", $self->namespace);
-			if ($cmdFailed)	{
-			  	$logger->error("Error getting IP for wkldcontroller loadbalancer: error = $cmdFailed");
-		  	} else {
-		        $hostname = $ip;
-			    $port = 80;
-		  	}
-		} elsif ($appIngressMethod eq "nodeport") {
-			# Using NodePort service for ingress
-			# Get the IP addresses of the nodes 
-			my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
-			if ($#{$ipAddrsRef} < 0) {
-				$logger->error("There are no IP addresses for the Kubernetes nodes");
-				exit 1;
-			}
-			$hostname = $ipAddrsRef->[0];
-			$port = $cluster->kubernetesGetNodePortForPortNumber("app=auction,tier=driver,type=controller", 80, $self->namespace);
-		}
-		$self->controllerUrl("http://${hostname}:$port");
+		$self->controllerUrl("http://localhost:80");
 	}
 	return $self->controllerUrl;
 };
@@ -122,7 +88,7 @@ sub configureWkldController {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 	my $workloadNum    = $self->workload->instanceNum;
-		
+	
 	# Calculate the values for the environment variables used by the auctiondatamanager container
 	my $driverThreads                       = $self->getParamValue('driverThreads');
 	my $driverHttpThreads                   = $self->getParamValue('driverHttpThreads');
@@ -178,16 +144,6 @@ sub configureWkldController {
 			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
-		}
-		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
-            my $appIngressMethod = $self->getParamValue("appIngressMethod");
-            if ($appIngressMethod eq "clusterip") {
-                print FILEOUT "${1}type: ClusterIP\n";                              
-            } elsif ($appIngressMethod eq "loadbalancer") {
-                print FILEOUT $inline;      
-            } elsif ($appIngressMethod eq "nodeport") {
-                print FILEOUT "${1}type: NodePort\n";               
-            }
 		}
 		else {
 			print FILEOUT $inline;
@@ -292,6 +248,135 @@ override 'startDrivers' => sub {
 	
 };
 
+override 'doHttpPost' => sub {
+	my ( $self, $url, $content) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
+	$logger->debug("doHttpPost: Sending POST to $url.  content = $content");
+
+	# Write the content into a local file
+	my $namespace = $self->namespace;
+	open( my $contentFile, ">content-${namespace}.json" ) or die "Can't open file content-${namespace}.json: $!\n";	
+	my @contentLines = split(/\n/, $content);
+	foreach my $line (@contentLines) {
+		print $contentFile $line;
+	}
+	close $contentFile;
+		
+	my $cluster = $self->host;
+	my $success = $cluster->kubernetesCopyToFirst("impl=wkldcontroller", "wkldcontroller", $namespace, 
+												"content-${namespace}.json", "content.json" );
+	if (!$success) {
+		$logger->debug("Error copying content to content.json");
+		return {"is_success" => 0, "content" => "" };
+	} 
+	
+	my $cmd = "bash -c \"http --pretty none --print hb --timeout 60 POST $url < content.json\"";
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("wkldcontroller", $cmd, $self->namespace);
+	if ($cmdFailed) {
+		return {"is_success" => 0, "content" => "" };
+	} 
+	
+	# Parse the response
+	my @outLines = split(/\n/, $outString);
+	my $status_line = $outLines[0];
+	chomp($status_line);
+	my $isSuccess = 1;
+	if (($status_line =~ /1\.1\s+4\d\d/) || ($status_line =~ /1\.1\s+5\d\d/)) {
+		$isSuccess = 0;
+	}
+	
+	my $responseContent = "";
+	my $foundContent = 0;
+	foreach my $line (@outLines) {
+		if ($line =~ /^\s*$/) {
+			# Blank lines start and end content
+			if ($foundContent) {
+				last;
+			} else {
+			    $foundContent = 1;
+			    next;			
+			}
+		}
+		if ($foundContent) {
+			$responseContent .= $line;	
+		}
+	}
+
+	$logger->debug("doHttpPost Response status line: " . $status_line . 
+				", is_success = " . $isSuccess . 
+				", content = " . $responseContent );
+	
+	return {"is_success" => $isSuccess,
+			"content" => $responseContent
+	};
+};
+
+override 'doHttpGet' => sub {
+	my ( $self, $url) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
+	$logger->debug("doHttpGet: Sending Get to $url.");
+	
+	my $cmd = "http --pretty none --print hb --timeout 60 GET $url";
+	my $cluster = $self->host;
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("wkldcontroller", $cmd, $self->namespace);
+	if ($cmdFailed) {
+		return {"is_success" => 0, "content" => "" };
+	} 
+	
+	# Parse the response
+	my @outLines = split(/\n/, $outString);
+	my $status_line = $outLines[0];
+	chomp($status_line);
+	my $isSuccess = 1;
+	if (($status_line =~ /1\.1\s+4\d\d/) || ($status_line =~ /1\.1\s+5\d\d/)) {
+		$isSuccess = 0;
+	}
+	
+	my $responseContent = "";
+	my $foundContent = 0;
+	foreach my $line (@outLines) {
+		if ($line =~ /^\s*$/) {
+			# Blank lines start and end content
+			if ($foundContent) {
+				last;
+			} else {
+			    $foundContent = 1;
+			    next;			
+			}
+		}
+		if ($foundContent) {
+			$responseContent .= $line;	
+		}
+	}
+
+	$logger->debug("doHttpGet Response status line: " . $status_line . 
+				", is_success = " . $isSuccess . 
+				", content = " . $responseContent );
+	
+	return {"is_success" => $isSuccess,
+			"content" => $responseContent
+	};
+};
+
+override 'isUp' => sub {
+	my ($self) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
+	my $workloadNum = $self->workload->instanceNum;
+	my $cluster = $self->host;
+
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne( "wkldcontroller", "curl http://localhost:80/run/up", $self->namespace );
+	if ($cmdFailed) {
+		return 0;
+	} else {
+		if ($outString =~ /isStarted\":true/) {
+			return 1;
+		} else {
+			return 0;
+		}		
+	}
+	return 0;
+};
+
 override 'followLogs' => sub {
 	my ( $self, $logDir, $suffix, $logHandle) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
@@ -316,6 +401,7 @@ override 'stopDrivers' => sub {
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("stopDrivers");
 	my $cluster = $self->host;
+	
 	my $selector = "app=auction,tier=driver";
 	$cluster->kubernetesDeleteAllWithLabel($selector, $self->namespace);
 };

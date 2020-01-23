@@ -107,6 +107,11 @@ sub parseConfigFile {
 			}
 		} elsif ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/) {
 			$dockerNamespace = $1;
+		} elsif ($_ =~ /useLoadBalancer/) {
+			print "The useLoadBalancer parameter has been replaced with the appIngressMethod parameter. " . 
+				"You must update your configuration file.\n" .
+				"Please refer to the Weathervane User's Guide for information on setting the appIngressMethod parameter.\n";
+			exit(1);
 		}
 	}
 	close CONFIGFILE;

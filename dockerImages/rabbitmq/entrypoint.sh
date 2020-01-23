@@ -44,8 +44,8 @@ printf "vm_memory_high_watermark.relative = 0.8\n" >> /etc/rabbitmq/rabbitmq.con
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-    echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &"
-	setsid sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &
+    echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=\"${RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS}\" rabbitmq-server &"
+	setsid sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS="${RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS}" rabbitmq-server &
 	until perl /isUp.pl
 	do
 		echo "Waiting for RabbitMQ to come up";

@@ -96,7 +96,7 @@ spec:
             - 'curl -s http://127.0.0.1:80/driver/up | grep -Eq true'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 1
 ---

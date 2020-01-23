@@ -132,7 +132,7 @@ spec:
             - 'jps | grep -Eq jar'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 1
         readinessProbe:
@@ -144,7 +144,7 @@ spec:
             - 'curl -s http://127.0.0.1:8888/warmer/ready | grep -Eq ready'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 1
 ---

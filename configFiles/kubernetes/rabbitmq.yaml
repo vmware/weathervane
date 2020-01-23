@@ -85,7 +85,7 @@ spec:
             - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 1
         readinessProbe:
@@ -97,7 +97,7 @@ spec:
             - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 1
 ---

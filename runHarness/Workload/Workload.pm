@@ -80,7 +80,7 @@ sub cleanData {
 
 sub prepareData {
 	my ( $self, $setupLogDir, $forked ) = @_;
-	my $allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareData', $self->appInstancesRef, $setupLogDir, 1 );
+	my $allIsStarted = callBooleanMethodOnObjectsParallel2BatchDelay( 'prepareData', $self->appInstancesRef, $setupLogDir, 1, 10, 30 );
 	if (!$allIsStarted && $forked) {
 		exit;
 	}

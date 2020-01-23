@@ -12,6 +12,8 @@ Contents:
 - [Run Output Details](#output)
 - [Troubleshooting](#troubleshooting)
 - [Advanced Topics](#advanced)
+- [Running on Specific Cluster Types](#specific)
+
 
 ## Introduction<a name="intro"></a>
 
@@ -811,8 +813,7 @@ for access to the applications from the workload drivers.
 
 | Configuration Parameter: appIngressMethod                     |
 | ------------------------------------------------------------ |
-| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" 
-: "clusterip",` |
+| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
 
 The possible values `loadbalancer`, `nodeport`, and `clusterip` correspond to Kubernetes 
 LoadBalancer, NodePort, and ClusterIP services. The default is `loadbalancer`.  See [Configuring Driver to Application Communication](#appingressmethod) for details.
@@ -1408,4 +1409,75 @@ As a result, when using node labels it is recommended that you label all of your
 worker nodes with either `wvrole=driver` or `wvrole=sut`.  This will give you the 
 best control over pod placement.
 
+## Running on Specific Cluster Types<a name="specific"></a>
+
+### Running on Minikube
+
+This section discusses requirements for running Weathervane on a laptop or workstation using a 
+Kubernetes cluster created with [Minikube](https://minikube.sigs.k8s.io/docs/start/).
+
+### Cluster Requirements
+
+In order to run Weathervane with a single Micro instance, you must create your Minikube 
+cluster with at least 3 cpus and 8GB of memory.  In addition, the default-storageclass 
+addon must be enabled (this is the default).  The micro instance will also use 15.25GB 
+of disk space.
+
+The command to start Minikube with 3 cpus and 8Gb is :
+* `minikube start --cpus=3 --memory=8g`
+
+Note that even with this cluster configuration, Minikube may have trouble running Weathervane 
+depending on how much memory is configured on the laptop and what else is 
+running.
+
+### Weathervane Configuration
+
+In order to run Weathervane on Minikube, you need to use the following configuration 
+parameter values:
+
+| Parameter | Value |
+|-----------|-------|
+| appIngressMethod | clusterIp |
+| cassandraDataStorageClass | standard |
+| postgresqlStorageClass | standard |
+| nginxCacheStorageClass | standard |
+
+
+The following is an example configuration file for use with Minikube.  To use this 
+configuration file you should:
+* Replace `yourNamespace` for the `dockerNamespace` parameter with the appropriate value 
+  for the registry to which you pushed the Weathervane images.  As discussed [above](#building), 
+  this may be your DockerHub username, or the hostname and port of a private Docker 
+  registry.
+* Update the path for the `kubeconfigFile` parameter with the path to your kubeconfig 
+  file.
+
+```json
+{
+  "description" : "minikube, micro",
+
+  "configurationSize": "micro",
+
+  "runStrategy" : "fixed",
+
+  "dockerNamespace" : "yourNamespace",
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "miniCluster", 
+      "kubeconfigFile" : "/yourPath/.kube/config",
+      "kubeconfigContext" : "minikube",
+    },
+  ],
+
+  "driverCluster" : "miniCluster",
+
+  "appInstanceCluster" : "miniCluster",
+  "appIngressMethod" : "clusterip",
+
+  "cassandraDataStorageClass" : "standard",
+  "postgresqlStorageClass" : "standard",
+  "nginxCacheStorageClass" : "standard",
+
+}
+```
 

@@ -950,7 +950,7 @@ sub kubernetesCopyFromFirst {
 	my ( $self, $podLabelString, $containerName, $namespace, $sourceFile, $destFile ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $console_logger = get_logger("Console");
-	$logger->debug("kubernetesGetLogs podLabelString $podLabelString, namespace $namespace");
+	$logger->debug("kubernetesCopyFromFirst podLabelString $podLabelString, namespace $namespace");
 	
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
 	my $context = $self->getParamValue('kubeconfigContext');
@@ -983,6 +983,50 @@ sub kubernetesCopyFromFirst {
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesCopyFromFirst failed: $cmdFailed");
+	}
+	
+	return 1;
+}
+
+sub kubernetesCopyToFirst {
+	my ( $self, $podLabelString, $containerName, $namespace, $sourceFile, $destFile ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesCopyToFirst podLabelString $podLabelString, namespace $namespace");
+	
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	# Get the list of pods
+	my $cmd;
+	my $outString;
+	my $cmdFailed;
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=$podLabelString --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesCopyToFirst get pod failed: $cmdFailed");
+		return 0;
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	my @names = split /\s+/, $outString;
+	if ($#names < 0) {
+		$console_logger->error("kubernetesCopyToFirst: There are no pods with label $podLabelString in namespace $namespace");
+		return 0;
+	}
+	
+	my $podName = $names[0];
+	$cmd = "kubectl cp -c $containerName  --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $sourceFile $podName:$destFile";
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesCopyToFirst failed: $cmdFailed");
+		return 0;
 	}
 	
 	return 1;

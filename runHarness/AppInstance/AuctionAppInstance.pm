@@ -9,7 +9,6 @@ use POSIX;
 use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use AppInstance::AppInstance;
-no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -111,21 +110,25 @@ override 'checkConfig' => sub {
 		$console_logger->error( "Workload $workloadNum, AppInstance $appInstanceNum: The Auction benchmark cannot be run with fewer than " . $minimumUsers . " users\n" );
 		return 0;
 	}
-
-	my $validWorkloadProfilesRef = $WeathervaneTypes::workloadProfiles->{"auction"};
-	if ( $self->getParamValue('workloadProfile') ~~ @$validWorkloadProfilesRef ) {
+	my $validWorkloadProfilesRef = $WeathervaneTypes::workloadProfiles{"auction"};
+    if (!(grep { $self->getParamValue('workloadProfile') eq $_ } @$validWorkloadProfilesRef)) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The Workload-Profile for the Auction workload must be one of: @$validWorkloadProfilesRef");
 		return 0;
 	}
 
-	my $validAppInstanceSizes = $WeathervaneTypes::appInstanceSizes->{"auction"};
-	if ( $self->getParamValue('appInstanceSize') ~~ @$validAppInstanceSizes ) {
-		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
-		return 0;
-	}
+    my $validAppInstanceSizes = $WeathervaneTypes::appInstanceSizes{"auction"};
+    if (!(grep { $self->getParamValue('configurationSize') eq $_ } @$validAppInstanceSizes)) {
+        $console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
+        return 0;
+    }
 
-	my $imageStoreType = $self->getParamValue('imageStoreType');
-	if ( !( $imageStoreType ~~ @WeathervaneTypes::imageStoreTypes ) ) {
+    my $validAppIngressMethods = $WeathervaneTypes::appIngressMethods{"auction"};
+    if (!(grep { $self->getParamValue('appIngressMethod') eq $_ } @$validAppIngressMethods)) {
+        $console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The appIngressMethod parameter for the Auction workload must be one of: @$validAppIngressMethods");
+        return 0;
+    }
+
+    if (!(grep { $self->getParamValue('imageStoreType') eq $_ } @WeathervaneTypes::imageStoreTypes)) {
 		$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The imageStore must be one of: @WeathervaneTypes::imageStoreTypes");
 		return 0;
 	}
@@ -205,7 +208,7 @@ override 'checkConfig' => sub {
 			next;
 		}
 		my $hostname = $host->name;
-		if ( $hostname ~~ @cassandraHosts ) {
+        if (grep { $hostname eq $_ } @cassandraHosts) {
 			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: When using more than one nosqlServer (Cassandra) nodes, each must run on a different Docker host.");
 			return 0;
 		} else {

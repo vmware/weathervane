@@ -160,12 +160,27 @@ has 'controllerUrl' => (
 	default => "",
 );
 
+has 'json' => (
+	is      => 'rw',
+);
+
+has 'ua' => (
+	is      => 'rw',
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
 	$self->name("driverW${workloadNum}I${instanceNum}");
+	
+	$self->json(JSON->new);
+	$self->json->relaxed(1);
+	$self->json->pretty(1);
+	$self->ua(LWP::UserAgent->new);
+	$self->ua->agent("Weathervane/2.0");
+	
 };
 
 override 'addSecondary' => sub {
@@ -839,6 +854,40 @@ sub stopAuctionWorkloadDriverContainer {
 
 }
 
+sub doHttpPost {
+	my ( $self, $url, $content) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("Sending POST to $url.  content = $content");
+	my $req = HTTP::Request->new( POST => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	$req->content($content);
+	my $res = $self->ua->request($req);
+	$logger->debug("Response status line: " . $res->status_line . 
+				", is_success = " . $res->is_success . 
+				", content = " . $res->content );
+	
+	return { "is_success" => $res->is_success,
+			 "content" => $res->content
+	};
+}
+
+sub doHttpGet {
+	my ( $self, $url) = @_;
+	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+	$logger->debug("Sending GET to $url");
+	my $req = HTTP::Request->new( GET => $url );
+	$req->content_type('application/json');
+	$req->header( Accept => "application/json" );
+	my $res = $self->ua->request($req);
+	$logger->debug("Response status line: " . $res->status_line . 
+				", is_success = " . $res->is_success . 
+				", content = " . $res->content );
+	return {"is_success" => $res->is_success,
+			"content" => $res->content
+	};
+}
+
 sub initializeRun {
 	my ( $self, $runNum, $logDir, $suffix, $tmpDir ) = @_;
 	my $console_logger = get_logger("Console");
@@ -883,32 +932,18 @@ sub initializeRun {
 	# Start following the driver logs
     $self->followLogs($logDir, $suffix, $logHandle);
 
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-	my $req;
 	my $res;
 	my $baseUrl = $self->getControllerURL() . "/run";
 
 	# Send the hosts and port number to the controller
-	my $runContent = $json->encode($self->getHosts());
+	my $runContent = $self->json->encode($self->getHosts());
 	my $url = $baseUrl . "/hosts";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($runContent);
 
 	$retryCount = 0;
 	my $success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -922,21 +957,13 @@ sub initializeRun {
 		
 	my %portHash;
 	$portHash{"port"} = $self->getHostPort();
-	$runContent = $json->encode(\%portHash);
+	$runContent = $self->json->encode(\%portHash);
 	$url = $baseUrl . "/port";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($runContent);
 	$retryCount = 0;
 	$success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -978,24 +1005,16 @@ sub initializeRun {
 	# Save the configuration in file form
 	open( my $configFile, ">$tmpDir/run$suffix.json" )
 	  || die "Can't open $tmpDir/run$suffix.json for writing: $!";
-	print $configFile $json->encode($runRef) . "\n";
+	print $configFile $self->json->encode($runRef) . "\n";
 	close $configFile;
 
-	$runContent = $json->encode($runRef);
+	$runContent = $self->json->encode($runRef);
 	$url = $baseUrl . "/$runName";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($runContent);
 	$retryCount = 0;
 	$success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1004,7 +1023,7 @@ sub initializeRun {
 	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send configuration message to workload controller. Exiting");
-		$logger->debug( "Response unsuccessful.  Content: " . $res->content );
+		$logger->debug( "Response unsuccessful.  Content: " . $res->{"content"} );
 		return 0;
 	}
 
@@ -1028,19 +1047,11 @@ sub initializeRun {
       close FILE;
 
 	  $url      = $baseUrl . "/behaviorSpec";
-	  $req = HTTP::Request->new( POST => $url );
-	  $req->content_type('application/json');
-	  $req->header( Accept => "application/json" );
-	  $req->content($contents);
 	  $retryCount = 0;
 	  $success = 0;
 	  do {
-		$logger->debug("Sending POST to $url.  content = $contents");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $contents);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1055,20 +1066,11 @@ sub initializeRun {
 
 	# Now send the initialize message to the runService
 	$url      = $baseUrl . "/$runName/initialize";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($runContent);
-
 	$retryCount = 0;
 	$success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1106,68 +1108,41 @@ sub startRun {
 		return 0;
 	};
 
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-
 	# Now send the start message to the runService
-	my $req;
 	my $res;
 	my $runContent = "{}";
-	my $pid1       = fork();
-	if ( $pid1 == 0 ) {
-		my $url      = $self->getControllerURL() . "/run/$runName/start";
-		$req = HTTP::Request->new( POST => $url );
-		$req->content_type('application/json');
-		$req->header( Accept => "application/json" );
-		$req->content($runContent);
-		my $retryCount = 0;
-		my $success = 0;
-		do {
-			$logger->debug("Sending POST to $url.  content = $runContent");
-			$res = $ua->request($req);
-			$logger->debug(
-				"Response status line: " . $res->status_line . " for url " . $url );
-			if ( $res->is_success ) {
-				$logger->debug( "Response successful.  Content: " . $res->content );
-				$success = 1;
-			} else {
-				sleep 10;
-			}
-			$retryCount++
-		} while ((!$success) && ($retryCount < 12));
-		if (!$success) {
-			$console_logger->warn("Could not send start message to workload controller. Exiting");
-			return 0;
+	my $url      = $self->getControllerURL() . "/run/$runName/start";
+	my $retryCount = 0;
+	my $success = 0;
+	do {
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
+			$success = 1;
+		} else {
+			sleep 10;
 		}
-		exit;
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
+		$console_logger->warn("Could not send start message to workload controller. Exiting");
+		return 0;
 	}
 
 	# Let the appInstances know that the workload is running.
 	callMethodOnObjectsParallel( 'workloadRunning',
 		$self->workload->appInstancesRef );
 
-# Now send the stats/start message the primary driver which is also the statsService host
+	# Now send the stats/start message the primary driver which is also the statsService host
 	my $statsStartedMsg = {};
 	$statsStartedMsg->{'timestamp'} = time;
-	my $statsStartedContent = $json->encode($statsStartedMsg);
+	my $statsStartedContent = $self->json->encode($statsStartedMsg);
 
-	my $url      = $self->getControllerURL() . "/stats/started/$runName";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($statsStartedContent);
-	my $retryCount = 0;
-	my $success = 0;
+	$url      = $self->getControllerURL() . "/stats/started/$runName";
+	$retryCount = 0;
+	$success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $runContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1279,13 +1254,9 @@ sub startRun {
 
 	sleep 30; #initial sleep before getting state
 	while (!$runCompleted) {
-		$logger->debug("Sending get to $url");
-		$req = HTTP::Request->new( GET => $url );
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$endRunStatus = $json->decode( $res->content );
+		$res = $self->doHttpGet($url);
+		if ( $res->{"is_success"} ) {
+			$endRunStatus = $self->json->decode( $res->{"content"} );
 
 			# print the messages for the end of the previous interval
 			my $workloadStati = $endRunStatus->{'workloadStati'};
@@ -1416,7 +1387,7 @@ sub startRun {
            	}
 
 			if ( $endRunStatus->{"state"} eq "COMPLETED") {
-				$endRunStatusRaw = $res->content;
+				$endRunStatusRaw = $res->{"content"};
 				$runCompleted = 1;
 				last;
 			}
@@ -1441,21 +1412,17 @@ sub startRun {
 	close FILE;
 
 	# Write end-of-run report using output from the stats endpoint
-	my $workloadStati = $json->decode($endRunStatusRaw)->{'workloadStati'};
+	my $workloadStati = $self->json->decode($endRunStatusRaw)->{'workloadStati'};
 	foreach my $workloadStatus (@$workloadStati) {
 		my $wkldName = $workloadStatus->{'name'};
 		my $loadPathName = $workloadStatus->{'loadPathName'};
 		my $maxPassIntervalName = $workloadStatus->{'maxPassIntervalName'};
 
 		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$wkldName/specName/$loadPathName/intervalName/$maxPassIntervalName";
-		$logger->debug("Sending get to $url");
-		$req = HTTP::Request->new( GET => $url );
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
+		$res = $self->doHttpGet($url);
 
-		if ( $res->is_success ) {
-			my $endStats = $json->decode($res->content);
+		if ( $res->{"is_success"} ) {
+			my $endStats = $self->json->decode($res->{"content"});
 			my $summaryText = $endStats->{'summaryText'};
 
 			if ($summaryText) {
@@ -1470,21 +1437,13 @@ sub startRun {
 	# Now send the stats/complete message the primary driver which is also the statsService host
 	my $statsCompleteMsg = {};
 	$statsCompleteMsg->{'timestamp'} = time;
-	my $statsCompleteContent = $json->encode($statsCompleteMsg);
+	my $statsCompleteContent = $self->json->encode($statsCompleteMsg);
 	$url      = $self->getControllerURL() . "/stats/complete/$runName";
-	$req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-	$req->content($statsCompleteContent);
 	$retryCount = 0;
 	$success = 0;
 	do {
-		$logger->debug("Sending POST to $url.  content = $runContent");
-		$res = $ua->request($req);
-		$logger->debug(
-			"Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug( "Response successful.  Content: " . $res->content );
+		$res = $self->doHttpPost($url, $statsCompleteContent);
+		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {
 			sleep 10;
@@ -1548,33 +1507,13 @@ sub stopRun {
 		$console_logger->error("Error opening $logName:$!");
 		return 0;
 	};
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
-	
 	
 	# Now send the shutdown message
 	my $url      = $self->getControllerURL() . "/run/$runName/shutdown";
-	$logger->debug("Sending POST to $url");
-	my $req = HTTP::Request->new( POST => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
 	my $runContent = "{}";
-	$req->content($runContent);
 
-	my $res = $ua->request($req);
-	$logger->debug( "Response status line: "
-		  . $res->status_line
-		  . " for url "
-		  . $url );
-	if ( $res->is_success ) {
-		$logger->debug(
-			"Response successful.  Content: " . $res->content );
-	}	
-	else {
+	my $res = $self->doHttpPost($url, $runContent);
+	if ( !$res->{"is_success"} ) {
 		$console_logger->warn(
 			"Could not send shutdown message to workload driver node on $hostname. Exiting"
 		);
@@ -1594,23 +1533,11 @@ sub isUp {
 	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $json     = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/0.95 ");
-
 	my $controllerUrl = $self->getControllerURL();
 	my $url = "$controllerUrl/run/up";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-
-	my $res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		my $jsonResponse = $json->decode( $res->content );
+	my $res = $self->doHttpGet($url);
+	if ( $res->{"is_success"} ) {
+		my $jsonResponse = $self->json->decode( $res->{"content"} );
 
 		if ( $jsonResponse->{"isStarted"} ) {
 			return 1;
@@ -1626,23 +1553,11 @@ sub areDriversUp {
 	my $workloadNum = $self->workload->instanceNum;
 	my $runName     = "runW${workloadNum}";
 
-	my $json     = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/0.95 ");
-
 	my $controllerUrl = $self->getControllerURL();
 	my $url = "$controllerUrl/run/driversUp";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-
-	my $res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		my $jsonResponse = $json->decode( $res->content );
+	my $res = $self->doHttpGet($url);
+	if ( $res->{"is_success"} ) {
+		my $jsonResponse = $self->json->decode( $res->{"content"} );
 
 		if ( $jsonResponse->{"isStarted"} ) {
 			return 1;
@@ -1662,22 +1577,11 @@ sub isStarted {
 
 	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
-	my $json     = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/0.95 ");
 
 	my $url = $self->getControllerURL() . "/run/$runName/start";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-
-	my $res = $ua->request($req);
-	$logger->debug(
-		"Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		my $jsonResponse = $json->decode( $res->content );
+	my $res = $self->doHttpGet($url);
+	if ( $res->{"is_success"} ) {
+		my $jsonResponse = $self->json->decode( $res->{"content"} );
 
 		if ( $jsonResponse->{"isStarted"} ) {
 			return 1;
@@ -2240,30 +2144,13 @@ sub getNumActiveUsers {
 
 	my %appInstanceToUsersHash;
 
-	my $ua = LWP::UserAgent->new;
-
-	$ua->timeout(300);
-	$ua->agent("Weathervane/1.0");
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
 	# Get the number of users on the primary driver
 	my $hostname = $self->host->name;
 	my $port     = $self->portMap->{'http'};
 
 	my $url = $self->getControllerURL() . "/run/$runName/users";
-	$logger->debug("Sending get to $url");
-
-	my $req = HTTP::Request->new( GET => $url );
-	$req->content_type('application/json');
-	$req->header( Accept => "application/json" );
-
-	my $res = $ua->request($req);
-	$logger->debug( "Response status line: " . $res->status_line );
-	my $contentHashRef = $json->decode( $res->content );
-	$logger->debug( "Response content:\n" . $res->content );
+	my $res = $self->doHttpGet($url);
+	my $contentHashRef = $self->json->decode( $res->{"content"} );
 	my $workloadActiveUsersRef = $contentHashRef->{'workloadActiveUsers'};
 	foreach my $appInstance ( keys %$workloadActiveUsersRef ) {
 		my $numUsers = $workloadActiveUsersRef->{$appInstance};
@@ -2280,16 +2167,9 @@ sub getNumActiveUsers {
 		$port     = $secondary->portMap->{'http'};
 
 		$url = $self->getControllerURL() . "/run/$runName/users";
-		$logger->debug("Sending get to $url");
 
-		$req = HTTP::Request->new( GET => $url );
-		$req->content_type('application/json');
-		$req->header( Accept => "application/json" );
-
-		$res = $ua->request($req);
-		$logger->debug( "Response status line: " . $res->status_line );
-		$contentHashRef = $json->decode( $res->content );
-		$logger->debug( "Response content:\n" . $res->content );
+	    $res = $self->doHttpGet($url);
+		$contentHashRef = $self->json->decode( $res->{"content"} );
 		my $workloadActiveUsersRef = $contentHashRef->{'workloadActiveUsers'};
 		foreach my $appInstance ( keys %$workloadActiveUsersRef ) {
 			my $numUsers = $workloadActiveUsersRef->{$appInstance};
@@ -2314,15 +2194,6 @@ sub setNumActiveUsers {
 
 	my %appInstanceToUsersHash;
 
-	my $ua = LWP::UserAgent->new;
-
-	$ua->timeout(300);
-	$ua->agent("Weathervane/1.0");
-
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-
 	# Need to divide the number of users across the number of workload
 	# driver nodes.
 	my $secondariesRef = $self->secondaries;
@@ -2339,22 +2210,15 @@ sub setNumActiveUsers {
 		my $port     = $driver->portMap->{'http'};
 		my $url =
 		  $self->getControllerURL() . "/run/$runName/workload/$appInstanceName/users";
-		$logger->debug("Sending POST to $url");
 
 		my $changeMessageContent = {};
 		$changeMessageContent->{"numUsers"} = $users;
-		my $content = $json->encode($changeMessageContent);
+		my $content = $self->json->encode($changeMessageContent);
 
 		$logger->debug("Content = $content");
-		my $req = HTTP::Request->new( POST => $url );
-		$req->content_type('application/json');
-		$req->header( Accept => "application/json" );
-		$req->content($content);
 
-		my $res = $ua->request($req);
-		$logger->debug( "Response status line: " . $res->status_line );
-		my $contentHashRef = $json->decode( $res->content );
-		$logger->debug( "Response content:\n" . $res->content );
+		my $res = $self->doHttpPost($url,$content);
+		my $contentHashRef = $self->json->decode( $res->{"content"} );
 
 		$driverNum++;
 	}
@@ -2428,20 +2292,11 @@ sub parseStats {
 	my $suffix          = $self->workload->suffix;
 	
 	# Get the final stats summary from the workload driver
-	my $json = JSON->new;
-	$json = $json->relaxed(1);
-	$json = $json->pretty(1);
-	my $ua = LWP::UserAgent->new;
-	$ua->agent("Weathervane/1.0 ");
 	my $url = $self->getControllerURL() . "/run/$runName/state";
-	$logger->debug("Sending get to $url");
-	my $req = HTTP::Request->new( GET => $url );
-	my $res = $ua->request($req);
+	my $res = $self->doHttpGet($url);
 	my $runStatus;
-	$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
-	if ( $res->is_success ) {
-		$logger->debug("Final status content: " . $res->content);
-		$runStatus = $json->decode( $res->content );			
+	if ( $res->{"is_success"} ) {
+		$runStatus = $self->json->decode( $res->{"content"} );			
 	} else {
 		$console_logger->warn("Could not retrieve final run state for workload $workloadNum");
 		return 0;
@@ -2518,14 +2373,10 @@ sub parseStats {
 		# Get the statsSummary for the max passing interval
 		my $loadPathName = $workloadStatus->{"loadPathName"};
 		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$appInstanceName/specName/$loadPathName/intervalName/$maxPassIntervalName/rollup";
-		$logger->debug("Sending get to $url");
-		$req = HTTP::Request->new( GET => $url );
-		$res = $ua->request($req);
+		$res = $self->doHttpGet($url);
 		my $statsSummaryRollup;
-		$logger->debug("Response status line: " . $res->status_line . " for url " . $url );
-		if ( $res->is_success ) {
-			$logger->debug("MaxPassInterval statsSummary: " . $res->content);
-			$statsSummaryRollup = $json->decode( $res->content )->{'statsSummaryRollup'};			
+		if ( $res->{"is_success"} ) {
+			$statsSummaryRollup = $self->json->decode( $res->{"content"} )->{'statsSummaryRollup'};			
 		} else {
 			$console_logger->warn("Could not retrieve max passing interval summary for workload $workloadNum");
 			return 0;

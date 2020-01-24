@@ -16,9 +16,12 @@ my $numNodes = $ENV{'CASSANDRA_NUM_NODES'};
 my $hostname = `hostname`;
 chomp($hostname);
 if ($ENV{'CASSANDRA_USE_IP'}) {
-	$hostname = `hostname -i`;
-	chomp($hostname);
-	$seeds = $hostname . "," . $seeds;
+	my $hostnameIp = `hostname -i`;
+	chomp($hostnameIp);
+	if ($hostname =~ /cassandra\-0/) {
+		$seeds = $hostnameIp . "," . $seeds;
+	}
+	$hostname = $hostnameIp;
 }
 
 print "configure cassandra. \n";

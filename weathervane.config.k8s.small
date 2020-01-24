@@ -11,19 +11,19 @@
       "name" : "appCluster", 
       "kubeconfigFile" : "/root/.kube/config",
       "kubeconfigContext" : "cluster-context-1",
-      "useLoadBalancer" : true,
     },
     { 
       "name" : "driverCluster", 
       "kubeconfigFile" : "/root/.kube/config",
       "kubeconfigContext" : "cluster-context-2",
-      "useLoadBalancer" : true,
     },
   ],
 
   "driverCluster" : "driverCluster",
 
   "appInstanceCluster" : "appCluster",
+  "appIngressMethod" : "loadbalancer",
+
   "cassandraDataStorageClass" : "weathervanesc",
   "postgresqlStorageClass" : "weathervanesc",
   "nginxCacheStorageClass" : "weathervanesc",

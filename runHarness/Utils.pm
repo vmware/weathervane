@@ -13,9 +13,9 @@ BEGIN {
 	  qw( createDebugLogger callMethodOnObjectsParallel callMethodsOnObjectParallel
 	  callMethodsOnObjectParallel1 callMethodsOnObject1 callMethodOnObjects1 callMethodOnObjects2 callBooleanMethodOnObjects2 
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
-	  callBooleanMethodOnObjectsParallel3
+	  callBooleanMethodOnObjectsParallel3 callBooleanMethodOnObjectsParallel3BatchDelay
 	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-	  callMethodOnObjectsParamListParallel1 runCmd);
+	  callMethodOnObjectsParamListParallel1 runCmd callBooleanMethodOnObjectsParallel2BatchDelay);
 }
 
 sub createDebugLogger {
@@ -255,6 +255,45 @@ sub callBooleanMethodOnObjectsParallel2 {
 	return $retval;
 }
 
+sub callBooleanMethodOnObjectsParallel2BatchDelay {
+	my ( $method, $objectsRef, $param1, $param2, $batchSize, $delaySec ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Util");
+	my @pids;
+	my $pid;
+	my $objectNum = 0;
+
+	foreach my $object (@$objectsRef) {
+		if ($objectNum == $batchSize) {
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
+			sleep($delaySec);
+			$objectNum = 0;
+		}
+		$objectNum++;
+		
+		$pid = fork();
+		if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}
+		elsif ( $pid == 0 ) {
+			exit( $object->$method( $param1, $param2 ) );
+		}
+		else {
+			push @pids, $pid;
+		}
+	}
+
+	my $retval = 1;
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+		if ( !$? ) {
+			$retval = 0;
+		}
+	}
+	return $retval;
+}
+
 sub callBooleanMethodOnObjectsParallel3 {
 	my ( $method, $objectsRef, $param1, $param2, $param3 ) = @_;
 	my $console_logger = get_logger("Console");
@@ -262,6 +301,45 @@ sub callBooleanMethodOnObjectsParallel3 {
 	my $pid;
 
 	foreach my $object (@$objectsRef) {
+		$pid = fork();
+		if ( !defined $pid ) {
+			$console_logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}
+		elsif ( $pid == 0 ) {
+			exit( $object->$method( $param1, $param2, $param3 ) );
+		}
+		else {
+			push @pids, $pid;
+		}
+	}
+
+	my $retval = 1;
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+		if ( !$? ) {
+			$retval = 0;
+		}
+	}
+	return $retval;
+}
+
+sub callBooleanMethodOnObjectsParallel3BatchDelay {
+	my ( $method, $objectsRef, $param1, $param2, $param3, $batchSize, $delaySec ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Util");
+	my @pids;
+	my $pid;
+	my $objectNum = 0;
+
+	foreach my $object (@$objectsRef) {
+		if ($objectNum == $batchSize) {
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
+			sleep($delaySec);
+			$objectNum = 0;
+		}
+		$objectNum++;
+
 		$pid = fork();
 		if ( !defined $pid ) {
 			$console_logger->error("Couldn't fork a process: $!");

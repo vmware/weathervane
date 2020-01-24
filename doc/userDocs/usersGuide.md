@@ -12,6 +12,8 @@ Contents:
 - [Run Output Details](#output)
 - [Troubleshooting](#troubleshooting)
 - [Advanced Topics](#advanced)
+- [Running on Specific Cluster Types](#specific)
+
 
 ## Introduction<a name="intro"></a>
 
@@ -90,7 +92,6 @@ More detailed [instructions](#setup) are included in later sections.
 Weathervane requires at least one existing Kubernetes cluster and a client system.
 - Kubernetes cluster:
     - You must have a kubeconfig file with [credentials](#credentials) for the cluster.
-    - The cluster must support either NodePort or LoadBalancer [services](#loadbalancer).
     - There must be at least one [StorageClass](#storageclass) defined on the cluster.
 - Client system:
     - Configure a workstation (MacOS or Linux) or a Linux VM with the required software:
@@ -99,9 +100,7 @@ Weathervane requires at least one existing Kubernetes cluster and a client syste
         - Git (https://git-scm.com/downloads)
         - The kubeconfig file must be accessible by this client system.
 
-Most uses of Weathervane might [use](#configuring-clusters) multiple clusters or node labels.
-
-### Quickstart Setup
+### Quickstart Setup<a name="quickstart-setup"></a>
 
 #### Obtain Weathervane from GitHub
 
@@ -141,7 +140,26 @@ The image below shows the lines that need to be edited in the configuration file
 2. Update *kubeconfigFile* to the full path to your kubeconfig file.  The paths will be identical if using a single cluster for both the app and driver.
 3. Update *kubeconfigContext* parameters with the name of the context for your cluster from the kubeconfig file, such as `kubernetes-admin@kubernetes`.
     - Set an empty string (`""`) to use the current-context defined in the kubeconfigFile.
-4. Set *useLoadBalancer* to `true` if your cluster supports LoadBalancer services. Otherwise, set it to `false` to use a NodePort for ingress.
+4. Choose a value for *appIngressMethod* that reflects the method you want to use
+  for communication between the workload drivers and the applications. You can choose 
+  from among:
+    - `loadbalancer`: Traffic from the workload drivers to the applications will
+          use the external IP address of a Kubernetes LoadBalancer service. This 
+          may be desirable even when the workload drivers and applications are running 
+          on the same cluster in order to load-test the complete networking 
+          stack of your cluster. The cluster on which the applications run must 
+          support provisioning external IP addresses for LoadBalancer services. 
+    - `nodeport`: Traffic from the workload drivers to the applications will
+          use the external IP addresses of the Kubernetes Nodes via a NodePort service. This 
+          may be desirable even when the workload drivers and applications are running 
+          on the same cluster in order to load-test the complete networking 
+          stack of your cluster. The cluster on which the applications run must 
+          support exposing the node IP addresses externally using NodePort services.
+    - `clusterip`: Traffic from the workload drivers to the applications will use a 
+          cluster internal address provisioned by a Kubernetes ClusterIP service.  This 
+          choice will only work if the workload drivers and applications are running 
+          on the same cluster.
+            
 5. Update *StorageClass* parameters with the names of one or more storage classes defined on your cluster.
 
 Notes:
@@ -206,15 +224,40 @@ Handling clusters whose credential expire is discussed [below](#expire).
 When using both a driverCluster and appCluster, you can use separate kubeconfig files for each cluster,
 or use one file with multiple contexts. More information about using multiple contexts in a kubeconfig file is located at (https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
 
-#### NodePort and LoadBalancer Services<a name="loadbalancer"></a>
+#### Configuring Driver to Application Communication<a name="appingressmethod"></a>
 
-The application instances can use either a NodePort or LoadBalancer service to enable incoming communication from the workload driver pods (https://kubernetes.io/docs/concepts/services-networking/service/).
-Most clusters will support at least one of these ingress methods, and some may support both.
-You will need to check the documentation for your cluster to determine which is supported.
+The Weathervane workload driver interacts with the Weathervane application through a Kubernetes service fronting the application's web-server 
+tier. Weathervane 
+allows the user to select the type of Kubernetes service to be used.  Your selection will depend 
+on the types of services supported by your cluster and the goals of your tests.  
 
-Using a LoadBalancer service may be more performant than a NodePort, and is more likely to match the way the cluster would be used in a production environment.
-As a result, if your cluster supports both types of services, we recommend using LoadBalancer services by setting *useLoadBalancer* to `true` in your configuration file.
+Weathervane supports the use of 
+[LoadBalancer, NodePort, or ClusterIP services](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types).   You 
+indicate the type of service you want to use by setting the *appIngressMethod* parameter 
+to `loadbalancer`, `nodeport`, or `clusterip`.  The default value for this parameter 
+is `loadbalancer`.  Note that cluster created manually using kubeadm will likely not 
+support LoadBalancer services.  In that case you will need to use either NodePort or 
+ClusterIP services.
+
+When you are running the workload drivers and applications on separate clusters, you 
+can choose between LoadBalancer and NodePort services.  Most 
+clusters will support at least one of these ingress methods, and some may support both.
+You will need to check the documentation for your cluster to determine which is supported. If 
+using LoadBalancer services is the typical ingress method for your cluster, then you 
+should use LoadBalancer services in order to ensure that your performance tests include 
+the entire network stack.  When using NodePort services the network traffic between 
+the drivers and applications is routed directly to the external IP addresses of the 
+Kubernetes nodes, and does not use any LoadBalancers provisioned by your infrastructure.
+
 Please note that depending on your cluster provider there may be a cost associated with LoadBalancer services. Check with your provider for more details.
+
+When you are running the workload drivers and applications on the same cluster, you 
+can choose among ClusterIP, LoadBalancer, and NodePort services.  With ClusterIP services 
+the network traffic will be directed to IP addresses internal to the cluster, and will 
+not require externally visible addresses.  This may simplify deployment in some cases, 
+but it will not stress the parts of the network stack that manage directing traffic 
+from external to internal addresses.  If the performance of those components is important, 
+you should use either LoadBalancer or NodePort services.
 
 
 #### Configuring Persistent Storage<a name="storageclass"></a>
@@ -677,18 +720,18 @@ used in the configuration file:
     "name" : "appCluster", 
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-1",
-    "useLoadBalancer" : true,
   },
   { 
     "name" : "driverCluster", 
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-2",
-    "useLoadBalancer" : true,
   },
 ],
 
   "driverCluster" : "driverCluster",
   "appInstanceCluster" : "appCluster",
+  "appIngressMethod" : "nodeport",
+
   "cassandraDataStorageClass" : "weathervanesc",
   "postgresqlStorageClass" : "weathervanesc",
   "nginxCacheStorageClass" : "weathervanesc",
@@ -712,7 +755,8 @@ where `yourRepository` is your Docker Hub username or the hostname and port of y
 #### Specifying Kubernetes Clusters
 
 The `kubernetesClusters` block describes the Kubernetes cluster(s) on which Weathervane runs. This is a 
-JSON list of JSON objects, where each object represents a Kubernetes cluster. At least one Kubernetes cluster must be specified, and the parameters `name`, `kubeconfigFile`, `kubeconfigContext` and `useLoadBalancer` must be specified for each cluster.  See [Configuring Kubernetes Cluster(s) for Weathervane](#configuring-clusters) for details.
+JSON list of JSON objects, where each object represents a Kubernetes cluster. At least one Kubernetes cluster must be specified, and the parameters `name`, `kubeconfigFile`, and 
+`kubeconfigContext` must be specified for each cluster.  See [Configuring Kubernetes Cluster(s) for Weathervane](#configuring-clusters) for details.
 
 ##### name<a name="kubernetesClusters-name"></a>
 
@@ -744,14 +788,6 @@ The `kubeconfigContext` parameter specifies the name of the context for your clu
 
 where `kubernetes-admin@kubernetes` is the name of your cluster's context. 
 
-##### useLoadBalancer
-
-The `useLoadBalancer` parameter specifies whether application instances use a NodePort or LoadBalancer service to enable incoming communication from the workload driver pods. See [NodePort and LoadBalancer Services](#loadbalancer) for details.
-
-| Configuration Parameter: useLoadBalancer                     |
-| ------------------------------------------------------------ |
-| `"useLoadBalancer" : true,`<BR>or<BR>`"useLoadBalancer" : false,` |
-
 #### Selecting Kubernetes Clusters<a name="selecting-clusters"></a>
 
 The `driverCluster` and `appInstanceCluster` parameters specify which clusters in `kubernetesClusters` should be used to host workload driver pods and Auction application pods respectively.
@@ -765,6 +801,19 @@ The `driverCluster` and `appInstanceCluster` parameters specify which clusters i
 | `"appInstanceCluster" : "appCluster",`      |
 
 where `driverCluster` and `appCluster` are the names of the workload driver cluster and Auction application cluster respectively. These names should be one of the `name` values specified in `kubernetesClusters`. See the [name configuration parameter](#kubernetesClusters-name).
+
+#### Selecting the Application Service Type
+
+The `appIngressMethod` parameter specifies which type of Kubernetes service to provision 
+for access to the applications from the workload drivers.  
+
+| Configuration Parameter: appIngressMethod                     |
+| ------------------------------------------------------------ |
+| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
+
+The possible values `loadbalancer`, `nodeport`, and `clusterip` correspond to Kubernetes 
+LoadBalancer, NodePort, and ClusterIP services. The default is `loadbalancer`.  See [Configuring Driver to Application Communication](#appingressmethod) for details.
+
 
 #### Storage Classes
 
@@ -1137,7 +1186,7 @@ Configuration parameters not mentioned here have an empty string as the default 
 | `runStrategy`               | `findMaxSingleRun`            |
 | `numAppInstances`           | `1`                           |
 | `kubeconfigFile`            | `~/.kube/config`              |
-| `useLoadBalancer`           | `TRUE`                        |
+| `appIngressMethod`          | `loadbalancer`                |
 | `cassandraDataStorageClass` | `weathervanesc`               |
 | `posgresqlStorageClass`     | `weathervanesc`               |
 | `nginxCacheStorageClass`    | `weathervanesc`               |
@@ -1356,4 +1405,88 @@ As a result, when using node labels it is recommended that you label all of your
 worker nodes with either `wvrole=driver` or `wvrole=sut`.  This will give you the 
 best control over pod placement.
 
+## Running on Specific Cluster Types<a name="specific"></a>
 
+### Overview
+
+This section discusses specific requirements, parameter settings, and any extra steps necessary 
+to run Weathervane on specific types of Kubernetes clusters or cluster providers.   This 
+information is intended to augment the instructions in the [Quickstart Guide](#quickstart-guide).
+
+The information contained in this section should be used as follows.
+* If the information for your cluster type or provider contains a _Cluster Set-Up Requirements_ section, 
+  then refer to that section when configuring your Kubernetes cluster.
+* If the information for your cluster type or provider contains a _Weathervane Configuration_ section, 
+  then refer to that section for required parameter values when completing the [configuration step](#quickstart-config) 
+  of the [quickstart setup](#quickstart-setup).
+
+### Running on Minikube
+
+This section discusses requirements and configuration settings for running Weathervane on a laptop 
+or workstation using a 
+Kubernetes cluster created with [Minikube](https://minikube.sigs.k8s.io/docs/start/). 
+
+#### Cluster Set-Up Requirements
+
+In order to run Weathervane with a single Micro instance, you must create your Minikube 
+cluster with at least 3 cpus and 8GB of memory.  In addition, the default-storageclass 
+addon must be enabled (this is the default).  The micro instance will also use 15.25GB 
+of disk space.
+
+The command to start Minikube with 3 cpus and 8Gb is :
+* `minikube start --cpus=3 --memory=8g`
+
+Note that even with this cluster configuration, Minikube may have trouble running Weathervane 
+depending on how much memory is configured on the laptop and what else is 
+running.
+
+#### Weathervane Configuration
+
+In order to run Weathervane on Minikube, you need to use the following configuration 
+parameter values:
+
+| Parameter | Value |
+|-----------|-------|
+| appIngressMethod | clusterip |
+| cassandraDataStorageClass | standard |
+| postgresqlStorageClass | standard |
+| nginxCacheStorageClass | standard |
+
+
+The following is an example configuration file for use with Minikube.  To use this 
+configuration file you should:
+* Replace `yourNamespace` for the `dockerNamespace` parameter with the appropriate value 
+  for the registry to which you pushed the Weathervane images.  As discussed [above](#building), 
+  this may be your DockerHub username, or the hostname and port of a private Docker 
+  registry.
+* Update the path for the `kubeconfigFile` parameter with the path to your kubeconfig 
+  file.
+
+```json
+{
+  "description" : "minikube, micro",
+
+  "configurationSize": "micro",
+
+  "runStrategy" : "fixed",
+
+  "dockerNamespace" : "yourNamespace",
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "miniCluster", 
+      "kubeconfigFile" : "/yourPath/.kube/config",
+      "kubeconfigContext" : "minikube",
+    },
+  ],
+
+  "driverCluster" : "miniCluster",
+
+  "appInstanceCluster" : "miniCluster",
+  "appIngressMethod" : "clusterip",
+
+  "cassandraDataStorageClass" : "standard",
+  "postgresqlStorageClass" : "standard",
+  "nginxCacheStorageClass" : "standard",
+
+}
+```

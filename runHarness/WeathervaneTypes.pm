@@ -68,8 +68,13 @@ our %workloadProfiles = (
 
 # These are all of the appInstance sizes that are supported for each workload
 our %appInstanceSizes = (
-	"auction" => ["micro", "microLowCpu", "small", "smallLowCpu", "medium"],
-	);
+    "auction" => ["micro", "microLowCpu", "small", "smallLowCpu", "medium"],
+    );
+
+# These are the allowed values for appIngressMethod
+our %appIngressMethods = (
+    "auction" => ["loadbalancer", "nodeport", "clusterip",],
+    );
 
 # Define a ServiceType to be one of a set of strings
 subtype ServiceType, as Str, where { $_ ~~ @{$serviceTypes{'auction'}} }, message { "That is not a valid Weathervane ServiceType" };

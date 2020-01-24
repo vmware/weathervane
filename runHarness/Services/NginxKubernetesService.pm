@@ -93,11 +93,13 @@ sub configure {
 			}
 		}
 		elsif ( $inline =~ /(\s+)type:\s+LoadBalancer/ ) {
-			my $useLoadbalancer = $self->host->getParamValue('useLoadBalancer');
-			if (!$useLoadbalancer) {
-				print FILEOUT "${1}type: NodePort\n";				
-			} else {
-				print FILEOUT $inline;		
+            my $appIngressMethod = $self->getParamValue("appIngressMethod");
+			if ($appIngressMethod eq "clusterip") {
+                print FILEOUT "${1}type: ClusterIP\n";               			  	
+			} elsif ($appIngressMethod eq "loadbalancer") {
+                print FILEOUT $inline;      
+	   	    } elsif ($appIngressMethod eq "nodeport") {
+                print FILEOUT "${1}type: NodePort\n";               
 			}
 		}
 		elsif ( $inline =~ /(\s+)resources/ )  {

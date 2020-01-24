@@ -529,6 +529,13 @@ $parameters{"appInstance"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+$parameters{"appIngressMethod"} = {
+    "type"      => "=s",
+    "default"   => "loadbalancer",
+    "parent"    => "workload",
+    "usageText" => "Specifies the method to be used to enable ingress to the Weathervane Auction application.  Valid values are: loadbalancer, nodeport, and clusterip.",
+    "showUsage" => 1,
+};
 
 $parameters{"dataManager"} = {
 	"type"      => "hash",
@@ -568,14 +575,6 @@ $parameters{"kubeconfigContext"} = {
 	"usageText" => "This is the context to use from within the kubeconfig file.",
 	"showUsage" => 1,
 };
-$parameters{"useLoadBalancer"} = {
-	"type"      => "!",
-	"default"   => JSON::true,
-	"parent"    => "kubernetesCluster",
-	"usageText" => "If true, applications will use LoadBalancer Services for ingress on this cluster.",
-	"showUsage" => 1,
-};
-
 
 $parameters{"dockerHost"} = {
 	"type"      => "hash",
@@ -2542,14 +2541,6 @@ $parameters{"esxDatastorePath"} = {
 $parameters{"workloadProfile"} = {
 	"type"      => "=s",
 	"default"   => "official2",
-	"parent"    => "workload",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"appInstanceSize"} = {
-	"type"      => "=s",
-	"default"   => "custom",
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

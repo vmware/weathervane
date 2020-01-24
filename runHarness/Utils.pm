@@ -265,7 +265,7 @@ sub callBooleanMethodOnObjectsParallel2BatchDelay {
 
 	foreach my $object (@$objectsRef) {
 		if ($objectNum == $batchSize) {
-			$logger->debug("Pausing for $delaySec to allow services to start.\n";)
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
 			sleep($delaySec);
 			$objectNum = 0;
 		}
@@ -334,7 +334,7 @@ sub callBooleanMethodOnObjectsParallel3BatchDelay {
 
 	foreach my $object (@$objectsRef) {
 		if ($objectNum == $batchSize) {
-			$logger->debug("Pausing for $delaySec to allow services to start.\n";)
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
 			sleep($delaySec);
 			$objectNum = 0;
 		}

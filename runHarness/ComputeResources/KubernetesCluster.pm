@@ -1293,6 +1293,12 @@ override 'stopStatsCollection' => sub {
 	$self->kubernetesStopTops();
 };
 
+sub equals {
+	my ( $this, $that ) = @_;
+
+	return ($this->getParamValue('kubeconfigFile') eq $that->getParamValue('kubeconfigFile')) &&
+		   ($this->getParamValue('kubeconfigContext') eq $that->getParamValue('kubeconfigContext'));
+}
 
 __PACKAGE__->meta->make_immutable;
 

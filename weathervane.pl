@@ -539,11 +539,11 @@ if ((getParamValue($paramsHashRef, "runStrategy") eq 'findMax')
 }
 
 if (getParamValue($paramsHashRef, "numQosPeriods") <= 0) {
-	die("The value for the numQosPeriods parameter must be greater than 0.");
+	die("The value for the numQosPeriods parameter must be greater than 0.\n");
 }
 
 if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
-	die("The value for the qosPeriodSec parameter must be greater than 0.");
+	die("The value for the qosPeriodSec parameter must be greater than 0.\n");
 }
 
 if (getParamValue( $paramsHashRef, "findMaxStopPct" ) <= 0) {
@@ -597,11 +597,26 @@ foreach my $paramHashRef (@$hostsParamHashRefs) {
 $instancesListRef = $runProcedureParamHashRef->{"kubernetesClusters"};
 my $clustersParamHashRefs =
   Parameters::getInstanceParamHashRefs( $paramsHashRef, $runProcedureParamHashRef, $instancesListRef, "kubernetesClusters");
+my @clusters;
 foreach my $paramHashRef (@$clustersParamHashRefs) {
 	$logger->debug( "For kubernetesCluster ", $paramHashRef->{'name'}, " the Param hash ref is:" );
 	my $tmp = $json->encode($paramHashRef);
 	$logger->debug($tmp);
 	my $cluster = createKubernetesCluster( $paramHashRef, $runProcedure, \%nameToComputeResourceHash );
+	push @clusters, $cluster;
+}
+
+# If using clusterip for appIngressMethod, make sure that all specified
+# kubernetesClusters actually refer to the same cluster
+if (getParamValue( $paramsHashRef, "appIngressMethod" ) eq "clusterip") {
+	foreach my $thisCluster (@clusters) {
+		foreach my $thatCluster (@clusters) {
+			if (!($thisCluster->equals($thatCluster))) {
+				$console_logger->error("When using clusterip for appIngressMethod, all components must run on the same Kubernetes cluster.\n");
+				exit(1);
+			}
+		}
+	}	
 }
 
 # Get the parameters for the workload instances

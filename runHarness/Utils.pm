@@ -258,12 +258,14 @@ sub callBooleanMethodOnObjectsParallel2 {
 sub callBooleanMethodOnObjectsParallel2BatchDelay {
 	my ( $method, $objectsRef, $param1, $param2, $batchSize, $delaySec ) = @_;
 	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Util");
 	my @pids;
 	my $pid;
 	my $objectNum = 0;
 
 	foreach my $object (@$objectsRef) {
 		if ($objectNum == $batchSize) {
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
 			sleep($delaySec);
 			$objectNum = 0;
 		}
@@ -325,12 +327,14 @@ sub callBooleanMethodOnObjectsParallel3 {
 sub callBooleanMethodOnObjectsParallel3BatchDelay {
 	my ( $method, $objectsRef, $param1, $param2, $param3, $batchSize, $delaySec ) = @_;
 	my $console_logger = get_logger("Console");
+	my $logger         = get_logger("Weathervane::Util");
 	my @pids;
 	my $pid;
 	my $objectNum = 0;
 
 	foreach my $object (@$objectsRef) {
 		if ($objectNum == $batchSize) {
+			$logger->debug("Pausing for $delaySec to allow services to start.\n");
 			sleep($delaySec);
 			$objectNum = 0;
 		}

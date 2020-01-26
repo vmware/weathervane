@@ -165,6 +165,7 @@ sub prepareDataServices {
 		# Delete the PVCs for this namespace and try again
 		$console_logger->info(
 			"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
+		$appInstance->stopServices("data", $logPath);
 		my $cluster = $self->host;
 		my $namespace = $self->appInstance->namespace;
 		$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $namespace );

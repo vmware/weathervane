@@ -251,7 +251,7 @@ override 'startDrivers' => sub {
 override 'doHttpPost' => sub {
 	my ( $self, $url, $content) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
-	$logger->debug("doHttpPost: Sending POST to $url.  content = $content");
+	$logger->debug("doHttpPost: Sending POST to $url.");
 
 	# Write the content into a local file
 	my $namespace = $self->namespace;

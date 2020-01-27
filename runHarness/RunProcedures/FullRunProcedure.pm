@@ -56,7 +56,7 @@ override 'run' => sub {
 		return $runResult;
 	}
 
-	$console_logger->info("Starting run number $seqnum");
+	$console_logger->info("Starting Workload Drivers");
 
 	# initialize the workload drivers
 	$ok = $self->initializeWorkloads( $seqnum, $tmpDir );
@@ -77,6 +77,8 @@ override 'run' => sub {
 	if ($interactive) {
 		$self->interactiveMode();
 	}
+
+	$console_logger->info("Starting run number $seqnum");
 	
 	## start the workload driver and wait until it is done
 	$ok = $self->runWorkloads( $seqnum, $tmpDir );

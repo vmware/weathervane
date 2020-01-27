@@ -171,6 +171,7 @@ sub run {
 
 	# Make sure that all of the services are up
 	$debug_logger->debug("Check isUp");
+	$console_logger->info("Checking that all services are up.");
 	$allUp = $self->isUp($setupLogDir);
 	if ( !$allUp ) {
 		$self->cleanupAfterFailure( "Couldn't start all application services for run $seqnum. Exiting.", $seqnum, $tmpDir );

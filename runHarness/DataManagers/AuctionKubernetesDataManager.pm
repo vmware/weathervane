@@ -161,7 +161,7 @@ sub prepareDataServices {
 	}
 	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
 	
-	if (!$allIsStarted) {
+	if (!$allIsStarted && $self->getParamValue("reloadOnFailure")) {
 		# Delete the PVCs for this namespace and try again
 		$console_logger->info(
 			"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );

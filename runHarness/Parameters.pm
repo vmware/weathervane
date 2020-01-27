@@ -1096,6 +1096,13 @@ $parameters{"reloadDb"} = {
 	"usageText" => "Force the harness to reload the database even if it is already loaded.",
 	"showUsage" => 1,
 };
+$parameters{"reloadOnFailure"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runProc",
+	"usageText" => "Reload the data for an instance if the harness is unable to start the services.",
+	"showUsage" => 1,
+};
 $parameters{"fullFilePath"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

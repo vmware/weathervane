@@ -1440,6 +1440,15 @@ Note that even with this cluster configuration, Minikube may have trouble runnin
 depending on how much memory is configured on the laptop and what else is 
 running.
 
+In addition, there is a known issue with Minikube that prevents a Kubernetes pod from 
+contacting itself through its Service name or IP.  This will prevent the Weathervane 
+workload driver from starting properly.  To work around this issue, you need to issue 
+the following commands after your Minikube instance is started:
+```
+minikube ssh
+sudo ip link set docker0 promisc on
+```
+
 #### Weathervane Configuration
 
 In order to run Weathervane on Minikube, you need to use the following configuration 

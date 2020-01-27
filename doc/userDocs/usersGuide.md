@@ -1318,6 +1318,19 @@ To clear up any data services issues, it is recommended to delete the Persistent
 
 The data will be reloaded on the next run with this instance.
 
+When performing a series of runs, see [above](#task-series), a data corruption issue in 
+one run can prevent all subsequent runs from starting.  In order to avoid this problem, 
+you can instruct Weathervane to automatically delete the PersistentVolumeClaims for 
+instances whose data services could not be started.  This is done using the `reloadOnFailure` 
+parameter. In order to have Weathervane delete PersistentVolumeClaims and retry 
+starting the data services, specify 
+
+`"reloadOnFailure" : true,`
+
+in your configuration file. Note that there can be reasons other than data corruption 
+that might prevent the data services from starting.  Setting `reloadOnFailure` to true 
+in these cases may result in unnecessary and possible lengthy reloads. 
+
 ## Advanced Topics<a name="advanced"></a>
 
 ### Overview
@@ -1439,6 +1452,15 @@ The command to start Minikube with 3 cpus and 8Gb is :
 Note that even with this cluster configuration, Minikube may have trouble running Weathervane 
 depending on how much memory is configured on the laptop and what else is 
 running.
+
+In addition, there is a known issue with Minikube that prevents a Kubernetes pod from 
+contacting itself through its Service name or IP.  This will prevent the Weathervane 
+workload driver from starting properly.  To work around this issue, you need to issue 
+the following commands after your Minikube instance is started:
+```
+minikube ssh
+sudo ip link set docker0 promisc on
+```
 
 #### Weathervane Configuration
 

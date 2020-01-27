@@ -233,7 +233,7 @@ open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n
 my $version = `cat version.txt`;
 chomp($version);
 
-# Build the executables in any of the images to be build 
+# Build the executables if any of the images to be built 
 # require the executables
 foreach my $imageName (@imageNames) {
 	my @needExecutableImageNames = qw(auctiondatamanager auctionworkloaddriver auctionappserverwarmer nginx tomcat auctionbidservice);

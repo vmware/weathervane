@@ -29,9 +29,26 @@ has 'kubectlTopNodeRunning' => (
 	default => 0,
 );
 
+has 'useAvailableNamespaces' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
+has 'availableNamespacesRef' => (
+	is      => 'rw',
+	isa     => 'ArrayRef',
+	default => sub { [] },
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-		
+
+	my $namespacesRef = $self->getParamValue("namespaces");
+	if ($#$namespacesRef >= 0) {
+		push @{$self->availableNamespacesRef}, @$namespacesRef;
+		$self->useAvailableNamespaces(1);
+	}	
 	super();
 };
 
@@ -132,6 +149,42 @@ override 'getConfigFiles' => sub {
     }
     close FILEOUT;
 };
+
+sub kubernetesGetNamespace {
+	my ( $self, $workloadNum, $appInstanceNum ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+
+	my $wkldInstanceString = "Workload $workloadNum";
+	if ($appInstanceNum) {
+		$wkldInstanceString .=", AppInstance $appInstanceNum"
+	} else {
+		$wkldInstanceString .=" drivers"				
+	}
+	$logger->debug("kubernetesGetNamespace: $wkldInstanceString");
+	
+	my $namespace;
+	if ($self->useAvailableNamespaces) {
+		my $availableNamespacesRef = $self->availableNamespacesRef;
+		$namespace = shift @$availableNamespacesRef;
+		if (!(defined $namespace)) {
+			$console_logger->error("There are not enough namespaces specified for cluster " . $self->name .
+			                        ". Could not assign a namespace to $wkldInstanceString.");
+			exit(1);
+		}
+	} else {
+		$namespace = $self->getParamValue("namespacePrefix") . "W$workloadNum";
+		if ($appInstanceNum) {
+			$namespace .= "I$appInstanceNum";
+		}
+		$namespace .= $self->getParamValue("namespaceSuffix");
+		if ($self->getParamValue("createNamespaces")) {
+			$self->kubernetesCreateNamespace($namespace);
+		}
+	}
+	$logger->debug("kubernetesGetNamespace: For $wkldInstanceString returning $namespace");	
+	return $namespace;
+}
 
 sub kubernetesCreateNamespace {
 	my ( $self, $namespaceName ) = @_;

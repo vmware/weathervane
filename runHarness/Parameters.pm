@@ -575,6 +575,37 @@ $parameters{"kubeconfigContext"} = {
 	"usageText" => "This is the context to use from within the kubeconfig file.",
 	"showUsage" => 1,
 };
+$parameters{"createNamespaces"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If set to false, Weathervane will not attempt to create namespaces.",
+	"showUsage" => 1,
+};
+$parameters{"namespacePrefix"} = {
+	"type"      => "=s",
+	"default"   => "auction",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the prefix to use when creating Kubernetes namespaces on this cluster.",
+	"showUsage" => 1,
+};
+$parameters{"namespaceSuffix"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the suffix to use when creating Kubernetes namespaces on this cluster.",
+	"showUsage" => 1,
+};
+$parameters{"namespaces"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is a list of available Kubernetes namespaces on this cluster." .
+		           "These namespaces must be created before starting a run.\n" . 
+		           "If specified, Weathervane will not create namespaces even is createNamespaces is true.",
+	"showUsage" => 1,
+};
+
 
 $parameters{"dockerHost"} = {
 	"type"      => "hash",

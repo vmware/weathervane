@@ -24,7 +24,8 @@ BEGIN {
 my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
 								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
-								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
+								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts',
+								 'namespaces');
 my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'warmUp', 'rampDown'  );
 
 my @filterConstants = ( 'tmpDir' );

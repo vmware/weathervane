@@ -173,9 +173,9 @@ sub kubernetesGetNamespace {
 			exit(1);
 		}
 	} else {
-		$namespace = $self->getParamValue("namespacePrefix") . "W$workloadNum";
+		$namespace = $self->getParamValue("namespacePrefix") . "w$workloadNum";
 		if ($appInstanceNum) {
-			$namespace .= "I$appInstanceNum";
+			$namespace .= "i$appInstanceNum";
 		}
 		$namespace .= $self->getParamValue("namespaceSuffix");
 		if ($self->getParamValue("createNamespaces")) {

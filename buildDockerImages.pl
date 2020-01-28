@@ -233,23 +233,30 @@ open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n
 my $version = `cat version.txt`;
 chomp($version);
 
-# Build the executables
-print "Building the executables.\n";
-print $fileout "Building the executables.\n";
+# Build the executables if any of the images to be built 
+# require the executables
+foreach my $imageName (@imageNames) {
+	my @needExecutableImageNames = qw(auctiondatamanager auctionworkloaddriver auctionappserverwarmer nginx tomcat auctionbidservice);
+	if (grep { $imageName eq $_ } @needExecutableImageNames) {
+		print "Building the executables.\n";
+		print $fileout "Building the executables.\n";
 
-# Create a .gradle directory and map it into the container
-# This will speed subsequent builds
-my $cwd = getcwd();
-`mkdir -p $cwd/.gradle`;
-my $cmdString = "docker run --name weathervane-builder --rm "
-              . "-v $cwd/.gradle:/root/.gradle " 
-              . "-v $cwd:/root/weathervane -w /root/weathervane " 
-              . "--entrypoint /root/weathervane/gradlew openjdk:8 release";
-runAndLog($fileout, $cmdString);
-my $exitValue=$? >> 8;
-if ($exitValue) {
-	print "Error: Building failed with exitValue $exitValue, check $logFile.\n";
-	exit;
+		# Create a .gradle directory and map it into the container
+		# This will speed subsequent builds
+		my $cwd = getcwd();
+		`mkdir -p $cwd/.gradle`;
+		my $cmdString = "docker run --name weathervane-builder --rm "
+        		      . "-v $cwd/.gradle:/root/.gradle " 
+              		  . "-v $cwd:/root/weathervane -w /root/weathervane " 
+                      . "--entrypoint /root/weathervane/gradlew openjdk:8 release";
+		runAndLog($fileout, $cmdString);
+		my $exitValue=$? >> 8;
+		if ($exitValue) {
+			print "Error: Building failed with exitValue $exitValue, check $logFile.\n";
+			exit;
+		}
+		last;
+	}
 }
 
 # Get the latest executables into the appropriate directories for the Docker images

@@ -149,12 +149,6 @@ sub prepareDataServices {
 	my $appInstance    = $self->appInstance;
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
-	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
-	my $logHandle;
-	open( $logHandle, ">$logName" ) or do {
-		$console_logger->error("Error opening $logName:$!");
-		return 0;
-	};
 
 	$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
@@ -166,8 +160,26 @@ sub prepareDataServices {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
+	
+	if (!$allIsStarted) {
+		if ($self->getParamValue("reloadOnFailure")) {
+			# Delete the PVCs for this namespace and try again
+			$console_logger->info(
+				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
+			$appInstance->stopServices("data", $logPath);
+			my $cluster = $self->host;
+			my $namespace = $self->appInstance->namespace;
+			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $namespace );
+			$allIsStarted = $appInstance->startServices("data", $logPath, 0);
+		} else {
+			$console_logger->info(
+				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum.\n" . 
+				"See the Troubleshooting section of the User's Guide for assistance.\n" . 			
+				"If this problem recurs, you can enable auto-remediation by setting \"reloadOnFailure\": true, in your configuration file.\n"
+				);			
+		}	
+	}
 
-	close $logHandle;
 	return $allIsStarted;
 }
 

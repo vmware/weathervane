@@ -178,18 +178,26 @@ sub kubernetesGetNamespace {
 			$namespace .= "i$appInstanceNum";
 		}
 		$namespace .= $self->getParamValue("namespaceSuffix");
-		if ($self->getParamValue("createNamespaces")) {
-			$self->kubernetesCreateNamespace($namespace);
+	}
+	
+	if ($self->getParamValue("createNamespaces")) {
+		$self->kubernetesCreateNamespace($namespace);
+	} else {
+		# Make sure that the namespace exists before returning
+		if (!$self->kubernetesNamespaceExists($namespace)) {
+			$console_logger->error("Namespace $namespace does not exist on cluster " . $self->name .
+		                        ". Either create it manually or set the parameter createNamespaces to true.");
+			exit(1);
 		}
 	}
 	$logger->debug("kubernetesGetNamespace: For $wkldInstanceString returning $namespace");	
 	return $namespace;
 }
 
-sub kubernetesCreateNamespace {
+sub kubernetesNamespaceExists {
 	my ( $self, $namespaceName ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesCreateNamespace: namespace $namespaceName");
+	$logger->debug("kubernetesNamespaceExists: namespace $namespaceName");
 
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
 	my $context = $self->getParamValue('kubeconfigContext');
@@ -198,7 +206,7 @@ sub kubernetesCreateNamespace {
 	  $contextString = "--context=$context";	
 	}
 
-	# First check if the namespace already exists
+	# check if the namespace already exists
 	my $cmd;
 	$cmd = "kubectl get namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
 	my ($cmdFailed, $outString) = runCmd($cmd);
@@ -208,12 +216,31 @@ sub kubernetesCreateNamespace {
 	foreach my $line (@lines) {
 		if ($line =~ /^$namespaceName/) {
 			# namespace already exists
-			return;
+			return 1;
 		}	
 	}
-	
-	$cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
-	($cmdFailed, $outString) = runCmd($cmd);
+	return 0;
+}
+
+sub kubernetesCreateNamespace {
+	my ( $self, $namespaceName ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesCreateNamespace: namespace $namespaceName");
+
+	# First check if the namespace already exists
+	if ($self->kubernetesNamespaceExists($namespaceName)) {
+		return;
+	}
+		
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	my $cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
+	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
 	}

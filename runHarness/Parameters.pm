@@ -601,9 +601,7 @@ $parameters{"namespaces"} = {
 	"type"      => "list",
 	"default"   => [],
 	"parent"    => "kubernetesCluster",
-	"usageText" => "This is a list of available Kubernetes namespaces on this cluster." .
-		           "These namespaces must be created before starting a run.\n" . 
-		           "If specified, Weathervane will not create namespaces even is createNamespaces is true.",
+	"usageText" => "This is a list of Kubernetes namespaces to use on this cluster.",
 	"showUsage" => 1,
 };
 

@@ -946,13 +946,14 @@ The default value is the empty string.
 The `namespaces` parameter specifies a list of namespace names to used by Weathervane 
 on this Kubernetes cluster. The value specified for this parameter must be a JSON list 
 of strings, each of which is a namespace name.  If a non-empty list is specified for 
-this parameter, then Weathervane will not generate namespace names for this cluster. 
-See [Configuring Namespaces](#namespaces) for more detail.
+this parameter, then Weathervane will ignore the values of `namespacePrefix` and `namespaceSuffix`, 
+and will not generate namespace names for this cluster. See [Configuring Namespaces](#namespaces) 
+for more detail.
   
 
-| Configuration Parameter: namespaceSuffix             |
+| Configuration Parameter: namespaces             |
 | ------------------------------------------------------ |
-| `"namespaceSuffix" : "",` |
+| `"namespaces" : "",` |
 
 The default value is an empty list.   
 

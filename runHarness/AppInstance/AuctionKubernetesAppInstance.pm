@@ -33,7 +33,8 @@ has 'imagePullPolicy' => (
 override 'initialize' => sub {
 	my ($self) = @_;
 	
-	$self->namespace("auctionw" . $self->workload->instanceNum . "i" . $self->instanceNum);
+	my $cluster = $self->host;
+	$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, $self->instanceNum));
 
 	if ($self->getParamValue('redeploy')) {
 	    $self->imagePullPolicy('Always');
@@ -72,11 +73,6 @@ override 'startServices' => sub {
 	my $logFile;
 	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
-	my $namespace = $self->namespace;
-	my $cluster = $self->host;
-	# Create the namespace and the namespace-wide resources
-	$cluster->kubernetesCreateNamespace($namespace);
-	
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
 		$self->workload->instanceNum,

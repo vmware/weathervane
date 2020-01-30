@@ -24,7 +24,8 @@ BEGIN {
 my @nonInstanceHashParameters = ("dockerServiceImages");
 my @nonInstanceListParameters = ('userLoadPath', 'kubernetesClusters', 'dockerHosts', 'driverHosts', 
 								 'dataManagerHosts', 'webServerHosts', 'appServerHosts', 'auctionBidServerHosts',
-								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts');
+								 'msgServerHosts', 'coordinationServerHosts', 'dbServerHosts', 'nosqlServerHosts',
+								 'namespaces');
 my @runLengthParams = ( 'numQosPeriods', 'qosPeriodSec', 'rampUp', 'warmUp', 'rampDown'  );
 
 my @filterConstants = ( 'tmpDir' );
@@ -575,6 +576,35 @@ $parameters{"kubeconfigContext"} = {
 	"usageText" => "This is the context to use from within the kubeconfig file.",
 	"showUsage" => 1,
 };
+$parameters{"createNamespaces"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If set to false, Weathervane will not attempt to create namespaces.",
+	"showUsage" => 1,
+};
+$parameters{"namespacePrefix"} = {
+	"type"      => "=s",
+	"default"   => "auction",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the prefix to use when creating Kubernetes namespaces on this cluster.",
+	"showUsage" => 1,
+};
+$parameters{"namespaceSuffix"} = {
+	"type"      => "=s",
+	"default"   => "",
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is the suffix to use when creating Kubernetes namespaces on this cluster.",
+	"showUsage" => 1,
+};
+$parameters{"namespaces"} = {
+	"type"      => "list",
+	"default"   => [],
+	"parent"    => "kubernetesCluster",
+	"usageText" => "This is a list of Kubernetes namespaces to use on this cluster.",
+	"showUsage" => 1,
+};
+
 
 $parameters{"dockerHost"} = {
 	"type"      => "hash",

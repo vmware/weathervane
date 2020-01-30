@@ -131,19 +131,18 @@ clean.dependsOn cleanDist
 project(':auctionWeb') {
 	apply plugin: 'war'
 	description = 'Auction Rich-Web Application'
-	task tar(type: Tar) {
+	task zip(type: Zip) {
 		from 'src/main/webapp'
-		compression = Compression.GZIP
 		destinationDir = file("build/libs")
 	}
-	artifacts { archives tar }
+	artifacts { archives zip }
 	task release(dependsOn: build) {
 	     doLast{
 		copy {
 			description "Copy artifacts to $rootDir/dist"
-			from tar.archivePath
+			from zip.archivePath
 			into file("$rootDir/dist/")
-			rename ('auctionWeb-.*tgz', 'auctionWeb.tgz')			
+			rename ('auctionWeb-.*zip', 'auctionWeb.zip')			
 		}
 		copy {
 			description "Copy artifacts to $rootDir/dist"

@@ -98,6 +98,7 @@ Weathervane requires at least one existing Kubernetes cluster and a client syste
         - Perl 5 (https://www.perl.org/get.html)
         - Docker Engine (https://docs.docker.com/install/)
         - Git (https://git-scm.com/downloads)
+        - The `unzip` utility
         - The kubeconfig file must be accessible by this client system.
 
 ### Quickstart Setup<a name="quickstart-setup"></a>
@@ -163,7 +164,10 @@ The image below shows the lines that need to be edited in the configuration file
 5. Update *StorageClass* parameters with the names of one or more storage classes defined on your cluster.
 
 Notes:
-- If your platform does not support creating namespaces using kubectl, then you must create the namespaces manually before the run. The workload drivers run in namespace `auctionw1`. The application runs in namespace `auctionw1i1`.
+- If your platform does not support creating namespaces using kubectl, then you must create the namespaces manually before the run. 
+  The workload drivers run in namespace `auctionw1`. The application runs in namespace `auctionw1i1`. For 
+  more information on configuring namespaces, including using specific namespace names, 
+  see [Configuring Namespaces](#namespaces) below.
 
 More details on the configuration file are available [here](#config).
 
@@ -258,6 +262,118 @@ not require externally visible addresses.  This may simplify deployment in some 
 but it will not stress the parts of the network stack that manage directing traffic 
 from external to internal addresses.  If the performance of those components is important, 
 you should use either LoadBalancer or NodePort services.
+
+#### Configuring Namespaces<a name="namespaces"></a>
+
+Weathervane runs each instance of the Auction application in a separate namespace. The 
+workload drivers also run in their own namespace.  The default names for the application 
+namespaces are __auctionw1i*n*__, where __*n*__ is the application's instance number.  The default 
+name for the workload driver namespace is __auctionw1__.  Weathervane will try 
+to create these namespaces if they don't already exist.
+
+It is possible to customize the names for the namespaces, as well as whether Weathervane 
+should try to create the namespaces, for each Kubernetes cluster specified in your 
+configuration file. Additional details about the configuration parameters discussed 
+in this section are provided in 
+[Specifying Kubernetes Clusters](#kubernetesClusters) below.
+
+
+##### Customizing the Generation of Namespace Names
+
+Weathervane generates the namespace names using three components:
+* A namespace prefix, which defaults to **auction**.
+* A unique identifier, which is __w1__ for the drivers and __w1i*n*__ for each application 
+  instance __*n*__.
+* A namespace suffix, which is blank by default.
+
+It is possible to change the strings used for the prefix and suffix using the parameters 
+`namespacePrefix` and `namespaceSuffix`.  These parameters are placed in the configuration 
+file within the definition of the Kubernetes cluster.
+
+For example, the following configuration file excerpt will use namespace names of the 
+form __appw1i*n*small__ for the cluster named *appCluster* and __driverw1small__ for 
+the cluster named *driverCluster*.
+
+```json
+"kubernetesClusters" : [ 
+  { 
+    "name" : "appCluster", 
+    "kubeconfigFile" : "/root/.kube/config",
+    "kubeconfigContext" : "cluster-context-1",
+    "namespacePrefix" : "app",
+    "namespaceSuffix" : "small",
+  },
+  { 
+    "name" : "driverCluster", 
+    "kubeconfigFile" : "/root/.kube/config",
+    "kubeconfigContext" : "cluster-context-2",
+    "namespacePrefix" : "driver",
+    "namespaceSuffix" : "small",
+  },
+],
+```
+
+The ability to specify a unique suffix is particularly useful when you are doing tests with different 
+configuration sizes on the same Kubernetes cluster.  Using a unique `namespaceSuffix` for 
+each configuration size will prevent the data services from being reloaded each time 
+you switch configuration size.
+
+##### Specifying Namespace Names
+
+There are situations in which namespace names must be used that do not fit the default or customized 
+name generation process.  Some examples are:
+* The namespace names must adhere to specific conventions
+* The namespaces are created and named by an administrator
+* The namespaces are created and named by an automated provisioning system
+
+In these cases, it is possible to use the `namespaces` parameter to provide a list of namespace names for each 
+Kubernetes cluster.  Weathervane will use namespace names from that list rather than 
+generating the namespace names.
+
+The following configuration file excerpt shows how to specify a list of namespace names. In 
+this example Weathervane will use *devNs1* and *devNs2* as the names for the workload driver 
+and application namespaces. 
+
+```json
+"kubernetesClusters" : [ 
+  { 
+    "name" : "k8sCluster", 
+    "kubeconfigFile" : "/root/.kube/config",
+    "kubeconfigContext" : "cluster-context-1",
+    "namespaces" : ["devNs1", "devNs2",],
+  },
+],
+```
+When specifying namespace names, you must provide at least one namespace name for each 
+application instance you plan to run on the cluster, plus one namespace name for the 
+workload drivers.  This means that if you are running the drivers and applications 
+on the same cluster you will need to specify a minimum of two namespaces. In this case 
+the first namespace will be used for the workload drivers and others for the application 
+instances.
+
+
+##### Disabling Namespace Creation
+
+On some Kubernetes clusters it is not possible to create namespaces using *kubectl*. 
+In this case you may want to prevent Weathervane from attempting to create a namespace. You 
+can do this by setting the `createNamespaces` parameter to false in your configuration 
+file, as shown in the following example:
+
+```json
+"kubernetesClusters" : [ 
+  { 
+    "name" : "k8sCluster", 
+    "kubeconfigFile" : "/root/.kube/config",
+    "kubeconfigContext" : "cluster-context-1",
+    "createNamespaces" : false,
+  },
+],
+```
+
+If you set `createNamespaces` to false, you must manually create the namespaces prior 
+to running Weathervane.  The names used for the namespaces must match those that will 
+be generated by Weathervane, or that were explictly specified using the `namespaces` 
+parameter.  See the previous sections for details.
 
 
 #### Configuring Persistent Storage<a name="storageclass"></a>
@@ -484,7 +600,8 @@ Then run Weathervane as before with the new configuration file.
 - Each application instance will run in a separate namespace.  For n 
   application instances, the namespaces will be called `auctionw1i1` through 
   `auctionw1in`.  If your platform does not support creating namespaces using 
-  kubectl, then you must create these namespaces manually before the run.
+  kubectl, then you must create these namespaces manually before the run. See [Configuring 
+  Namespaces](#namespaces) for more detail.
 
 ### Increase the Load on the SUT: Larger Application Instances<a name="task-largerinstances"></a>
 
@@ -752,7 +869,7 @@ The `dockerNamespace` parameter tells Weathervane where to find the Docker Image
 
 where `yourRepository` is your Docker Hub username or the hostname and port of your private Docker registry.
 
-#### Specifying Kubernetes Clusters
+#### Specifying Kubernetes Clusters<a name="kubernetesClusters"></a>
 
 The `kubernetesClusters` block describes the Kubernetes cluster(s) on which Weathervane runs. This is a 
 JSON list of JSON objects, where each object represents a Kubernetes cluster. At least one Kubernetes cluster must be specified, and the parameters `name`, `kubeconfigFile`, and 
@@ -787,6 +904,73 @@ The `kubeconfigContext` parameter specifies the name of the context for your clu
 | `"kubeconfigContext" : "kubernetes-admin@kubernetes",` |
 
 where `kubernetes-admin@kubernetes` is the name of your cluster's context. 
+
+##### kubeconfigContext
+
+The `kubeconfigContext` parameter specifies the name of the context for your cluster such as `kubernetes-admin@kubernetes`. This can be found in your *kubeconfig* file. Set an empty string (`""`) to use the `current-context` defined in the `kubeconfigFile`.
+
+| Configuration Parameter: kubeconfigContext             |
+| ------------------------------------------------------ |
+| `"kubeconfigContext" : "kubernetes-admin@kubernetes",` |
+
+where `kubernetes-admin@kubernetes` is the name of your cluster's context. 
+
+##### namespacePrefix
+
+The `namespacePrefix` parameter specifies the prefix to be used in the generation of 
+the namespace names used by Weathervane on this Kubernetes cluster. See [Configuring 
+  Namespaces](#namespaces) for more detail.
+  
+
+| Configuration Parameter: namespacePrefix             |
+| ------------------------------------------------------ |
+| `"namespacePrefix" : "auction",` |
+
+where you can replace *auction* with your desired prefix. The default value is _auction_.
+
+##### namespaceSuffix
+
+The `namespaceSuffix` parameter specifies the suffix to be used in the generation of 
+the namespace names used by Weathervane on this Kubernetes cluster. See [Configuring 
+  Namespaces](#namespaces) for more detail.
+  
+
+| Configuration Parameter: namespaceSuffix             |
+| ------------------------------------------------------ |
+| `"namespaceSuffix" : "",` |
+
+The default value is the empty string. 
+
+##### namespaces
+
+The `namespaces` parameter specifies a list of namespace names to used by Weathervane 
+on this Kubernetes cluster. The value specified for this parameter must be a JSON list 
+of strings, each of which is a namespace name.  If a non-empty list is specified for 
+this parameter, then Weathervane will not generate namespace names for this cluster. 
+See [Configuring Namespaces](#namespaces) for more detail.
+  
+
+| Configuration Parameter: namespaceSuffix             |
+| ------------------------------------------------------ |
+| `"namespaceSuffix" : "",` |
+
+The default value is an empty list.   
+
+##### createNamespaces
+
+The `createNamespaces` parameter controls whether Weathervane attempts to 
+create namespaces in this cluster using kubectl.  If _true_, Weathervane will try to
+create a namespace for a selected namespace name if that namespace does not already 
+exist.  If _false_, Weathervane will not attempt to create new namespaces in this cluster. 
+If it is configured to use a namespace that does not exist, it will exit with an error 
+message. See [Configuring Namespaces](#namespaces) for more detail.
+  
+
+| Configuration Parameter: createNamespaces             |
+| ------------------------------------------------------ |
+| `"createNamespaces" : true,` |
+
+The default value is _true_.   
 
 #### Selecting Kubernetes Clusters<a name="selecting-clusters"></a>
 

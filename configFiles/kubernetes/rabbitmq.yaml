@@ -75,18 +75,6 @@ spec:
           requests:
             cpu: 1
             memory: 4Gi
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          successThreshold: 1
-          timeoutSeconds: 1
         readinessProbe:
           exec:
             command:
@@ -96,7 +84,7 @@ spec:
             - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 30
+          periodSeconds: 60
           successThreshold: 1
           timeoutSeconds: 1
 ---

@@ -1577,9 +1577,10 @@ and application namespaces.
   },
 ],
 ```
-When specifying namespace names, you must provide at least one namespace name for each 
-application instance you plan to run on the cluster, plus one namespace name for the 
-workload drivers.  This means that if you are running the drivers and applications 
+When specifying namespace names, you must provide one namespace name for the 
+workload drivers plus at least one namespace name for each 
+application instance you plan to run on the cluster.  This means that 
+if you are running the drivers and applications 
 on the same cluster you will need to specify a minimum of two namespaces. 
 
 #### Disabling Namespace Creation

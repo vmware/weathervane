@@ -13,7 +13,6 @@ data:
   RABBITMQ_NODE_PORT: "5672"
   RABBITMQ_DIST_PORT: "25672"
   RABBITMQ_MEMORY: "4GB"
-  RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 1:1"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -76,18 +75,6 @@ spec:
           requests:
             cpu: 1
             memory: 4Gi
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
         readinessProbe:
           exec:
             command:
@@ -97,7 +84,7 @@ spec:
             - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 60
           successThreshold: 1
           timeoutSeconds: 1
 ---

@@ -37,8 +37,9 @@ has 'namespace' => (
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	super();
-	$self->namespace("auctionw" . $self->workload->instanceNum);
 
+	my $cluster = $self->host;
+	$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, ""));
 };
 
 override 'redeploy' => sub {
@@ -235,9 +236,6 @@ override 'startDrivers' => sub {
 	my $cluster = $self->host;
 	my $namespace = $self->namespace;
 	
-	# Create the namespace and the namespace-wide resources
-	$cluster->kubernetesCreateNamespace($namespace);
-	
 	$logger->debug("Starting Workload Controller");
 	$self->configureWkldController();
 	$cluster->kubernetesApply("/tmp/auctionworkloadcontroller-${namespace}.yaml", $namespace);
@@ -251,7 +249,7 @@ override 'startDrivers' => sub {
 override 'doHttpPost' => sub {
 	my ( $self, $url, $content) = @_;
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
-	$logger->debug("doHttpPost: Sending POST to $url.  content = $content");
+	$logger->debug("doHttpPost: Sending POST to $url.");
 
 	# Write the content into a local file
 	my $namespace = $self->namespace;

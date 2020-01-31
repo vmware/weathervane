@@ -223,9 +223,11 @@ sub isUp {
 	my $retries = $self->getParamValue('isUpRetries');
 	my $allUp   = 0;
 	do {
-		sleep 30;
-		$retries--;
 		$allUp = callBooleanMethodOnObjectsParallel2( 'isUp', $self->appInstancesRef, $retries, $logDir );
+		if (!$allUp) {
+			sleep 30;
+		}
+		$retries--;
 	} while ( ( $retries > 0 ) && !$allUp );
 
 	return $allUp;

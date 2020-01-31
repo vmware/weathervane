@@ -120,7 +120,7 @@ sub configure {
 
 					do {
 						$inline = <FILEIN>;
-					} while(!($inline =~ /livenessProbe/));
+					} while(!($inline =~ /readinessProbe/));
 					print FILEOUT $inline;			
 				}
 				elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
@@ -130,6 +130,12 @@ sub configure {
 					my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
 					my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
 					print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+				}
+	  		    elsif ( $inline =~ /(\s+)initialDelaySeconds:/ ) {
+			        # Randomize the initialDelaySeconds on the readiness probes
+					my $indent = $1;
+					my $delay = int(rand(60)) + 1;
+					print FILEOUT "${indent}initialDelaySeconds: $delay\n";
 				} else {
 					print FILEOUT $inline;						
 				}

@@ -29,9 +29,26 @@ has 'kubectlTopNodeRunning' => (
 	default => 0,
 );
 
+has 'useAvailableNamespaces' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 0,
+);
+
+has 'availableNamespacesRef' => (
+	is      => 'rw',
+	isa     => 'ArrayRef',
+	default => sub { [] },
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
-		
+
+	my $namespacesRef = $self->getParamValue("namespaces");
+	if ($#$namespacesRef >= 0) {
+		push @{$self->availableNamespacesRef}, @$namespacesRef;
+		$self->useAvailableNamespaces(1);
+	}	
 	super();
 };
 
@@ -133,10 +150,54 @@ override 'getConfigFiles' => sub {
     close FILEOUT;
 };
 
-sub kubernetesCreateNamespace {
+sub kubernetesGetNamespace {
+	my ( $self, $workloadNum, $appInstanceNum ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+
+	my $wkldInstanceString = "Workload $workloadNum";
+	if ($appInstanceNum) {
+		$wkldInstanceString .=", AppInstance $appInstanceNum"
+	} else {
+		$wkldInstanceString .=" drivers"				
+	}
+	$logger->debug("kubernetesGetNamespace: $wkldInstanceString");
+	
+	my $namespace;
+	if ($self->useAvailableNamespaces) {
+		my $availableNamespacesRef = $self->availableNamespacesRef;
+		$namespace = shift @$availableNamespacesRef;
+		if (!(defined $namespace)) {
+			$console_logger->error("There are not enough namespaces specified for cluster " . $self->name .
+			                        ". Could not assign a namespace to $wkldInstanceString.");
+			exit(1);
+		}
+	} else {
+		$namespace = $self->getParamValue("namespacePrefix") . "w$workloadNum";
+		if ($appInstanceNum) {
+			$namespace .= "i$appInstanceNum";
+		}
+		$namespace .= $self->getParamValue("namespaceSuffix");
+	}
+	
+	if ($self->getParamValue("createNamespaces")) {
+		$self->kubernetesCreateNamespace($namespace);
+	} else {
+		# Make sure that the namespace exists before returning
+		if (!$self->kubernetesNamespaceExists($namespace)) {
+			$console_logger->error("Namespace $namespace does not exist on cluster " . $self->name .
+		                        ". Either create it manually or set the parameter createNamespaces to true.");
+			exit(1);
+		}
+	}
+	$logger->debug("kubernetesGetNamespace: For $wkldInstanceString returning $namespace");	
+	return $namespace;
+}
+
+sub kubernetesNamespaceExists {
 	my ( $self, $namespaceName ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	$logger->debug("kubernetesCreateNamespace: namespace $namespaceName");
+	$logger->debug("kubernetesNamespaceExists: namespace $namespaceName");
 
 	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
 	my $context = $self->getParamValue('kubeconfigContext');
@@ -145,7 +206,7 @@ sub kubernetesCreateNamespace {
 	  $contextString = "--context=$context";	
 	}
 
-	# First check if the namespace already exists
+	# check if the namespace already exists
 	my $cmd;
 	$cmd = "kubectl get namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
 	my ($cmdFailed, $outString) = runCmd($cmd);
@@ -155,12 +216,31 @@ sub kubernetesCreateNamespace {
 	foreach my $line (@lines) {
 		if ($line =~ /^$namespaceName/) {
 			# namespace already exists
-			return;
+			return 1;
 		}	
 	}
-	
-	$cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
-	($cmdFailed, $outString) = runCmd($cmd);
+	return 0;
+}
+
+sub kubernetesCreateNamespace {
+	my ( $self, $namespaceName ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	$logger->debug("kubernetesCreateNamespace: namespace $namespaceName");
+
+	# First check if the namespace already exists
+	if ($self->kubernetesNamespaceExists($namespaceName)) {
+		return;
+	}
+		
+	my $kubeconfigFile = $self->getParamValue('kubeconfigFile');
+	my $context = $self->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
+	my $cmd = "kubectl create namespace --kubeconfig=$kubeconfigFile $contextString $namespaceName";
+	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesCreateNamespace failed: $cmdFailed");
 	}

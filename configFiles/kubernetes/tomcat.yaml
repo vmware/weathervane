@@ -93,18 +93,6 @@ spec:
           limits:
             cpu: 1
             memory: 8Gi
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'jps | grep -Eq Bootstrap'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
         readinessProbe:
           exec:
             command:
@@ -114,7 +102,7 @@ spec:
             - 'curl -s http://127.0.0.1:8080/auction/healthCheck | grep -Eq alive'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 60
           successThreshold: 1
           timeoutSeconds: 1
       - image: repository/weathervane-auctionappserverwarmer:1.2.0
@@ -123,30 +111,6 @@ spec:
         envFrom:
         - configMapRef:
             name: tomcat-config
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'jps | grep -Eq jar'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'curl -s http://127.0.0.1:8888/warmer/ready | grep -Eq ready'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
 ---
 apiVersion: v1
 kind: Service

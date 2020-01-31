@@ -63,13 +63,6 @@ spec:
       - image: repository/weathervane-auctiondatamanager:1.2.0
         name: auctiondatamanager
         imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - cat
-            - /loadData.pl
-          initialDelaySeconds: 15
-          periodSeconds: 10
         envFrom:
         - configMapRef:
             name: auctiondatamanager-config            

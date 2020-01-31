@@ -83,18 +83,6 @@ spec:
           requests:
             cpu: 1
             memory: 8Gi
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - 'ps x | grep -v grep | grep -Eq master'
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
         readinessProbe:
           exec:
             command:
@@ -104,7 +92,7 @@ spec:
             - 'curl -s -w "%{http_code}\n" -o /dev/null http://127.0.0.1:80'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 10
+          periodSeconds: 60
           successThreshold: 1
           timeoutSeconds: 1
         volumeMounts:

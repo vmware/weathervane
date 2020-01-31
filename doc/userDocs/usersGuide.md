@@ -1573,7 +1573,7 @@ and application namespaces.
     "name" : "k8sCluster", 
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-1",
-    "namespaces" : ["devNs1", "devNs2",],
+    "namespaces" : ["devns1", "devns2",],
   },
 ],
 ```

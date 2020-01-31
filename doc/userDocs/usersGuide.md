@@ -1564,7 +1564,7 @@ generating the namespace names. Any values specified for `namespacePrefix` and `
 will be ignored.
 
 The following configuration file excerpt shows how to specify a list of namespace names. In 
-this example Weathervane will use *devNs1* and *devNs2* as the names for the workload driver 
+this example Weathervane will use *devns1* and *devns2* as the names for the workload driver 
 and application namespaces. 
 
 ```json

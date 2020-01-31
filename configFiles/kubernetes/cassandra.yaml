@@ -102,7 +102,7 @@ spec:
             - -c
             - 'nodetool status | grep $POD_IP | grep -Eq UN'
           initialDelaySeconds: 15
-          periodSeconds: 30
+          periodSeconds: 60
           timeoutSeconds: 5
         volumeMounts:
         - name: cassandra-data

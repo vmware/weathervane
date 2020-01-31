@@ -83,18 +83,6 @@ spec:
           requests:
             cpu: 1
             memory: 8Gi
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432
-          failureThreshold: 3
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          successThreshold: 1
-          timeoutSeconds: 1
         readinessProbe:
           exec:
             command:
@@ -104,7 +92,7 @@ spec:
             - 'cat /tmp/isReady && /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432'
           failureThreshold: 3
           initialDelaySeconds: 30
-          periodSeconds: 30
+          periodSeconds: 60
           successThreshold: 1
           timeoutSeconds: 1        
   volumeClaimTemplates:

@@ -68,7 +68,7 @@ our %workloadProfiles = (
 
 # These are all of the appInstance sizes that are supported for each workload
 our %appInstanceSizes = (
-    "auction" => ["micro", "microLowCpu", "small", "smallLowCpu", "medium"],
+    "auction" => ["micro", "microLowCpu", "small", "smallT1500", "smallT1000", "smallLowCpu", "medium"],
     );
 
 # These are the allowed values for appIngressMethod

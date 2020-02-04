@@ -38,18 +38,18 @@
   "coordinationServerImpl" : "zookeeper",
   
   "numMsgServers" : 1, 
-  "msgServerCpus" : "300m",
+  "msgServerCpus" : "40m",
   "msgServerMem" : "1000Mi",
   "msgServerImpl" : "rabbitmq",
 
   "numDbServers" : 1, 
-  "dbServerCpus" : "60m",
+  "dbServerCpus" : "50m",
   "dbServerMem" : "1000Mi",
   "dbServerImpl" : "postgresql",
   "postgresqlVolumeSize" : "4Gi",
 
   "numNosqlServers" : 1, 
-  "nosqlServerCpus" : "300m",
+  "nosqlServerCpus" : "150m",
   "nosqlServerMem" : "1500Mi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "10Gi",
@@ -166,7 +166,7 @@
   "coordinationServerImpl" : "zookeeper",
   
   "numMsgServers" : 1, 
-  "msgServerCpus" : "375m",
+  "msgServerCpus" : "100m",
   "msgServerMem" : "1Gi",
   "msgServerImpl" : "rabbitmq",
 
@@ -177,7 +177,7 @@
   "postgresqlVolumeSize" : "10Gi",
 
   "numNosqlServers" : 1, 
-  "nosqlServerCpus" : "640m",
+  "nosqlServerCpus" : "550m",
   "nosqlServerMem" : "24Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "80Gi",

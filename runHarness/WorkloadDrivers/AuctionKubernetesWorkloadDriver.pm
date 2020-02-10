@@ -268,7 +268,7 @@ override 'doHttpPost' => sub {
 		return {"is_success" => 0, "content" => "" };
 	} 
 	
-	my $cmd = "bash -c \"http --pretty none --print hb --timeout 60 POST $url < content.json\"";
+	my $cmd = "bash -c \"http --pretty none --print hb --timeout 240 POST $url < content.json\"";
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("wkldcontroller", $cmd, $self->namespace);
 	if ($cmdFailed) {
 		return {"is_success" => 0, "content" => "" };
@@ -314,7 +314,7 @@ override 'doHttpGet' => sub {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("doHttpGet: Sending Get to $url.");
 	
-	my $cmd = "http --pretty none --print hb --timeout 60 GET $url";
+	my $cmd = "http --pretty none --print hb --timeout 120 GET $url";
 	my $cluster = $self->host;
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("wkldcontroller", $cmd, $self->namespace);
 	if ($cmdFailed) {

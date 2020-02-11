@@ -1708,8 +1708,10 @@ configuration file you should:
 ### Storage and Network Resource Demands
 
 This section gives the typical storage and network demands created by the Weathervane 
-application per WvUser for each configuration.  There will be some run-to-run variation due to randomness 
-in the workload.
+application for each configuration.  These demands are per WvUser, meaning the the 
+demands for a given run can be estimated by multiplying the expected number of WvUsers 
+by the values given in the tables. There will be some run-to-run variation due to randomness 
+in the workload.  Storage demands tend to vary more widely than the network demands.
 
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
@@ -1722,6 +1724,9 @@ in the workload.
 | micro         |    10.3           |      0.054           |    8.0            | 0.092 |
 | small    | tbd | tbd | tbd | tbd |
 
-For example, a run using the micro configuration which runs up to 1000 WvUsers will 
-generate 10.3 * 1000 = 10300 Rx Pkt/sec, 0.054 * 1000 = 54 Rx Mbps, 8.0 * 1000 = 8000 Tx pkt/s, and 
-0.092 * 1000 = 92 Tx Mbps.  
+As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
+This run will generate the approximately the following network demands: 
+* 10.3 * 1000 = 10300 Rx Pkt/sec
+* 0.054 * 1000 = 54 Rx Mbps
+* 8.0 * 1000 = 8000 Tx pkt/s
+* 0.092 * 1000 = 92 Tx Mbps.  

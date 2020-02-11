@@ -351,7 +351,7 @@
   "auctionBidServerImpl" : "auctionbidservice",
   
   "numAppServers" : 6,
-  "appServerCpus" :"2",
+  "appServerCpus" :"1500m",
   "appServerMem" : "5Gi",
   "appServerJvmOpts" : "-Xmx4G -Xms4G -XX:+UseParallelGC -XX:+AlwaysPreTouch ",
   "appServerThreads" : 100,

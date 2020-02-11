@@ -13,6 +13,7 @@ Contents:
 - [Troubleshooting](#troubleshooting)
 - [Advanced Topics](#advanced)
 - [Running on Specific Cluster Types](#specific)
+- [Appendices](#appendices)
 
 
 ## Introduction<a name="intro"></a>
@@ -1701,3 +1702,26 @@ configuration file you should:
 
 }
 ```
+
+## Appendix<a name="appendices"></a>
+
+### Storage and Network Resource Demands
+
+This section gives the typical storage and network demands created by the Weathervane 
+application per WvUser for each configuration.  There will be some run-to-run variation due to randomness 
+in the workload.
+
+| Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
+|---------------|-------------------|------------------------|--------------------|-------------------------|
+| micro         |    0.19           |       0.0005           |    0.10            | 0.002 |
+| small    | tbd | tbd | tbd | tbd |
+
+
+| Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
+|---------------|-------------------|------------------------|--------------------|-------------------------|
+| micro         |    10.3           |      0.054           |    8.0            | 0.092 |
+| small    | tbd | tbd | tbd | tbd |
+
+For example, a run using the micro configuration which runs up to 1000 WvUsers will 
+generate 10.3 * 1000 = 10300 Rx Pkt/sec, 0.054 * 1000 = 54 Rx Mbps, 8.0 * 1000 = 8000 Tx pkt/s, and 
+0.092 * 1000 = 92 Tx Mbps.  

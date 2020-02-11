@@ -1063,3 +1063,7 @@ $console_logger->info( "Running Weathervane with "
 	  . $runManager->runProcedure->name
 	  . " RunProcedure.\n" );
 $runManager->start();
+
+# Zip the debug log
+$weathervane_logger->remove_appender("rootDebugFile");
+($cmdFailed, $cmdOutput) = runCmd("gzip $tmpDir/debug.log");

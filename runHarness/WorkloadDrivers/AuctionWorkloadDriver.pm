@@ -881,8 +881,7 @@ sub doHttpGet {
 	$req->header( Accept => "application/json" );
 	my $res = $self->ua->request($req);
 	$logger->debug("Response status line: " . $res->status_line . 
-				", is_success = " . $res->is_success . 
-				", content = " . $res->content );
+				", is_success = " . $res->is_success );
 	return {"is_success" => $res->is_success,
 			"content" => $res->content
 	};

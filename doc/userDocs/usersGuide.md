@@ -1725,7 +1725,7 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 | small    | tbd | tbd | tbd | tbd |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
-This run will generate the approximately the following network demands: 
+This run will generate approximately the following network demands: 
 * 10.3 * 1000 = 10300 Rx Pkt/sec
 * 0.054 * 1000 = 54 Rx Mbps
 * 8.0 * 1000 = 8000 Tx pkt/s

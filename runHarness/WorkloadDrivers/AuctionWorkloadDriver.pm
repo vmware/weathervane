@@ -863,9 +863,9 @@ sub doHttpPost {
 	$req->header( Accept => "application/json" );
 	$req->content($content);
 	my $res = $self->ua->request($req);
-	$logger->debug("Response status line: " . $res->status_line . 
-				", is_success = " . $res->is_success . 
-				", content = " . $res->content );
+	$logger->debug("doHttpPost Response status line: " . $status_line . 
+				", is_success = " . $isSuccess . 
+				", content = " . $responseContent );
 	
 	return { "is_success" => $res->is_success,
 			 "content" => $res->content
@@ -880,8 +880,9 @@ sub doHttpGet {
 	$req->content_type('application/json');
 	$req->header( Accept => "application/json" );
 	my $res = $self->ua->request($req);
-	$logger->debug("Response status line: " . $res->status_line . 
-				", is_success = " . $res->is_success );
+	$logger->debug("doHttpGet Response status line: " . $status_line . 
+				", is_success = " . $isSuccess . 
+				", content = " . $responseContent );
 	return {"is_success" => $res->is_success,
 			"content" => $res->content
 	};

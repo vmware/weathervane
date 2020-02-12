@@ -1721,8 +1721,8 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 
 | Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
-| micro         |    10.3           |      0.054           |    8.0            | 0.092 |
-| small    | 11.0 | 0.6 | 8.4 | 0.1 |
+| micro         |    10.3           |      0.06           |    8.0            | 0.1 |
+| small    | 11.0 | 0.06 | 8.4 | 0.1 |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
 This run will generate approximately the following network demands: 

@@ -1716,13 +1716,13 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    0.19           |       0.0005           |    0.10            | 0.002 |
-| small    | tbd | tbd | tbd | tbd |
+| small    | 0.005 | 0.002 | 0.04 | 0.0002 |
 
 
 | Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    10.3           |      0.054           |    8.0            | 0.092 |
-| small    | tbd | tbd | tbd | tbd |
+| small    | 11.0 | 0.6 | 8.4 | 0.1 |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
 This run will generate approximately the following network demands: 

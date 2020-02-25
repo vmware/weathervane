@@ -79,7 +79,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'curl -f --user auction:auction 127.0.0.1:15672/api/healthchecks/node | grep -Eq ok'
           failureThreshold: 3

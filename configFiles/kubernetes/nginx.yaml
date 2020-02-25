@@ -87,7 +87,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'curl -s -w "%{http_code}\n" -o /dev/null http://127.0.0.1:80'
           failureThreshold: 3

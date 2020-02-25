@@ -378,6 +378,11 @@ sub getServiceConfigParameters {
 		$jvmOpts .= " -DAUCTIONREPRESENTATIONCACHESIZE=$auctionRepresentationCacheSize ";
 		$jvmOpts .= " -DIMAGEINFOCACHESIZE=$imageInfoCacheSize -DITEMSFORAUCTIONCACHESIZE=$itemsForAuctionCacheSize ";
 		$jvmOpts .= " -DITEMCACHESIZE=$itemCacheSize ";
+		if ($self->getParamValue('prewarmAppServers')) {
+			$jvmOpts .= " -DPREWARM=true ";
+		} else {
+			$jvmOpts .= " -DPREWARM=false ";	
+		}
 
 		my $zookeeperConnectionString = "";
 		my $coordinationServersRef    = $self->getAllServicesByType('coordinationServer');

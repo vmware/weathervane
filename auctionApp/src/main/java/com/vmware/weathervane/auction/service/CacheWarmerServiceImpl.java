@@ -59,7 +59,7 @@ public class CacheWarmerServiceImpl implements CacheWarmerService {
 
 	@Inject
 	@Named("auctionDao")
-	AuctionDao auctionDao;
+	AuctionDao auctionDao;	
 
 	private boolean cachesWarmed = false;
 	private AtomicBoolean warmerRun = new AtomicBoolean(false);
@@ -71,9 +71,16 @@ public class CacheWarmerServiceImpl implements CacheWarmerService {
 	@Override
 	public boolean isReady() {
 		if (!warmerRun.getAndSet(true)) {
-			// Start the cache warmer on the first healthCheck
-			Thread warmerThread = new Thread(new CacheWarmingRunner(), "cacheWarmer");
-			warmerThread.start();
+			Boolean preWarm = Boolean.getBoolean("PREWARM");
+			if (preWarm) {
+				logger.warn("Prewarming caches");
+				// Start the cache warmer on the first healthCheck
+				Thread warmerThread = new Thread(new CacheWarmingRunner(), "cacheWarmer");
+				warmerThread.start();
+			} else {
+				logger.warn("Not prewarming caches");
+				cachesWarmed = true;
+			}
 		}
 		return cachesWarmed;
 	}

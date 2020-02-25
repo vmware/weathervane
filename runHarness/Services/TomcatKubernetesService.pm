@@ -146,6 +146,13 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAppServers\n";
 		}
+		elsif (($inline =~ /auctionappserverwarmer/) && !($self->getParamValue('prewarmAppServers'))) {
+			# Not using warmer so remove it from yaml
+			do {
+				$inline = <FILEIN>;
+			} while(!($inline =~ /\-\-\-/));
+			print FILEOUT $inline;			
+		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}
@@ -183,9 +190,9 @@ override 'isUp' => sub {
 	my ($self, $fileout) = @_;
 	my $cluster = $self->host;
 	my $numServers = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
-	if (   $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace, 'alive', $numServers ) 
-	    && $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace, 'ready', $numServers )
-	   ) { 
+	if ($cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8080/auction/healthCheck", $self->namespace, 'alive', $numServers ) 
+	    && (!$self->getParamValue('prewarmAppServers') ||
+	         $cluster->kubernetesAreAllPodUpWithNum ($self->getImpl(), "curl -s http://localhost:8888/warmer/ready", $self->namespace, 'ready', $numServers ))) { 
 		return 1;
 	}
 	return 0;

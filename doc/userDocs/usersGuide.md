@@ -112,7 +112,7 @@ Weathervane requires at least one existing Kubernetes cluster and a client syste
 1. Change into the weathervane directory:
       - `cd weathervane`
 
-    
+
 #### Create the Weathervane Docker Images
 
 Using the included `buildDockerImages.pl` script, build the Docker images for the Weathervane components 
@@ -161,7 +161,7 @@ The image below shows the lines that need to be edited in the configuration file
           cluster internal address provisioned by a Kubernetes ClusterIP service.  This 
           choice will only work if the workload drivers and applications are running 
           on the same cluster.
-            
+  
 5. Update *StorageClass* parameters with the names of one or more storage classes defined on your cluster.
 
 Notes:
@@ -839,7 +839,7 @@ where `kubernetes-admin@kubernetes` is the name of your cluster's context.
 
 The `namespacePrefix` parameter specifies the prefix to be used in the generation of 
 the namespace names used by Weathervane on this Kubernetes cluster. 
-  
+
 
 | Configuration Parameter: namespacePrefix             |
 | ------------------------------------------------------ |
@@ -851,7 +851,7 @@ where you can replace *auction* with your desired prefix. The default value is _
 
 The `namespaceSuffix` parameter specifies the suffix to be used in the generation of 
 the namespace names used by Weathervane on this Kubernetes cluster. 
-  
+
 
 | Configuration Parameter: namespaceSuffix             |
 | ------------------------------------------------------ |
@@ -866,7 +866,7 @@ on this Kubernetes cluster. The value specified for this parameter must be a JSO
 of strings, each of which is a namespace name.  If a non-empty list is specified for 
 this parameter, then Weathervane will ignore the values of `namespacePrefix` and `namespaceSuffix`, 
 and will not generate namespace names for this cluster. 
-  
+
 
 | Configuration Parameter: namespaces             |
 | ------------------------------------------------------ |
@@ -882,7 +882,7 @@ create a namespace for a selected namespace name if that namespace does not alre
 exist.  If _false_, Weathervane will not attempt to create new namespaces in this cluster. 
 If it is configured to use a namespace that does not exist, it will exit with an error 
 message. 
-  
+
 
 | Configuration Parameter: createNamespaces             |
 | ------------------------------------------------------ |
@@ -990,277 +990,43 @@ A small application instance can support roughly up to 10,000 users.
 | Default users for fixed run | 200   | 2000  |
 | Default maximum users supported | 3000   | 20,000  |
 
-
 Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources required at different numbers of application instances.  You can use these tables to find the maximum number of application instances you will be able to deploy on your clusters.
 
 **Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
-<table border=0 cellpadding=0 cellspacing=0 width=546 style='border-collapse:
- collapse;table-layout:fixed;width:410pt'>
- <col class=xl65 width=128 style='mso-width-source:userset;mso-width-alt:4096;
- width:96pt'>
- <col class=xl65 width=37 style='mso-width-source:userset;mso-width-alt:1194;
- width:28pt'>
- <col class=xl65 width=101 style='mso-width-source:userset;mso-width-alt:3242;
- width:76pt'>
- <col class=xl65 width=71 style='mso-width-source:userset;mso-width-alt:2261;
- width:53pt'>
- <col class=xl65 width=37 style='mso-width-source:userset;mso-width-alt:1194;
- width:28pt'>
- <col class=xl65 width=101 style='mso-width-source:userset;mso-width-alt:3242;
- width:76pt'>
- <col class=xl65 width=71 style='mso-width-source:userset;mso-width-alt:2261;
- width:53pt'>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 class=xl65 width=128 style='height:16.0pt;width:96pt'>Configuration
-  Size</td>
-  <td colspan=3 class=xl66 width=209 style='text-align: center;border-right:1.0pt solid black;
-  width:157pt'><b>micro</b></td>
-  <td colspan=3 class=xl66 width=209 style='text-align: center;border-right:1.0pt solid black;
-  border-left:none;width:157pt'><b>small</b></td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 class=xl65 style='height:16.0pt'></td>
-  <td class=xl69>CPU</td>
-  <td class=xl70>Memory (GiB)</td>
-  <td class=xl71>Disk (GiB)</td>
-  <td class=xl69 style='border-left:none'>CPU</td>
-  <td class=xl70>Memory (GiB)</td>
-  <td class=xl71>Disk (GiB)</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 class=xl65 style='height:16.0pt'>Total Driver</td>
-  <td class=xl72 align=right>0.50</td>
-  <td class=xl65 align=right>1.66</td>
-  <td class=xl73 align=right>0.00</td>
-  <td class=xl72 align=right style='border-left:none'>3.30</td>
-  <td class=xl65 align=right>19.04</td>
-  <td class=xl73 align=right>0.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 class=xl65 style='height:16.0pt'>Total App</td>
-  <td class=xl72 align=right>1.21</td>
-  <td class=xl65 align=right>5.57</td>
-  <td class=xl73 align=right>32.00</td>
-  <td class=xl72 align=right style='border-left:none'>6.00</td>
-  <td class=xl65 align=right>53.42</td>
-  <td class=xl73 align=right>150.00</td>
- </tr>
- <tr height=23 style='height:17.0pt'>
-  <td height=23 class=xl74 style='height:17.0pt'>Total</td>
-  <td class=xl75 align=right style='border-left:none'>1.71</td>
-  <td class=xl76 align=right>7.23</td>
-  <td class=xl77 align=right>32.00</td>
-  <td class=xl75 align=right style='border-left:none'>9.30</td>
-  <td class=xl76 align=right>72.46</td>
-  <td class=xl77 align=right>150.00</td>
- </tr>
-</table>
+
+| Configuration<BR>Size |       | micro             |                 |       | small             |                 |
+|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
+|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 3\.10 | 19\.04            | 0\.00           |
+| Total App             | 0\.79 | 5\.57             | 32\.00          | 4\.00 | 53\.42            | 150\.00         |
+| Total                 | 1\.29 | 7\.23             | 32\.00          | 7\.10 | 72\.46            | 150\.00         |
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
-<table border=0 cellpadding=0 cellspacing=0 width=547 style='border-collapse:
- collapse;table-layout:fixed;width:410pt'>
- <col width=93 style='mso-width-source:userset;mso-width-alt:2986;width:70pt'>
- <col width=45 style='mso-width-source:userset;mso-width-alt:1450;width:34pt'>
- <col width=103 style='mso-width-source:userset;mso-width-alt:3285;width:77pt'>
- <col width=75 style='mso-width-source:userset;mso-width-alt:2389;width:56pt'>
- <col width=53 style='mso-width-source:userset;mso-width-alt:1706;width:40pt'>
- <col width=103 style='mso-width-source:userset;mso-width-alt:3285;width:77pt'>
- <col width=75 style='mso-width-source:userset;mso-width-alt:2389;width:56pt'>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 width=93 style='height:16.0pt;width:70pt'>Configuration Size</td>
-  <td colspan=3 class=xl65 width=223 style='text-align: center;width:167pt'><b>micro</b></td>
-  <td colspan=3 class=xl65 width=231 style='text-align: center;width:173pt'><b>small</b></td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 style='height:16.0pt'>Number of Application Instances</td>
-  <td>CPU</td>
-  <td>Memory (GiB)</td>
-  <td>Disk (GiB)</td>
-  <td>CPU</td>
-  <td>Memory (GiB)</td>
-  <td>Disk (GiB)</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>1</td>
-  <td class=xl66 align=right>1.21</td>
-  <td class=xl66 align=right>5.57</td>
-  <td class=xl66 align=right>32.00</td>
-  <td class=xl66 align=right>6.00</td>
-  <td class=xl66 align=right>53.42</td>
-  <td class=xl66 align=right>150.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>2</td>
-  <td class=xl66 align=right>2.42</td>
-  <td class=xl66 align=right>11.13</td>
-  <td class=xl66 align=right>64.00</td>
-  <td class=xl66 align=right>12.00</td>
-  <td class=xl66 align=right>106.84</td>
-  <td class=xl66 align=right>300.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>3</td>
-  <td class=xl66 align=right>3.63</td>
-  <td class=xl66 align=right>16.70</td>
-  <td class=xl66 align=right>96.00</td>
-  <td class=xl66 align=right>18.00</td>
-  <td class=xl66 align=right>160.25</td>
-  <td class=xl66 align=right>450.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>4</td>
-  <td class=xl66 align=right>4.84</td>
-  <td class=xl66 align=right>22.27</td>
-  <td class=xl66 align=right>128.00</td>
-  <td class=xl66 align=right>24.00</td>
-  <td class=xl66 align=right>213.67</td>
-  <td class=xl66 align=right>600.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>5</td>
-  <td class=xl66 align=right>6.06</td>
-  <td class=xl66 align=right>27.83</td>
-  <td class=xl66 align=right>160.00</td>
-  <td class=xl66 align=right>30.00</td>
-  <td class=xl66 align=right>267.09</td>
-  <td class=xl66 align=right>750.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>6</td>
-  <td class=xl66 align=right>7.27</td>
-  <td class=xl66 align=right>33.40</td>
-  <td class=xl66 align=right>192.00</td>
-  <td class=xl66 align=right>36.00</td>
-  <td class=xl66 align=right>320.51</td>
-  <td class=xl66 align=right>900.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>7</td>
-  <td class=xl66 align=right>8.48</td>
-  <td class=xl66 align=right>38.96</td>
-  <td class=xl66 align=right>224.00</td>
-  <td class=xl66 align=right>42.00</td>
-  <td class=xl66 align=right>373.93</td>
-  <td class=xl66 align=right>1050.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>8</td>
-  <td class=xl66 align=right>9.69</td>
-  <td class=xl66 align=right>44.53</td>
-  <td class=xl66 align=right>256.00</td>
-  <td class=xl66 align=right>48.00</td>
-  <td class=xl66 align=right>427.34</td>
-  <td class=xl66 align=right>1200.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>9</td>
-  <td class=xl66 align=right>10.90</td>
-  <td class=xl66 align=right>50.10</td>
-  <td class=xl66 align=right>288.00</td>
-  <td class=xl66 align=right>54.00</td>
-  <td class=xl66 align=right>480.76</td>
-  <td class=xl66 align=right>1350.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>10</td>
-  <td class=xl66 align=right>12.11</td>
-  <td class=xl66 align=right>55.66</td>
-  <td class=xl66 align=right>320.00</td>
-  <td class=xl66 align=right>60.00</td>
-  <td class=xl66 align=right>534.18</td>
-  <td class=xl66 align=right>1500.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>11</td>
-  <td class=xl66 align=right>13.32</td>
-  <td class=xl66 align=right>61.23</td>
-  <td class=xl66 align=right>352.00</td>
-  <td class=xl66 align=right>66.00</td>
-  <td class=xl66 align=right>587.60</td>
-  <td class=xl66 align=right>1650.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>12</td>
-  <td class=xl66 align=right>14.53</td>
-  <td class=xl66 align=right>66.80</td>
-  <td class=xl66 align=right>384.00</td>
-  <td class=xl66 align=right>72.00</td>
-  <td class=xl66 align=right>641.02</td>
-  <td class=xl66 align=right>1800.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>13</td>
-  <td class=xl66 align=right>15.74</td>
-  <td class=xl66 align=right>72.36</td>
-  <td class=xl66 align=right>416.00</td>
-  <td class=xl66 align=right>78.00</td>
-  <td class=xl66 align=right>694.43</td>
-  <td class=xl66 align=right>1950.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>14</td>
-  <td class=xl66 align=right>16.95</td>
-  <td class=xl66 align=right>77.93</td>
-  <td class=xl66 align=right>448.00</td>
-  <td class=xl66 align=right>84.00</td>
-  <td class=xl66 align=right>747.85</td>
-  <td class=xl66 align=right>2100.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>15</td>
-  <td class=xl66 align=right>18.17</td>
-  <td class=xl66 align=right>83.50</td>
-  <td class=xl66 align=right>480.00</td>
-  <td class=xl66 align=right>90.00</td>
-  <td class=xl66 align=right>801.27</td>
-  <td class=xl66 align=right>2250.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>16</td>
-  <td class=xl66 align=right>19.38</td>
-  <td class=xl66 align=right>89.06</td>
-  <td class=xl66 align=right>512.00</td>
-  <td class=xl66 align=right>96.00</td>
-  <td class=xl66 align=right>854.69</td>
-  <td class=xl66 align=right>2400.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>17</td>
-  <td class=xl66 align=right>20.59</td>
-  <td class=xl66 align=right>94.63</td>
-  <td class=xl66 align=right>544.00</td>
-  <td class=xl66 align=right>102.00</td>
-  <td class=xl66 align=right>908.11</td>
-  <td class=xl66 align=right>2550.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>18</td>
-  <td class=xl66 align=right>21.80</td>
-  <td class=xl66 align=right>100.20</td>
-  <td class=xl66 align=right>576.00</td>
-  <td class=xl66 align=right>108.00</td>
-  <td class=xl66 align=right>961.52</td>
-  <td class=xl66 align=right>2700.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>19</td>
-  <td class=xl66 align=right>23.01</td>
-  <td class=xl66 align=right>105.76</td>
-  <td class=xl66 align=right>608.00</td>
-  <td class=xl66 align=right>114.00</td>
-  <td class=xl66 align=right>1014.94</td>
-  <td class=xl66 align=right>2850.00</td>
- </tr>
- <tr height=21 style='height:16.0pt'>
-  <td height=21 align=right style='height:16.0pt'>20</td>
-  <td class=xl66 align=right>24.22</td>
-  <td class=xl66 align=right>111.33</td>
-  <td class=xl66 align=right>640.00</td>
-  <td class=xl66 align=right>120.00</td>
-  <td class=xl66 align=right>1068.36</td>
-  <td class=xl66 align=right>3000.00</td>
- </tr>
-</table>
+
+| Configuration<BR>Size                 |          | micro             |                 |          | small             |                 |
+|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
+| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| 1                                     |  0\.79   | 5\.57             | 32\.00          |  4\.00   | 53\.42            | 150\.00         |
+| 2                                     |  1\.58   | 11\.13            | 64\.00          |  8\.00   | 106\.84           | 300\.00         |
+| 3                                     |  2\.37   | 16\.70            | 96\.00          |  12\.00  | 160\.25           | 450\.00         |
+| 4                                     |  3\.16   | 22\.27            | 128\.00         |  16\.00  | 213\.67           | 600\.00         |
+| 5                                     |  3\.96   | 27\.83            | 160\.00         |  20\.00  | 267\.09           | 750\.00         |
+| 6                                     |  4\.75   | 33\.40            | 192\.00         |  24\.00  | 320\.51           | 900\.00         |
+| 7                                     |  5\.54   | 38\.96            | 224\.00         |  28\.00  | 373\.93           | 1050\.00        |
+| 8                                     |  6\.33   | 44\.53            | 256\.00         |  32\.00  | 427\.34           | 1200\.00        |
+| 9                                     |  7\.12   | 50\.10            | 288\.00         |  36\.00  | 480\.76           | 1350\.00        |
+| 10                                    |  7\.91   | 55\.66            | 320\.00         |  40\.00  | 534\.18           | 1500\.00        |
+| 11                                    |  8\.70   | 61\.23            | 352\.00         |  44\.00  | 587\.60           | 1650\.00        |
+| 12                                    |  9\.49   | 66\.80            | 384\.00         |  48\.00  | 641\.02           | 1800\.00        |
+| 13                                    |  10\.28  | 72\.36            | 416\.00         |  52\.00  | 694\.43           | 1950\.00        |
+| 14                                    |  11\.07  | 77\.93            | 448\.00         |  56\.00  | 747\.85           | 2100\.00        |
+| 15                                    |  11\.87  | 83\.50            | 480\.00         |  60\.00  | 801\.27           | 2250\.00        |
+| 16                                    |  12\.66  | 89\.06            | 512\.00         |  64\.00  | 854\.69           | 2400\.00        |
+| 17                                    |  13\.45  | 94\.63            | 544\.00         |  68\.00  | 908\.11           | 2550\.00        |
+| 18                                    |  14\.24  | 100\.20           | 576\.00         |  72\.00  | 961\.52           | 2700\.00        |
+| 19                                    |  15\.03  | 105\.76           | 608\.00         |  76\.00  | 1014\.94          | 2850\.00        |
+| 20                                    |  15\.82  | 111\.33           | 640\.00         |  80\.00  | 1068\.36          | 3000\.00        |
+
 
 *These figures do not include resources being used by the Kubernetes system pods.*
 
@@ -1455,8 +1221,8 @@ The process for automating the credentials refresh process is as follows:
 the credentials for your cluster.
     - Check the documentation for your cluster provider for the required commands.
     - For many cluster providers, refreshing the credentials will require logging
-    into an API using provider-specific tools. In those cases you will need install
-    any required tools on your client.
+      into an API using provider-specific tools. In those cases you will need install
+      any required tools on your client.
 2. Determine how often this script needs to be run to keep the credentials valid.
 3. You then use the `--script` and `--scriptPeriod` parameters to runWeathervane.pl 
 to have the script executed every `scriptPeriod` seconds during the run.

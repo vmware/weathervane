@@ -97,7 +97,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'curl -s http://127.0.0.1:8080/auction/healthCheck | grep -Eq alive'
           failureThreshold: 3

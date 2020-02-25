@@ -79,7 +79,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'curl -s http://127.0.0.1:80/driver/up | grep -Eq true'
           failureThreshold: 3

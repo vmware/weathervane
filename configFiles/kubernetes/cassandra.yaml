@@ -98,7 +98,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'nodetool status | grep $POD_IP | grep -Eq UN'
           initialDelaySeconds: 15

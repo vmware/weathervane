@@ -512,6 +512,7 @@ if ($fullHelp) {
 }
 
 my $version = `cat $weathervaneHome/version.txt`;
+chomp($version);
 $console_logger->warn( "Weathervane Version $version" );
 if (!getParamValue($paramsHashRef, "dockerWeathervaneVersion")) {	
 	setParamValue( $paramsHashRef, "dockerWeathervaneVersion",  $version );

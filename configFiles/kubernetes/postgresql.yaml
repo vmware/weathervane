@@ -87,7 +87,6 @@ spec:
           exec:
             command:
             - /bin/sh
-            - -i
             - -c
             - 'cat /tmp/isReady && /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432'
           failureThreshold: 3

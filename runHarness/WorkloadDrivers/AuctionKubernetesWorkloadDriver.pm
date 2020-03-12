@@ -72,7 +72,7 @@ sub getHostPort {
 
 override 'getStatsHost' => sub {
 	my ( $self ) = @_;
-	return "wkldcontroller";
+	return "localhost";
 };
 
 override 'killOld' => sub {

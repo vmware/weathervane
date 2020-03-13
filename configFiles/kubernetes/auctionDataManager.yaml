@@ -65,4 +65,9 @@ spec:
         imagePullPolicy: IfNotPresent
         envFrom:
         - configMapRef:
-            name: auctiondatamanager-config            
+            name: auctiondatamanager-config
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
+      

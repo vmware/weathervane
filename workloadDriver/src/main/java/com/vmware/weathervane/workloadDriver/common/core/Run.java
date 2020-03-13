@@ -47,7 +47,9 @@ public class Run {
 	
 	private String statsOutputDirName;
 	
-	private String statsHost;
+	private String runStatsHost;
+
+	private String workloadStatsHost;
 
 	private List<Workload> workloads;	
 	
@@ -108,7 +110,7 @@ public class Run {
 		initializeRunStatsMessage.setWorkloadNameToNumTargetsMap(workloadNameToNumTargetsMap);
 		
 		HttpEntity<InitializeRunStatsMessage> statsEntity = new HttpEntity<InitializeRunStatsMessage>(initializeRunStatsMessage, requestHeaders);
-		String url = "http://" + statsHost + ":" + portNumber + "/stats/initialize/run/" + name;
+		String url = "http://" + runStatsHost + ":" + portNumber + "/stats/initialize/run/" + name;
 		logger.debug("Sending initialize run message to stats controller.  url = " + url + ", maessage: " + initializeRunStatsMessage);
 		ResponseEntity<BasicResponse> responseEntity 
 				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
@@ -123,7 +125,7 @@ public class Run {
 		 */
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
-			workload.initialize(name, this, hosts, statsHost, portNumber, loadPathController, restTemplate, executorService);
+			workload.initialize(name, this, hosts, workloadStatsHost, portNumber, loadPathController, restTemplate, executorService);
 		}
 		
 		state = RunState.INITIALIZED;
@@ -193,9 +195,6 @@ public class Run {
 		 * Send exit messages to the other driver nodes
 		 */
 		for (String hostname : hosts) {
-			if (hostname == statsHost) {
-				continue;
-			}
 			HttpHeaders requestHeaders = new HttpHeaders();
 			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -297,12 +296,20 @@ public class Run {
 		this.state = state;
 	}
 
-	public String getStatsHost() {
-		return statsHost;
+	public String getRunStatsHost() {
+		return runStatsHost;
 	}
 
-	public void setStatsHost(String statsHost) {
-		this.statsHost = statsHost;
+	public void setRunStatsHost(String runStatsHost) {
+		this.runStatsHost = runStatsHost;
+	}
+
+	public String getWorkloadStatsHost() {
+		return workloadStatsHost;
+	}
+
+	public void setWorkloadStatsHost(String workloadStatsHost) {
+		this.workloadStatsHost = workloadStatsHost;
 	}
 
 	public Integer getPortNumber() {

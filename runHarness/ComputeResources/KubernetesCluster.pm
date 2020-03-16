@@ -895,13 +895,8 @@ sub kubernetesAreAllPodRunningWithNum {
 		$logger->debug("kubernetesAreAllPodRunningWithNum: There are no pods with label $podLabelString in namespace $namespace");
 		return 0;
 	}
-	
-	my $numFound = $#stati + 1;
-	if ($numFound != $num) {
-		$logger->debug("kubernetesAreAllPodRunningWithNum: Found $numFound of $num pods with label $podLabelString in namespace $namespace");
-		return 0;
-	}
-	
+		
+	my $numFoundRunning = 0;
 	foreach my $status (@stati) { 
 		if ($status eq "Pending") {
 			# check if Pending status is due to FailedScheduling, which will prevent the pod from achieving "Running" status
@@ -919,10 +914,13 @@ sub kubernetesAreAllPodRunningWithNum {
 				}
 			}
 		}
-		if ($status ne "Running") {
-			$logger->debug("kubernetesAreAllPodRunningWithNum: Found a non-running pod: $status");
-			return 0;
+		if ($status eq "Running") {
+			$numFoundRunning++;
 		}	
+	}
+	if ($numFoundRunning != $num) {
+		$logger->debug("kubernetesAreAllPodRunningWithNum: Found $numFoundRunning Running pods of $num pods with label $podLabelString in namespace $namespace");
+		return 0;
 	}
 	
 	# make sure all of the endpoints have been created in the associated service
@@ -971,13 +969,8 @@ sub kubernetesAreAllPodUpWithNum {
 		$console_logger->error("kubernetesAreAllPodUpWithNum: There are no pods with label $serviceTypeImpl in namespace $namespace");
 		exit(-1);
 	}
-	
-	my $numFound = $#names + 1;
-	if ($numFound != $num) {
-		$logger->debug("kubernetesAreAllPodUpWithNum: Found $numFound of $num pods with label $serviceTypeImpl in namespace $namespace");
-		return 0;
-	}
-	
+		
+	my $numFoundUp = 0;
 	foreach my $podName (@names) { 	
 		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
 		($cmdFailed, $outString) = runCmd($cmd);
@@ -985,13 +978,17 @@ sub kubernetesAreAllPodUpWithNum {
 		$logger->debug("Output: $outString");
 		if ($cmdFailed) {
 			$logger->debug("kubernetesAreAllPodUpWithNum not up on pod $podName: $outString");
-			return 0;
-		}
-		if ( !($findString eq '') && !($outString =~ /$findString/) ) {
+		} elsif ( !($findString eq '') && !($outString =~ /$findString/) ) {
 			$logger->debug("kubernetesAreAllPodUpWithNum: No match of $findString to Output on pod $podName");
-			return 0;
+		} else {
+			$numFoundUp++;
 		}	
 	}
+	if ($numFoundUp != $num) {
+		$logger->debug("kubernetesAreAllPodUpWithNum: Found $numFoundUp Up pods of $num pods with label $serviceTypeImpl in namespace $namespace");
+		return 0;
+	}
+
 	$logger->debug("kubernetesAreAllPodUpWithNum: Matched $findString to $num pods");
 	return 1;
 }

@@ -195,6 +195,9 @@ public class Run {
 		 * Send exit messages to the other driver nodes
 		 */
 		for (String hostname : hosts) {
+			if (hostname.equals(workloadStatsHost)) {
+				continue;
+			}
 			HttpHeaders requestHeaders = new HttpHeaders();
 			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);

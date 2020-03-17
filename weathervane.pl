@@ -795,6 +795,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
 		$secondary->initialize(0);
+		$secondary->namespace($workloadDriver->namespace);
 		$driverNum++;
 
 		# Add the secondary driver to the primary

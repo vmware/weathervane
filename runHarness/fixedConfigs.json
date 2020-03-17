@@ -56,8 +56,8 @@
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,
-  "dbLoaderCpus" : "500m",
-  "dbLoaderMem" : "2000Mi",
+  "dbLoaderCpus" : "400m",
+  "dbLoaderMem" : "2500Mi",
   "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
@@ -117,8 +117,8 @@
 
   "dbLoaderThreads" : 8,
   "dbPrepThreads" : 128,
-  "dbLoaderCpus" : "500m",
-  "dbLoaderMem" : "2000Mi",
+  "dbLoaderCpus" : "400m",
+  "dbLoaderMem" : "2500Mi",
   "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 

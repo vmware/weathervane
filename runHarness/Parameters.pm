@@ -1221,6 +1221,14 @@ $parameters{"useKubernetesRequests"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"useDataManagerRequests"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"dockerCpuShares"} = {
 	"type"      => "=i",
 	"default"   => 0,

@@ -91,7 +91,7 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /(\s+)resources/ )  {
 			my $indent = $1;
-			if ($self->getParamValue('useKubernetesRequests')) {
+			if ($self->getParamValue('useKubernetesRequests') && $self->getParamValue('useDataManagerRequests')) {
 				print FILEOUT $inline;
 				print FILEOUT "$indent  requests:\n";
 				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbLoaderCpus') . "\n";

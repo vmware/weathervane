@@ -63,6 +63,10 @@ spec:
       - image: repository/weathervane-auctiondatamanager:1.2.0
         name: auctiondatamanager
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
         envFrom:
         - configMapRef:
-            name: auctiondatamanager-config            
+            name: auctiondatamanager-config      

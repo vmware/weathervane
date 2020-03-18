@@ -70,7 +70,12 @@ sub getHostPort {
 	return 80;
 }
 
-override 'getStatsHost' => sub {
+override 'getRunStatsHost' => sub {
+	my ( $self ) = @_;
+	return "localhost";
+};
+
+override 'getWorkloadStatsHost' => sub {
 	my ( $self ) = @_;
 	return "wkldcontroller";
 };

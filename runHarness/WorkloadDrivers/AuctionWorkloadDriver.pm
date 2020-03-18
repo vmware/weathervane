@@ -361,7 +361,12 @@ sub getHostPort {
 	return $self->portMap->{'http'};
 }
 
-sub getStatsHost {
+sub getRunStatsHost {
+	my ( $self ) = @_;
+	return $self->host->name
+}
+
+sub getWorkloadStatsHost {
 	my ( $self ) = @_;
 	return $self->host->name
 }
@@ -396,7 +401,8 @@ sub createRunConfigHash {
 
 	$runRef->{"name"} = "runW${workloadNum}";
 
-	$runRef->{"statsHost"}          = $self->getStatsHost();
+	$runRef->{"runStatsHost"}          = $self->getRunStatsHost();
+	$runRef->{"workloadStatsHost"}     = $self->getWorkloadStatsHost();
 	$runRef->{"statsOutputDirName"} = "/tmp";
 
 	$runRef->{"workloads"} = [];

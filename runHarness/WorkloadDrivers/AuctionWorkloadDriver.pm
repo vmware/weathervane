@@ -169,7 +169,7 @@ has 'ua' => (
 );
 
 override 'initialize' => sub {
-	my ( $self, $paramHashRef ) = @_;
+	my ( $self, $isMaster ) = @_;
 	super();
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;

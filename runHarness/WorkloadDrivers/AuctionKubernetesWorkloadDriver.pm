@@ -35,11 +35,13 @@ has 'namespace' => (
 );
 
 override 'initialize' => sub {
-	my ( $self, $paramHashRef ) = @_;
+	my ( $self, $isMaster ) = @_;
 	super();
 
 	my $cluster = $self->host;
-	$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, ""));
+	if ($isMaster) {
+		$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, ""));
+	}
 };
 
 override 'redeploy' => sub {

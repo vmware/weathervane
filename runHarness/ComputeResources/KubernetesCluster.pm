@@ -923,20 +923,31 @@ sub kubernetesAreAllPodRunningWithNum {
 		return 0;
 	}
 	
-	# make sure all of the endpoints have been created in the associated service
-	$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+	# Check whether there is a service for this selector.  If so, we need to count the endpoints
+	# to make sure they all exist
+	$cmd = "kubectl get svc --selector=$podLabelString -o=jsonpath='{.items[*].kind}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+		return 0;
 	} else {
-		$logger->debug("Command: $cmd");
-		$logger->debug("Output: $outString");
-		if ($num != $outString) {
-			$logger->debug("kubernetesAreAllPodRunningWithNum: Not all endpoints have been created. Found $outString, expected $num");
-			return 0;
-		}	
+		if ($outString > 0) {			
+			# make sure all of the endpoints have been created in the associated service
+			$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+				return 0;
+			} else {
+				$logger->debug("Command: $cmd");
+				$logger->debug("Output: $outString");
+				if ($num != $outString) {
+					$logger->debug("kubernetesAreAllPodRunningWithNum: Not all endpoints have been created. Found $outString, expected $num");
+					return 0;
+				}	
+			}
+		}
 	}
-	
 	$logger->debug("kubernetesAreAllPodRunningWithNum: All pods are running");
 	return 1;
 }

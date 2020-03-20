@@ -931,6 +931,8 @@ sub kubernetesAreAllPodRunningWithNum {
 		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
 		return 0;
 	} else {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
 		if ($outString > 0) {			
 			# make sure all of the endpoints have been created in the associated service
 			$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";

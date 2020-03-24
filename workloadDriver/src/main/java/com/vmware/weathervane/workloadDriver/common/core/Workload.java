@@ -70,7 +70,10 @@ public abstract class Workload implements UserFactory {
 	private String runName;
 
 	@JsonIgnore
-	private String statsHostName;
+	private String runStatsHost;
+
+	@JsonIgnore
+	private String workloadStatsHost;
 
 	@JsonIgnore
 	private int statsPortNumber;
@@ -105,7 +108,7 @@ public abstract class Workload implements UserFactory {
 	/*
 	 * Used to initialize the master workload in the RunService
 	 */
-	public void initialize(String runName, Run run, List<String> hosts, String statsHostName, int statsPortNumber, 
+	public void initialize(String runName, Run run, List<String> hosts, String runStatsHost, String workloadStatsHost, int statsPortNumber, 
 			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		logger.debug("Initialize workload: " + this.toString());
 
@@ -122,7 +125,9 @@ public abstract class Workload implements UserFactory {
 		this.runName = runName;
 		this.run = run;
 		this.hosts = hosts;
-		this.statsHostName = statsHostName;
+		
+		this.runStatsHost = runStatsHost;
+		this.workloadStatsHost = workloadStatsHost;
 		this.statsPortNumber = statsPortNumber;
 		this.LoadPathController = loadPathController;
 		this.restTemplate = restTemplate;
@@ -137,7 +142,7 @@ public abstract class Workload implements UserFactory {
 			msg.setHostname(hostname);
 			msg.setNodeNumber(nodeNum);
 			msg.setNumNodes(hosts.size());
-			msg.setStatsHostName(statsHostName);
+			msg.setStatsHostName(workloadStatsHost);
 			msg.setStatsPortNumber(statsPortNumber);
 			msg.setRunName(runName);
 			/*
@@ -172,7 +177,7 @@ public abstract class Workload implements UserFactory {
 		 * LoadPaths run locally
 		 */
 		getLoadPath().initialize(runName, name, this, loadPathController, 
-				hosts, statsHostName, statsPortNumber, restTemplate, executorService);
+				hosts, runStatsHost, statsPortNumber, restTemplate, executorService);
 
 		state = WorkloadState.INITIALIZED;
 	}
@@ -183,7 +188,7 @@ public abstract class Workload implements UserFactory {
 	public void initializeNode(InitializeWorkloadMessage initializeWorkloadMessage) {
 		logger.debug("initializeNode name = " + name);
 		this.hostname = initializeWorkloadMessage.getHostname();
-		this.statsHostName = initializeWorkloadMessage.getStatsHostName();
+		this.workloadStatsHost = initializeWorkloadMessage.getStatsHostName();
 		this.statsPortNumber = initializeWorkloadMessage.getStatsPortNumber();
 		this.numNodes = initializeWorkloadMessage.getNumNodes();
 		this.nodeNumber = initializeWorkloadMessage.getNodeNumber();
@@ -191,7 +196,7 @@ public abstract class Workload implements UserFactory {
 
 		operations = this.getOperations();
 
-		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, statsHostName, statsPortNumber,
+		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost, statsPortNumber,
 				hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
 
 		/*
@@ -426,6 +431,22 @@ public abstract class Workload implements UserFactory {
 
 	public void setStatsIntervalSpecs(List<StatsIntervalSpec> statsIntervalSpecs) {
 		this.statsIntervalSpecs = statsIntervalSpecs;
+	}
+
+	public String getRunStatsHost() {
+		return runStatsHost;
+	}
+
+	public void setRunStatsHost(String runStatsHost) {
+		this.runStatsHost = runStatsHost;
+	}
+
+	public String getWorkloadStatsHost() {
+		return workloadStatsHost;
+	}
+
+	public void setWorkloadStatsHost(String workloadStatsHost) {
+		this.workloadStatsHost = workloadStatsHost;
 	}
 
 	@Override

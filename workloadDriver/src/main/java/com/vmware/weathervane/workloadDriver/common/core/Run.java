@@ -125,7 +125,8 @@ public class Run {
 		 */
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
-			workload.initialize(name, this, hosts, workloadStatsHost, portNumber, loadPathController, restTemplate, executorService);
+			workload.initialize(name, this, hosts, runStatsHost, workloadStatsHost, portNumber, 
+					loadPathController, restTemplate, executorService);
 		}
 		
 		state = RunState.INITIALIZED;

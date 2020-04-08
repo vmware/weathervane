@@ -298,10 +298,16 @@ sub loadData {
 	$logger->debug("Exec-ing perl /loadData.pl");
 	print $applog "Exec-ing perl /loadData.pl\n";
 	my $kubernetesConfigFile = $cluster->getParamValue('kubeconfigFile');
+	my $context = $cluster->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
 	# Get the list of pods
 	my $cmd;
 	my $outString;	
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace 2>&1";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace --kubeconfig=$kubernetesConfigFile $contextString 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -309,13 +315,13 @@ sub loadData {
 	print $applog "Output: $outString\n";
 	my @lines = split /\s+/, $outString;
 	if ($#lines < 0) {
-		$console_logger->error("loadData: There are no pods with label auctiondatamanager in namespace $namespace");
-		exit(-1);
+		$console_logger->error("Data loading failed for Workload $workloadNum, appInstance $appInstanceNum: There are no pods with label auctiondatamanager in namespace $namespace");
+		return 0;
 	}
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace  --kubeconfig=$kubernetesConfigFile $contextString $podName -- perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
 	print $applog "opening pipe with command $cmd\n";
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";

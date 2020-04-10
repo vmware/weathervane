@@ -315,7 +315,7 @@ sub loadData {
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
+	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName -- perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
 	print $applog "opening pipe with command $cmd\n";
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";

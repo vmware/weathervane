@@ -6,7 +6,7 @@ use strict;
 use POSIX;
 
 my $appInstanceNum = $ENV{'APPINSTANCENUM'};
-print "Cleaning data for appInstance $appInstanceNum\n";
+print "Checking whether data is loaded for appInstance $appInstanceNum\n";
 
 # Not preparing any auctions, just cleaning up
 my $auctions = 0;

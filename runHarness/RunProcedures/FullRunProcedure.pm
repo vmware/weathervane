@@ -116,16 +116,15 @@ override 'run' => sub {
 	## get the logs
 	$self->getLogFiles($tmpDir);
 
-	my $sanityPassed = 1;
+	# Stop the workload drivers from driving load
+	$self->stopWorkloads( $seqnum, $tmpDir );
 
+	my $sanityPassed = 1;
 	if ( $self->getParamValue('stopServices') ) {
 
 		## stop the services
 		$self->stopDataManager($cleanupLogDir);
 		
-		my @tiers = qw(frontend backend data infrastructure);
-		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
-
  		$sanityPassed = $self->sanityCheckServices($cleanupLogDir);
 		if ($sanityPassed) {
 			$console_logger->info("All Sanity Checks Passed");
@@ -133,6 +132,9 @@ override 'run' => sub {
 		else {
 			$console_logger->info("Sanity Checks Failed");
 		}
+
+		my @tiers = qw(frontend backend data infrastructure);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 
 		# clean up old logs and stats
 		$self->cleanup($cleanupLogDir);
@@ -160,23 +162,25 @@ override 'run' => sub {
 	# and gather up the headers and values for the results csv
 	my $csvHashRef = $self->getStatsSummary($seqnum, $tmpDir);
 
+	# Shut down the drivers
+	$self->shutdownDrivers( $seqnum, $tmpDir );
+
 	# Todo: Add parsing of logs for errors
 	# my $isRunError = $self->parseLogs()
 	my $isRunError = 0;
 
+	my $workloadPassedHashRef = $self->isWorkloadPassed($tmpDir);
 	my $isPassed = $self->isPassed($tmpDir) && $sanityPassed;
 	
-	# Stop the workload drivers
-	$self->stopWorkloads( $seqnum, $tmpDir );
-
 	my $runResult = RunResult->new(
 		'runNum'                => $seqnum,
 		'isPassable'            => 1,
+		'workloadPassedHashRef' => $workloadPassedHashRef,
 		'isPassed'              => $isPassed,
 		'runNum'                => $seqnum,
 		'resultsSummaryHashRef' => $csvHashRef,
-
 		'metricsHashRef'        => $self->getResultMetrics(),
+		'workloadMetricsHashRef' => $self->getWorkloadResultMetrics(),
 		'isRunError' => $isRunError,
 	);
 

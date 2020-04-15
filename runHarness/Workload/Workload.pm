@@ -149,6 +149,13 @@ sub stopRun {
 	return $self->primaryDriver->stopRun( $seqnum, $tmpDir, $self->suffix );
 }
 
+sub shutdownDrivers {
+	my ( $self, $seqnum, $tmpDir ) = @_;
+	my $logger = get_logger("Weathervane::Workload::Workload");
+	$logger->debug("shutdownDrivers: seqnum = $seqnum, tmpDir = $tmpDir");
+	return $self->primaryDriver->shutdownDrivers( $seqnum, $tmpDir, $self->suffix );
+}
+
 # We have found the maximum if all appInstances have hit a maximum
 sub foundMax {
 	my ($self)   = @_;

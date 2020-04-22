@@ -739,7 +739,18 @@ sub kubernetesGetNodeIPs {
 		@ips = split /\s/, $outString;
 		
 		if ($#ips < 0) {
-			$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+			# Include the master node.   This is needed for single node clusters without the master taint
+			$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
+			}
+			$logger->debug("Command: $cmd");
+			$logger->debug("Output: $outString");
+			@ips = split /\s/, $outString;
+			if ($#ips < 0) {
+				$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+			}
 		}
 	}
 

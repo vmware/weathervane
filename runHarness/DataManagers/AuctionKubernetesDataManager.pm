@@ -120,8 +120,10 @@ sub startDataManagerContainer {
 	sleep 15;
 	my $retries = 20;
 	while ($retries >= 0) {
-		my $isRunning = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
-		
+		my ($isRunning, $errorStr) = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
+		if (!$isRunning && defined $errorStr) {
+			return 0; #short circuit waiting, retries, and sleeps in cases like FailedScheduling
+		}
 		if ($isRunning) {
 			return 1;
 		}
@@ -205,7 +207,15 @@ sub prepareData {
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	$self->startDataManagerContainer ($users, $logHandle);
+	if (!$self->startDataManagerContainer($users, $logHandle)) {
+		$console_logger->info(
+				    "Could not start AuctionDataManager pod for appInstance "
+				  . "$appInstanceNum of workload $workloadNum." );
+		# stop the auctiondatamanager container
+		$self->stopDataManagerContainer($logHandle);
+		return 0;		
+	}
+	
 		
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
@@ -321,7 +331,7 @@ sub loadData {
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace  --kubeconfig=$kubernetesConfigFile $contextString $podName -- perl /loadData.pl"; 
+	$cmd = "kubectl exec -c auctiondatamanager --namespace=$namespace  --kubeconfig=$kubernetesConfigFile $contextString $podName -- perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
 	print $applog "opening pipe with command $cmd\n";
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";

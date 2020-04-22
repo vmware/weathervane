@@ -56,8 +56,7 @@ override 'stop' => sub {
 	close $log;
 };
 
-# Configure and Start all of the services needed for the 
-# Nginx service
+# Configure and Start all of the services 
 override 'start' => sub {
 	my ($self, $serviceType, $users, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::KubernetesService");

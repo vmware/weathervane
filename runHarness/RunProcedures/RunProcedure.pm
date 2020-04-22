@@ -211,6 +211,20 @@ sub stopWorkloads {
 	return $success;
 }
 
+sub shutdownDrivers {
+	my ( $self, $seqnum, $tmpDir ) = @_;
+	my $debug_logger = get_logger("Weathervane::RunProcedures::RunProcedure");
+	$debug_logger->debug("shutdownDrivers.  seqnum = $seqnum, tmpDir = $tmpDir");
+
+	my $success = callBooleanMethodOnObjectsParallel2( 'shutdownDrivers', $self->workloadsRef, $seqnum, $tmpDir );
+	if ( !$success ) {
+		return 0;
+	}
+	$debug_logger->debug("shutdownDrivers suceeded.");
+
+	return $success;
+}
+
 ####################
 #
 # This method spawns a thread that manages activities that must take place
@@ -383,6 +397,15 @@ sub isPassed {
 		$passed &= $workload->isPassed($tmpDir);
 	}
 	return $passed;
+}
+
+sub isWorkloadPassed {
+	my ( $self, $tmpDir ) = @_;
+	my %workloadPassed;
+	foreach my $workload ( @{ $self->workloadsRef } ) {
+		$workloadPassed{$workload->instanceNum} = $workload->isPassed($tmpDir);
+	}
+	return \%workloadPassed;
 }
 
 sub setLoadPathType {
@@ -1011,6 +1034,19 @@ sub getResultMetrics {
 		$WvUsers += $metricsRef->{"WvUsers"};
 	}
 	$csv{"WvUsers"}         = $WvUsers;
+	
+	return \%csv;
+}
+
+sub getWorkloadResultMetrics {
+	my ( $self ) = @_;
+	my %csv;
+	
+	my $workloadsRef = $self->workloadsRef;
+	foreach my $workload (@$workloadsRef) {
+		my $metricsRef = $workload->getResultMetrics();
+		$csv{$workload->instanceNum} = {"WvUsers" => $metricsRef->{"WvUsers"}};
+	}
 	
 	return \%csv;
 }

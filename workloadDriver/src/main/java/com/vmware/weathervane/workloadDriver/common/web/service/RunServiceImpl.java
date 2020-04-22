@@ -160,17 +160,11 @@ public class RunServiceImpl implements RunService {
 		logger.debug("stop for run " + runName);
 		Run run = runs.get(runName);
 		if (run == null) {
-			logger.debug("stop Run " + runName + " does not exist.");
+			logger.warn("stop Run " + runName + " does not exist.");
 			throw new RunNotInitializedException("Run " + runName + " does not exist.");
 		}
 
-		if (run.getState() != RunState.RUNNING) {
-			logger.debug("stop Run " + runName + " is not running.");
-			throw new RunNotInitializedException("Run " + runName + " is not running");
-		}
-
 		run.stop();
-
 	}
 
 	@Override
@@ -189,7 +183,6 @@ public class RunServiceImpl implements RunService {
 
 		run.shutdown();
 		runs.remove(runName);		
-		
 	}
 
 	@Override
@@ -201,7 +194,6 @@ public class RunServiceImpl implements RunService {
 		} else {
 			return true;
 		}
-
 	}
 
 	@Override

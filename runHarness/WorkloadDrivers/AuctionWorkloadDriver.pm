@@ -1326,7 +1326,7 @@ sub startRun {
 									chop($successStr);
 								}
 								my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
-								$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								$console_logger->info("   [workload $workloadNum, appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 							}
 						}
 					}
@@ -1373,7 +1373,7 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-            	my $instancesString = "[appInstance";
+            	my $instancesString = "[workload $workloadNum, appInstance";
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	if ($#{$instancesListRef} == 0) {
             		$instancesString .= ": " . $instancesListRef->[0];
@@ -1400,7 +1400,7 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	$console_logger->info("Run is complete");
+	$console_logger->info("workload: $workloadNum: Run is complete");
 	kill(9, $pid);
 	
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
@@ -1440,30 +1440,10 @@ sub startRun {
 		}
 	}
 
-	# Now send the stats/complete message the primary driver which is also the statsService host
-	my $statsCompleteMsg = {};
-	$statsCompleteMsg->{'timestamp'} = time;
-	my $statsCompleteContent = $self->json->encode($statsCompleteMsg);
-	$url      = $self->getControllerURL() . "/stats/complete/$runName";
-	$retryCount = 0;
-	$success = 0;
-	do {
-		$res = $self->doHttpPost($url, $statsCompleteContent);
-		if ( $res->{"is_success"} ) {
-			$success = 1;
-		} else {
-			sleep 10;
-		}
-		$retryCount++
-	} while ((!$success) && ($retryCount < 12));
-	if (!$success) {
-		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
-		return 0;
-	}
 	close $logHandle;
 
 	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $workloadNum: $impl finished");
+	$console_logger->info("Workload $workloadNum finished");
 
 	return 1;
 }
@@ -1496,7 +1476,56 @@ sub parseNameStr {
 	return $nameStr;
 }
 
+# Stop driving load for this run
 sub stopRun {
+	my ( $self, $runNum, $logDir, $suffix ) = @_;
+	my $console_logger = get_logger("Console");
+	my $logger =
+	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+
+	my $workloadNum             = $self->workload->instanceNum;
+	my $runName                 = "runW${workloadNum}";
+	my $port = $self->portMap->{'http'};
+	my $hostname = $self->host->name;
+
+	# Now send the stop message
+	my $url      = $self->getControllerURL() . "/run/$runName/stop";
+	my $runContent = "{}";
+
+	my $res = $self->doHttpPost($url, $runContent);
+	if ( !$res->{"is_success"} ) {
+		$console_logger->warn(
+			"Could not send stop message to workload driver node on $hostname. Exiting"
+		);
+		return 0;
+	}
+				
+
+	# Now send the stats/complete message the primary driver which is also the statsService host
+	my $statsCompleteMsg = {};
+	$statsCompleteMsg->{'timestamp'} = time;
+	my $statsCompleteContent = $self->json->encode($statsCompleteMsg);
+	$url      = $self->getControllerURL() . "/stats/complete/$runName";
+	my $retryCount = 0;
+	my $success = 0;
+	do {
+		$res = $self->doHttpPost($url, $statsCompleteContent);
+		if ( $res->{"is_success"} ) {
+			$success = 1;
+		} else {
+			sleep 10;
+		}
+		$retryCount++
+	} while ((!$success) && ($retryCount < 12));
+	if (!$success) {
+		$console_logger->warn("Could not send stats/complete message to workload controller. Exiting");
+		return 0;
+	}
+	
+	return 1;
+}
+
+sub shutdownDrivers {
 	my ( $self, $runNum, $logDir, $suffix ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger =

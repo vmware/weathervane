@@ -1056,7 +1056,7 @@ $parameters{"runStrategy"} = {
 $parameters{"configurationSize"} = {
 	"type"      => "=s",
 	"default"   => "micro",
-	"parent"    => "runManager",
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
 };

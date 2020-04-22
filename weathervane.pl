@@ -691,9 +691,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
 	$workload->instanceNum($workloadNum);
-	if ( $numWorkloads > 1 ) {
-		$workload->useSuffix(1);
-	}
 	$workload->initialize();
 	push @workloads, $workload;
 

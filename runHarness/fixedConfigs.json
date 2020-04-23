@@ -239,19 +239,19 @@
 
   "numDbServers" : 1, 
   "dbServerCpus" : "250m",
-  "dbServerMem" : "8Gi",
+  "dbServerMem" : "4Gi",
   "dbServerImpl" : "postgresql",
   "postgresqlVolumeSize" : "10Gi",
 
   "numNosqlServers" : 1, 
   "nosqlServerCpus" : "400m",
-  "nosqlServerMem" : "7Gi",
+  "nosqlServerMem" : "6Gi",
   "nosqlServerImpl" : "cassandra",
   "cassandraDataVolumeSize" : "80Gi",
 
   "dbLoaderThreads" : 16,
   "dbPrepThreads" : 128,
-  "dbLoaderCpus" : "2000m",
+  "dbLoaderCpus" : "m",
   "dbLoaderMem" : "9000Mi",
   "dbLoaderJvmOpts" : "-Xmx8g -Xms8g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },

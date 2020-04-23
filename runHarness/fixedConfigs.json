@@ -234,7 +234,7 @@
   
   "numMsgServers" : 1, 
   "msgServerCpus" : "25m",
-  "msgServerMem" : "500mi",
+  "msgServerMem" : "500Mi",
   "msgServerImpl" : "rabbitmq",
 
   "numDbServers" : 1, 

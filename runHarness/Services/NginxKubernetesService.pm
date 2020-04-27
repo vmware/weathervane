@@ -113,9 +113,12 @@ sub configure {
 				print FILEOUT "$indent    memory: " . $self->getParamValue('webServerMem') . "\n";
 			}
 			if ($self->getParamValue('useKubernetesLimits')) {
+				my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
+				my $cpuLimit = $self->expandK8sCpu($self->getParamValue('webServerCpus'), $limitsExpansion);
+				my $memLimit = $self->expandK8sMem($self->getParamValue('webServerMem'), $limitsExpansion);
 				print FILEOUT "$indent  limits:\n";
-				print FILEOUT "$indent    cpu: " . $self->getParamValue('webServerCpus') . "\n";
-				print FILEOUT "$indent    memory: " . $self->getParamValue('webServerMem') . "\n";						
+				print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+				print FILEOUT "$indent    memory: " . $memLimit . "\n";						
 			}
 
 			do {

@@ -118,9 +118,12 @@ sub configure {
 				print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";
 			}
 			if ($self->getParamValue('useKubernetesLimits')) {
+				my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
+				my $cpuLimit = $self->expandK8sCpu($self->getParamValue('dbServerCpus'), $limitsExpansion);
+				my $memLimit = $self->expandK8sMem($self->getParamValue('dbServerMem'), $limitsExpansion);
 				print FILEOUT "$indent  limits:\n";
-				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbServerCpus') . "\n";
-				print FILEOUT "$indent    memory: " . $self->getParamValue('dbServerMem') . "\n";						
+				print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+				print FILEOUT "$indent    memory: " . $memLimit . "\n";	
 			}
 			
 			do {

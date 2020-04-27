@@ -17,6 +17,8 @@ my $version = '2.0.0';
 my $outputDir = 'output';
 my $tmpDir = '';
 my $backgroundScript = '';
+my $mapSsh = '';
+my $fixedConfigsFile = "";
 my $scriptPeriodSec = 60;
 my $help = '';
 
@@ -32,7 +34,9 @@ GetOptions(	'accept!' => \$accept,
 			'version=s' => \$version,
 			'tmpDir=s' => \$tmpDir,
 			'script=s' => \$backgroundScript,
+			'fixedConfigsFile=s' => \$fixedConfigsFile,
 			'scriptPeriod=i' => \$scriptPeriodSec,
+			'mapSsh!' => $mapSsh,
 			'help!' => \$help,
 		);
 		
@@ -76,6 +80,9 @@ sub usage {
 	print "              default value: None.\n";
 	print "--scriptPeriod: The frequency at which the script should be run in seconds.\n";
 	print "              default value: 60\n";
+	print "--mapSsh:     Causes the user's \$HOME/.ssh directory to be mapped into the run harness container.\n";
+	print "              This is only needed when collecting esxtop data, which requires passwordless ssh.\n";
+	print "              default value: False\n";
 	print "--accept:     Accepts the terms of the Weathervane license.  Useful when running this script\n";
 	print "              from another script.  Only needs to be specified on the first run in a given directory.\n";
 	print "              default value: None.  If no value is specified the user is prompted to accept the\n";
@@ -299,7 +306,7 @@ if (!(-e $resultsFile)) {
 
 my $homeDir = $ENV{'HOME'};
 my $sshMountString = "";
-if ((-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
+if ($mapSsh && (-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
     $sshMountString = "-v $homeDir/.ssh:/root/.ssh";
 }
 
@@ -324,8 +331,24 @@ foreach my $k8sConfig (@$k8sConfigFilesRef) {
 	}
 }
 
+
+
 my $configMountString = "-v $configFile:/root/weathervane/weathervane.config";
 my $resultsMountString = "-v $resultsFile:/root/weathervane/weathervaneResults.csv";
+
+my $fixedConfigsMountString = "";
+if ($fixedConfigsFile) {
+	# If the fixedConfigsFile does not reference a file with an absolute path, 
+	# then make it an absolute path relative to the local dir
+	if (!($fixedConfigsFile =~ /\//)) {
+		$fixedConfigsFile = "$pwd/$fixedConfigsFile";	
+	}
+	if (!(-e "$fixedConfigsFile") || !(-f "$fixedConfigsFile")) {
+		die "fixedConfigsFile $fixedConfigsFile must exist\n";
+	} else {
+		$fixedConfigsMountString = "-v $fixedConfigsFile:/root/weathervane/runHarness/fixedConfigs.json";
+	}
+}
 
 my $tz = `date +%Z`;
 chomp($tz);
@@ -347,7 +370,7 @@ print "Starting Weathervane Run-Harness.  Pulling container image may take a few
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
 my $cmdString = "docker run --name weathervane --net host $tzEnvString --rm -d -w /root/weathervane " 
-		. "$configMountString $resultsMountString $k8sConfigMountString " 
+		. "$configMountString $resultsMountString $k8sConfigMountString $fixedConfigsMountString " 
 		. "$outputMountString $tmpMountString $sshMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
 my $dockerId = `$cmdString`;

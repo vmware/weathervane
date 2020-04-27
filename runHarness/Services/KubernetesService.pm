@@ -6,7 +6,7 @@ use Moose;
 use Tie::IxHash;
 use Parameters qw(getParamValue);
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
-use POSIX qw(floor);
+use POSIX qw(floor ceil);
 use namespace::autoclean;
 use Log::Log4perl qw(get_logger);
 use ComputeResources::ComputeResource;

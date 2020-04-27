@@ -338,7 +338,12 @@ my $resultsMountString = "-v $resultsFile:/root/weathervane/weathervaneResults.c
 
 my $fixedConfigsMountString = "";
 if ($fixedConfigsFile) {
-	if (!(-e "$fixedConfigsFile") || (-f "$fixedConfigsFile")) {
+	# If the fixedConfigsFile does not reference a file with an absolute path, 
+	# then make it an absolute path relative to the local dir
+	if (!($fixedConfigsFile =~ /\//)) {
+		$fixedConfigsFile = "$pwd/$fixedConfigsFile";	
+	}
+	if (!(-e "$fixedConfigsFile") || !(-f "$fixedConfigsFile")) {
 		die "fixedConfigsFile $fixedConfigsFile must exist\n";
 	} else {
 		$fixedConfigsMountString = "-v $fixedConfigsFile:/root/weathervane/runHarness/fixedConfigs.json";
@@ -365,7 +370,7 @@ print "Starting Weathervane Run-Harness.  Pulling container image may take a few
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
 my $cmdString = "docker run --name weathervane --net host $tzEnvString --rm -d -w /root/weathervane " 
-		. "$configMountString $resultsMountString $k8sConfigMountString $fixedConfigsMountString" 
+		. "$configMountString $resultsMountString $k8sConfigMountString $fixedConfigsMountString " 
 		. "$outputMountString $tmpMountString $sshMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
 my $dockerId = `$cmdString`;

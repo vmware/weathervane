@@ -28,7 +28,7 @@ SPDX-License-Identifier: BSD-2-Clause
         	<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
             	<property name="initialInterval" value="500" />
             	<property name="multiplier" value="2.0" />
-            	<property name="maxInterval" value="600" />
+            	<property name="maxInterval" value="10000" />
         	</bean>
    	 	</property>
 	</bean>
@@ -81,6 +81,7 @@ SPDX-License-Identifier: BSD-2-Clause
 		<rabbit:connection-factory id="rabbitConnectionFactory"
 			host="${RABBITMQ_HOST}" port="${RABBITMQ_PORT}" 
 			username="auction" password="auction" virtual-host="auction" 
+			requested-heartbeat="10"
 			/>
 			
 	</beans>
@@ -89,6 +90,7 @@ SPDX-License-Identifier: BSD-2-Clause
 		<rabbit:connection-factory id="rabbitConnectionFactory" 
 			addresses="${RABBITMQ_HOSTS}" 
 			username="auction" password="auction" virtual-host="auction" 
+			requested-heartbeat="10"
 			/>
 	</beans>
 </beans>

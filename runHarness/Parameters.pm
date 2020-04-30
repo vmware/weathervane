@@ -1207,7 +1207,7 @@ $parameters{"useAppServerLimits"} = {
 
 $parameters{"useKubernetesLimits"} = {
 	"type"      => "!",
-	"default"   => JSON::true,
+	"default"   => JSON::false,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

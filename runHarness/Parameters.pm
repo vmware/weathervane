@@ -1215,7 +1215,7 @@ $parameters{"useKubernetesLimits"} = {
 
 $parameters{"limitsExpansionPct"} = {
 	"type"      => "=i",
-	"default"   => 20,
+	"default"   => 0,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,

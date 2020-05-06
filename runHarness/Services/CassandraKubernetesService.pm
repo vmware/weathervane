@@ -178,7 +178,7 @@ sub configure {
 	close FILEIN;
 	close FILEOUT;
 	
-	# Delete the pvcs for postgresqlDataVolume  and postregresqlLogVolume
+	# Delete the pvcs for cassandra
 	# if the size doesn't match the requested size.  
 	# This is to make sure that we are running the
 	# correct configuration size

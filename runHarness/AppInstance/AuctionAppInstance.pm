@@ -240,12 +240,7 @@ override 'checkConfig' => sub {
 		}
 		if ($dbServer->getParamValue('postgresqlUseNamedVolumes') || $host->getParamValue('vicHost')) {
 			# use named volumes.  Error if does not exist
-			my $volumeName = $dbServer->getParamValue('postgresqlDataVolume');
-			if (!$host->dockerVolumeExists($volumeName)) {
-				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
-				return 0;
-			}
-			$volumeName = $dbServer->getParamValue('postgresqlLogVolume');
+			my $volumeName = $dbServer->getParamValue('postgresqlVolume');
 			if (!$host->dockerVolumeExists($volumeName)) {
 				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 				return 0;

@@ -389,23 +389,32 @@ sub kubernetesDeleteAllForCluster {
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "kubectl get namespaces -o=jsonpath='{.items[*].metadata.name}' --kubeconfig=$kubeconfigFile $contextString";
-	($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("kubernetesDeleteAllForCluster get namespaces failed: $cmdFailed");
-		return 0;
-	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
+	my @namespaceNames;
+	my $matchStr = "not set";
 
-	my @namespaceNames = split /\s+/, $outString;
+	if ($self->useAvailableNamespaces) {
+		my $namespacesRef = $self->getParamValue("namespaces");
+		@namespaceNames = @$namespacesRef;
+	} else {
+		$cmd = "kubectl get namespaces -o=jsonpath='{.items[*].metadata.name}' --kubeconfig=$kubeconfigFile $contextString";
+		($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->error("kubernetesDeleteAllForCluster get namespaces failed: $cmdFailed");
+			return 0;
+		}
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+
+		@namespaceNames = split /\s+/, $outString;
+		$matchStr = '^' .  $self->getParamValue("namespacePrefix") . 'w\d+i\d+' . $self->getParamValue("namespaceSuffix") . '$';
+	}
 	if ($#namespaceNames < 0) {
 		$logger->debug("kubernetesDeleteAllForCluster: There are no namespaces.");
 		return 1;
 	}
 	my $initialRemaining = 0;
 	foreach my $namespace (@namespaceNames) {
-		if ($namespace =~ /^auctionw/) {
+		if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
 			$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
@@ -421,10 +430,10 @@ sub kubernetesDeleteAllForCluster {
 				if ($numRemaining == 0) {
 					next;
 				}
-				_kubernetesDeleteAllForClusterHelper($logger, "deployment", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "statefulset", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "service", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "configmap", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+				_kubernetesDeleteAllForClusterHelper($logger, "deployment", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "statefulset", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "service", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "configmap", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
 			}
 		}
 	}
@@ -439,7 +448,7 @@ sub kubernetesDeleteAllForCluster {
 		$logger->debug("kubernetesDeleteAllForCluster wait for no items remaining, loop $loopCount");
 		my $loopExit = 1;
 		foreach my $namespace (@namespaceNames) {
-			if ($namespace =~ /^auctionw/) {
+			if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
 				$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 				($cmdFailed, $outString) = runCmd($cmd);
 				if ($cmdFailed) {
@@ -471,10 +480,10 @@ sub kubernetesDeleteAllForCluster {
 
 
 sub _kubernetesDeleteAllForClusterHelper {
-	my ( $logger, $type, $appendCmdStr ) = @_;
+	my ( $logger, $type, $appendCmdStr, $useAvailableNamespaces ) = @_;
 
 	#safety check
-	if (!$appendCmdStr || !($appendCmdStr =~ /namespace=auctionw/)) {
+	if (!$appendCmdStr || (!$useAvailableNamespaces && !($appendCmdStr =~ /namespace=.*w\d+i\d+.*/))) {
 		$logger->error("kubernetesDeleteAllForClusterHelper invalid namespace in appendCmdStr $appendCmdStr");
 		return;
 	}

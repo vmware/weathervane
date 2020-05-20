@@ -1213,6 +1213,14 @@ $parameters{"useKubernetesLimits"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"limitsExpansionPct"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"useKubernetesRequests"} = {
 	"type"      => "!",
 	"default"   => JSON::true,

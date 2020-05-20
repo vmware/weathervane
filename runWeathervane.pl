@@ -36,7 +36,7 @@ GetOptions(	'accept!' => \$accept,
 			'script=s' => \$backgroundScript,
 			'fixedConfigsFile=s' => \$fixedConfigsFile,
 			'scriptPeriod=i' => \$scriptPeriodSec,
-			'mapSsh!' => $mapSsh,
+			'mapSsh!' => \$mapSsh,
 			'help!' => \$help,
 		);
 		

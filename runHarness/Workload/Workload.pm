@@ -271,14 +271,7 @@ sub isPassed {
 		my $aiPassed = $self->primaryDriver->isPassed($appInstanceRef, $tmpDir); 
 		$passed &= $aiPassed;
 		
-		$appInstanceRef->passedLast($passed);
-		
-		my $appInstanceNum = $appInstanceRef->instanceNum;
-		my $resultString = "failed";
-		if ($aiPassed) {
-			$resultString = "passed";
-		} 
-		$console_logger->info("Workload $workloadNum AppInstance $appInstanceNum $resultString.");	
+		$appInstanceRef->passedLast($passed);		
 	}
 
 	return $passed;

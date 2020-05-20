@@ -86,9 +86,12 @@ sub configure {
 				print FILEOUT "$indent    memory: " . $self->getParamValue('msgServerMem') . "\n";
 			}
 			if ($self->getParamValue('useKubernetesLimits')) {
+				my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
+				my $cpuLimit = $self->expandK8sCpu($self->getParamValue('msgServerCpus'), $limitsExpansion);
+				my $memLimit = $self->expandK8sMem($self->getParamValue('msgServerMem'), $limitsExpansion);
 				print FILEOUT "$indent  limits:\n";
-				print FILEOUT "$indent    cpu: " . $self->getParamValue('msgServerCpus') . "\n";
-				print FILEOUT "$indent    memory: " . $self->getParamValue('msgServerMem') . "\n";						
+				print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+				print FILEOUT "$indent    memory: " . $memLimit . "\n";						
 			}
 			
 			do {

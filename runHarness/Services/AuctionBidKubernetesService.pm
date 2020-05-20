@@ -99,9 +99,12 @@ sub configure {
 				print FILEOUT "$indent    memory: " . $self->getParamValue('auctionBidServerMem') . "\n";
 			}
 			if ($self->getParamValue('useKubernetesLimits')) {
+				my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
+				my $cpuLimit = $self->expandK8sCpu($self->getParamValue('auctionBidServerCpus'), $limitsExpansion);
+				my $memLimit = $self->expandK8sMem($self->getParamValue('auctionBidServerMem'), $limitsExpansion);
 				print FILEOUT "$indent  limits:\n";
-				print FILEOUT "$indent    cpu: " . $self->getParamValue('auctionBidServerCpus') . "\n";
-				print FILEOUT "$indent    memory: " . $self->getParamValue('auctionBidServerMem') . "\n";						
+				print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+				print FILEOUT "$indent    memory: " . $memLimit . "\n";						
 			}
 			
 			do {

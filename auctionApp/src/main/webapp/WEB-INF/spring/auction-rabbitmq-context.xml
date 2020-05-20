@@ -21,7 +21,17 @@ SPDX-License-Identifier: BSD-2-Clause
 
 	<!-- RabbitMQ General Configuration -->
 	<rabbit:template id="liveAuctionRabbitTemplate" connection-factory="rabbitConnectionFactory"
-		reply-timeout="10000" />
+		reply-timeout="10000" retry-template="retryTemplate"/>
+
+	<bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
+    	<property name="backOffPolicy">
+        	<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+            	<property name="initialInterval" value="500" />
+            	<property name="multiplier" value="2.0" />
+            	<property name="maxInterval" value="10000" />
+        	</bean>
+   	 	</property>
+	</bean>
 
 	<rabbit:queue id="auctionStartedQueue"  />
 	<rabbit:queue id="auctionEndedQueue"  />
@@ -71,6 +81,7 @@ SPDX-License-Identifier: BSD-2-Clause
 		<rabbit:connection-factory id="rabbitConnectionFactory"
 			host="${RABBITMQ_HOST}" port="${RABBITMQ_PORT}" 
 			username="auction" password="auction" virtual-host="auction" 
+			requested-heartbeat="10"
 			/>
 			
 	</beans>
@@ -79,6 +90,7 @@ SPDX-License-Identifier: BSD-2-Clause
 		<rabbit:connection-factory id="rabbitConnectionFactory" 
 			addresses="${RABBITMQ_HOSTS}" 
 			username="auction" password="auction" virtual-host="auction" 
+			requested-heartbeat="10"
 			/>
 	</beans>
 </beans>

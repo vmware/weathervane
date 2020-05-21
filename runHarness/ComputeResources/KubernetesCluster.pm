@@ -314,49 +314,60 @@ sub kubernetesDeleteAllWithLabel {
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete deployments failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete sts --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete sts failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete daemonsets --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete daemonsets failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete replicasets --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete replicasets failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete service --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete service failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete configmap --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete configmap failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-	
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
 }
 
 sub kubernetesDeleteAllWithLabelAndResourceType {

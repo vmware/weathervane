@@ -361,8 +361,10 @@ public class DbLoaderDao {
 					+ ", totalWork = " + totalWork + ", updateIntervalMillis = "
 					+ updateIntervalMillis);
 			double pctDone = 100.0 - ((totalTimeRemaining / totalDurationEstimate) * 100.0);
+			if (pctDone > 99.9) pctDone = 99.9;
 
 			long duration = Math.round(totalTimeRemaining * 1000);
+			if (duration < 1) duration = 1;
 
 			if (!Epochs.USER.equals(typeOfWork)) {
 				String durationString = String.format(

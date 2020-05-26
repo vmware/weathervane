@@ -309,21 +309,65 @@ sub kubernetesDeleteAllWithLabel {
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "kubectl delete all --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	$cmd = "kubectl delete deployments --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesDeleteAllWithLabel delete all failed: $cmdFailed");
+		$logger->error("kubernetesDeleteAllWithLabel delete deployments failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
+	$cmd = "kubectl delete sts --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllWithLabel delete sts failed: $cmdFailed");
+	}
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
+	$cmd = "kubectl delete daemonsets --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllWithLabel delete daemonsets failed: $cmdFailed");
+	}
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
+	$cmd = "kubectl delete replicasets --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllWithLabel delete replicasets failed: $cmdFailed");
+	}
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
+	$cmd = "kubectl delete service --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+	($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("kubernetesDeleteAllWithLabel delete service failed: $cmdFailed");
+	}
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
+	
 	$cmd = "kubectl delete configmap --selector=$selector --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllWithLabel delete configmap failed: $cmdFailed");
 	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-	
+	if ($outString  && !($outString =~ /No\sresources\sfound/)) {
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+	}
 }
 
 sub kubernetesDeleteAllWithLabelAndResourceType {
@@ -389,23 +433,32 @@ sub kubernetesDeleteAllForCluster {
 	my $cmd;
 	my $outString;
 	my $cmdFailed;
-	$cmd = "kubectl get namespaces -o=jsonpath='{.items[*].metadata.name}' --kubeconfig=$kubeconfigFile $contextString";
-	($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("kubernetesDeleteAllForCluster get namespaces failed: $cmdFailed");
-		return 0;
-	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
+	my @namespaceNames;
+	my $matchStr = "not set";
 
-	my @namespaceNames = split /\s+/, $outString;
+	if ($self->useAvailableNamespaces) {
+		my $namespacesRef = $self->getParamValue("namespaces");
+		@namespaceNames = @$namespacesRef;
+	} else {
+		$cmd = "kubectl get namespaces -o=jsonpath='{.items[*].metadata.name}' --kubeconfig=$kubeconfigFile $contextString";
+		($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->error("kubernetesDeleteAllForCluster get namespaces failed: $cmdFailed");
+			return 0;
+		}
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
+
+		@namespaceNames = split /\s+/, $outString;
+		$matchStr = '^' .  $self->getParamValue("namespacePrefix") . 'w\d+i\d+' . $self->getParamValue("namespaceSuffix") . '$';
+	}
 	if ($#namespaceNames < 0) {
 		$logger->debug("kubernetesDeleteAllForCluster: There are no namespaces.");
 		return 1;
 	}
 	my $initialRemaining = 0;
 	foreach my $namespace (@namespaceNames) {
-		if ($namespace =~ /^auctionw/) {
+		if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
 			$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
@@ -421,10 +474,10 @@ sub kubernetesDeleteAllForCluster {
 				if ($numRemaining == 0) {
 					next;
 				}
-				_kubernetesDeleteAllForClusterHelper($logger, "deployment", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "statefulset", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "service", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
-				_kubernetesDeleteAllForClusterHelper($logger, "configmap", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString");
+				_kubernetesDeleteAllForClusterHelper($logger, "deployment", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "statefulset", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "service", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
+				_kubernetesDeleteAllForClusterHelper($logger, "configmap", "--namespace=$namespace --kubeconfig=$kubeconfigFile $contextString", $self->useAvailableNamespaces);
 			}
 		}
 	}
@@ -439,7 +492,7 @@ sub kubernetesDeleteAllForCluster {
 		$logger->debug("kubernetesDeleteAllForCluster wait for no items remaining, loop $loopCount");
 		my $loopExit = 1;
 		foreach my $namespace (@namespaceNames) {
-			if ($namespace =~ /^auctionw/) {
+			if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
 				$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 				($cmdFailed, $outString) = runCmd($cmd);
 				if ($cmdFailed) {
@@ -471,10 +524,10 @@ sub kubernetesDeleteAllForCluster {
 
 
 sub _kubernetesDeleteAllForClusterHelper {
-	my ( $logger, $type, $appendCmdStr ) = @_;
+	my ( $logger, $type, $appendCmdStr, $useAvailableNamespaces ) = @_;
 
 	#safety check
-	if (!$appendCmdStr || !($appendCmdStr =~ /namespace=auctionw/)) {
+	if (!$appendCmdStr || (!$useAvailableNamespaces && !($appendCmdStr =~ /namespace=.*w\d+i\d+.*/))) {
 		$logger->error("kubernetesDeleteAllForClusterHelper invalid namespace in appendCmdStr $appendCmdStr");
 		return;
 	}
@@ -739,7 +792,18 @@ sub kubernetesGetNodeIPs {
 		@ips = split /\s/, $outString;
 		
 		if ($#ips < 0) {
-			$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+			# Include the master node.   This is needed for single node clusters without the master taint
+			$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
+			}
+			$logger->debug("Command: $cmd");
+			$logger->debug("Output: $outString");
+			@ips = split /\s/, $outString;
+			if ($#ips < 0) {
+				$logger->warn("kubernetesGetNodeIPs: There are no node IPs");
+			}
 		}
 	}
 
@@ -895,13 +959,8 @@ sub kubernetesAreAllPodRunningWithNum {
 		$logger->debug("kubernetesAreAllPodRunningWithNum: There are no pods with label $podLabelString in namespace $namespace");
 		return 0;
 	}
-	
-	my $numFound = $#stati + 1;
-	if ($numFound != $num) {
-		$logger->debug("kubernetesAreAllPodRunningWithNum: Found $numFound of $num pods with label $podLabelString in namespace $namespace");
-		return 0;
-	}
-	
+		
+	my $numFoundRunning = 0;
 	foreach my $status (@stati) { 
 		if ($status eq "Pending") {
 			# check if Pending status is due to FailedScheduling, which will prevent the pod from achieving "Running" status
@@ -919,26 +978,42 @@ sub kubernetesAreAllPodRunningWithNum {
 				}
 			}
 		}
-		if ($status ne "Running") {
-			$logger->debug("kubernetesAreAllPodRunningWithNum: Found a non-running pod: $status");
-			return 0;
+		if ($status eq "Running") {
+			$numFoundRunning++;
 		}	
 	}
+	if ($numFoundRunning != $num) {
+		$logger->debug("kubernetesAreAllPodRunningWithNum: Found $numFoundRunning Running pods of $num pods with label $podLabelString in namespace $namespace");
+		return 0;
+	}
 	
-	# make sure all of the endpoints have been created in the associated service
-	$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+	# Check whether there is a service for this selector.  If so, we need to count the endpoints
+	# to make sure they all exist
+	$cmd = "kubectl get svc --selector=$podLabelString -o=jsonpath='{.items[*].kind}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+		return 0;
 	} else {
 		$logger->debug("Command: $cmd");
 		$logger->debug("Output: $outString");
-		if ($num != $outString) {
-			$logger->debug("kubernetesAreAllPodRunningWithNum: Not all endpoints have been created. Found $outString, expected $num");
-			return 0;
-		}	
+		if ($outString > 0) {			
+			# make sure all of the endpoints have been created in the associated service
+			$cmd = "kubectl get endpoints --selector=$podLabelString -o=jsonpath='{.items[*].subsets[*].addresses[*].ip}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString | wc -w";
+			($cmdFailed, $outString) = runCmd($cmd);
+			if ($cmdFailed) {
+				$logger->error("kubernetesAreAllPodRunningWithNum failed: $cmdFailed");
+				return 0;
+			} else {
+				$logger->debug("Command: $cmd");
+				$logger->debug("Output: $outString");
+				if ($num != $outString) {
+					$logger->debug("kubernetesAreAllPodRunningWithNum: Not all endpoints have been created. Found $outString, expected $num");
+					return 0;
+				}	
+			}
+		}
 	}
-	
 	$logger->debug("kubernetesAreAllPodRunningWithNum: All pods are running");
 	return 1;
 }
@@ -971,13 +1046,8 @@ sub kubernetesAreAllPodUpWithNum {
 		$console_logger->error("kubernetesAreAllPodUpWithNum: There are no pods with label $serviceTypeImpl in namespace $namespace");
 		exit(-1);
 	}
-	
-	my $numFound = $#names + 1;
-	if ($numFound != $num) {
-		$logger->debug("kubernetesAreAllPodUpWithNum: Found $numFound of $num pods with label $serviceTypeImpl in namespace $namespace");
-		return 0;
-	}
-	
+		
+	my $numFoundUp = 0;
 	foreach my $podName (@names) { 	
 		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
 		($cmdFailed, $outString) = runCmd($cmd);
@@ -985,13 +1055,17 @@ sub kubernetesAreAllPodUpWithNum {
 		$logger->debug("Output: $outString");
 		if ($cmdFailed) {
 			$logger->debug("kubernetesAreAllPodUpWithNum not up on pod $podName: $outString");
-			return 0;
-		}
-		if ( !($findString eq '') && !($outString =~ /$findString/) ) {
+		} elsif ( !($findString eq '') && !($outString =~ /$findString/) ) {
 			$logger->debug("kubernetesAreAllPodUpWithNum: No match of $findString to Output on pod $podName");
-			return 0;
+		} else {
+			$numFoundUp++;
 		}	
 	}
+	if ($numFoundUp != $num) {
+		$logger->debug("kubernetesAreAllPodUpWithNum: Found $numFoundUp Up pods of $num pods with label $serviceTypeImpl in namespace $namespace");
+		return 0;
+	}
+
 	$logger->debug("kubernetesAreAllPodUpWithNum: Matched $findString to $num pods");
 	return 1;
 }

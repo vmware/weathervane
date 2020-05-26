@@ -6,7 +6,7 @@ use Moose;
 use Tie::IxHash;
 use Parameters qw(getParamValue);
 no if $] >= 5.017011, warnings => 'experimental::smartmatch';
-use POSIX qw(floor);
+use POSIX qw(floor ceil);
 use namespace::autoclean;
 use Log::Log4perl qw(get_logger);
 use ComputeResources::ComputeResource;
@@ -56,8 +56,7 @@ override 'stop' => sub {
 	close $log;
 };
 
-# Configure and Start all of the services needed for the 
-# Nginx service
+# Configure and Start all of the services 
 override 'start' => sub {
 	my ($self, $serviceType, $users, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::KubernetesService");
@@ -102,6 +101,41 @@ override 'isStopped' => sub {
 	return !$self->host->kubernetesDoPodsExist("type=$serviceType", $namespace );
 };
 
+sub expandK8sCpu {
+	my ($self, $cpuString, $expansionFactor) = @_;
+	
+	if ($cpuString =~ /^\d*\.?\d+$/) {
+		# Already numerical.  Just return expanded
+		return $cpuString * $expansionFactor;
+	}
+	
+	$cpuString =~ /(\d+)([^\d]+)/;
+	my $magnitude = ceil($1 * $expansionFactor);
+	my $unit = $2;	
+	return 	"$magnitude$unit";
+}
+
+sub expandK8sMem {
+	my ($self, $memString, $expansionFactor) = @_;
+	$memString =~ /(\d+)([^\d]+)/;
+	my $magnitude = $1;
+	my $unit = $2;
+
+	# Apply the expansion factor and move down one unit so we 
+	# don't have to round too far
+	my $unitStep = 1000;
+	if ($unit =~ /i/) {
+		$unitStep = 1024;
+	}
+	$magnitude = ceil($magnitude * $expansionFactor * $unitStep);
+	$unit =~ s/M/K/i;
+	$unit =~ s/G/M/i;
+	$unit =~ s/T/G/i;
+	$unit =~ s/P/T/i;
+	$unit =~ s/E/P/i;
+	
+	return 	"$magnitude$unit";
+}
 
 sub getLogFiles {
 	my ( $self, $destinationPath ) = @_;

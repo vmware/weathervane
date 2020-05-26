@@ -189,6 +189,14 @@ override 'checkConfig' => sub {
 							"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
 				return 0;			
 			}
+			
+			# if the limitsExpansionPct parameter is specified, make sure that it is a positive integer
+			my $expansionPct = $service->getParamValue('limitsExpansionPct');
+			if ($expansionPct && (!($expansionPct =~ /^-?\d+\z/ ) || ($expansionPct < 0))) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: $expansionPct is not a valid value for limitsExpansionPct");
+				$console_logger->error("limitsExpansionPct must be a non-negative integer\n");
+				return 0;							
+			}
 		}
 	}
 

@@ -66,9 +66,12 @@ sub configure {
 				print FILEOUT "$indent    memory: " . $self->getParamValue('coordinationServerMem') . "\n";
 			}
 			if ($self->getParamValue('useKubernetesLimits')) {
+				my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
+				my $cpuLimit = $self->expandK8sCpu($self->getParamValue('coordinationServerCpus'), $limitsExpansion);
+				my $memLimit = $self->expandK8sMem($self->getParamValue('coordinationServerMem'), $limitsExpansion);
 				print FILEOUT "$indent  limits:\n";
-				print FILEOUT "$indent    cpu: " . $self->getParamValue('coordinationServerCpus') . "\n";
-				print FILEOUT "$indent    memory: " . $self->getParamValue('coordinationServerMem') . "\n";						
+				print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+				print FILEOUT "$indent    memory: " . $memLimit . "\n";						
 			}
 
 			do {

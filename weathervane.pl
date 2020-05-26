@@ -691,9 +691,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
 	$workload->instanceNum($workloadNum);
-	if ( $numWorkloads > 1 ) {
-		$workload->useSuffix(1);
-	}
 	$workload->initialize();
 	push @workloads, $workload;
 
@@ -766,7 +763,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
 	$workloadDriver->instanceNum($driverNum);
-	$workloadDriver->initialize();
+	$workloadDriver->initialize(1);
 	$driverNum++;
 
 	# Add the primary driver to the workload
@@ -794,7 +791,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
-		$secondary->initialize();
+		$secondary->initialize(0);
+		$secondary->namespace($workloadDriver->namespace);
 		$driverNum++;
 
 		# Add the secondary driver to the primary

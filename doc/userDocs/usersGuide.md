@@ -44,7 +44,7 @@ includes both stateless and stateful services. You can select from multiple
 pre-tuned and tested configurations of this application.  The configurations
 represent a range of deployment sizes. This allows you to select a configuration
 based on the size of the cluster under test, or based on the expected usage of
-the cluster.  Weathervane 2.0 includes two configuration sizes, and larger
+the cluster.  Weathervane 2.0 includes three configuration sizes, and larger
 configurations will be included in future releases. More details about the
 application are included in the [appendix](#architecture).
 
@@ -308,7 +308,8 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
-- A small configuration with 20,000 users takes close to an hour.
+- An xsmall configuration with 12,000 users takes about 30 minutes.
+- A small2 configuration with 16,000 users takes about 50 minutes.
 
 ##### Cleaning Up Persistent Storage<a name="cleaning-up-persistent-storage"></a>
 
@@ -423,9 +424,10 @@ With the `fixed` run strategy, you can change the load on the SUT by specifying
 the number of users in your configuration file.  
 
 The number of users specified must be less than or equal to the maximum number 
-of users loaded for the selected configuration size.  For the `micro` 
-configuration this is `3000` users. For the `small` configuration this is 
-`20000` users.
+of users loaded for the selected configuration size.  
+* For the `micro` configuration, maxUsers is `3000` users. 
+* For the `xsmall` configuration, this is `12000` users.
+* For the `small2` configuration, this is `16000` users.
 
 To change the number of users, edit the configuration file as follows:
 
@@ -523,9 +525,9 @@ Then run Weathervane as before with the new configuration file.
 This task shows how to increase the load on the SUT by using a larger 
 configuration size for your application instances.
 
-Weathervane currently supports two configuration sizes for the Auction 
-application: `micro` and `small`. Additional sizes will be added in future releases.
-Each size corresponds to a fixed configuration of the Weathervane Auction 
+Weathervane currently supports three configuration sizes for the Auction 
+application: `micro`, `xsmall, and `small`. Additional sizes will be added 
+in future releases. Each size corresponds to a fixed configuration of the Weathervane Auction 
 application and an appropriate number of workload driver nodes.  Larger 
 configurations will support a large user load, and may come closer to 
 maxing out the capabilities of your cluster. A different configuration size 
@@ -543,7 +545,7 @@ reloaded for any previously used instances.
 
 To use a different configuration size, edit the configuration file as follows:
 
-1. Change the value for the `configurationSize` to `micro` or `small`.
+1. Change the value for the `configurationSize` to `micro`, `xsmall`, or `small`.
 1. Optionally, change the description parameter to properly describe the run.
 1. Optionally, save the configuration file by a different name to reflect the contents.
 
@@ -638,13 +640,13 @@ client or the SUT will leave components running on the various systems. As a
 result it is necessary to follow the instructions in this task to cleanly stop 
 all components of Weathervane.
 
-Note that starting a new run of Weathervane will also clean up any components 
-left running from a previous run.
+Note that starting a new run of Weathervane with the same configuration file will 
+also clean up any components left running from a previous run.
 
 #### Instructions
 
 To cleanly stop an ongoing run of Weathervane, execute the following command
-from a command-line on the client.  The configuration file used should be the 
+from a command-line on the client.  The configuration file used must be the 
 same as that used in the run to be stopped. 
 
 `./runWeathervane.pl --configFile weathervane.config -- --stop`
@@ -698,11 +700,11 @@ file, then you will need to include the `--context=` parameter in these commands
 
 The Weathervane configuration file controls all options for a Weathervane run.
 
-Example Weathervane configuration files can be found at `weathervane/weathervane.config.k8s.micro` and `weathervane/weathervane.config.k8s.small`.
+Example Weathervane configuration files can be found at `weathervane/weathervane.config.k8s.micro` and `weathervane/weathervane.config.k8s.small2`.
 
 When you start a run, the configuration file must be specified as an argument to the `runWeathervane.pl` script:
 
-`./runWeathervane.pl --configFile=weathervane.config.k8s.small`
+`./runWeathervane.pl --configFile=weathervane.config.k8s.small2`
 
 This section discusses the different configuration file parameters. See [Using Weathervane](#using) for a hands-on introduction to the Weathervane configuration file.
 
@@ -967,65 +969,107 @@ You can use findMaxSingleRun with multiple application instances to scale up the
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
-Weathervane supports two configuration sizes: `micro` and `small`. Each size corresponds to a fixed configuration of the Weathervane Auction application and an appropriate number of workload driver nodes.  The `small` configuration size supports a larger user load than the `micro` configuration size, and may come closer to maxing out the capabilities of your cluster. A different configuration size may also be more representative of production applications to be deployed on the cluster under test.  
+Weathervane supports three configuration sizes: `micro`, `xsmall`, and `small2`. Each size corresponds 
+to a fixed configuration of the Weathervane Auction application and an appropriate number of workload 
+driver nodes.  The `xsmall` configuration size supports a larger user load than the `micro` configuration 
+size, and `small2` supports a larger load than `xsmall`.  Using a larger configuration 
+may allow you to come closer to maxing out the capabilities of your cluster.  A different configuration size 
+may also be more representative of production applications to be deployed on the cluster under test.  Note 
+that the `small` configuration size, included in the initial release of Weathervane 
+2.0, is still available, but has been deprecated in favor of the `small2` configuration.
 
 You can select a configuration size using the parameter `configurationSize`.
 
-| Configuration Parameter: Micro Configuration Size |
+| Configuration Parameter: micro Configuration Size |
 |-------------------------------|
 | `"configurationSize": "micro",` |
 
-A micro application instance can support roughly up to 1000 users.
+A micro application instance can support roughly up to 1,000 users.
 
-| Configuration Parameter: Small Configuration Size |
+| Configuration Parameter: xsmall Configuration Size |
 |-------------------------------|
-| `"configurationSize": "small",` |
+| `"configurationSize": "xsmall",` |
 
-A small application instance can support roughly up to 10,000 users.
+An xsmall application instance can support roughly up to 6,000 users.
 
-**Table: User Defaults for micro and small Configuration Sizes**
+| Configuration Parameter: small2 Configuration Size |
+|-------------------------------|
+| `"configurationSize": "small2",` |
 
-| Configuration Size          | micro | small |
-| --------------------------- | ----- | ----- |
-| Default users for fixed run | 200   | 2000  |
-| Default maximum users supported | 3000   | 20,000  |
+A small2 application instance can support roughly up to 10,000 users.
 
-Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources required at different numbers of application instances.  You can use these tables to find the maximum number of application instances you will be able to deploy on your clusters.
+**Table: User Defaults for different Configuration Sizes**
+
+| Configuration Size          | micro | xsmall | small2 |
+| --------------------------- | ----- | ----- | ------ |
+| Default users for fixed run | 200   | 1000  | 2000 |
+| Default maximum users supported | 3000   | 12,000  | 16,000 |
+
+Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  
+These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources 
+required at different numbers of application instances.  You can use these tables to find the maximum number of application 
+instances you will be able to deploy on your clusters.
 
 **Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
 
-| Configuration<BR>Size |       | micro             |                 |       | small             |                 |
-|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
-|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 3\.10 | 19\.04            | 0\.00           |
-| Total App             | 0\.79 | 5\.57             | 32\.00          | 4\.00 | 53\.42            | 150\.00         |
-| Total                 | 1\.29 | 7\.23             | 32\.00          | 7\.10 | 72\.46            | 150\.00         |
+| Configuration<BR>Size |       | micro             |                 |       | xsmall            |                 |       | small2            |                 |
+|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
+|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 2\.55 | 9\.38             | 0\.00           | 3\.10 | 15\.92            | 0\.00           |
+| Total App             | 0\.79 | 5\.57             | 32\.00          | 2\.59 | 12\.51            | 59\.00         | 4\.80 | 31\.84            | 80\.00           |
+| Total                 | 1\.29 | 7\.23             | 32\.00          | 5\.14 | 21\.89            | 59\.00         | 7\.90 | 47\.76            | 80\.00           |
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |          | micro             |                 |          | small             |                 |
-|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
-| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| 1                                     |  0\.79   | 5\.57             | 32\.00          |  4\.00   | 53\.42            | 150\.00         |
-| 2                                     |  1\.58   | 11\.13            | 64\.00          |  8\.00   | 106\.84           | 300\.00         |
-| 3                                     |  2\.37   | 16\.70            | 96\.00          |  12\.00  | 160\.25           | 450\.00         |
-| 4                                     |  3\.16   | 22\.27            | 128\.00         |  16\.00  | 213\.67           | 600\.00         |
-| 5                                     |  3\.96   | 27\.83            | 160\.00         |  20\.00  | 267\.09           | 750\.00         |
-| 6                                     |  4\.75   | 33\.40            | 192\.00         |  24\.00  | 320\.51           | 900\.00         |
-| 7                                     |  5\.54   | 38\.96            | 224\.00         |  28\.00  | 373\.93           | 1050\.00        |
-| 8                                     |  6\.33   | 44\.53            | 256\.00         |  32\.00  | 427\.34           | 1200\.00        |
-| 9                                     |  7\.12   | 50\.10            | 288\.00         |  36\.00  | 480\.76           | 1350\.00        |
-| 10                                    |  7\.91   | 55\.66            | 320\.00         |  40\.00  | 534\.18           | 1500\.00        |
-| 11                                    |  8\.70   | 61\.23            | 352\.00         |  44\.00  | 587\.60           | 1650\.00        |
-| 12                                    |  9\.49   | 66\.80            | 384\.00         |  48\.00  | 641\.02           | 1800\.00        |
-| 13                                    |  10\.28  | 72\.36            | 416\.00         |  52\.00  | 694\.43           | 1950\.00        |
-| 14                                    |  11\.07  | 77\.93            | 448\.00         |  56\.00  | 747\.85           | 2100\.00        |
-| 15                                    |  11\.87  | 83\.50            | 480\.00         |  60\.00  | 801\.27           | 2250\.00        |
-| 16                                    |  12\.66  | 89\.06            | 512\.00         |  64\.00  | 854\.69           | 2400\.00        |
-| 17                                    |  13\.45  | 94\.63            | 544\.00         |  68\.00  | 908\.11           | 2550\.00        |
-| 18                                    |  14\.24  | 100\.20           | 576\.00         |  72\.00  | 961\.52           | 2700\.00        |
-| 19                                    |  15\.03  | 105\.76           | 608\.00         |  76\.00  | 1014\.94          | 2850\.00        |
-| 20                                    |  15\.82  | 111\.33           | 640\.00         |  80\.00  | 1068\.36          | 3000\.00        |
+| Configuration<BR>Size                 |          | micro             |                 |          | xsmall             |                 |          | small2             |                 |
+|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
+| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| 1                                     |  0\.79   |  5\.57            |  32\.00         |  2\.59   |  12\.51           |  59\.00         |  4\.80   |  31\.84           |  80\.00         |
+| 2                                     |  1\.58   |  11\.13           |  64\.00         |  5\.18   |  25\.02           |  118\.00        |  9\.60   |  63\.67           |  160\.00        |
+| 3                                     |  2\.37   |  16\.70           |  96\.00         |  7\.77   |  37\.53           |  177\.00        |  14\.40  |  95\.51           |  240\.00        |
+| 4                                     |  3\.16   |  22\.27           |  128\.00        |  10\.36  |  50\.04           |  236\.00        |  19\.20  |  127\.34          |  320\.00        |
+| 5                                     |  3\.96   |  27\.83           |  160\.00        |  12\.95  |  62\.55           |  295\.00        |  24\.00  |  159\.18          |  400\.00        |
+| 6                                     |  4\.75   |  33\.40           |  192\.00        |  15\.54  |  75\.06           |  354\.00        |  28\.80  |  191\.02          |  480\.00        |
+| 7                                     |  5\.54   |  38\.96           |  224\.00        |  18\.13  |  87\.57           |  413\.00        |  33\.60  |  222\.85          |  560\.00        |
+| 8                                     |  6\.33   |  44\.53           |  256\.00        |  20\.72  |  100\.08          |  472\.00        |  38\.40  |  254\.69          |  640\.00        |
+| 9                                     |  7\.12   |  50\.10           |  288\.00        |  23\.31  |  112\.59          |  531\.00        |  43\.20  |  286\.52          |  720\.00        |
+| 10                                    |  7\.91   |  55\.66           |  320\.00        |  25\.90  |  125\.10          |  590\.00        |  48\.00  |  318\.36          |  800\.00        |
+| 11                                    |  8\.70   |  61\.23           |  352\.00        |  28\.49  |  137\.61          |  649\.00        |  52\.80  |  350\.20          |  880\.00        |
+| 12                                    |  9\.49   |  66\.80           |  384\.00        |  31\.08  |  150\.12          |  708\.00        |  57\.60  |  382\.03          |  960\.00        |
+| 13                                    |  10\.28  |  72\.36           |  416\.00        |  33\.67  |  162\.63          |  767\.00        |  62\.40  |  413\.87          |  1,040\.00      |
+| 14                                    |  11\.07  |  77\.93           |  448\.00        |  36\.26  |  175\.14          |  826\.00        |  67\.20  |  445\.70          |  1,120\.00      |
+| 15                                    |  11\.87  |  83\.50           |  480\.00        |  38\.85  |  187\.65          |  885\.00        |  72\.00  |  477\.54          |  1,200\.00      |
+| 16                                    |  12\.66  |  89\.06           |  512\.00        |  41\.44  |  200\.16          |  944\.00        |  76\.80  |  509\.38          |  1,280\.00      |
+| 17                                    |  13\.45  |  94\.63           |  544\.00        |  44\.03  |  212\.67          |  1,003\.00      |  81\.60  |  541\.21          |  1,360\.00      |
+| 18                                    |  14\.24  |  100\.20          |  576\.00        |  46\.62  |  225\.18          |  1,062\.00      |  86\.40  |  573\.05          |  1,440\.00      |
+| 19                                    |  15\.03  |  105\.76          |  608\.00        |  49\.21  |  237\.69          |  1,121\.00      |  91\.20  |  604\.88          |  1,520\.00      |
+| 20                                    |  15\.82  |  111\.33          |  640\.00        |  51\.80  |  250\.20          |  1,180\.00      |  96\.00  |  636\.72          |  1,600\.00      |
+
+**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
+
+| Configuration<BR>Size                 |        | micro             |                 |        | xsmall             |                 |        | small2             |                 |
+|---------------------------------------|--------|-------------------|-----------------|--------|-------------------|-----------------|--------|-------------------|-----------------|
+| Number of<BR>Application<BR>Instances | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| 1                                     | 0\.50  | 1\.66             | 0\.00           | 2\.55  | 9\.38             | 0\.00           | 3\.10  | 15\.92            | 0\.00           |
+| 2                                     | 1\.00  | 3\.32             | 0\.00           | 5\.10  | 18\.75            | 0\.00           | 6\.20  | 31\.84            | 0\.00           |
+| 3                                     | 1\.50  | 4\.98             | 0\.00           | 7\.65  | 28\.13            | 0\.00           | 9\.30  | 47\.75            | 0\.00           |
+| 4                                     | 2\.00  | 6\.64             | 0\.00           | 10\.20 | 37\.50            | 0\.00           | 12\.40 | 63\.67            | 0\.00           |
+| 5                                     | 2\.50  | 8\.30             | 0\.00           | 12\.75 | 46\.88            | 0\.00           | 15\.50 | 79\.59            | 0\.00           |
+| 6                                     | 3\.00  | 9\.96             | 0\.00           | 15\.30 | 56\.25            | 0\.00           | 18\.60 | 95\.51            | 0\.00           |
+| 7                                     | 3\.50  | 11\.62            | 0\.00           | 17\.85 | 65\.63            | 0\.00           | 21\.70 | 111\.43           | 0\.00           |
+| 8                                     | 4\.00  | 13\.28            | 0\.00           | 20\.40 | 75\.00            | 0\.00           | 24\.80 | 127\.34           | 0\.00           |
+| 9                                     | 4\.50  | 14\.94            | 0\.00           | 22\.95 | 84\.38            | 0\.00           | 27\.90 | 143\.26           | 0\.00           |
+| 10                                    | 5\.00  | 16\.60            | 0\.00           | 25\.50 | 93\.75            | 0\.00           | 31\.00 | 159\.18           | 0\.00           |
+| 11                                    | 5\.50  | 18\.26            | 0\.00           | 28\.05 | 103\.13           | 0\.00           | 34\.10 | 175\.10           | 0\.00           |
+| 12                                    | 6\.00  | 19\.92            | 0\.00           | 30\.60 | 112\.50           | 0\.00           | 37\.20 | 191\.02           | 0\.00           |
+| 13                                    | 6\.50  | 21\.58            | 0\.00           | 33\.15 | 121\.88           | 0\.00           | 40\.30 | 206\.93           | 0\.00           |
+| 14                                    | 7\.00  | 23\.24            | 0\.00           | 35\.70 | 131\.25           | 0\.00           | 43\.40 | 222\.85           | 0\.00           |
+| 15                                    | 7\.50  | 24\.90            | 0\.00           | 38\.25 | 140\.63           | 0\.00           | 46\.50 | 238\.77           | 0\.00           |
+| 16                                    | 8\.00  | 26\.56            | 0\.00           | 40\.80 | 150\.00           | 0\.00           | 49\.60 | 254\.69           | 0\.00           |
+| 17                                    | 8\.50  | 28\.22            | 0\.00           | 43\.35 | 159\.38           | 0\.00           | 52\.70 | 270\.61           | 0\.00           |
+| 18                                    | 9\.00  | 29\.88            | 0\.00           | 45\.90 | 168\.75           | 0\.00           | 55\.80 | 286\.52           | 0\.00           |
+| 19                                    | 9\.50  | 31\.54            | 0\.00           | 48\.45 | 178\.13           | 0\.00           | 58\.90 | 302\.44           | 0\.00           |
+| 20                                    | 10\.00 | 33\.20            | 0\.00           | 51\.00 | 187\.50           | 0\.00           | 62\.00 | 318\.36           | 0\.00           |
 
 **Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
@@ -1328,7 +1372,7 @@ It is possible to change the strings used for the prefix and suffix using the pa
 file within the definition of the Kubernetes cluster.
 
 For example, the following configuration file excerpt will use namespace names of the 
-form __appw1i*n*small__ for the cluster named *appCluster* and __driverw1small__ for 
+form __appw1i*n*small2__ for the cluster named *appCluster* and __driverw1small2__ for 
 the cluster named *driverCluster*.
 
 ```json
@@ -1338,14 +1382,14 @@ the cluster named *driverCluster*.
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-1",
     "namespacePrefix" : "app",
-    "namespaceSuffix" : "small",
+    "namespaceSuffix" : "small2",
   },
   { 
     "name" : "driverCluster", 
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-2",
     "namespacePrefix" : "driver",
-    "namespaceSuffix" : "small",
+    "namespaceSuffix" : "small2",
   },
 ],
 ```
@@ -1400,7 +1444,180 @@ to running Weathervane.  The names used for the namespaces must match those that
 be generated by Weathervane, or that were explictly specified using the `namespaces` 
 parameter.  See the previous sections for details.
 
+### Weathervane and Kubernetes Resource Controls<a name="resources"></a>
 
+#### Overview
+
+This section describes how Weathervane uses the resource controls provided 
+by Kubernetes for specifying CPU and memory usage with requests and limits, and how 
+that usage affects the performance results generated by the benchmark.  It also 
+shows how the use of requests and limits can be changed with configuration parameters.  
+
+This section assumes that you are familiar with the concepts of resource requests 
+and limits.  A description of how requests and limits are used to
+manage container resources in Kubernetes can be found 
+[here](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers).
+
+#### Impact of Resource Controls on Weathervane Results
+
+The goal of Weathervane is to characterize the performance of the Kubernetes clusters that 
+make up the SUT.  As a result, it is important that the bottleneck on any run be some characteristic 
+of the SUT, and not an internal limitation of the Weathervane application.  
+
+The Weathervane 
+application includes many components whose performance, when given unlimited CPU resources, will 
+ultimately be limited by the size of the configured memory resources.  For example, 
+the performance of the Java services will be limited by amount of memory configured 
+for the Java heap.  Because the memory configuration, including heap size, is fixed for 
+each [configuration size](#configuration-sizes), this means that in the absence of 
+some other limitation, such as CPU resources or network latency, an application instance of a given
+size will give the same results on all clusters.  
+
+In order to move the performance bottleneck from the application configuration back 
+to the SUT, Weathervane specifies a CPU limit for the application server container. The 
+effect of this limit is to cause the bottleneck for a single instance of the Weathervane 
+application to be the CPU usage of the application server.  As a result, the difference 
+between the results on different clusters will reflect performance characteristics of 
+the clusters, and not the memory configuration. 
+
+For each configuration size, setting a CPU limit on one container allows us to determine 
+the CPU and memory usage of the other pods when that container is running 
+at its limit.  We use this information to set resource requests for all of the 
+pods in the application.
+
+As a result, the default behavior of Weathervane for all configuration 
+sizes is as follows:
+* CPU and Memory requests and limits are set for the application server container in the tomcat 
+  pod.  The requests and limits are set to the same value.
+* CPU and Memory requests are set for all other pods.
+* No limits are set for the other pods.
+
+It is possible to change this behavior using parameters in the configuration file. 
+We discuss these parameters in the following sections.  Changing these parameters can 
+have unexpected results so you should be sure you know what you are doing before using 
+these advanced parameters.
+
+#### Raise Limits for the Application Server Pod
+
+By default, the CPU and memory limits for the tomcat pod are set to the same value as the requests. 
+Unless there is another bottleneck in the SUT, such as network latency or slow storage,
+the bottleneck for the run will be the CPU usage of this pod.  It is possible to set 
+the limits for the tomcat pod to be higher than the requests.  The primary reason you 
+might want to increase the limits is to increase overall CPU utilization when the maximum number 
+of application instances that fit on the SUT do not provide sufficient load.  You can 
+do this by setting the `limitsExpansionPct` parameter to a positive, non-zero, value. The 
+value of this parameter is the percent above the requests to which the limits will 
+be set.
+
+For example, if you add the following to your config file:
+
+```json
+"limitsExpansionPct" : 10,
+```
+then the value for the CPU and memory limits for the tomcat pod will be 110% of the requests. 
+
+There are a number of reasons that you should be careful about using this parameter:
+* The requests of the containers/pods used in each configuration size have been tuned 
+  for the default limits.  If the limit for the tomcat pod is increased, the CPU and memory 
+  usage of the other pods will also increase.  As a result, the placement decisions 
+  made by the Kubernetes scheduler may be less suitable.  
+* If most of the resources of the cluster are committed to the requests of the pods, 
+  then there may not sufficient headroom for the increased usage.  In some cases performance 
+  may actually degrade when the limit is raised.
+* Using a non-zero value for this parameter makes comparisons with 
+  results from runs with different values invalid.  If you change the value of this 
+  parameter, you must only compare with the results from runs with the same value to 
+  avoid drawing invalid conclusions.
+
+#### Turn off Limits for the Application Server Pod
+
+It is possible to disable the use of limits for the Application Server (tomcat) pod. 
+As discussed above, the CPU limit on the tomcat pods will be the bottleneck in the absence 
+of other limiting factors in the SUT.   Disabling these limits will enable you to get a 
+higher peak WvUsers from each application instance.  You can 
+do this by setting the `useAppServerLimits` parameter to false.
+
+For example, if you add the following to your config file:
+
+```json
+"useAppServerLimits" : false,
+```
+then CPU and memory limits will not be used for the tomcat pods. 
+
+There are a number of reasons that you should be careful about using this parameter:
+* The requests of the containers/pods used in each configuration size have been tuned 
+  for default limits.  If the limit for the tomcat pod is removed, the CPU and memory 
+  usage of the other pods will also increase.  As a result, the placement decisions 
+  made by the Kubernetes scheduler may be less suitable.  
+* If the limits are removed, the memory configuration of the services may become the 
+  bottleneck, rather than the capabilities of the SUT.  This is particularly likely 
+  to be true on runs in which the overall CPU utilization is not near saturation. 
+* Setting this parameter to false makes comparisons with 
+  results from runs with different values invalid.  If you turn off the use of app server 
+  limits, you must only compare with the results from runs with the same value to 
+  avoid drawing invalid conclusions.
+
+
+#### Turn on Limits for all Pods
+
+It is possible to cause Weathervane to specify CPU and memory limits for all pods. You 
+might want to do this if you are interested in examining the impact of CPU limits on 
+the performance of an application.  Otherwise enabling the limits is highly discouraged
+for reasons discussed below.  Enabling limits is done by setting the `useKubernetesLimits` 
+parameter to true.  In this case, 
+the limits will be set to the same value as the requests for all pods. 
+
+For example, if you add the following to your config file:
+
+```json
+"useKubernetesLimits" : true,
+```
+then CPU and memory limits will be used for all pods in the Weathervane application. You 
+can also combine this parameter with the `limitsExpansionPct` parameter to set the limits 
+for all services to a fixed percentage above the requests.
+
+There are a number of reasons that you should be careful about using this parameter:
+* Due to the way that Linux implements CPU limits using throttling, the use of CPU limits 
+  can have a significant negative impact on overall performance. For pods which have 
+  low CPU usage, but that are on the primary path for latency sensitive operations, 
+  the throttling can cause operations to exceed their response-time limits.  This is 
+  true for the database services in the Weathervane application.  For more information 
+  on the impact of CPU throttling when limits are enabled, see the following references:
+    * [https://medium.com/omio-engineering/cpu-limits-and-aggressive-throttling-in-kubernetes-c5b20bd8a718](https://medium.com/omio-engineering/cpu-limits-and-aggressive-throttling-in-kubernetes-c5b20bd8a718)
+    * [https://github.com/kubernetes/kubernetes/issues/67577](https://github.com/kubernetes/kubernetes/issues/67577)
+    * [https://github.com/kubernetes/kubernetes/issues/51135](https://github.com/kubernetes/kubernetes/issues/51135) 
+* Setting this parameter to true makes comparisons with 
+  results from runs with different values invalid.  If you turn on the use of  
+  limits for all pods, you must only compare with the results from runs with the same value to 
+  avoid drawing invalid conclusions.
+
+#### Turn off Requests for all Pods
+
+It is possible to cause Weathervane to specify neither requests or limits for all pods. You 
+might want to do this if you are interested in examining the impact on performance 
+of the Kubernetes scheduler having no resource information to use when deciding on the placement 
+of pods. Otherwise disabling the requests is highly discouraged
+for reasons discussed below.  Disabling requests is done by setting the `useKubernetesRequests` 
+parameter to false.  
+
+For example, if you add the following to your config file:
+
+```json
+"useKubernetesRequests" : false,
+```
+then no CPU and memory requests or limits will be used for all pods in the Weathervane 
+application. 
+
+There are a number of reasons that you should be careful about using this parameter:
+* The Kubernetes scheduler uses the CPU and memory requests when making decisions about 
+  the placement of pods on particular nodes.  If requests are not specified, then the 
+  scheduler may place multiple resource intensive pods on a node that cannot satisfy 
+  their resource needs.  This will result in poor performance or killed processes.
+* Setting this parameter to false makes comparisons with 
+  results from runs with different values invalid.  If you turn off the use of 
+  requests for all pods, you must only compare with the results from runs with the same value to 
+  avoid drawing invalid conclusions.
+  
 ## Running on Specific Cluster Types<a name="specific"></a>
 
 ### Overview
@@ -1509,13 +1726,13 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    0.19           |       0.0005           |    0.10            | 0.002 |
-| small    | 0.005 | 0.002 | 0.04 | 0.0002 |
+| small2    | 0.005 | 0.002 | 0.04 | 0.0002 |
 
 
 | Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    10.3           |      0.06           |    8.0            | 0.1 |
-| small    | 11.0 | 0.06 | 8.4 | 0.1 |
+| small2    | 11.0 | 0.06 | 8.4 | 0.1 |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
 This run will generate approximately the following network demands: 

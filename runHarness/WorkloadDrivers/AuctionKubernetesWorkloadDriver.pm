@@ -35,11 +35,13 @@ has 'namespace' => (
 );
 
 override 'initialize' => sub {
-	my ( $self, $paramHashRef ) = @_;
+	my ( $self, $isMaster ) = @_;
 	super();
 
 	my $cluster = $self->host;
-	$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, ""));
+	if ($isMaster) {
+		$self->namespace($cluster->kubernetesGetNamespace($self->workload->instanceNum, ""));
+	}
 };
 
 override 'redeploy' => sub {
@@ -70,7 +72,12 @@ sub getHostPort {
 	return 80;
 }
 
-override 'getStatsHost' => sub {
+override 'getRunStatsHost' => sub {
+	my ( $self ) = @_;
+	return "localhost";
+};
+
+override 'getWorkloadStatsHost' => sub {
 	my ( $self ) = @_;
 	return "wkldcontroller";
 };
@@ -314,7 +321,7 @@ override 'doHttpGet' => sub {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionKubernetesWorkloadDriver");
 	$logger->debug("doHttpGet: Sending Get to $url.");
 	
-	my $cmd = "http --pretty none --print hb --timeout 120 GET $url";
+	my $cmd = "http --pretty none --print hb --timeout 120 --ignore-stdin GET $url";
 	my $cluster = $self->host;
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("wkldcontroller", $cmd, $self->namespace);
 	if ($cmdFailed) {

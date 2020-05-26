@@ -91,7 +91,7 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /(\s+)resources/ )  {
 			my $indent = $1;
-			if ($self->getParamValue('useKubernetesRequests')) {
+			if ($self->getParamValue('useKubernetesRequests') && $self->getParamValue('useDataManagerRequests')) {
 				print FILEOUT $inline;
 				print FILEOUT "$indent  requests:\n";
 				print FILEOUT "$indent    cpu: " . $self->getParamValue('dbLoaderCpus') . "\n";
@@ -118,14 +118,16 @@ sub startDataManagerContainer {
 	$cluster->kubernetesApply("/tmp/auctionDataManager-${namespace}.yaml", $namespace);
 
 	sleep 15;
-	my $retries = 3;
+	my $retries = 20;
 	while ($retries >= 0) {
-		my $isRunning = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
-		
+		my ($isRunning, $errorStr) = $cluster->kubernetesAreAllPodRunningWithNum("tier=dataManager", $namespace, 1 );
+		if (!$isRunning && defined $errorStr) {
+			return 0; #short circuit waiting, retries, and sleeps in cases like FailedScheduling
+		}
 		if ($isRunning) {
 			return 1;
 		}
-		sleep 15;
+		sleep 30;
 		$retries--;
 	}
 	return 0;
@@ -205,7 +207,15 @@ sub prepareData {
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
-	$self->startDataManagerContainer ($users, $logHandle);
+	if (!$self->startDataManagerContainer($users, $logHandle)) {
+		$console_logger->info(
+				    "Could not start AuctionDataManager pod for appInstance "
+				  . "$appInstanceNum of workload $workloadNum." );
+		# stop the auctiondatamanager container
+		$self->stopDataManagerContainer($logHandle);
+		return 0;		
+	}
+	
 		
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
@@ -298,10 +308,16 @@ sub loadData {
 	$logger->debug("Exec-ing perl /loadData.pl");
 	print $applog "Exec-ing perl /loadData.pl\n";
 	my $kubernetesConfigFile = $cluster->getParamValue('kubeconfigFile');
+	my $context = $cluster->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+	  $contextString = "--context=$context";	
+	}
+
 	# Get the list of pods
 	my $cmd;
 	my $outString;	
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace 2>&1";
+	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace --kubeconfig=$kubernetesConfigFile $contextString 2>&1";
 	$outString = `$cmd`;
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -309,13 +325,13 @@ sub loadData {
 	print $applog "Output: $outString\n";
 	my @lines = split /\s+/, $outString;
 	if ($#lines < 0) {
-		$console_logger->error("loadData: There are no pods with label auctiondatamanager in namespace $namespace");
-		exit(-1);
+		$console_logger->error("Data loading failed for Workload $workloadNum, appInstance $appInstanceNum: There are no pods with label auctiondatamanager in namespace $namespace");
+		return 0;
 	}
 	
 	# Get the name of the first pod
 	my $podName = $lines[0];
-	$cmd = "KUBECONFIG=$kubernetesConfigFile kubectl exec -c auctiondatamanager --namespace=$namespace $podName perl /loadData.pl"; 
+	$cmd = "kubectl exec -c auctiondatamanager --namespace=$namespace  --kubeconfig=$kubernetesConfigFile $contextString $podName -- perl /loadData.pl"; 
 	$logger->debug("opening pipe with command $cmd");
 	print $applog "opening pipe with command $cmd\n";
 	open my $pipe, "$cmd |"   or die "Couldn't execute program: $!";

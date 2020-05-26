@@ -1056,7 +1056,7 @@ $parameters{"runStrategy"} = {
 $parameters{"configurationSize"} = {
 	"type"      => "=s",
 	"default"   => "micro",
-	"parent"    => "runManager",
+	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1213,7 +1213,23 @@ $parameters{"useKubernetesLimits"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"limitsExpansionPct"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"useKubernetesRequests"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
+$parameters{"useDataManagerRequests"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
 	"parent"    => "workload",

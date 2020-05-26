@@ -25,9 +25,21 @@ has 'isPassable' => (
 	isa => 'Bool',
 );
 
+has 'workloadPassedHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 has 'isPassed' => (
 	is  => 'rw',
 	isa => 'Bool',
+);
+
+has 'workloadMetricsHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
 );
 
 has 'metricsHashRef' => (
@@ -49,8 +61,24 @@ sub initialize {
 
 sub toString {
 	my ($self) = @_;
-	my $retVal = "Run " . $self->runNum;
+	my $retVal = "";
 	if ( $self->isPassable ) {
+		foreach my $key (keys %{$self->workloadPassedHashRef}) {
+			$retVal .= "Workload $key: ";
+			my $passed = $self->workloadPassedHashRef->{$key};
+			if ($passed) {
+				$retVal .= "Passed";
+			    my $metricsHashRef = $self->workloadMetricsHashRef->{$key};
+				foreach my $metricKey (keys %{$metricsHashRef}) {
+					$retVal .= "; $metricKey = ".$metricsHashRef->{$metricKey};
+				}
+				$retVal .= "\n";
+			} else {
+				$retVal .= "Failed\n";				
+			}
+		}
+		$retVal .= "Run " . $self->runNum;
+		
 		if ( $self->isPassed ) {
 			$retVal .= " Passed";
 			my $metricsHashRef = $self->metricsHashRef;

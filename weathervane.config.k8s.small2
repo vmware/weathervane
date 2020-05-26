@@ -1,7 +1,7 @@
 {
-  "description" : "small",
+  "description" : "small2",
 
-  "configurationSize": "small",
+  "configurationSize": "small2",
 
   "runStrategy" : "findMaxSingleRun",
 

@@ -44,7 +44,7 @@ includes both stateless and stateful services. You can select from multiple
 pre-tuned and tested configurations of this application.  The configurations
 represent a range of deployment sizes. This allows you to select a configuration
 based on the size of the cluster under test, or based on the expected usage of
-the cluster.  Weathervane 2.0 includes two configuration sizes, and larger
+the cluster.  Weathervane 2.0 includes three configuration sizes, and larger
 configurations will be included in future releases. More details about the
 application are included in the [appendix](#architecture).
 
@@ -308,7 +308,8 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
-- A small configuration with 20,000 users takes close to an hour.
+- An xsmall configuration with 12,000 users takes about 30 minutes.
+- A small2 configuration with 16,000 users takes about 50 minutes.
 
 ##### Cleaning Up Persistent Storage<a name="cleaning-up-persistent-storage"></a>
 
@@ -423,9 +424,10 @@ With the `fixed` run strategy, you can change the load on the SUT by specifying
 the number of users in your configuration file.  
 
 The number of users specified must be less than or equal to the maximum number 
-of users loaded for the selected configuration size.  For the `micro` 
-configuration this is `3000` users. For the `small` configuration this is 
-`20000` users.
+of users loaded for the selected configuration size.  
+* For the `micro` configuration, maxUsers is `3000` users. 
+* For the `xsmall` configuration, this is `12000` users.
+* For the `small2` configuration, this is `16000` users.
 
 To change the number of users, edit the configuration file as follows:
 
@@ -523,9 +525,9 @@ Then run Weathervane as before with the new configuration file.
 This task shows how to increase the load on the SUT by using a larger 
 configuration size for your application instances.
 
-Weathervane currently supports two configuration sizes for the Auction 
-application: `micro` and `small`. Additional sizes will be added in future releases.
-Each size corresponds to a fixed configuration of the Weathervane Auction 
+Weathervane currently supports three configuration sizes for the Auction 
+application: `micro`, `xsmall, and `small`. Additional sizes will be added 
+in future releases. Each size corresponds to a fixed configuration of the Weathervane Auction 
 application and an appropriate number of workload driver nodes.  Larger 
 configurations will support a large user load, and may come closer to 
 maxing out the capabilities of your cluster. A different configuration size 
@@ -543,7 +545,7 @@ reloaded for any previously used instances.
 
 To use a different configuration size, edit the configuration file as follows:
 
-1. Change the value for the `configurationSize` to `micro` or `small`.
+1. Change the value for the `configurationSize` to `micro`, `xsmall`, or `small`.
 1. Optionally, change the description parameter to properly describe the run.
 1. Optionally, save the configuration file by a different name to reflect the contents.
 
@@ -698,11 +700,11 @@ file, then you will need to include the `--context=` parameter in these commands
 
 The Weathervane configuration file controls all options for a Weathervane run.
 
-Example Weathervane configuration files can be found at `weathervane/weathervane.config.k8s.micro` and `weathervane/weathervane.config.k8s.small`.
+Example Weathervane configuration files can be found at `weathervane/weathervane.config.k8s.micro` and `weathervane/weathervane.config.k8s.small2`.
 
 When you start a run, the configuration file must be specified as an argument to the `runWeathervane.pl` script:
 
-`./runWeathervane.pl --configFile=weathervane.config.k8s.small`
+`./runWeathervane.pl --configFile=weathervane.config.k8s.small2`
 
 This section discusses the different configuration file parameters. See [Using Weathervane](#using) for a hands-on introduction to the Weathervane configuration file.
 
@@ -967,65 +969,107 @@ You can use findMaxSingleRun with multiple application instances to scale up the
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
-Weathervane supports two configuration sizes: `micro` and `small`. Each size corresponds to a fixed configuration of the Weathervane Auction application and an appropriate number of workload driver nodes.  The `small` configuration size supports a larger user load than the `micro` configuration size, and may come closer to maxing out the capabilities of your cluster. A different configuration size may also be more representative of production applications to be deployed on the cluster under test.  
+Weathervane supports three configuration sizes: `micro`, `xsmall`, and `small2`. Each size corresponds 
+to a fixed configuration of the Weathervane Auction application and an appropriate number of workload 
+driver nodes.  The `xsmall` configuration size supports a larger user load than the `micro` configuration 
+size, and `small2` supports a larger load than `xsmall`.  Using a larger configuration 
+may allow you to come closer to maxing out the capabilities of your cluster.  A different configuration size 
+may also be more representative of production applications to be deployed on the cluster under test.  Note 
+that the `small` configuration size, included in the initial release of Weathervane 
+2.0, is still available, but has been deprecated in favor of the `small2` configuration.
 
 You can select a configuration size using the parameter `configurationSize`.
 
-| Configuration Parameter: Micro Configuration Size |
+| Configuration Parameter: micro Configuration Size |
 |-------------------------------|
 | `"configurationSize": "micro",` |
 
-A micro application instance can support roughly up to 1000 users.
+A micro application instance can support roughly up to 1,000 users.
 
-| Configuration Parameter: Small Configuration Size |
+| Configuration Parameter: xsmall Configuration Size |
 |-------------------------------|
-| `"configurationSize": "small",` |
+| `"configurationSize": "xsmall",` |
 
-A small application instance can support roughly up to 10,000 users.
+An xsmall application instance can support roughly up to 6,000 users.
 
-**Table: User Defaults for micro and small Configuration Sizes**
+| Configuration Parameter: small2 Configuration Size |
+|-------------------------------|
+| `"configurationSize": "small2",` |
 
-| Configuration Size          | micro | small |
-| --------------------------- | ----- | ----- |
-| Default users for fixed run | 200   | 2000  |
-| Default maximum users supported | 3000   | 20,000  |
+A small2 application instance can support roughly up to 10,000 users.
 
-Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources required at different numbers of application instances.  You can use these tables to find the maximum number of application instances you will be able to deploy on your clusters.
+**Table: User Defaults for different Configuration Sizes**
+
+| Configuration Size          | micro | xsmall | small2 |
+| --------------------------- | ----- | ----- | ------ |
+| Default users for fixed run | 200   | 1000  | 2000 |
+| Default maximum users supported | 3000   | 12,000  | 16,000 |
+
+Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  
+These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources 
+required at different numbers of application instances.  You can use these tables to find the maximum number of application 
+instances you will be able to deploy on your clusters.
 
 **Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
 
-| Configuration<BR>Size |       | micro             |                 |       | small             |                 |
-|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
-|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 3\.10 | 19\.04            | 0\.00           |
-| Total App             | 0\.79 | 5\.57             | 32\.00          | 4\.00 | 53\.42            | 150\.00         |
-| Total                 | 1\.29 | 7\.23             | 32\.00          | 7\.10 | 72\.46            | 150\.00         |
+| Configuration<BR>Size |       | micro             |                 |       | xsmall            |                 |       | small2            |                 |
+|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
+|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 2\.55 | 9\.38             | 0\.00           | 3\.10 | 15\.92            | 0\.00           |
+| Total App             | 0\.79 | 5\.57             | 32\.00          | 2\.59 | 12\.51            | 59\.00         | 4\.80 | 31\.84            | 80\.00           |
+| Total                 | 1\.29 | 7\.23             | 32\.00          | 5\.14 | 21\.89            | 59\.00         | 7\.90 | 47\.76            | 80\.00           |
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |          | micro             |                 |          | small             |                 |
-|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
-| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| 1                                     |  0\.79   | 5\.57             | 32\.00          |  4\.00   | 53\.42            | 150\.00         |
-| 2                                     |  1\.58   | 11\.13            | 64\.00          |  8\.00   | 106\.84           | 300\.00         |
-| 3                                     |  2\.37   | 16\.70            | 96\.00          |  12\.00  | 160\.25           | 450\.00         |
-| 4                                     |  3\.16   | 22\.27            | 128\.00         |  16\.00  | 213\.67           | 600\.00         |
-| 5                                     |  3\.96   | 27\.83            | 160\.00         |  20\.00  | 267\.09           | 750\.00         |
-| 6                                     |  4\.75   | 33\.40            | 192\.00         |  24\.00  | 320\.51           | 900\.00         |
-| 7                                     |  5\.54   | 38\.96            | 224\.00         |  28\.00  | 373\.93           | 1050\.00        |
-| 8                                     |  6\.33   | 44\.53            | 256\.00         |  32\.00  | 427\.34           | 1200\.00        |
-| 9                                     |  7\.12   | 50\.10            | 288\.00         |  36\.00  | 480\.76           | 1350\.00        |
-| 10                                    |  7\.91   | 55\.66            | 320\.00         |  40\.00  | 534\.18           | 1500\.00        |
-| 11                                    |  8\.70   | 61\.23            | 352\.00         |  44\.00  | 587\.60           | 1650\.00        |
-| 12                                    |  9\.49   | 66\.80            | 384\.00         |  48\.00  | 641\.02           | 1800\.00        |
-| 13                                    |  10\.28  | 72\.36            | 416\.00         |  52\.00  | 694\.43           | 1950\.00        |
-| 14                                    |  11\.07  | 77\.93            | 448\.00         |  56\.00  | 747\.85           | 2100\.00        |
-| 15                                    |  11\.87  | 83\.50            | 480\.00         |  60\.00  | 801\.27           | 2250\.00        |
-| 16                                    |  12\.66  | 89\.06            | 512\.00         |  64\.00  | 854\.69           | 2400\.00        |
-| 17                                    |  13\.45  | 94\.63            | 544\.00         |  68\.00  | 908\.11           | 2550\.00        |
-| 18                                    |  14\.24  | 100\.20           | 576\.00         |  72\.00  | 961\.52           | 2700\.00        |
-| 19                                    |  15\.03  | 105\.76           | 608\.00         |  76\.00  | 1014\.94          | 2850\.00        |
-| 20                                    |  15\.82  | 111\.33           | 640\.00         |  80\.00  | 1068\.36          | 3000\.00        |
+| Configuration<BR>Size                 |          | micro             |                 |          | xsmall             |                 |          | small2             |                 |
+|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
+| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| 1                                     |  0\.79   |  5\.57            |  32\.00         |  2\.59   |  12\.51           |  59\.00         |  4\.80   |  31\.84           |  80\.00         |
+| 2                                     |  1\.58   |  11\.13           |  64\.00         |  5\.18   |  25\.02           |  118\.00        |  9\.60   |  63\.67           |  160\.00        |
+| 3                                     |  2\.37   |  16\.70           |  96\.00         |  7\.77   |  37\.53           |  177\.00        |  14\.40  |  95\.51           |  240\.00        |
+| 4                                     |  3\.16   |  22\.27           |  128\.00        |  10\.36  |  50\.04           |  236\.00        |  19\.20  |  127\.34          |  320\.00        |
+| 5                                     |  3\.96   |  27\.83           |  160\.00        |  12\.95  |  62\.55           |  295\.00        |  24\.00  |  159\.18          |  400\.00        |
+| 6                                     |  4\.75   |  33\.40           |  192\.00        |  15\.54  |  75\.06           |  354\.00        |  28\.80  |  191\.02          |  480\.00        |
+| 7                                     |  5\.54   |  38\.96           |  224\.00        |  18\.13  |  87\.57           |  413\.00        |  33\.60  |  222\.85          |  560\.00        |
+| 8                                     |  6\.33   |  44\.53           |  256\.00        |  20\.72  |  100\.08          |  472\.00        |  38\.40  |  254\.69          |  640\.00        |
+| 9                                     |  7\.12   |  50\.10           |  288\.00        |  23\.31  |  112\.59          |  531\.00        |  43\.20  |  286\.52          |  720\.00        |
+| 10                                    |  7\.91   |  55\.66           |  320\.00        |  25\.90  |  125\.10          |  590\.00        |  48\.00  |  318\.36          |  800\.00        |
+| 11                                    |  8\.70   |  61\.23           |  352\.00        |  28\.49  |  137\.61          |  649\.00        |  52\.80  |  350\.20          |  880\.00        |
+| 12                                    |  9\.49   |  66\.80           |  384\.00        |  31\.08  |  150\.12          |  708\.00        |  57\.60  |  382\.03          |  960\.00        |
+| 13                                    |  10\.28  |  72\.36           |  416\.00        |  33\.67  |  162\.63          |  767\.00        |  62\.40  |  413\.87          |  1,040\.00      |
+| 14                                    |  11\.07  |  77\.93           |  448\.00        |  36\.26  |  175\.14          |  826\.00        |  67\.20  |  445\.70          |  1,120\.00      |
+| 15                                    |  11\.87  |  83\.50           |  480\.00        |  38\.85  |  187\.65          |  885\.00        |  72\.00  |  477\.54          |  1,200\.00      |
+| 16                                    |  12\.66  |  89\.06           |  512\.00        |  41\.44  |  200\.16          |  944\.00        |  76\.80  |  509\.38          |  1,280\.00      |
+| 17                                    |  13\.45  |  94\.63           |  544\.00        |  44\.03  |  212\.67          |  1,003\.00      |  81\.60  |  541\.21          |  1,360\.00      |
+| 18                                    |  14\.24  |  100\.20          |  576\.00        |  46\.62  |  225\.18          |  1,062\.00      |  86\.40  |  573\.05          |  1,440\.00      |
+| 19                                    |  15\.03  |  105\.76          |  608\.00        |  49\.21  |  237\.69          |  1,121\.00      |  91\.20  |  604\.88          |  1,520\.00      |
+| 20                                    |  15\.82  |  111\.33          |  640\.00        |  51\.80  |  250\.20          |  1,180\.00      |  96\.00  |  636\.72          |  1,600\.00      |
+
+**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
+
+| Configuration<BR>Size                 |        | micro             |                 |        | xsmall             |                 |        | small2             |                 |
+|---------------------------------------|--------|-------------------|-----------------|--------|-------------------|-----------------|--------|-------------------|-----------------|
+| Number of<BR>Application<BR>Instances | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
+| 1                                     | 0\.50  | 1\.66             | 0\.00           | 2\.55  | 9\.38             | 0\.00           | 3\.10  | 15\.92            | 0\.00           |
+| 2                                     | 1\.00  | 3\.32             | 0\.00           | 5\.10  | 18\.75            | 0\.00           | 6\.20  | 31\.84            | 0\.00           |
+| 3                                     | 1\.50  | 4\.98             | 0\.00           | 7\.65  | 28\.13            | 0\.00           | 9\.30  | 47\.75            | 0\.00           |
+| 4                                     | 2\.00  | 6\.64             | 0\.00           | 10\.20 | 37\.50            | 0\.00           | 12\.40 | 63\.67            | 0\.00           |
+| 5                                     | 2\.50  | 8\.30             | 0\.00           | 12\.75 | 46\.88            | 0\.00           | 15\.50 | 79\.59            | 0\.00           |
+| 6                                     | 3\.00  | 9\.96             | 0\.00           | 15\.30 | 56\.25            | 0\.00           | 18\.60 | 95\.51            | 0\.00           |
+| 7                                     | 3\.50  | 11\.62            | 0\.00           | 17\.85 | 65\.63            | 0\.00           | 21\.70 | 111\.43           | 0\.00           |
+| 8                                     | 4\.00  | 13\.28            | 0\.00           | 20\.40 | 75\.00            | 0\.00           | 24\.80 | 127\.34           | 0\.00           |
+| 9                                     | 4\.50  | 14\.94            | 0\.00           | 22\.95 | 84\.38            | 0\.00           | 27\.90 | 143\.26           | 0\.00           |
+| 10                                    | 5\.00  | 16\.60            | 0\.00           | 25\.50 | 93\.75            | 0\.00           | 31\.00 | 159\.18           | 0\.00           |
+| 11                                    | 5\.50  | 18\.26            | 0\.00           | 28\.05 | 103\.13           | 0\.00           | 34\.10 | 175\.10           | 0\.00           |
+| 12                                    | 6\.00  | 19\.92            | 0\.00           | 30\.60 | 112\.50           | 0\.00           | 37\.20 | 191\.02           | 0\.00           |
+| 13                                    | 6\.50  | 21\.58            | 0\.00           | 33\.15 | 121\.88           | 0\.00           | 40\.30 | 206\.93           | 0\.00           |
+| 14                                    | 7\.00  | 23\.24            | 0\.00           | 35\.70 | 131\.25           | 0\.00           | 43\.40 | 222\.85           | 0\.00           |
+| 15                                    | 7\.50  | 24\.90            | 0\.00           | 38\.25 | 140\.63           | 0\.00           | 46\.50 | 238\.77           | 0\.00           |
+| 16                                    | 8\.00  | 26\.56            | 0\.00           | 40\.80 | 150\.00           | 0\.00           | 49\.60 | 254\.69           | 0\.00           |
+| 17                                    | 8\.50  | 28\.22            | 0\.00           | 43\.35 | 159\.38           | 0\.00           | 52\.70 | 270\.61           | 0\.00           |
+| 18                                    | 9\.00  | 29\.88            | 0\.00           | 45\.90 | 168\.75           | 0\.00           | 55\.80 | 286\.52           | 0\.00           |
+| 19                                    | 9\.50  | 31\.54            | 0\.00           | 48\.45 | 178\.13           | 0\.00           | 58\.90 | 302\.44           | 0\.00           |
+| 20                                    | 10\.00 | 33\.20            | 0\.00           | 51\.00 | 187\.50           | 0\.00           | 62\.00 | 318\.36           | 0\.00           |
 
 
 *These figures do not include resources being used by the Kubernetes system pods.*
@@ -1301,7 +1345,7 @@ It is possible to change the strings used for the prefix and suffix using the pa
 file within the definition of the Kubernetes cluster.
 
 For example, the following configuration file excerpt will use namespace names of the 
-form __appw1i*n*small__ for the cluster named *appCluster* and __driverw1small__ for 
+form __appw1i*n*small2__ for the cluster named *appCluster* and __driverw1small2__ for 
 the cluster named *driverCluster*.
 
 ```json
@@ -1311,14 +1355,14 @@ the cluster named *driverCluster*.
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-1",
     "namespacePrefix" : "app",
-    "namespaceSuffix" : "small",
+    "namespaceSuffix" : "small2",
   },
   { 
     "name" : "driverCluster", 
     "kubeconfigFile" : "/root/.kube/config",
     "kubeconfigContext" : "cluster-context-2",
     "namespacePrefix" : "driver",
-    "namespaceSuffix" : "small",
+    "namespaceSuffix" : "small2",
   },
 ],
 ```
@@ -1655,13 +1699,13 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    0.19           |       0.0005           |    0.10            | 0.002 |
-| small    | 0.005 | 0.002 | 0.04 | 0.0002 |
+| small2    | 0.005 | 0.002 | 0.04 | 0.0002 |
 
 
 | Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    10.3           |      0.06           |    8.0            | 0.1 |
-| small    | 11.0 | 0.06 | 8.4 | 0.1 |
+| small2    | 11.0 | 0.06 | 8.4 | 0.1 |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
 This run will generate approximately the following network demands: 

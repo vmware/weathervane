@@ -152,11 +152,18 @@ The image below shows the lines that need to be edited in the configuration file
           stack of your cluster. The cluster on which the applications run must 
           support provisioning external IP addresses for LoadBalancer services. 
     - `nodeport`: Traffic from the workload drivers to the applications will
-          use the external IP addresses of the Kubernetes Nodes via a NodePort service. This 
+          use the *external* IP addresses of the Kubernetes Nodes via a NodePort service. This 
           may be desirable even when the workload drivers and applications are running 
           on the same cluster in order to load-test the complete networking 
           stack of your cluster. The cluster on which the applications run must 
           support exposing the node IP addresses externally using NodePort services.
+    - `nodeport-internal`: Traffic from the workload drivers to the applications will
+          use the *internal* IP addresses of the Kubernetes Nodes via a NodePort service. This 
+          may be desirable even when the workload drivers and applications are running 
+          on the same cluster in order to load-test the complete networking 
+          stack of your cluster. If the workload drivers are running in a different 
+          cluster than the applications, then the internal IP addresses must be routable 
+          from outside the SUT cluster.
     - `clusterip`: Traffic from the workload drivers to the applications will use a 
           cluster internal address provisioned by a Kubernetes ClusterIP service.  This 
           choice will only work if the workload drivers and applications are running 
@@ -239,10 +246,12 @@ on the types of services supported by your cluster and the goals of your tests.
 Weathervane supports the use of 
 [LoadBalancer, NodePort, or ClusterIP services](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types).   You 
 indicate the type of service you want to use by setting the *appIngressMethod* parameter 
-to `loadbalancer`, `nodeport`, or `clusterip`.  The default value for this parameter 
-is `loadbalancer`.  Note that cluster created manually using kubeadm will likely not 
-support LoadBalancer services.  In that case you will need to use either NodePort or 
-ClusterIP services.
+to `loadbalancer`, `nodeport`, `nodeport-internal`, or `clusterip`.  The default value 
+for this parameter is `loadbalancer`.  The `nodeport` and `nodeport-internal` options 
+differ in that `nodeport` uses the external IP addresses of the nodes, while `nodeport-internal` 
+uses the internal IP addresses.  Note that clusters created manually using kubeadm 
+will likely not support LoadBalancer services.  In that case you will need to use either 
+NodePort or ClusterIP services.
 
 When you are running the workload drivers and applications on separate clusters, you 
 can choose between LoadBalancer and NodePort services.  Most 
@@ -250,11 +259,18 @@ clusters will support at least one of these ingress methods, and some may suppor
 You will need to check the documentation for your cluster to determine which is supported. If 
 using LoadBalancer services is the typical ingress method for your cluster, then you 
 should use LoadBalancer services in order to ensure that your performance tests include 
-the entire network stack.  When using NodePort services the network traffic between 
+the entire network stack.  When using NodePort services with the `nodeport` value for 
+`appIngressMethod`, the network traffic between 
 the drivers and applications is routed directly to the external IP addresses of the 
-Kubernetes nodes, and does not use any LoadBalancers provisioned by your infrastructure.
+Kubernetes nodes, and does not use any LoadBalancers provisioned by your infrastructure. 
+If using NodePort services with the `nodeport-internal` value for 
+`appIngressMethod`, the network traffic between 
+the drivers and applications is routed directly to the internal IP addresses of the 
+Kubernetes nodes.  In this case you may need additional network support to route traffic 
+to the internal addresses.
 
-Please note that depending on your cluster provider there may be a cost associated with LoadBalancer services. Check with your provider for more details.
+Please note that depending on your cluster provider there may be a monetary cost associated 
+with LoadBalancer services. Check with your provider for more details.
 
 When you are running the workload drivers and applications on the same cluster, you 
 can choose among ClusterIP, LoadBalancer, and NodePort services.  With ClusterIP services 
@@ -913,9 +929,9 @@ for access to the applications from the workload drivers.
 
 | Configuration Parameter: appIngressMethod                     |
 | ------------------------------------------------------------ |
-| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
+| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" : "nodeport-internal",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
 
-The possible values `loadbalancer`, `nodeport`, and `clusterip` correspond to Kubernetes 
+The possible values `loadbalancer`, `nodeport`, `nodeport-internal`, and `clusterip` correspond to Kubernetes 
 LoadBalancer, NodePort, and ClusterIP services. The default is `loadbalancer`.  See [Configuring Driver to Application Communication](#appingressmethod) for details.
 
 

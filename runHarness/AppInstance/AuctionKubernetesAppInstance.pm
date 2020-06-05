@@ -144,9 +144,13 @@ override 'getEdgeAddrsRef' => sub {
 	      } else {
 		    push @$wwwIpAddrsRef, [$ip, 80, 443];
 	  	  }	
-   	} elsif ($appIngressMethod eq "nodeport") {
+   	} elsif (($appIngressMethod eq "nodeport") || ($appIngressMethod eq "nodeport-internal")) {
 	  # Using NodePort service for ingress
-	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs();
+	  my $type = "ExternalIP";
+	  if ($appIngressMethod eq "nodeport-internal") {
+	  	$type = "InternalIP";
+	  }
+	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs($type);
 	  if ($#{$ipAddrsRef} < 0) {
 	  	 $logger->error("There are no IP addresses for the Kubernetes nodes");
 		 exit 1;

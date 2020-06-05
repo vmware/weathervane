@@ -103,7 +103,7 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 60
           successThreshold: 1
-          timeoutSeconds: 1
+          timeoutSeconds: 5
       - image: repository/weathervane-auctionappserverwarmer:1.2.0
         name: warmer
         imagePullPolicy: IfNotPresent

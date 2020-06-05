@@ -98,7 +98,7 @@ sub configure {
                 print FILEOUT "${1}type: ClusterIP\n";               			  	
 			} elsif ($appIngressMethod eq "loadbalancer") {
                 print FILEOUT $inline;      
-	   	    } elsif ($appIngressMethod eq "nodeport") {
+	   	    } elsif (($appIngressMethod eq "nodeport") || ($appIngressMethod eq "nodeport-internal")) {
                 print FILEOUT "${1}type: NodePort\n";               
 			}
 		}

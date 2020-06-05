@@ -73,9 +73,6 @@ spec:
         - configMapRef:
             name: nginx-config
         ports: 
-        - containerPort: 80
-          name: httpport
-          protocol: TCP
         - containerPort: 443
           name: httpsport
           protocol: TCP
@@ -93,7 +90,7 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 60
           successThreshold: 1
-          timeoutSeconds: 1
+          timeoutSeconds: 5
         volumeMounts:
         - name: nginx-cache
           mountPath: /var/cache/nginx
@@ -119,8 +116,6 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    name: httpport
   - port: 443
     name: httpsport
   selector:

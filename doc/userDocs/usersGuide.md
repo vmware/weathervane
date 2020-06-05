@@ -161,7 +161,7 @@ The image below shows the lines that need to be edited in the configuration file
           use the *internal* IP addresses of the Kubernetes Nodes via a NodePort service. This 
           may be desirable even when the workload drivers and applications are running 
           on the same cluster in order to load-test the complete networking 
-          stack of your cluster. In the workload drivers are running in a different 
+          stack of your cluster. If the workload drivers are running in a different 
           cluster than the applications, then the internal IP addresses must be routable 
           from outside the SUT cluster.
     - `clusterip`: Traffic from the workload drivers to the applications will use a 
@@ -929,7 +929,7 @@ for access to the applications from the workload drivers.
 
 | Configuration Parameter: appIngressMethod                     |
 | ------------------------------------------------------------ |
-| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",<BR>or<BR>`"appIngressMethod" : "nodeport-internal",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
+| `"appIngressMethod" : "loadbalancer",`<BR>or<BR>`"appIngressMethod" : "nodeport",`<BR>or<BR>`"appIngressMethod" : "nodeport-internal",`<BR>or<BR>`"appIngressMethod" : "clusterip",` |
 
 The possible values `loadbalancer`, `nodeport`, `nodeport-internal`, and `clusterip` correspond to Kubernetes 
 LoadBalancer, NodePort, and ClusterIP services. The default is `loadbalancer`.  See [Configuring Driver to Application Communication](#appingressmethod) for details.

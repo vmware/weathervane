@@ -758,7 +758,7 @@ sub kubernetesGetServiceIP {
 }
 
 sub kubernetesGetNodeIPs {
-	my ( $self ) = @_;
+	my ( $self, $type ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	$logger->debug("kubernetesGetNodeIPs ");
 
@@ -771,7 +771,7 @@ sub kubernetesGetNodeIPs {
 
 	# First try to get all nodes with label wvrole=sut
 	my $cmd;
-	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector=wvrole=sut -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+	$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector=wvrole=sut -o=jsonpath='{.items[*].status.addresses[?(@.type == \"$type\")].address}'";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
@@ -782,7 +782,7 @@ sub kubernetesGetNodeIPs {
 	my @ips = split /\s/, $outString;
 	if ($#ips < 0) {
 		# There are no nodes labeled wvrole=sut, instead get all nodes except master nodes
-		$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector='!node-role.kubernetes.io/master' -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+		$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString --selector='!node-role.kubernetes.io/master' -o=jsonpath='{.items[*].status.addresses[?(@.type == \"$type\")].address}'";
 		($cmdFailed, $outString) = runCmd($cmd);
 		if ($cmdFailed) {
 			$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");
@@ -793,7 +793,7 @@ sub kubernetesGetNodeIPs {
 		
 		if ($#ips < 0) {
 			# Include the master node.   This is needed for single node clusters without the master taint
-			$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"ExternalIP\")].address}'";
+			$cmd = "kubectl get node --kubeconfig=$kubeconfigFile $contextString -o=jsonpath='{.items[*].status.addresses[?(@.type == \"$type\")].address}'";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
 				$logger->error("kubernetesGetNodeIPs failed: $cmdFailed");

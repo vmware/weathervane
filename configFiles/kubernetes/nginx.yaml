@@ -73,6 +73,9 @@ spec:
         - configMapRef:
             name: nginx-config
         ports: 
+        - containerPort: 80
+          name: httpport
+          protocol: TCP
         - containerPort: 443
           name: httpsport
           protocol: TCP
@@ -116,6 +119,8 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
+  - port: 80
+    name: httpport
   - port: 443
     name: httpsport
   selector:

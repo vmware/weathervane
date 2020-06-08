@@ -142,7 +142,7 @@ sub configure {
 				while (!($inline =~ /443/)) {
 					$inline = <FILEIN>;							
 				}
-				print $inline;
+				print FILEOUT $inline;
 			}
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {

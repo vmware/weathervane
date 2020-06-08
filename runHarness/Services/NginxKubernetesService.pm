@@ -132,19 +132,6 @@ sub configure {
 			my $delay = int(rand(60)) + 1;
 			print FILEOUT "${indent}initialDelaySeconds: $delay\n";
 		}
-		elsif ( $inline =~ /(\s+)ports:/ ) {
-			# Deal with both the pod and service ports here
-			print FILEOUT $inline;
-			if ($self->getParamValue('ssl')) {
-				# Skip the port 80 definitions by dropping all lines
-				# until we see 443
-				$inline = <FILEIN>;			
-				while (!($inline =~ /443/)) {
-					$inline = <FILEIN>;							
-				}
-				print $inline;
-			}
-		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
 			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
 		}

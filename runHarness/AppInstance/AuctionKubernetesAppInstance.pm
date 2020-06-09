@@ -155,12 +155,16 @@ override 'getEdgeAddrsRef' => sub {
 	  	 $logger->error("There are no IP addresses for the Kubernetes nodes");
 		 exit 1;
 	  }	
-	  # The http port will only be used if the ssl parameter is true
+	  # The http port will only be used if the ssl parameter is false
       my $httpPort = 80;
       if (!$self->getParamValue('ssl')) {
-      	$cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
+      	$httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 80, $self->namespace);
       }
-	  my $httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
+	  # The https port will only be used if the ssl parameter is true
+	  my $httpsPort = 443;
+      if ($self->getParamValue('ssl')) {
+      	$httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
+      }
 	
 	  foreach my $ipAddr (@$ipAddrsRef) {
 	  	push @$wwwIpAddrsRef, [$ipAddr, $httpPort, $httpsPort];							

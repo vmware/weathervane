@@ -133,7 +133,7 @@ sub configure {
 			print FILEOUT "${indent}initialDelaySeconds: $delay\n";
 		}
 		elsif ( $inline =~ /(\s+)ports:/ ) {
-			# Deal with both the pod and service ports here
+			# Deal with both the container and service ports here
 			print FILEOUT $inline;
 			if ($self->getParamValue('ssl')) {
 				# Skip the port 80 definitions by dropping all lines
@@ -143,6 +143,29 @@ sub configure {
 					$inline = <FILEIN>;							
 				}
 				print FILEOUT $inline;
+			} else {
+				# Leave the port 80 definitions and drop the
+				# port 443 definitions
+				$inline = <FILEIN>;
+				print FILEOUT $inline;
+				# Decide whether we are parsing the container or 
+				# service port
+				if ($inline =~ /container/) {
+					# Container ports.  Leave two more lines then drop three
+					$inline = <FILEIN>;
+					print FILEOUT $inline;
+					$inline = <FILEIN>;
+					print FILEOUT $inline;
+					$inline = <FILEIN>;
+					$inline = <FILEIN>;
+					$inline = <FILEIN>;
+				} else {
+					# Service ports.  Leave one more lines then drop two
+					$inline = <FILEIN>;
+					print FILEOUT $inline;
+					$inline = <FILEIN>;
+					$inline = <FILEIN>;
+				}
 			}
 		}
 		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {

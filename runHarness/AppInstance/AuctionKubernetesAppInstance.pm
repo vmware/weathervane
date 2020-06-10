@@ -163,7 +163,7 @@ override 'getEdgeAddrsRef' => sub {
 	  # The https port will only be used if the ssl parameter is true
 	  my $httpsPort = 443;
       if ($self->getParamValue('ssl')) {
-      	$httpPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
+      	$httpsPort = $cluster->kubernetesGetNodePortForPortNumber("app=auction,type=webServer", 443, $self->namespace);
       }
 	
 	  foreach my $ipAddr (@$ipAddrsRef) {

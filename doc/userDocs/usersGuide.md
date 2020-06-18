@@ -94,7 +94,7 @@ Weathervane requires at least one existing Kubernetes cluster and a client syste
 - Kubernetes cluster:
     - You must have a kubeconfig file with [credentials](#credentials) for the cluster.
     - There must be at least one [StorageClass](#storageclass) defined on the cluster.
-        - A StorageClass Provisioner might have its own [prerequisites](#storageclass-prereq).
+        - A StorageClass Provisioner might have prerequisites and configuration [steps](#storageclass-prereq).
 - Client system:
     - Configure a workstation (MacOS or Linux) or a Linux VM with the required software:
         - Perl 5 (https://www.perl.org/get.html)
@@ -316,7 +316,7 @@ and auction attendance.
 
 There must be at least one [StorageClass](#storageclass) defined on the application cluster to be used for this persistent storage.
 Examples for different storage providers are available at this link (https://kubernetes.io/docs/concepts/storage/storage-classes/).  
-A StorageClass Provisioner might have its own [prerequisites](#storageclass-prereq).
+A StorageClass Provisioner might have prerequisites and configuration [steps](#storageclass-prereq).
 
 In the Weathervane config file, there are multiple *StorageClass* parameters that should be updated with names defined on your cluster.
 All services may use the same StorageClass, or you can use a different StorageClass for each service.
@@ -330,9 +330,9 @@ Here are some time estimates for loading a single application instance:
 - An xsmall configuration with 12,000 users takes about 30 minutes.
 - A small2 configuration with 16,000 users takes about 50 minutes.
 
-##### StorageClass Provisioner Prerequisites<a name="storageclass-prereq"></a>
-Ensure that all prerequisites are met for your chosen StorageClass Provisioner.  
-For example, when using vSphere Storage for Kubernetes, details are available at this link (https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/prerequisites.html).
+##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
+Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  
+For example, when using vSphere Storage for Kubernetes, details are available at this link (https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/).
 
 ##### Cleaning Up Persistent Storage<a name="cleaning-up-persistent-storage"></a>
 

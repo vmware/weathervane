@@ -98,6 +98,7 @@ Weathervane requires at least one existing Kubernetes cluster and a client syste
 - Client system:
     - Configure a workstation (MacOS or Linux) or a Linux VM with the required software:
         - Perl 5 (https://www.perl.org/get.html)
+        	- The module for Term::ReadKey should be installed.
         - Docker Engine (https://docs.docker.com/install/)
         - Git (https://git-scm.com/downloads)
         - The `unzip` utility

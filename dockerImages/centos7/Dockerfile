@@ -5,6 +5,7 @@ MAINTAINER Hal Rosenberg <hrosenbe@vmware.com>
 
 COPY sysctl.conf /etc/sysctl.conf
 COPY updateResolveConf.pl /updateResolveConf.pl
+ARG http_proxy
 
 RUN \
   chmod +x /updateResolveConf.pl && \

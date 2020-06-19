@@ -29,6 +29,8 @@ sub usage {
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This is only used with --private.\n";
+    print "     --proxy :        This is the url of the http(s) proxy to use when accessing the internet.\n";
+    print "                      If required by your proxy, the url should include the port, username, and password.\n";
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
 
@@ -38,13 +40,15 @@ my $port = 0;
 my $username = "";
 my $password = "";
 my $private = '';
+my $proxy = '';
 
 my $optionsSuccess = GetOptions('help' => \$help,
 			'host=s' => \$host,
 			'port=i' => \$port,
 			'username=s' => \$username,
 			'password=s' => \$password,
-			'private!' => \$private
+			'private!' => \$private,
+			'proxy=s' => \$proxy
 			);
 if (!$optionsSuccess) {
   die "Error for command line options.\n";
@@ -302,6 +306,9 @@ foreach my $imageName (@imageNames) {
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
+	if ($proxy) {
+		 push @buildArgs, "http_proxy=$proxy"; 
+	}
 	
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version, $logFile);
 }

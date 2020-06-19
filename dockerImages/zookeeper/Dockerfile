@@ -7,6 +7,7 @@ COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 COPY waitForNodes.pl /waitForNodes.pl
 COPY zoo.cfg /root/zookeeper/conf/zoo.cfg
+ARG http_proxy
 
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

@@ -12,6 +12,7 @@ COPY Notice.txt /root/weathervane/Notice.txt
 COPY version.txt /root/weathervane/version.txt
 
 ENV  JAVA_HOME /usr/lib/jvm/java-1.8.0	
+ARG http_proxy
 
 RUN yum install -y perl-App-cpanminus && \
 	yum install -y wget && \

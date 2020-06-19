@@ -4,7 +4,6 @@ FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 
 COPY nginx.repo /etc/yum.repos.d/nginx.repo
-ARG http_proxy
 
 RUN 	yum install -y nginx && \
 	yum -y clean all 

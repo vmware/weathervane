@@ -6,7 +6,6 @@ MAINTAINER hrosenbe@vmware.com
 COPY entrypoint.sh /entrypoint.sh
 COPY workloadDriver.jar /workloadDriver.jar
 COPY workloadDriverLibs /workloadDriverLibs
-ARG http_proxy
 	
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

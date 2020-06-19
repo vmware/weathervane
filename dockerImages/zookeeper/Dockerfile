@@ -1,6 +1,6 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-FROM namespace/weathervane-centos7:version
+FROM hrosenbe/weathervane-centos7:2.0.7-dev
 MAINTAINER hrosenbe@vmware.com
 	
 COPY entrypoint.sh /entrypoint.sh
@@ -12,7 +12,8 @@ ARG http_proxy
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \
 	yum install -y nc && \
-	curl https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz -o zookeeper-3.4.14.tar.gz && \
+	if [ -z ${http_proxy+x} ]; then export proxy=''; else export proxy="-x $http_proxy"; fi && \
+	curl $proxy https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz -o zookeeper-3.4.14.tar.gz && \
     tar zxf zookeeper-3.4.14.tar.gz && rm -r zookeeper-3.4.14.tar.gz && \
     mv zookeeper-3.4.14 /opt/zookeeper-3.4.14 && \
 	ln -s /opt/zookeeper-3.4.14 /opt/zookeeper && \

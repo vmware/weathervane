@@ -9,7 +9,6 @@ COPY erlang.cookie /var/lib/rabbitmq/.erlang.cookie
 COPY entrypoint.sh /entrypoint.sh
 COPY rabbitmqadmin  /usr/local/bin/rabbitmqadmin
 COPY isUp.pl /isUp.pl    
-ARG http_proxy
 
 RUN chmod +x /entrypoint.sh && \
 	chmod +x /usr/local/bin/rabbitmqadmin && \

@@ -6,7 +6,6 @@ MAINTAINER hrosenbe@vmware.com
 ENV PG_MAJOR 9.3
 ENV PG_MAJOR_PKG 93
 ENV PGDATA /var/lib/pgsql/${PG_MAJOR}/data
-ARG http_proxy
 
 COPY dbScripts /dbScripts
 COPY pg-init.sh /pg-init.sh

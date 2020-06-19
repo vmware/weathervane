@@ -30,6 +30,7 @@ sub usage {
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This is only used with --private.\n";
     print "     --proxy :        This is the url of the http(s) proxy to use when accessing the internet.\n";
+    print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
     print "                      If required by your proxy, the url should include the port, username, and password.\n";
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
@@ -301,12 +302,13 @@ if (!$private || $username) {
 	}
 } 
 
+my @needProxyImageNames = qw(zookeeper tomcat auctionbidservice);
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
-	if ($proxy) {
+	if ($proxy && (grep { $imageName eq $_ } @needProxyImageNames)) {
 		 push @buildArgs, "http_proxy=$proxy"; 
 	}
 	

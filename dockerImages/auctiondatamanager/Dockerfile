@@ -11,7 +11,6 @@ COPY loadData.pl /loadData.pl
 COPY prepareData.pl /prepareData.pl
 COPY images /images
 COPY items.json /items.json
-ARG http_proxy
 	
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

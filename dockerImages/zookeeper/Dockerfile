@@ -7,11 +7,13 @@ COPY entrypoint.sh /entrypoint.sh
 COPY configure.pl /configure.pl
 COPY waitForNodes.pl /waitForNodes.pl
 COPY zoo.cfg /root/zookeeper/conf/zoo.cfg
+ARG http_proxy
 
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \
 	yum install -y nc && \
-	curl -s https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz -o zookeeper-3.4.14.tar.gz && \
+	if [ -z ${http_proxy+x} ]; then export proxy=''; else export proxy="-x $http_proxy"; fi && \
+	curl $proxy https://archive.apache.org/dist/zookeeper/zookeeper-3.4.14/zookeeper-3.4.14.tar.gz -o zookeeper-3.4.14.tar.gz && \
     tar zxf zookeeper-3.4.14.tar.gz && rm -r zookeeper-3.4.14.tar.gz && \
     mv zookeeper-3.4.14 /opt/zookeeper-3.4.14 && \
 	ln -s /opt/zookeeper-3.4.14 /opt/zookeeper && \

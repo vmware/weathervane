@@ -9,6 +9,7 @@ COPY auctionAppServerWarmer.jar /auctionAppServerWarmer.jar
 ENV WARMER_THREADS_PER_SERVER 1
 ENV WARMER_ITERATIONS 500
 ENV WARMER_JVM_OPTS "-Xmx250m -Xms250 -XX:+AlwaysPreTouch -XX:+PreserveFramePointer  -Dspring.profiles.active=postgresql,ehcache,imagesInMongo,singleRabbit "
+ARG http_proxy
 
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \

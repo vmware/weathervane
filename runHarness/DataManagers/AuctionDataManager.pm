@@ -59,7 +59,7 @@ sub startDataManagerContainer {
 	$envVarMap{"MAXUSERS"} = $self->getParamValue('maxUsers');	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
 	$envVarMap{"APPINSTANCENUM"} = $appInstanceNum;	
-	$envVarMap{"JVMOPTS"} = $jvmopts;	
+	$envVarMap{"JVMOPTS"} = "\"$jvmopts\"";
 	$envVarMap{"LOADERTHREADS"} = $loaderThreads;	
 	$envVarMap{"PREPTHREADS"} = $prepThreads;	
 	

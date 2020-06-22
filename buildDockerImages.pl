@@ -302,13 +302,12 @@ if (!$private || $username) {
 	}
 } 
 
-my @needProxyImageNames = qw(zookeeper tomcat auctionbidservice);
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
-	if ($proxy && (grep { $imageName eq $_ } @needProxyImageNames)) {
+	if ($proxy) {
 		 push @buildArgs, "http_proxy=$proxy"; 
 	}
 	

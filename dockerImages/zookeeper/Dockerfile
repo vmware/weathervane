@@ -1,6 +1,6 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-FROM hrosenbe/weathervane-centos7:2.0.7-dev
+FROM namespace/weathervane-centos7:version
 MAINTAINER hrosenbe@vmware.com
 	
 COPY entrypoint.sh /entrypoint.sh

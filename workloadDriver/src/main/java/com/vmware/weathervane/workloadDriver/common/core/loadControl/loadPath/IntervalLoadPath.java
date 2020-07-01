@@ -26,7 +26,7 @@ import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummaryRollu
 public class IntervalLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(IntervalLoadPath.class);
 	
-	private List<LoadInterval> loadIntervals = new ArrayList<LoadInterval>();
+	private List<LoadInterval> loadIntervals;
 	
 	@JsonIgnore
 	private List<UniformLoadInterval> uniformIntervals = null;
@@ -265,8 +265,9 @@ public class IntervalLoadPath extends LoadPath {
 	}
 
 	@Override
+	@JsonIgnore
 	public RampLoadInterval getCurStatusInterval() {
-		return getCurStatusInterval();
+		return curStatusInterval;
 	}
 
 	public final List<LoadInterval> getLoadIntervals() {

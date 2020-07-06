@@ -1163,6 +1163,7 @@ sub startRun {
 	my $usingFindMaxLoadPathType = 0;
 	my $usingSyncedFindMaxLoadPathType = 0;
 	my $usingFixedLoadPathType = 0;
+	my $usingIntervalLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
@@ -1176,6 +1177,10 @@ sub startRun {
 		}
 		if ($loadPathType eq "fixed" ) {
 			$usingFixedLoadPathType = 1;
+			last;
+		}
+		if ($loadPathType eq "interval" ) {
+			$usingIntervalLoadPathType = 1;
 			last;
 		}
 	}
@@ -1275,7 +1280,7 @@ sub startRun {
 					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
 				
-				if ($usingFindMaxLoadPathType || 
+				if ($usingFindMaxLoadPathType ||  $usingIntervalLoadPathType ||
 						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;

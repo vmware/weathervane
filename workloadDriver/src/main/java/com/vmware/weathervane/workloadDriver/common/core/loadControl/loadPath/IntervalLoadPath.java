@@ -47,7 +47,10 @@ public class IntervalLoadPath extends LoadPath {
 	private boolean statsIntervalComplete = false;
 		
 	@JsonIgnore
-	private UniformLoadInterval curStatsInterval = new UniformLoadInterval();
+	private boolean curIntervalEndOfStats = false;
+	
+	@JsonIgnore
+	private UniformLoadInterval curStatsInterval;
 	
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, LoadPathController loadPathController,
@@ -55,9 +58,9 @@ public class IntervalLoadPath extends LoadPath {
 			ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, loadPathController, 
 				hosts, statsHostName, portNumber, restTemplate, executorService);
+		logger.debug("initialize: There are " + loadIntervals.size() + " loadIntervals");
 		
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
-		
 		/*
 		 * Create a list of uniform intervals from the list of
 		 * uniform and ramp intervals
@@ -160,6 +163,37 @@ public class IntervalLoadPath extends LoadPath {
 			firstInterval = false;
 		}
 		
+		// Initialize the curStats and curStatus intervals to the first interval
+		logger.debug("initialize: Initializing curStatsInverval");
+		LoadInterval firstLoadInterval = loadIntervals.get(0);
+		if (firstLoadInterval != null) {
+			curStatsInterval = new UniformLoadInterval();
+			curStatsInterval.setDuration(firstLoadInterval.getDuration());
+			curStatsInterval.setName(firstLoadInterval.getName());
+			if (firstLoadInterval instanceof UniformLoadInterval) {
+				UniformLoadInterval uniformInterval = (UniformLoadInterval) firstLoadInterval;
+				curStatsInterval.setUsers(uniformInterval.getUsers());
+			} else if (firstLoadInterval instanceof RampLoadInterval) {
+				RampLoadInterval rampInterval = (RampLoadInterval) firstLoadInterval;
+				curStatsInterval.setUsers(rampInterval.getEndUsers());
+			}
+
+			curStatusInterval = new RampLoadInterval();
+			curStatusInterval.setName(firstLoadInterval.getName());
+			curStatusInterval.setDuration(firstLoadInterval.getDuration());
+			if (firstLoadInterval instanceof UniformLoadInterval) {
+				UniformLoadInterval uniformInterval = (UniformLoadInterval) firstLoadInterval;
+				curStatusInterval.setStartUsers(uniformInterval.getUsers());
+				curStatusInterval.setEndUsers(uniformInterval.getUsers());
+			} else if (firstLoadInterval instanceof RampLoadInterval) {
+				RampLoadInterval rampInterval = (RampLoadInterval) firstLoadInterval;
+				curStatusInterval.setStartUsers(rampInterval.getStartUsers());
+				curStatusInterval.setEndUsers(rampInterval.getEndUsers());
+			}
+		} else {
+			logger.error("initialize: Can't initialize curStatsInterval.  loadIntervals is empty");
+		}
+		
 	}
 		
 	@JsonIgnore
@@ -169,7 +203,7 @@ public class IntervalLoadPath extends LoadPath {
 		logger.debug("getNextInterval, nextIntervalIndex = " + nextIntervalIndex);
 		statsIntervalComplete = false;
 		if ((uniformIntervals == null) || (uniformIntervals.size() == 0)) {
-			logger.debug("getNextInterval returning null");
+			logger.error("getNextInterval returning null");
 			return null;
 		}
  
@@ -199,22 +233,57 @@ public class IntervalLoadPath extends LoadPath {
 		} else {
 			nextInterval = uniformIntervals.get(nextIntervalIndex);
 			nextIntervalIndex++;
-		}
 		
-		if (nextInterval.isEndOfStatsInterval()) {
-			statsIntervalComplete = true;
-			LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
-			curStatsInterval.setDuration(curLoadInterval.getDuration());
-			curStatsInterval.setName(curLoadInterval.getName());
-			if (curLoadInterval instanceof UniformLoadInterval) {
-				UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
-				curStatsInterval.setUsers(uniformInterval.getUsers());
-			} else if (curLoadInterval instanceof RampLoadInterval) {
-				RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
-				curStatsInterval.setUsers(rampInterval.getEndUsers());			
+			if (curIntervalEndOfStats) {
+				// Get the rollup for the previous interval
+				String curIntervalName = loadIntervals.get(curStatsIntervalIndex).getName();			
+				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+				boolean prevIntervalPassed = false;
+				if (rollup != null) {
+					prevIntervalPassed = rollup.isIntervalPassed();			
+					long startUsers = rollup.getStartActiveUsers();
+					long endUsers = rollup.getEndActiveUsers();
+
+					// Only non-ramp intervals can be passing
+					if ((startUsers == endUsers) && prevIntervalPassed && (endUsers > maxPassUsers)) {
+						maxPassUsers = endUsers;
+						maxPassIntervalName = curIntervalName;
+					}
+					
+					getIntervalStatsSummaries().add(rollup);
+				}
+				
+				// Set the curStats and curStatus to the new current interval
+				curStatsIntervalIndex++;
+				LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
+				curStatsInterval.setDuration(curLoadInterval.getDuration());
+				curStatsInterval.setName(curLoadInterval.getName());
+				if (curLoadInterval instanceof UniformLoadInterval) {
+					UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
+					curStatsInterval.setUsers(uniformInterval.getUsers());
+				} else if (curLoadInterval instanceof RampLoadInterval) {
+					RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
+					curStatsInterval.setUsers(rampInterval.getEndUsers());			
+				}
+				curStatusInterval.setName(curLoadInterval.getName());
+				curStatusInterval.setDuration(curLoadInterval.getDuration());
+				if (curLoadInterval instanceof UniformLoadInterval) {
+					UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
+					curStatusInterval.setStartUsers(uniformInterval.getUsers());
+					curStatusInterval.setEndUsers(uniformInterval.getUsers());			
+				} else if (curLoadInterval instanceof RampLoadInterval) {
+					RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
+					curStatusInterval.setStartUsers(rampInterval.getStartUsers());
+					curStatusInterval.setEndUsers(rampInterval.getEndUsers());			
+				}
+			}
+			
+			curIntervalEndOfStats = nextInterval.isEndOfStatsInterval();
+			if (curIntervalEndOfStats) {
+				statsIntervalComplete = true;
 			}
 		}
-		
+				
 		logger.debug("getNextInterval returning interval: " + nextInterval);
 		return nextInterval;
 
@@ -228,39 +297,7 @@ public class IntervalLoadPath extends LoadPath {
 
 	@JsonIgnore
 	@Override
-	public UniformLoadInterval getCurStatsInterval() {
-		String curIntervalName = loadIntervals.get(curStatsIntervalIndex).getName();			
-		StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
-		boolean prevIntervalPassed = false;
-		if (rollup != null) {
-			prevIntervalPassed = rollup.isIntervalPassed();			
-			long startUsers = rollup.getStartActiveUsers();
-			long endUsers = rollup.getEndActiveUsers();
-
-			// Only non-ramp intervals can be passing
-			if ((startUsers == endUsers) && prevIntervalPassed && (endUsers > maxPassUsers)) {
-				maxPassUsers = endUsers;
-				maxPassIntervalName = curIntervalName;
-			}
-			
-			getIntervalStatsSummaries().add(rollup);
-		}
-		
-		LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
-		curStatusInterval.setName(curLoadInterval.getName());
-		curStatusInterval.setDuration(curLoadInterval.getDuration());
-		if (curLoadInterval instanceof UniformLoadInterval) {
-			UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
-			curStatusInterval.setStartUsers(uniformInterval.getUsers());
-			curStatusInterval.setEndUsers(uniformInterval.getUsers());			
-		} else if (curLoadInterval instanceof RampLoadInterval) {
-			RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
-			curStatusInterval.setStartUsers(rampInterval.getStartUsers());
-			curStatusInterval.setEndUsers(rampInterval.getEndUsers());			
-		}
-
-		curStatsIntervalIndex++;
-		
+	public UniformLoadInterval getCurStatsInterval() {		
 		return curStatsInterval;
 	}
 

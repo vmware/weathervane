@@ -123,6 +123,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		this.statsHostName = statsHostName;
 		this.portNumber = portNumber;
 		this.restTemplate = restTemplate;
+		this.curStatusInterval = new RampLoadInterval();
 	}
 
 	public void start() {

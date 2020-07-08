@@ -1318,7 +1318,10 @@ sub startRun {
 								my $endUsersStr = $statsSummary->{"endActiveUsers"};
 								my $numRtOps = $statsSummary->{"totalNumRTOps"};
 								my $numFailedRt = $statsSummary->{"totalNumFailedRT"};
-								my $pctFailRTStr = sprintf("%.2f", 100 * ((1.0 * $numFailedRt) / $numRtOps));
+								my $pctFailRTStr = 0;
+								if ($numRtOps > 0) {
+									$pctFailRTStr = sprintf("%.2f", 100 * ((1.0 * $numFailedRt) / $numRtOps));
+								}
 
 								my $successStr;
 								if ($statsSummary->{"intervalPassed"}) {

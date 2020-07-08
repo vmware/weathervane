@@ -102,6 +102,7 @@ sub parseConfigFile {
 
 	my @k8sConfigFiles;
 	my $dockerNamespace;
+	my %storageClassNames;
 	while (<CONFIGFILE>) {
 		if ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
 			if ((! -e $1) || (! -f $1)) {
@@ -114,6 +115,10 @@ sub parseConfigFile {
 			}
 		} elsif ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/) {
 			$dockerNamespace = $1;
+		} elsif ($_ =~ /StorageClass"\s*\:\s*"(.*)"\s*,/) {
+			# ToDo: Need to associate storage classes with kubeconfig and context so that can 
+			# correctly try creating a pvc/pv
+			$storageClassNames{$1} = 1;
 		} elsif ($_ =~ /useLoadBalancer/) {
 			print "The useLoadBalancer parameter has been replaced with the appIngressMethod parameter. " . 
 				"You must update your configuration file.\n" .
@@ -129,11 +134,43 @@ sub parseConfigFile {
 		exit 1;									
 	}
 	
-	my @return = (\@k8sConfigFiles, $dockerNamespace);
+	my @return = (\@k8sConfigFiles, $dockerNamespace, \%storageClassNames);
 	
 	return \@return;
 }
 
+sub checkStorageClasses {
+	my ($storageClassNamesRef) = @_;
+	
+	my $pvcYamlString = <<"END";
+{
+  "kind": "PersistentVolumeClaim",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "test-claim",
+    "annotations": {
+        "volume.beta.kubernetes.io/storage-class": "storageClassNameHere"
+    }
+  },
+  "spec": {
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "resources": {
+      "requests": {
+        "storage": "1Mi"
+      }
+    }
+  }
+}
+END
+	# ToDo: Need to loop through clusters and then storage classes in the cluster
+	foreach my $storageClassName (keys %$storageClassNamesRef) {
+		
+		
+	}
+
+}
 sub parseKubeconfigFile {
 	my ($configFileName) = @_;
 	
@@ -313,6 +350,9 @@ if ($mapSsh && (-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
 my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];
 my $dockerNamespace = $retRef->[1];
+my $storageClassNamesRef = $retRef->[2];
+
+checkStorageClasses($storageClassNamesRef);
 
 my $k8sConfigMountString = "";
 foreach my $k8sConfig (@$k8sConfigFilesRef) {

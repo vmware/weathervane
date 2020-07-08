@@ -138,7 +138,7 @@
   "webServerCpus" : "275m",
   "webServerMem"  : "2Gi",
   "webServerImpl" : "nginx",
-  "nginxCacheVolumeSize" : "2Gi",
+  "nginxCacheVolumeSize" : "2150Mi",
 
   "numAuctionBidServers" : 1,
   "auctionBidServerCpus" : "800m",

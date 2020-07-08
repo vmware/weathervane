@@ -38,12 +38,18 @@ sub configure {
 		$workerConnections = $self->getParamValue('nginxWorkerConnections');
 	}
 
+	my $configurationSize = $self->getParamValue("configurationSize");
+	my $cacheMagnitudeMultiplier = 0.90;
+	if ($configurationSize eq "xsmall") {
+		$logger->debug("For xsmall config, setting cacheMagnitudeMultiplier to 0.85");
+		$cacheMagnitudeMultiplier = 0.85;
+	}
 	my $dataVolumeSize = $self->getParamValue("nginxCacheVolumeSize");
 	# Convert the cache size notation from Kubernetes to Nginx. Also need to 
 	# make the cache size 90% of the volume size to ensure that it doesn't 
 	# fill up. To do this we step down to the next smaller unit size
 	$dataVolumeSize =~ /(\d+)([^\d]+)/;
-	my $cacheMagnitude = ceil(1024 * $1 * 0.90);
+	my $cacheMagnitude = ceil(1024 * $1 * $cacheMagnitudeMultiplier);
 	my $cacheUnit = $2;	
 	$cacheUnit =~ s/Gi/m/i;
 	$cacheUnit =~ s/Mi/k/i;

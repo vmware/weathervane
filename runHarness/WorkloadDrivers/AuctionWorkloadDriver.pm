@@ -286,7 +286,7 @@ sub printLoadInterval {
 	my $interval = {};
 
 	$interval->{"duration"} = $loadIntervalRef->{"duration"};
-	$interval->{"name"}     = "$nextIntervalNumber";
+	$interval->{"name"}     = "Interval-$nextIntervalNumber";
 
 	if (   ( exists $loadIntervalRef->{"users"} )
 		&& ( exists $loadIntervalRef->{"duration"} ) )
@@ -1163,6 +1163,7 @@ sub startRun {
 	my $usingFindMaxLoadPathType = 0;
 	my $usingSyncedFindMaxLoadPathType = 0;
 	my $usingFixedLoadPathType = 0;
+	my $usingIntervalLoadPathType = 0;
 	my $appInstancesRef = $self->workload->appInstancesRef;
 	foreach my $appInstance (@$appInstancesRef) {
 		my $loadPathType = $appInstance->getParamValue('loadPathType');
@@ -1176,6 +1177,10 @@ sub startRun {
 		}
 		if ($loadPathType eq "fixed" ) {
 			$usingFixedLoadPathType = 1;
+			last;
+		}
+		if ($loadPathType eq "interval" ) {
+			$usingIntervalLoadPathType = 1;
 			last;
 		}
 	}
@@ -1275,7 +1280,7 @@ sub startRun {
 					$logger->debug("$wkldName: curInterval = $curIntervalName");
 				}
 				
-				if ($usingFindMaxLoadPathType || 
+				if ($usingFindMaxLoadPathType ||  $usingIntervalLoadPathType ||
 						$usingSyncedFindMaxLoadPathType || $usingFixedLoadPathType) {
 					$wkldName =~ /appInstance(\d+)/;
 					my $appInstanceNum = $1;
@@ -1309,6 +1314,15 @@ sub startRun {
 							if (!($endIntervalName =~ /InitialRamp\-(\d+)/)) {
 								my $tptStr = sprintf("%.2f", $statsSummary->{"throughput"});
 								my $rtStr = sprintf("%.2f", $statsSummary->{"avgRT"});
+								my $startUsersStr = $statsSummary->{"startActiveUsers"};
+								my $endUsersStr = $statsSummary->{"endActiveUsers"};
+								my $numRtOps = $statsSummary->{"totalNumRTOps"};
+								my $numFailedRt = $statsSummary->{"totalNumFailedRT"};
+								my $pctFailRTStr = 0;
+								if ($numRtOps > 0) {
+									$pctFailRTStr = sprintf("%.2f", 100 * ((1.0 * $numFailedRt) / $numRtOps));
+								}
+
 								my $successStr;
 								if ($statsSummary->{"intervalPassed"}) {
 									$successStr = 'passed';
@@ -1325,7 +1339,12 @@ sub startRun {
 									}
 									chop($successStr);
 								}
-								my $metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";
+								my $metricsStr;
+								if ($usingIntervalLoadPathType) {
+									$metricsStr = ", Start Users: $startUsersStr, End Users: $endUsersStr, avgRT:$rtStr, percentFailRT: $pctFailRTStr\%";
+								} else {
+									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
+								}
 								$console_logger->info("   [workload $workloadNum, appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 							}
 						}

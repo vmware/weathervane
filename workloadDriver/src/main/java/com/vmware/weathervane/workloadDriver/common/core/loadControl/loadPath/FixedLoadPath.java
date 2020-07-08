@@ -35,7 +35,7 @@ public class FixedLoadPath extends LoadPath {
 	private boolean exitOnFirstFailure = false;
 	
 	private long timeStep = 10L;
-	
+
 	/*
 	 * Phases in a findMax run: 
 	 * - RAMPUP: Ramp up to users in timeStep intervals

@@ -255,10 +255,13 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 	public byte[] retrieveImage(UUID imageHandle, ImageSize size) throws NoSuchImageException,
 			IOException {
 		logger.info("retrieveImage imageHandle = " + imageHandle + ", imageSize = " + size);
+		List<ImageThumbnail> thumbs;
+		List<ImagePreview> previews;
+		List<ImageFull> fulls;
 		switch (size) {
 		case THUMBNAIL:
-			List<ImageThumbnail> thumbs = imageThumbnailRepository.findByKeyImageId(imageHandle);
-			if (thumbs == null) {
+			thumbs = imageThumbnailRepository.findByKeyImageId(imageHandle);
+			if ((thumbs == null) || (thumbs.size() <= 0)) {
 				logger.warn("retrieveImage thumbs = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
@@ -266,8 +269,8 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			return thumbs.get(0).getImage().array();
 
 		case PREVIEW:
-			List<ImagePreview> previews = imagePreviewRepository.findByKeyImageId(imageHandle);
-			if (previews == null) {
+			previews = imagePreviewRepository.findByKeyImageId(imageHandle);
+			if ((previews == null) || (previews.size() <= 0)) {
 				logger.warn("retrieveImage previews = null, imageHandle = " + imageHandle
 						+ ", imageSize = " + size);
 				throw new NoSuchImageException();
@@ -275,13 +278,26 @@ public class ImageStoreFacadeCassandraImpl extends ImageStoreFacadeBaseImpl {
 			return previews.get(0).getImage().array();
 
 		default:
-			List<ImageFull> fulls = imageFullRepository.findByKeyImageId(imageHandle);
-			if (fulls == null) {
-				logger.warn("retrieveImage fulls = null, imageHandle = " + imageHandle
-						+ ", imageSize = " + size);
-				throw new NoSuchImageException();
+			fulls = imageFullRepository.findByKeyImageId(imageHandle);
+			if ((fulls == null) || (fulls.size() <= 0)) {
+				// Some items don't have full images, so we send PREVIEW size instead
+				previews = imagePreviewRepository.findByKeyImageId(imageHandle);
+				if ((previews == null) || (previews.size() <= 0)) {
+					// Some items don't have preview images, so we send THUMBNAIL size instead
+					thumbs = imageThumbnailRepository.findByKeyImageId(imageHandle);
+					if ((thumbs == null) || (thumbs.size() <= 0)) {
+						logger.warn("retrieveImage " + size + 
+								" = null, imageHandle = " + imageHandle + ", imageSize = " + size);
+						throw new NoSuchImageException();
+					} else {
+						return thumbs.get(0).getImage().array();						
+					}
+				} else {
+					return previews.get(0).getImage().array();
+				}
+			} else {
+				return fulls.get(0).getImage().array();
 			}
-			return fulls.get(0).getImage().array();
 		}
 	}
 

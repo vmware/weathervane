@@ -98,27 +98,78 @@ sub parseConfigFile {
 	my ($configFileName) = @_;
 	
 	# Read in the config file
-	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
+	open( my $configFile, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
 
 	my @k8sConfigFiles;
+	my %clusterNameToKubeconfig;
 	my $dockerNamespace;
-	my %storageClassNames;
-	while (<CONFIGFILE>) {
-		if ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
-			if ((! -e $1) || (! -f $1)) {
-				print "The kubeconfigFile $1 must exist and be a regular file.\n";
-				usage();
-				exit 1;									
+	my $topLevelAppInstanceCluster = "";
+	my %topLevelStorageClassNames;
+	# Parsing the config file manually to avoid requiring the JSON package
+	while (<$configFile>) {		
+		if ($_ =~ /^\s*"kubernetesClusters"\s*\:\s*\[/) {
+			# Fill out a hash with clustername -> [kubeconfig, context])
+			while (<$configFile>) {	
+				if ($_ =~ /^\s*{/) {
+					my $name = "";
+					my $kubeconfigFileName = "~/.kube/config";
+					my $kubeconfigContext = "";
+					while (<$configFile>) {	
+						if ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
+							$kubeconfigFileName = $1;
+							if ((! -e $kubeconfigFileName) || (! -f $kubeconfigFileName)) {
+								print "The kubeconfigFile $kubeconfigFileName must exist and be a regular file.\n";
+								usage();
+								exit 1;									
+							}
+							if (!($kubeconfigFileName ~~ @k8sConfigFiles)) {
+								push(@k8sConfigFiles, $kubeconfigFileName);
+							}
+						} elsif ($_ =~ /^\s*"kubeconfigContext"\s*\:\s*"(.*)"\s*,/) {
+							$kubeconfigContext = $1;
+						} elsif ($_ =~ /^\s*"name"\s*\:\s*"(.*)"\s*,/) {
+							$name = $1;
+						} elsif ($_ =~ /^\s*\}/) {
+							last;
+						}
+					}
+					$clusterNameToKubeconfig{$name} = [$kubeconfigFileName, $kubeconfigContext];			
+				} elsif ($_ =~ /^\s*\]/) {
+					last;
+				}
 			}
-			if (!($1 ~~ @k8sConfigFiles)) {
-				push(@k8sConfigFiles, $1);
+		} elsif ($_ =~ /^\s*"workloads"\s*\:\s*\[/) {
+			# Don't parse inside workloads 
+			my $numOpenBrackets = 1;
+			while (<$configFile>) {	
+				if ($_ =~ /\[/) {
+					$numOpenBrackets++;
+				} elsif ($_ =~ /\]/) {
+					$numOpenBrackets--;
+					if ($numOpenBrackets == 0) {
+						last;
+					}
+				}
 			}
+		} elsif ($_ =~ /^\s*"appInstances"\s*\:\s*\[/) {
+			# Don't parse inside appInstances
+			my $numOpenBrackets = 1;
+			while (<$configFile>) {	
+				if ($_ =~ /\[/) {
+					$numOpenBrackets++;
+				} elsif ($_ =~ /\]/) {
+					$numOpenBrackets--;
+					if ($numOpenBrackets == 0) {
+						last;
+					}
+				}
+			}
+		} elsif ($_ =~ /StorageClass"\s*\:\s*"(.*)"\s*,/) {
+			$topLevelStorageClassNames{$1} = 1;
+		} elsif ($_ =~ /appInstanceCluster"\s*\:\s*"(.*)"\s*,/) {
+			$topLevelAppInstanceCluster = $1;
 		} elsif ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/) {
 			$dockerNamespace = $1;
-		} elsif ($_ =~ /StorageClass"\s*\:\s*"(.*)"\s*,/) {
-			# ToDo: Need to associate storage classes with kubeconfig and context so that can 
-			# correctly try creating a pvc/pv
-			$storageClassNames{$1} = 1;
 		} elsif ($_ =~ /useLoadBalancer/) {
 			print "The useLoadBalancer parameter has been replaced with the appIngressMethod parameter. " . 
 				"You must update your configuration file.\n" .
@@ -126,50 +177,83 @@ sub parseConfigFile {
 			exit(1);
 		}
 	}
-	close CONFIGFILE;
-		
+	close $configFile;
+
 	if (!$dockerNamespace) {
 		print "You must specify the dockerNamespace parameter in configuration file $configFileName.\n";
 		usage();
 		exit 1;									
 	}
-	
-	my @return = (\@k8sConfigFiles, $dockerNamespace, \%storageClassNames);
+
+	my %clusterToStorageClassNames;
+	if ($topLevelAppInstanceCluster) {
+		$clusterToStorageClassNames{$topLevelAppInstanceCluster} = \%topLevelStorageClassNames;
+	}
+		
+	my @return = (\@k8sConfigFiles, $dockerNamespace, \%clusterNameToKubeconfig, \%clusterToStorageClassNames);
 	
 	return \@return;
 }
 
 sub checkStorageClasses {
-	my ($storageClassNamesRef) = @_;
+	my ($clusterNameToKubeconfigRef, $clusterToStorageClassNamesRef) = @_;
 	
 	my $pvcYamlString = <<"END";
 {
-  "kind": "PersistentVolumeClaim",
-  "apiVersion": "v1",
-  "metadata": {
-    "name": "test-claim",
-    "annotations": {
-        "volume.beta.kubernetes.io/storage-class": "storageClassNameHere"
+  \\\"kind\\\": \\\"PersistentVolumeClaim\\\",
+  \\\"apiVersion\\\": \\\"v1\\\",
+  \\\"metadata\\\": {
+    \\\"name\\\": \\\"weathervane-test-claim\\\",
+    \\\"annotations\\\": {
+        \\\"volume.beta.kubernetes.io/storage-class\\\": \\\"storageClassNameHere\\\"
     }
   },
-  "spec": {
-    "accessModes": [
-      "ReadWriteOnce"
+  \\\"spec\\\": {
+    \\\"accessModes\\\": [
+      \\\"ReadWriteOnce\\\"
     ],
-    "resources": {
-      "requests": {
-        "storage": "1Mi"
+    \\\"resources\\\": {
+      \\\"requests\\\": {
+        \\\"storage\\\": \\\"1Mi\\\"
       }
     }
   }
 }
 END
-	# ToDo: Need to loop through clusters and then storage classes in the cluster
-	foreach my $storageClassName (keys %$storageClassNamesRef) {
-		
-		
-	}
 
+	foreach my $clusterName (keys $clusterToStorageClassNamesRef) {
+		my $kubeconfigFileName = $clusterNameToKubeconfigRef->{$clusterName}->[0];
+		my $kubeconfigContext = $clusterNameToKubeconfigRef->{$clusterName}->[1];
+		foreach my $storageClassName (keys %{$clusterToStorageClassNamesRef->{$clusterName}}) {
+			# Delete any old PVC with name weathervane-test-claim
+			my $out = `kubectl --kubeconfig=$kubeconfigFileName --context=$kubeconfigContext delete pvc weathervane-test-claim 2>&1`;
+			
+			# Create a PVC
+			my $pvcYamlStringCopy = $pvcYamlString;
+			$pvcYamlStringCopy =~ s/storageClassNameHere/$storageClassName/;
+			$out = `echo "$pvcYamlStringCopy" | kubectl --kubeconfig=$kubeconfigFileName --context=$kubeconfigContext apply -f -`;
+			
+			# Check 5 times for the status to equal Bound and exit if not sucessful
+			my $retries = 5;
+			my $status;
+			do {
+				$status = `kubectl --kubeconfig=$kubeconfigFileName --context=$kubeconfigContext get pvc weathervane-test-claim -o=jsonpath='{.status.phase}'`;
+				chomp($status);
+				$retries--;
+				if ($status ne "Bound") {
+					if ($retries == 0) {
+						$out = `kubectl --kubeconfig=$kubeconfigFileName --context=$kubeconfigContext delete pvc weathervane-test-claim 2>&1`;
+						die "Weathervane is unable to create a persistant volume using storage class $storageClassName in kubernetesCluster $clusterName.\n" .
+					    "Check the configuration of your cluster to ensure that the storage class exists and can provision persistent volumes.\n";			
+					}
+					sleep 5;
+				}
+			} while (($status ne "Bound") && ($retries > 0));
+			
+			# Delete the PVC
+			$out = `kubectl --kubeconfig=$kubeconfigFileName --context=$kubeconfigContext delete pvc weathervane-test-claim 2>&1`;
+		}
+	}
 }
 sub parseKubeconfigFile {
 	my ($configFileName) = @_;
@@ -350,9 +434,11 @@ if ($mapSsh && (-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
 my $retRef = parseConfigFile($configFile);
 my $k8sConfigFilesRef = $retRef->[0];
 my $dockerNamespace = $retRef->[1];
-my $storageClassNamesRef = $retRef->[2];
+my $clusterNameToKubeconfigRef = $retRef->[2];
+my $clusterToStorageClassNamesRef = $retRef->[3];
 
-checkStorageClasses($storageClassNamesRef);
+checkStorageClasses($clusterNameToKubeconfigRef, $clusterToStorageClassNamesRef);
+exit 0;
 
 my $k8sConfigMountString = "";
 foreach my $k8sConfig (@$k8sConfigFilesRef) {

@@ -112,15 +112,21 @@ sub parseConfigFile {
 	my %topLevelStorageClassNames;
 	# Parsing the config file manually to avoid requiring the JSON package
 	while (<$configFile>) {		
-		if ($_ =~ /^\s*"kubernetesClusters"\s*\:\s*\[/) {
+		if ($_ =~ /^\s*#/) {
+				next;
+		} elsif ($_ =~ /^\s*"kubernetesClusters"\s*\:\s*\[/) {
 			# Fill out a hash with clustername -> [kubeconfig, context])
 			while (<$configFile>) {	
-				if ($_ =~ /^\s*{/) {
+				if ($_ =~ /^\s*#/) {
+					next;
+				} elsif ($_ =~ /^\s*{/) {
 					my $name = "";
 					my $kubeconfigFileName = "~/.kube/config";
 					my $kubeconfigContext = "";
 					while (<$configFile>) {	
-						if ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
+						if ($_ =~ /^\s*#/) {
+							next;
+						} elsif ($_ =~ /^\s*"kubeconfigFile"\s*\:\s*"(.*)"\s*,/) {
 							$kubeconfigFileName = $1;
 							if ((! -e $kubeconfigFileName) || (! -f $kubeconfigFileName)) {
 								print "The kubeconfigFile $kubeconfigFileName must exist and be a regular file.\n";
@@ -147,7 +153,9 @@ sub parseConfigFile {
 			# Don't parse inside workloads 
 			my $numOpenBrackets = 1;
 			while (<$configFile>) {	
-				if ($_ =~ /\[/) {
+				if ($_ =~ /^\s*#/) {
+					next;
+				} elsif ($_ =~ /\[/) {
 					$numOpenBrackets++;
 				} elsif ($_ =~ /\]/) {
 					$numOpenBrackets--;
@@ -160,7 +168,9 @@ sub parseConfigFile {
 			# Don't parse inside appInstances
 			my $numOpenBrackets = 1;
 			while (<$configFile>) {	
-				if ($_ =~ /\[/) {
+				if ($_ =~ /^\s*#/) {
+					next;
+				} elsif ($_ =~ /\[/) {
 					$numOpenBrackets++;
 				} elsif ($_ =~ /\]/) {
 					$numOpenBrackets--;

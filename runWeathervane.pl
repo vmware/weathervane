@@ -18,6 +18,7 @@ my $outputDir = 'output';
 my $tmpDir = '';
 my $backgroundScript = '';
 my $mapSsh = '';
+my $skipPvTest = '';
 my $fixedConfigsFile = "";
 my $scriptPeriodSec = 60;
 my $help = '';
@@ -37,6 +38,7 @@ GetOptions(	'accept!' => \$accept,
 			'fixedConfigsFile=s' => \$fixedConfigsFile,
 			'scriptPeriod=i' => \$scriptPeriodSec,
 			'mapSsh!' => \$mapSsh,
+			'skipPvTest!' => \$skipPvTest,
 			'help!' => \$help,
 		);
 		
@@ -87,6 +89,9 @@ sub usage {
 	print "              from another script.  Only needs to be specified on the first run in a given directory.\n";
 	print "              default value: None.  If no value is specified the user is prompted to accept the\n";
 	print "                             license terms.\n";
+	print "--skipPvTest: Causes the scipt to skip testing whether Weathervane can dynamically allocate \n";
+	print "              persistant volumes in the storage classes defined in the configuration file.\n";
+	print "              default value: False";
 	print "--help:       Displays this text.\n";
 	print "\n";
 	print "To pass command-line parameters to the Weathervane run harness, enter them following two dashes\n";
@@ -437,7 +442,9 @@ my $dockerNamespace = $retRef->[1];
 my $clusterNameToKubeconfigRef = $retRef->[2];
 my $clusterToStorageClassNamesRef = $retRef->[3];
 
-checkStorageClasses($clusterNameToKubeconfigRef, $clusterToStorageClassNamesRef);
+if (!$skipPvTest) {
+	checkStorageClasses($clusterNameToKubeconfigRef, $clusterToStorageClassNamesRef);
+}
 
 my $k8sConfigMountString = "";
 foreach my $k8sConfig (@$k8sConfigFilesRef) {

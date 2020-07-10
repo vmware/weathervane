@@ -438,7 +438,6 @@ my $clusterNameToKubeconfigRef = $retRef->[2];
 my $clusterToStorageClassNamesRef = $retRef->[3];
 
 checkStorageClasses($clusterNameToKubeconfigRef, $clusterToStorageClassNamesRef);
-exit 0;
 
 my $k8sConfigMountString = "";
 foreach my $k8sConfig (@$k8sConfigFilesRef) {

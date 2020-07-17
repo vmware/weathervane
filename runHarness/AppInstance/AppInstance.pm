@@ -109,6 +109,14 @@ has 'passedLast' => (
 	default => 0,
 );
 
+# Depending on the runStrategy and loadPathType, the concept of pass/fail
+# may not make sense for some appInstances
+has 'isPassable' => (
+	is      => 'rw',
+	isa     => 'Bool',
+	default => 1,
+);
+
 has 'host' => (
 	is  => 'rw',
 );
@@ -135,6 +143,12 @@ override 'initialize' => sub {
 		if ( $maxUsers > $self->users ) {
 			$self->users($maxUsers);
 		}
+	}
+	
+	my $loadPathType = $self->getParamValue('loadPathType');	
+	if ($loadPathType eq 'interval') {
+		# Instances with interval loadPathType are never passable
+		$self->isPassable(0);    	
 	}
 
 };

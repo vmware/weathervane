@@ -10,6 +10,7 @@ use RunManagers::FindMaxSingleRunRunManager;
 use RunManagers::FindMaxMultiRunRunManager;
 use RunManagers::FindMaxSingleRunWithScalingRunManager;
 use RunManagers::FindMaxMultiAIRunManager;
+use RunManagers::MixedRunManager;
 use Parameters qw(getParamValue);
 
 use namespace::autoclean;

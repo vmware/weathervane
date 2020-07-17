@@ -408,10 +408,10 @@ sub createRunConfigHash {
 	$runRef->{"workloads"} = [];
 	
 	my $loadPathController = {};
-	my $loadPathType = $self->workload->getParamValue('loadPathType');
 	if ($self->getParamValue('runStrategy') eq "findMaxSingleRunSync") {
 		$loadPathController->{"type"} = "anypassuntilhalffail";
-    } elsif ($self->getParamValue('runStrategy') eq "findMaxSingleRun") {
+    } elsif (($self->getParamValue('runStrategy') eq "findMaxSingleRun") || 
+    		 ($self->getParamValue('runStrategy') eq "mixed")) {
         $loadPathController->{"type"} = "syncuntilhalffail";      
     } else {
         $loadPathController->{"type"} = "allpass";      
@@ -446,7 +446,7 @@ sub createRunConfigHash {
 		
 
 		# Add the loadPath to the workload
-		$loadPathType = $appInstance->getParamValue('loadPathType');
+		my $loadPathType = $appInstance->getParamValue('loadPathType');
 		my $loadPath     = {};
 		$loadPath->{'name'}            = "loadPath" . $instanceNum;
 		$loadPath->{"isStatsInterval"} = JSON::true;
@@ -1160,30 +1160,44 @@ sub startRun {
 		return 0;
 	}
 
+	my $usingMixedRunStrategy = 0;
 	my $usingFindMaxLoadPathType = 0;
 	my $usingSyncedFindMaxLoadPathType = 0;
 	my $usingFixedLoadPathType = 0;
 	my $usingIntervalLoadPathType = 0;
+	my %loadPathNameToType;
 	my $appInstancesRef = $self->workload->appInstancesRef;
-	foreach my $appInstance (@$appInstancesRef) {
-		my $loadPathType = $appInstance->getParamValue('loadPathType');
-		if ( $self->getParamValue('runStrategy') eq "findMaxSingleRun" ) {
-			$usingFindMaxLoadPathType = 1;
-			last;
-		}
-		if ( $self->getParamValue('runStrategy') eq "findMaxSingleRunSync" ) {
-			$usingSyncedFindMaxLoadPathType = 1;
-			last;
-		}
-		if ($loadPathType eq "fixed" ) {
-			$usingFixedLoadPathType = 1;
-			last;
-		}
-		if ($loadPathType eq "interval" ) {
-			$usingIntervalLoadPathType = 1;
-			last;
+	if ( $self->getParamValue('runStrategy') eq "findMaxSingleRun" ) {
+		$usingFindMaxLoadPathType = 1;
+	}
+	elsif ( $self->getParamValue('runStrategy') eq "findMaxSingleRunSync" ) {
+		$usingSyncedFindMaxLoadPathType = 1;
+	}
+	elsif ( $self->getParamValue('runStrategy') eq "fixed" ) {
+		$usingFixedLoadPathType = 1;
+	}
+	elsif ( $self->getParamValue('runStrategy') eq "interval" ) {
+		$usingIntervalLoadPathType = 1;
+	}
+	elsif ( $self->getParamValue('runStrategy') eq "mixed" ) {
+		$usingMixedRunStrategy = 1;
+		foreach my $appInstance (@$appInstancesRef) {
+			my $instanceNum = $appInstance->instanceNum;
+			my $loadPathName = "appInstance$instanceNum";
+			my $loadPathType = $appInstance->getParamValue('loadPathType');
+			$loadPathNameToType{$loadPathName} = $loadPathType;
+			if ($loadPathType eq "fixed" ) {
+				$usingFixedLoadPathType = 1;
+			} elsif ($loadPathType eq "interval" ) {
+				$usingIntervalLoadPathType = 1;
+			} elsif ($loadPathType eq "findmax" ) {
+				$usingFindMaxLoadPathType = 1;
+			} elsif ($loadPathType eq "syncedfindmax" ) {
+				$usingSyncedFindMaxLoadPathType = 1;
+			}
 		}
 	}
+
 
 	# Start a process to echo the log to the screen and start/stop the stats collection
 	my $pid = fork();
@@ -1239,7 +1253,7 @@ sub startRun {
 					my $runLengthMinutes = sprintf("%.0f", $totalTime / 60.0);
 					my $impl             = $self->getParamValue('workloadImpl');
 
-					if ($usingFixedLoadPathType) {
+					if ($usingFixedLoadPathType && !$usingMixedRunStrategy) {
 						$console_logger->info(
 							"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
 						);
@@ -1273,6 +1287,7 @@ sub startRun {
 			my $workloadStati = $endRunStatus->{'workloadStati'};
 			foreach my $workloadStatus (@$workloadStati) {
 				my $wkldName = $workloadStatus->{'name'};
+				my $loadPathType = $loadPathNameToType{$wkldName};
 				my $curInterval = $workloadStatus->{'curInterval'};
 				my $curIntervalName;
 				if ($curInterval) {
@@ -2283,6 +2298,11 @@ sub isPassed {
 	my ( $self, $appInstanceRef, $tmpDir ) = @_;
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
+
+	# If this workload is not passable, then always return true
+	if (!$appInstanceRef->isPassable) {
+		return 1;
+	}
 
 	if (!$self->parseStats($tmpDir)) {
 		return;	

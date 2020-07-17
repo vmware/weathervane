@@ -48,6 +48,32 @@ override 'start' => sub {
 	my $console_logger = get_logger("Console");
 	my $debug_logger = get_logger("Weathervane::RunManager::MixedRunManager");
 	
+	# For a mixed runStrategy, there are a few restrictions:
+	#   - There can only be one workload
+	#   - If any appInstance uses findmax or syncedfindmax loadpathtype, then 
+	#     passing only depends on the findmax instances.  Therefore none of the
+	#     fixed appInstances will be passable.
+	my $workloadsRef = $self->runProcedure->workloadsRef;
+	if ((scalar @$workloadsRef) != 1) {
+		$console_logger->error("When running with the mixed runStrategy, there can only be one workload.");
+		exit 1;	
+	}
+	
+	my $hasFindMax = 0;
+	my $appInstancesRef = $workloadsRef->[0]->appInstancesRef;
+	foreach my $appInstance (@$appInstancesRef) {
+		my $loadPathType = $appInstance->getParamValue('loadPathType');	
+		if (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
+			$hasFindMax = 1;
+		}
+	}
+	foreach my $appInstance (@$appInstancesRef) {
+		my $loadPathType = $appInstance->getParamValue('loadPathType');	
+		if ($hasFindMax && ($loadPathType ne "findmax") && ($loadPathType ne "syncedfindmax")) {
+			$appInstance->isPassable(0);;
+		}
+	}
+	
 	$console_logger->info($self->name . " starting run.");
 
 	my $runResult = $self->runProcedure->run();

@@ -54,26 +54,26 @@ override 'start' => sub {
 	#     passing only depends on the findmax instances.  Therefore none of the
 	#     fixed appInstances will be passable.
 	my $workloadsRef = $self->runProcedure->workloadsRef;
-	if ((scalar @$workloadsRef) != 1) {
-		$console_logger->error("When running with the mixed runStrategy, there can only be one workload.");
-		exit 1;	
-	}
-	
 	my $hasFindMax = 0;
-	my $appInstancesRef = $workloadsRef->[0]->appInstancesRef;
-	foreach my $appInstance (@$appInstancesRef) {
-		my $loadPathType = $appInstance->getParamValue('loadPathType');	
-		if (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
-			$hasFindMax = 1;
+	foreach my $workload (@$workloadsRef) {	
+		my $appInstancesRef = $workload->appInstancesRef;
+		foreach my $appInstance (@$appInstancesRef) {
+			my $loadPathType = $appInstance->getParamValue('loadPathType');	
+			if (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
+				$hasFindMax = 1;
+			}
 		}
 	}
-	foreach my $appInstance (@$appInstancesRef) {
-		my $loadPathType = $appInstance->getParamValue('loadPathType');	
-		if ($hasFindMax && ($loadPathType ne "findmax") && ($loadPathType ne "syncedfindmax")) {
-			$appInstance->isPassable(0);;
+	foreach my $workload (@$workloadsRef) {	
+		my $appInstancesRef = $workload->appInstancesRef;
+
+		foreach my $appInstance (@$appInstancesRef) {
+			my $loadPathType = $appInstance->getParamValue('loadPathType');	
+			if ($hasFindMax && ($loadPathType ne "findmax") && ($loadPathType ne "syncedfindmax")) {
+				$appInstance->isPassable(0);
+			}
 		}
 	}
-	
 	$console_logger->info($self->name . " starting run.");
 
 	my $runResult = $self->runProcedure->run();

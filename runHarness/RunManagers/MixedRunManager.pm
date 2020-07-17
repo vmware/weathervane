@@ -1,6 +1,6 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-package FindMaxSingleRunRunManager;
+package MixedRunManager;
 
 use Moose;
 use MooseX::Storage;
@@ -19,7 +19,7 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'RunManager';
 
-has '+name' => ( default => 'Find Max/Single-Run Run Strategy', );
+has '+name' => ( default => 'Mixed Run Strategy', );
 
 has '+description' => ( default => '', );
 
@@ -36,7 +36,7 @@ override 'setRunProcedure' => sub {
 
 	my @runProcedures = @WeathervaneTypes::runProcedures;
 	if ( !( $runProcedureType ~~ @runProcedures ) ) {
-		die "FindMaxSingleRunRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
+		die "MixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
 	}
 
 
@@ -46,9 +46,8 @@ override 'setRunProcedure' => sub {
 override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
-	my $debug_logger = get_logger("Weathervane::RunManager::FindMaxSingleRunRunManager");
+	my $debug_logger = get_logger("Weathervane::RunManager::MixedRunManager");
 	
-    $self->runProcedure->setLoadPathType("syncedfindmax");
 	$console_logger->info($self->name . " starting run.");
 
 	my $runResult = $self->runProcedure->run();

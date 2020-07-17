@@ -45,6 +45,10 @@ sub getRunManager {
 		$runManager =
 		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
+	elsif ($runStrategy eq 'mixed' ) {
+		$runManager =
+		  MixedRunManager->new( 'paramHashRef' => $paramsHashRef );
+	}
 	else {
 		die
 "No matching run manager for run strategy $runStrategy available to RunManagerFactory";

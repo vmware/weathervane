@@ -58,7 +58,8 @@ our @viMgmtHostTypes            = ('virtualCenter');
 
 our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunSync', 
 							'findMaxSingleRunWithScaling',
-							'findMaxMultiAI', 'findMaxMultiRun', 'single' );
+							'findMaxMultiAI', 'findMaxMultiRun', 'single',
+							'mixed' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 # These are all of the workload profiles that are supported for each workload

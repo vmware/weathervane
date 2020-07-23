@@ -272,6 +272,12 @@ sub prepareData {
 
 	# stop the auctiondatamanager container
 	$self->stopDataManagerContainer($logHandle);
+	
+	# Don't return until the data manager pod has terminated
+    my $podExists = 1;
+    do {
+	  $podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );    	
+    } while ($podExists);
 
 	close $logHandle;
 	return 1;

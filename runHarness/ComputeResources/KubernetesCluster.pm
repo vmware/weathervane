@@ -1429,17 +1429,19 @@ override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals, $tmpDir ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 
-	my $destinationDir = "$tmpDir/statistics/kubernetes";
-	my $cmd;
-	$cmd = "mkdir -p $destinationDir";
-	my ($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->error("startStatsCollection failed: $cmdFailed");
-		return;
-	}
+	if ($self->getParamValue('collectKubectlTop')) {
+		my $destinationDir = "$tmpDir/statistics/kubernetes";
+		my $cmd;
+		$cmd = "mkdir -p $destinationDir";
+		my ($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->error("startStatsCollection failed: $cmdFailed");
+			return;
+		}
 
-	$self->kubernetesTopPodAllNamespaces(15, $destinationDir);
-	$self->kubernetesTopNode(15, $destinationDir);
+		$self->kubernetesTopPodAllNamespaces(15, $destinationDir);
+		$self->kubernetesTopNode(15, $destinationDir);
+	}
 };
 
 override 'stopStatsCollection' => sub {

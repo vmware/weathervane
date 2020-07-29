@@ -583,6 +583,13 @@ $parameters{"createNamespaces"} = {
 	"usageText" => "If set to false, Weathervane will not attempt to create namespaces.",
 	"showUsage" => 1,
 };
+$parameters{"collectKubectlTop"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If set to true, Weathervane will not attempt collect kubectl top data.",
+	"showUsage" => 1,
+};
 $parameters{"namespacePrefix"} = {
 	"type"      => "=s",
 	"default"   => "auction",

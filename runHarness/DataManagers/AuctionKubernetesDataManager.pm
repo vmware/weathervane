@@ -141,11 +141,20 @@ sub stopDataManagerContainer {
 	$cluster->kubernetesDelete("configMap", "auctiondatamanager-config", $self->appInstance->namespace);
 	$cluster->kubernetesDelete("deployment", "auctiondatamanager", $self->appInstance->namespace);
 
-	# Don't return until the data manager pod has terminated
+	# Don't return until the data manager pod has terminated.  
+	# Give it five minutes total, which is excessive 
+	my $retries = 30;;
+	my $sleepDuration = 10; 
     my $podExists = 1;
     do {
-	  $podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );    	
-    } while ($podExists);
+	  $podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );
+	  if ($podExists) {
+	    $retries--;    	
+	  	sleep $sleepDuration;
+	  }
+    } while ($podExists && ($retries > 0));
+	# Even if the pod hasn't terminated yet, we let the run proceed because in most
+	# cases this won't cause a problem 
 }
 
 sub prepareDataServices {

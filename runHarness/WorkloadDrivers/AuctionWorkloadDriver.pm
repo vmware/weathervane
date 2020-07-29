@@ -463,6 +463,7 @@ sub createRunConfigHash {
 			$loadPath->{"warmUp"}      = $warmUp;
 			$loadPath->{"numQosPeriods"} = $self->getParamValue('numQosPeriods');
 			$loadPath->{"qosPeriodSec"} = $self->getParamValue('qosPeriodSec');
+			$loadPath->{"runForever"} = $self->getParamValue('runForever');
 			$loadPath->{"exitOnFirstFailure"} = $self->getParamValue('exitOnFirstFailure');
 			$loadPath->{"rampDown"}    = $rampDown;
 			$loadPath->{"users"}       = $users;

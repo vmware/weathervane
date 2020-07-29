@@ -141,6 +141,11 @@ sub stopDataManagerContainer {
 	$cluster->kubernetesDelete("configMap", "auctiondatamanager-config", $self->appInstance->namespace);
 	$cluster->kubernetesDelete("deployment", "auctiondatamanager", $self->appInstance->namespace);
 
+	# Don't return until the data manager pod has terminated
+    my $podExists = 1;
+    do {
+	  $podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );    	
+    } while ($podExists);
 }
 
 sub prepareDataServices {

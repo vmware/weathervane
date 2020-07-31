@@ -23,6 +23,9 @@ my $fixedConfigsFile = "";
 my $scriptPeriodSec = 60;
 my $help = '';
 
+# Turn on auto flushing of output
+BEGIN { $| = 1 }
+
 if ((-e "./version.txt") && (-f "./version.txt")) {
   $version = `cat ./version.txt`;
   chomp($version);	

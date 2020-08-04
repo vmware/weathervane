@@ -528,7 +528,6 @@ $console_logger->warn( "Writing output to $tmpDir" );
 # if we are stopping a run, then use the singlefixed run manager
 my $stop = getParamValue( $paramsHashRef, "stop" );
 if ($stop) {
-	setParamValue( $paramsHashRef, "runStrategy",  'fixed' );
 	setParamValue( $paramsHashRef, "runProcedure", 'stop' );
 }
 

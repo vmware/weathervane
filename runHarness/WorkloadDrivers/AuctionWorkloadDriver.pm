@@ -314,22 +314,12 @@ sub printLoadInterval {
 
 sub printLoadPath {
 	my ( $self, $loadPathRef, $intervalListRef,	$totalTime ) = @_;
-	my $accumulatedDuration = 0;
-	my $nextIntervalNumber  = 1;
+	my $nextIntervalNumber  = 0;
 
-	do {
-		foreach my $loadIntervalRef (@$loadPathRef) {
-			$self->printLoadInterval( $loadIntervalRef, $intervalListRef,
-				$nextIntervalNumber );
-			$nextIntervalNumber++;
-
-			$accumulatedDuration += $loadIntervalRef->{"duration"};
-			if ( $accumulatedDuration >= $totalTime ) {
-				return;
-			}
-		}
-	} while ( $self->getParamValue('repeatUserLoadPath') );
-
+	foreach my $loadIntervalRef (@$loadPathRef) {
+		$self->printLoadInterval( $loadIntervalRef, $intervalListRef, $nextIntervalNumber );
+		$nextIntervalNumber++;
+	}
 }
 
 sub getControllerURL {
@@ -380,9 +370,7 @@ sub createRunConfigHash {
 
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $warmUp           = $self->getParamValue('warmUp');
-	my $steadyState = $self->getParamValue('numQosPeriods') * $self->getParamValue('qosPeriodSec');
 	my $rampDown         = $self->getParamValue('rampDown');
-	my $totalTime        = $rampUp + $warmUp + $steadyState + $rampDown;
 	my $usersScaleFactor = $self->getParamValue('usersScaleFactor');
 	my $usersPerAuctionScaleFactor =
 	  $self->getParamValue('usersPerAuctionScaleFactor');
@@ -474,13 +462,15 @@ sub createRunConfigHash {
 "configure for workload $workloadNum, appInstance $instanceNum has load path type interval"
 			);
 			$loadPath->{"type"}          = "interval";
+			$loadPath->{"runDuration"} = $self->getParamValue('runDuration');
+			$loadPath->{"runForever"} = $self->getParamValue('runForever');
+			$loadPath->{"repeatLoadPath"} = $self->getParamValue('repeatUserLoadPath');
 			$loadPath->{"loadIntervals"} = [];
 			if ( $appInstance->hasLoadPath() ) {
 				$logger->debug(
 "configure for workload $workloadNum, appInstance has load path"
 				);
-				$self->printLoadPath($appInstance->getLoadPath(),
-					$loadPath->{"loadIntervals"}, $totalTime);
+				$self->printLoadPath($appInstance->getLoadPath(), $loadPath->{"loadIntervals"});
 			}
 			else {
 				$logger->error(

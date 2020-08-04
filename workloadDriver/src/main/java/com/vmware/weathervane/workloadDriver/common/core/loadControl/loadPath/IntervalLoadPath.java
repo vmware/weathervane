@@ -27,15 +27,24 @@ public class IntervalLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(IntervalLoadPath.class);
 	
 	private List<LoadInterval> loadIntervals;
-	
+
+	private long runDuration = 1800;
+
+	private boolean repeatLoadPath = false;
+
+	private boolean runForever = false;
+
 	@JsonIgnore
 	private List<UniformLoadInterval> uniformIntervals = null;
 	
 	@JsonIgnore
-	private int nextIntervalIndex = 0;
+	private int curIntervalIndex = -1;
 	
 	@JsonIgnore
 	private int curStatsIntervalIndex = 0;
+	
+	@JsonIgnore
+	private long remainingRunDuration;
 	
 	@JsonIgnore
 	private long maxPassUsers = 0;
@@ -50,6 +59,9 @@ public class IntervalLoadPath extends LoadPath {
 	private boolean curIntervalEndOfStats = false;
 	
 	@JsonIgnore
+	private boolean repeatingLastInterval = false;
+	
+	@JsonIgnore
 	private UniformLoadInterval curStatsInterval;
 	
 	@Override
@@ -58,15 +70,21 @@ public class IntervalLoadPath extends LoadPath {
 			ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, loadPathController, 
 				hosts, statsHostName, portNumber, restTemplate, executorService);
-		logger.debug("initialize: There are " + loadIntervals.size() + " loadIntervals");
+		logger.debug("initialize: There are " + loadIntervals.size() + " loadIntervals" 
+				+ ", runDuration = " + runDuration
+				+ ", repeatLoadPath = " + repeatLoadPath
+				+ ", runForever = " + runForever
+				);
 		
 		uniformIntervals = new ArrayList<UniformLoadInterval>();
+		remainingRunDuration = runDuration;
 		/*
 		 * Create a list of uniform intervals from the list of
 		 * uniform and ramp intervals
 		 */
 		boolean firstInterval = true;
 		long previousIntervalEndUsers = 0;
+		int intervalCount = 1;
 		for (LoadInterval interval : loadIntervals) {
 			Long duration = interval.getDuration();
 			if (duration == null) {
@@ -84,7 +102,15 @@ public class IntervalLoadPath extends LoadPath {
 				UniformLoadInterval newInterval = new UniformLoadInterval(users, interval.getDuration());
 				newInterval.setName(interval.getName());
 				newInterval.setEndOfStatsInterval(true);
+
+				logger.debug("For intervalLoadPath " + getName() 
+				           + ", interval = " + interval.getName() 
+				           + ", users = " + users
+				           + ", intervalCount = " + intervalCount
+				           + ", endOfStatsInterval = " + newInterval.isEndOfStatsInterval()
+				);
 				uniformIntervals.add(newInterval);
+				intervalCount++;
 				previousIntervalEndUsers = users;
 			} else if (interval instanceof RampLoadInterval) {
 				/*
@@ -147,14 +173,19 @@ public class IntervalLoadPath extends LoadPath {
 					}
 					
 					UniformLoadInterval newInterval = new UniformLoadInterval(curUsers, timeStep);
-					logger.debug("For intervalLoadPath " + getName() + ", interval = " + interval.getName() 
-					+ ", adjustedUsers = " + curUsers);
-
 					newInterval.setName(interval.getName());
 					if ((i+1) == numIntervals) {
 						newInterval.setEndOfStatsInterval(true);
 					}
+
+					logger.debug("For intervalLoadPath " + getName() 
+					           + ", interval = " + interval.getName() 
+					           + ", adjustedUsers = " + curUsers
+					           + ", intervalCount = " + intervalCount
+					           + ", endOfStatsInterval = " + newInterval.isEndOfStatsInterval()
+					);
 					uniformIntervals.add(newInterval);
+					intervalCount++;
 
 					totalDuration += timeStep;
 					
@@ -162,7 +193,7 @@ public class IntervalLoadPath extends LoadPath {
 			}
 			firstInterval = false;
 		}
-		
+		logger.debug("initialize: There are " + uniformIntervals.size() + " uniform intervals");
 		// Initialize the curStats and curStatus intervals to the first interval
 		logger.debug("initialize: Initializing curStatsInverval");
 		LoadInterval firstLoadInterval = loadIntervals.get(0);
@@ -200,7 +231,7 @@ public class IntervalLoadPath extends LoadPath {
 	@Override
 	public UniformLoadInterval getNextInterval() {
 		
-		logger.debug("getNextInterval, nextIntervalIndex = " + nextIntervalIndex);
+		logger.debug("getNextInterval, curIntervalIndex = " + curIntervalIndex);
 		statsIntervalComplete = false;
 		if ((uniformIntervals == null) || (uniformIntervals.size() == 0)) {
 			logger.error("getNextInterval returning null");
@@ -208,11 +239,12 @@ public class IntervalLoadPath extends LoadPath {
 		}
  
 		UniformLoadInterval nextInterval;
-		if (nextIntervalIndex >= uniformIntervals.size()) {
+		if (remainingRunDuration == 0) {
 			/*
-			 * At end of intervals, signal that loadPath is complete.
+			 * At end of runDuration, signal that loadPath is complete.
 			 * Keep returning the last interval
 			 */
+			logger.debug("getNextInterval: remainingRunDuration = 0, setting loadPathComplete");
 			boolean passed = false;
 			if (maxPassUsers > 0) {
 				/*
@@ -229,15 +261,46 @@ public class IntervalLoadPath extends LoadPath {
 			status.setPassed(passed);
 			status.setLoadPathName(this.getName());
 			workload.loadPathComplete(status);
-			nextInterval = uniformIntervals.get(nextIntervalIndex-1);
+			nextInterval = uniformIntervals.get(curIntervalIndex);
 		} else {
-			nextInterval = uniformIntervals.get(nextIntervalIndex);
-			nextIntervalIndex++;
-		
-			if (curIntervalEndOfStats) {
+			curIntervalIndex++;
+			if (curIntervalIndex == uniformIntervals.size()) {
+				if (repeatLoadPath || runForever) {
+					logger.debug("getNextInterval: repeating load path");
+					curIntervalIndex = 0;
+				} else {
+					// Otherwise we leave curIntervalIndex at the last interval
+					curIntervalIndex--;
+					repeatingLastInterval = true;
+				}
+			}
+			
+			nextInterval = uniformIntervals.get(curIntervalIndex);
+			if (!runForever) {
+				// Only decrement remainingRunDuration if not running forever 
+				if (nextInterval.getDuration() > remainingRunDuration) {
+					logger.debug("getNextInterval: Duration " + nextInterval.getDuration() + " greater than remainingRunDuration " 
+							+ remainingRunDuration);
+					nextInterval.setDuration(nextInterval.getDuration() - remainingRunDuration);
+					remainingRunDuration = 0;
+				} else {
+					logger.debug("getNextInterval: decrementing remainingRunDuration by " + nextInterval.getDuration());
+					remainingRunDuration -= nextInterval.getDuration();
+				}
+			}
+			
+			logger.debug("getNextInterval: " + "remainingRunDuration = " + remainingRunDuration + 
+					", curIntervalIndex = " + curIntervalIndex +
+					", users = " + nextInterval.getUsers() +
+					", duration = " + nextInterval.getDuration()
+					);
+
+			if (curIntervalEndOfStats && !repeatingLastInterval) {
+				logger.debug("getNextInterval: curIntervalEndOfStats\n");
 				// Get the rollup for the previous interval
-				String curIntervalName = loadIntervals.get(curStatsIntervalIndex).getName();			
+				String curIntervalName = "Interval-" + curStatsIntervalIndex;			
 				StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
+				logger.debug("getNextInterval: curIntervalEndOfStats got rollup\n");
 				boolean prevIntervalPassed = false;
 				if (rollup != null) {
 					prevIntervalPassed = rollup.isIntervalPassed();			
@@ -255,9 +318,12 @@ public class IntervalLoadPath extends LoadPath {
 				
 				// Set the curStats and curStatus to the new current interval
 				curStatsIntervalIndex++;
-				LoadInterval curLoadInterval = loadIntervals.get(curStatsIntervalIndex);
+				int indexForCurStatsInterval = curStatsIntervalIndex % loadIntervals.size();
+				logger.debug("getNextInterval: curStatsIntervalIndex = " + curStatsIntervalIndex
+						+ " Getting curLoadInterval for index " + indexForCurStatsInterval);
+				LoadInterval curLoadInterval = loadIntervals.get(indexForCurStatsInterval);
 				curStatsInterval.setDuration(curLoadInterval.getDuration());
-				curStatsInterval.setName(curLoadInterval.getName());
+				curStatsInterval.setName("Interval-" + curStatsIntervalIndex);
 				if (curLoadInterval instanceof UniformLoadInterval) {
 					UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
 					curStatsInterval.setUsers(uniformInterval.getUsers());
@@ -265,7 +331,7 @@ public class IntervalLoadPath extends LoadPath {
 					RampLoadInterval rampInterval = (RampLoadInterval) curLoadInterval;
 					curStatsInterval.setUsers(rampInterval.getEndUsers());			
 				}
-				curStatusInterval.setName(curLoadInterval.getName());
+				curStatusInterval.setName("Interval-" + curStatsIntervalIndex);
 				curStatusInterval.setDuration(curLoadInterval.getDuration());
 				if (curLoadInterval instanceof UniformLoadInterval) {
 					UniformLoadInterval uniformInterval = (UniformLoadInterval) curLoadInterval;
@@ -292,18 +358,21 @@ public class IntervalLoadPath extends LoadPath {
 	@JsonIgnore
 	@Override
 	public boolean isStatsIntervalComplete() {
+		logger.debug("isStatsIntervalComplete returning: " + statsIntervalComplete);
 		return statsIntervalComplete;
 	}
 
 	@JsonIgnore
 	@Override
 	public UniformLoadInterval getCurStatsInterval() {		
+		logger.debug("getCurStatsInterval returning: " + curStatsInterval);
 		return curStatsInterval;
 	}
 
 	@Override
 	@JsonIgnore
 	public RampLoadInterval getCurStatusInterval() {
+		logger.debug("getCurStatusInterval returning: " + curStatusInterval);
 		return curStatusInterval;
 	}
 
@@ -319,6 +388,30 @@ public class IntervalLoadPath extends LoadPath {
 		loadIntervals.add(interval);
 	}
 	
+	public long getRunDuration() {
+		return runDuration;
+	}
+
+	public void setRunDuration(long runDuration) {
+		this.runDuration = runDuration;
+	}
+
+	public boolean isRepeatLoadPath() {
+		return repeatLoadPath;
+	}
+
+	public void setRepeatLoadPath(boolean repeatLoadPath) {
+		this.repeatLoadPath = repeatLoadPath;
+	}
+
+	public boolean isRunForever() {
+		return runForever;
+	}
+
+	public void setRunForever(boolean runForever) {
+		this.runForever = runForever;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("IntervalLoadPath: ");

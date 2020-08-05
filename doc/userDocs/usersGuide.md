@@ -424,6 +424,8 @@ The tasks discussed in this section are:
 - [Increase the Load on the SUT: Add Application Instances](#task-moreinstances)
 - [Increase the Load on the SUT: Larger Application Instances](#task-largerinstances)
 - [Perform an Extended Duration Run](#task-extended)
+- [Perform a Run with Varying Load](#task-varying)
+- [Perform a Run that Doesn't End](#task-forever)
 - [Perform a Series of Runs](#task-series)
 - [Cleanly Stop an Ongoing Run](#task-stop)
 - [Clean up a Cluster when Finished](#task-clean)
@@ -585,7 +587,7 @@ This consists of a four minute ramp-up period, a five minute warm-up period, a
 single five minute QoS period, and a two minute ramp-down period. Compliance 
 with the QoS requirements is checked in the QoS period.
 
-There may times when it is desirable to run Weathervane for an extended 
+There may be times when it is desirable to run Weathervane for an extended 
 duration.  For example, you may wish to perform an extended load test of
 a cluster, or to observe the effects of changes made to the SUT while the 
 Weathervane is running.  You can do this using the `fixed` run strategy by 
@@ -606,6 +608,141 @@ edit the configuration file as follows:
 1. Optionally, save the configuration file by a different name to reflect the contents.
 
 Then run Weathervane as before with the new configuration file.
+
+### Perform a Run with Varying Load<a name="task-varying"></a>
+
+#### Task Goal
+
+This task shows how to perform a run in which the load placed on the application
+instances varies over the course of a run according to a predefined load path.
+
+In addition to the `fixed` and `findMaxSingleRun` run strategies discussed in
+previous sections, Weathervane provides an `interval` runStrategy in which you
+can specify the manner in which the load driven against the application
+instances should be varied over the course of a run.
+
+The `interval` runStrategy has two main parameters that control the behavior of
+a run:
+
+1. `runDuration` : This controls how long Weathervane will run, in seconds. The
+default value for this parameter is 1800.
+1. `userLoadPath` : This specifies a list of intervals of fixed duration. Within
+each interval the number of users either ramps up or down between start and end
+values, or takes a fixed value. 
+
+During a run with the `interval` runStrategy, the load driven to the application
+instances will change according to the intervals specified in the userLoadPath.
+The intervals are used in the order in which they are specified.  If the
+`runDuration` is longer than the sum of the durations of the intervals, then the
+userLoadPath will continue from the first interval until the run completes.  If
+this is not the desired behavior, the `repeatUserLoadPath` parameter can be set
+to `false` to cause the load to remain at the level of the final interval until
+the run completes.
+
+Note that when specifying the `userLoadPath` according to the instructions
+below, the same load path will be used for all application instances.  It is
+possible to specify different `userLoadPath`s for each application instances
+using a more complex syntax in the configuration file which is not yet
+documented in this User's Guide.  If this is a use-case that is interesting to
+you, please contact the Weathervane team for assistance.
+
+The `interval` runStrategy does not currently produce any performance metrics
+useful for the comparision of alternatives.  As a result it is primarily useful
+for demonstration purposes.  Future releases of Weathervane will build on the
+`interval` runStrategy to provide metrics related to scalability, elasticity,
+and performance isolation.
+
+#### Instructions
+
+To use the `interval` run strategy, edit the configuration file as follows:
+
+1. Change the value for `runStrategy` to `interval`.
+1. Optionally, set the duration of the run by adding the following line:
+`"runDuration" : 3600,`, replacing the `3600` with the desired run duration in
+seconds.  If you do not add this parameter, runDuration` will default to 1800
+seconds (30 minutes).
+1. Add a `userLoadPath` parameter.  The following is an example of a definition
+of a `userLoadPath`:
+
+```json
+"userLoadPath" : [
+  {"duration" : 300, "users" : 2000, },
+  {"duration" : 120, "startUsers" : 2000, "endUsers" : 4000, "timeStep" : 10},
+  {"duration" : 240, "endUsers" : 1000, "timeStep" : 10, },
+  {"duration" : 120, "endUsers" : 4000, },
+  {"duration" : 300, "users" : 2000, },
+],
+```
+
+The value of the `userLoadPath` parameter is a JSON list of intervals. Each
+interval specifies a duration, and either a fixed number of users to run in that
+interval, or a start and end number of users for the interval. You should
+customize the intervals for your use-case using the example for guidance.
+
+In the example given above, the first interval lasts 300 seconds. In that
+interval, the workload driver will run 2000 simulated users for each application
+instance. In the second interval, which lasts 120 seconds, the workload driver
+will start at 2000 users and ramp the load up to 4000 users, with the number of
+users incremented every 10 seconds. In this case, the increment will be (4000 -
+2000) / (120 / 10) = 166.667. Note that the driver will adjust this number so
+that some intervals increase by 166 and some by 167 so that the total increase
+is 2000 users.
+
+The third interval demonstrates that the "startUsers" parameter is optional. If
+omitted, the interval will start with the same number of users as were active at
+the end of the previous interval. If "startUsers" is omitted from the first
+interval, then the interval will start with 0 users. This particular example
+will ramp down from 4000 to 1000 users over 120 seconds.
+
+The fourth interval shows that the "timeStep" parameter is optional. The default
+timeStep for an interval is 15 seconds.
+
+The final interval will run 2000 users for a fixed duration. In this case, you
+should note that there is a step-wise change in the number of users from the
+previous interval, which ended with 4000 users, to this one, which runs 2000
+users. This is allowed.
+
+1. Optionally, set the `repeatUserLoadPath` parameter.  The default value for
+this parameter is `true`.  If you specify a `userLoadPath` whose total duration is
+less than the `runDuration`, the workload driver will return to the initial
+interval after the final interval ends.  If instead you want to have the load
+remain at the level specified by the final interval until the run completes, add
+the following long to your configuration file: `"repeatUserLoadPath` : false,`.
+
+1. Optionally, change the description parameter to properly describe the run.
+1. Optionally, save the configuration file by a different name to reflect the contents.
+
+### Perform a Run That Continues Until Stopped<a name="task-forever"></a>
+
+#### Task Goal
+
+This task shows how to perform a run of Weathervane that will run continuously
+until it is manually stopped. 
+
+There may be instances where you want to start a run of Weathervane that will
+continue forever until it is manually stopped.  Examples might be long-term load
+testing or a continuously running demonstration.  Note that this is different
+from the case of an extended duration run as discussed [above](#task-extended).
+That task discusses runs that are longer than normal but which will eventually
+stop.
+
+Non-stopping runs can only be performed with the [fixed](#task-change) or
+[interval](#task-max) run strategies. Note that because the run does not stop,
+there will be no final metrics reported for the run.  
+
+#### Instructions
+
+To perform a run that continues forever without stopping, edit the configuration
+file created for either a `fixed` or `interval` run as follows:
+
+1. Add the following line: `"runForever" : true,` 
+1. Optionally, change the description parameter to properly describe the run.
+1. Optionally, save the configuration file by a different name to reflect the contents.
+
+Then run Weathervane as before with the new configuration file.
+
+To cleanly stop a run started with `runForever` set to true, follow instructions
+in the task for [cleanly stopping an ongoing run](#task-stop).
 
 ### Perform a Series of Runs<a name="task-series"></a>
 
@@ -980,15 +1117,26 @@ A fixed run gives a pass or fail result for a fixed number of users. A fixed run
 
 ##### findMaxSingleRun
 
-A run using findMaxSingleRun Run Strategy will automatically vary the load in order to discover the maximum number of users supported by the given configuration size on the SUT.
+A run using the findMaxSingleRun Run Strategy will automatically vary the load in order to discover the maximum number of users supported by the given configuration size on the SUT.
 
-The outcome of a findMaxSingleRun is the Maximum WvUsers that pass at QoS. The run length of a findMaxSingleRun varies, but typically takes between 1.5 to 2 hours to complete. 
+The outcome of a findMaxSingleRun run is the Maximum WvUsers that pass at QoS. The run length of a findMaxSingleRun varies, but typically takes between 1.5 to 2 hours to complete. 
 
 You can use findMaxSingleRun with multiple application instances to scale up the load on the SUT.
 
 | Configuration Parameter: findMaxSingleRun Run Strategy |
 |-------------------------------|
 | `"runStrategy" : "findMaxSingleRun",` |
+
+##### interval
+
+A run using the interval Run Strategy will vary the load according to a
+`userLoadPath` for a duration defined by the `runDuration` parameter. More
+information about the `interval` runStrategy is giving in the section discussing
+[Perform a Run with Varying Load](#task-varying). 
+
+| Configuration Parameter: interval Run Strategy |
+|-------------------------------|
+| `"runStrategy" : "interval",` |
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
@@ -1735,6 +1883,96 @@ configuration file you should:
 
 }
 ```
+
+## Accessing the Web Interface of the Running Application<a name="access-ui"></a>
+
+### Overview
+
+The Auction application used in the application instances deployed by
+Weathervane has a simple browser interface that can be used to interact with the 
+running application.  The interface supports most of the functionality and
+operations performed by the simulated users.  This interface is not used in the
+benchmark runs, but it can be useful when trying to understand what
+functionality is provided by the benchmark application.
+
+The browser interface is served by the nginx pods and service deployed for the
+application instances.  The process for accessing the interface will vary
+depending on the value chosen for the `appIngressMethod` parameter.  The process
+for each setting is given in the following sections.  
+
+In all of the following, it is assumed that the application instance is running
+in the namespace `auctionw1i1`, and that the default context in your kubeconfig
+file points to the context for the Kubernetes cluster on which the application
+instance is running.  If not, you may need to specify the context in the kubectl
+commands using the `--context` option.
+
+Note that the instructions for `appIngressMethod` of `clusterip` will work for
+all values of `appIngressMethod`.
+
+#### Accessing the UI when `appIngressMethod` is `loadbalancer`
+
+1. Get the EXTERNAL-IP address for the loadbalancer assigned to the nginx service using
+the command `kubectl get svc -n auctionw1i1`.  Here we will assume that that the
+value is 192.168.20.20.
+    - If the EXTERNAL-IP field contains <none> you should ensure that you have
+    selected `loadbalancer` as the `appIngressMethod` and that your cluster
+    supports LoadBalancer services.  
+    - If the EXTERNAL-IP field contains <pending> you should wait to proceed
+    until the cluster has assigned an IP address to the service.
+1. In a browser which can access the service IP address, enter the URL
+`https://192/168.20.20`, where you should replace the IP address with the
+address from the previous step.
+1. The UI will load in the browser.  You can log in with the username
+`guest@foobar.xyz` and the password `guest`.  At this point you can join
+auctions, bid on items, and explore the rest of the application.  Note that not
+all of the functionality of the application is implemented in the UI.
+
+#### Accessing the UI when `appIngressMethod` is `nodeport`
+
+1. Get the EXTERNAL-IP address for the one of the nodes of your Kubernetes
+cluster using the command `kubectl get node -o wide`.  You can use the address
+of any node. Here we will assume that that the value is 192.168.20.20. 
+1. Get external port number assigned to port 443 on the nginx service using the
+command `kubectl get svc -n auctionw1i1`. The port number you want will be the
+right-hand half of a pair that looks like `443:30204/TCP`, where we have used
+30204 as an example.
+1. In a browser which can access the node EXTERNAL-IP address, enter the URL
+`https://192/168.20.20:30204`, where you should replace the IP address and port
+number with the information from the previous steps.
+1. The UI will load in the browser.  You can log in with the username
+`guest@foobar.xyz` and the password `guest`.  At this point you can join
+auctions, bid on items, and explore the rest of the application.  Note that not
+all of the functionality of the application is implemented in the UI.
+
+#### Accessing the UI when `appIngressMethod` is `nodeport-internal`
+
+1. Get the INTERNAL-IP address for the one of the nodes of your Kubernetes
+cluster using the command `kubectl get node -o wide`.  You can use the address
+of any node. Here we will assume that that the value is 192.168.20.20. 
+1. Get external port number assigned to port 443 on the nginx service using the
+command `kubectl get svc -n auctionw1i1`. The port number you want will be the
+right-hand half of a pair that looks like `443:30204/TCP`, where we have used
+30204 as an example.
+1. In a browser which can access the node's INTERNAL-IP address, enter the URL
+`https://192/168.20.20:30204`, where you should replace the IP address and port
+number with the information from the previous steps.
+1. The UI will load in the browser.  You can log in with the username
+`guest@foobar.xyz` and the password `guest`.  At this point you can join
+auctions, bid on items, and explore the rest of the application.  Note that not
+all of the functionality of the application is implemented in the UI.
+
+#### Accessing the UI when `appIngressMethod` is `clusterip`
+
+1. Forward port 443 from one of the nginx pods to a port on your client system
+using the command `kubectl -n auctionw1i1 port-forward nginx-0 :443`.  The
+output of this command will be of the form _Forwarding from 127.0.0.1:28037 ->
+443_.  Note that the port-forward command will continue running until stopped.
+1. In a browser on your client enter the URL `https://127.0.0.1:28037`, where
+you should replace the port number with the output of the previous step.
+1. The UI will load in the browser.  You can log in with the username
+`guest@foobar.xyz` and the password `guest`.  At this point you can join
+auctions, bid on items, and explore the rest of the application.  Note that not
+all of the functionality of the application is implemented in the UI.
 
 ## Appendix<a name="appendices"></a>
 

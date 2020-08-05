@@ -1054,7 +1054,7 @@ $parameters{"userLoadPath"} = {
 
 $parameters{"repeatUserLoadPath"} = {
 	"type"      => "!",
-	"default"   => JSON::false,
+	"default"   => JSON::true,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

@@ -618,8 +618,8 @@ instances varies over the course of a run according to a predefined load path.
 
 In addition to the `fixed` and `findMaxSingleRun` run strategies discussed in
 previous sections, Weathervane provides an `interval` runStrategy in which you
-can specify the manner in which the load driven against the application
-instances should be varied over the course of a run.
+can specify the manner in which the load should be varied over the course of a
+run.
 
 The `interval` runStrategy has two main parameters that control the behavior of
 a run:
@@ -641,7 +641,7 @@ the run completes.
 
 Note that when specifying the `userLoadPath` according to the instructions
 below, the same load path will be used for all application instances.  It is
-possible to specify different `userLoadPath`s for each application instances
+possible to specify a different `userLoadPath` for each application instance
 using a more complex syntax in the configuration file which is not yet
 documented in this User's Guide.  If this is a use-case that is interesting to
 you, please contact the Weathervane team for assistance.
@@ -662,7 +662,7 @@ To use the `interval` run strategy, edit the configuration file as follows:
 seconds.  If you do not add this parameter, runDuration` will default to 1800
 seconds (30 minutes).
 1. Add a `userLoadPath` parameter.  The following is an example of a definition
-of a `userLoadPath`:
+of a `userLoadPath`:  
 
 ```json
 "userLoadPath" : [
@@ -672,7 +672,7 @@ of a `userLoadPath`:
   {"duration" : 120, "endUsers" : 4000, },
   {"duration" : 300, "users" : 2000, },
 ],
-```
+```  
 
 The value of the `userLoadPath` parameter is a JSON list of intervals. Each
 interval specifies a duration, and either a fixed number of users to run in that
@@ -702,15 +702,15 @@ should note that there is a step-wise change in the number of users from the
 previous interval, which ended with 4000 users, to this one, which runs 2000
 users. This is allowed.
 
-1. Optionally, set the `repeatUserLoadPath` parameter.  The default value for
+4. Optionally, set the `repeatUserLoadPath` parameter.  The default value for
 this parameter is `true`.  If you specify a `userLoadPath` whose total duration is
 less than the `runDuration`, the workload driver will return to the initial
 interval after the final interval ends.  If instead you want to have the load
 remain at the level specified by the final interval until the run completes, add
 the following long to your configuration file: `"repeatUserLoadPath` : false,`.
 
-1. Optionally, change the description parameter to properly describe the run.
-1. Optionally, save the configuration file by a different name to reflect the contents.
+5. Optionally, change the description parameter to properly describe the run.
+6. Optionally, save the configuration file by a different name to reflect the contents.
 
 ### Perform a Run That Continues Until Stopped<a name="task-forever"></a>
 
@@ -1921,7 +1921,8 @@ value is 192.168.20.20.
     until the cluster has assigned an IP address to the service.
 1. In a browser which can access the service IP address, enter the URL
 `https://192/168.20.20`, where you should replace the IP address with the
-address from the previous step.
+address from the previous step.  You may need to accept security overrides as
+Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
 `guest@foobar.xyz` and the password `guest`.  At this point you can join
 auctions, bid on items, and explore the rest of the application.  Note that not
@@ -1938,7 +1939,8 @@ right-hand half of a pair that looks like `443:30204/TCP`, where we have used
 30204 as an example.
 1. In a browser which can access the node EXTERNAL-IP address, enter the URL
 `https://192/168.20.20:30204`, where you should replace the IP address and port
-number with the information from the previous steps.
+number with the information from the previous steps. You may need to accept
+security overrides as Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
 `guest@foobar.xyz` and the password `guest`.  At this point you can join
 auctions, bid on items, and explore the rest of the application.  Note that not
@@ -1955,7 +1957,8 @@ right-hand half of a pair that looks like `443:30204/TCP`, where we have used
 30204 as an example.
 1. In a browser which can access the node's INTERNAL-IP address, enter the URL
 `https://192/168.20.20:30204`, where you should replace the IP address and port
-number with the information from the previous steps.
+number with the information from the previous steps. You may need to accept
+security overrides as Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
 `guest@foobar.xyz` and the password `guest`.  At this point you can join
 auctions, bid on items, and explore the rest of the application.  Note that not
@@ -1968,7 +1971,8 @@ using the command `kubectl -n auctionw1i1 port-forward nginx-0 :443`.  The
 output of this command will be of the form _Forwarding from 127.0.0.1:28037 ->
 443_.  Note that the port-forward command will continue running until stopped.
 1. In a browser on your client enter the URL `https://127.0.0.1:28037`, where
-you should replace the port number with the output of the previous step.
+you should replace the port number with the output of the previous step. You may
+need to accept security overrides as Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
 `guest@foobar.xyz` and the password `guest`.  At this point you can join
 auctions, bid on items, and explore the rest of the application.  Note that not

@@ -576,6 +576,13 @@ $parameters{"kubeconfigContext"} = {
 	"usageText" => "This is the context to use from within the kubeconfig file.",
 	"showUsage" => 1,
 };
+$parameters{"collectKubectlTop"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "kubernetesCluster",
+	"usageText" => "If set to true, Weathervane will not attempt collect kubectl top data.",
+	"showUsage" => 1,
+};
 $parameters{"createNamespaces"} = {
 	"type"      => "!",
 	"default"   => JSON::true,

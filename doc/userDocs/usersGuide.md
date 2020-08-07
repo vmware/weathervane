@@ -692,7 +692,7 @@ The third interval demonstrates that the "startUsers" parameter is optional. If
 omitted, the interval will start with the same number of users as were active at
 the end of the previous interval. If "startUsers" is omitted from the first
 interval, then the interval will start with 0 users. This particular example
-will ramp down from 4000 to 1000 users over 120 seconds.
+will ramp down from 4000 to 1000 users over 240 seconds.
 
 The fourth interval shows that the "timeStep" parameter is optional. The default
 timeStep for an interval is 15 seconds.
@@ -1920,7 +1920,7 @@ value is 192.168.20.20.
     - If the EXTERNAL-IP field contains <pending> you should wait to proceed
     until the cluster has assigned an IP address to the service.
 1. In a browser which can access the service IP address, enter the URL
-`https://192/168.20.20`, where you should replace the IP address with the
+`https://192.168.20.20`, where you should replace the IP address with the
 address from the previous step.  You may need to accept security overrides as
 Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
@@ -1938,7 +1938,7 @@ command `kubectl get svc -n auctionw1i1`. The port number you want will be the
 right-hand half of a pair that looks like `443:30204/TCP`, where we have used
 30204 as an example.
 1. In a browser which can access the node EXTERNAL-IP address, enter the URL
-`https://192/168.20.20:30204`, where you should replace the IP address and port
+`https://192.168.20.20:30204`, where you should replace the IP address and port
 number with the information from the previous steps. You may need to accept
 security overrides as Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username
@@ -1956,7 +1956,7 @@ command `kubectl get svc -n auctionw1i1`. The port number you want will be the
 right-hand half of a pair that looks like `443:30204/TCP`, where we have used
 30204 as an example.
 1. In a browser which can access the node's INTERNAL-IP address, enter the URL
-`https://192/168.20.20:30204`, where you should replace the IP address and port
+`https://192.168.20.20:30204`, where you should replace the IP address and port
 number with the information from the previous steps. You may need to accept
 security overrides as Weathervane uses self-signed certificates.
 1. The UI will load in the browser.  You can log in with the username

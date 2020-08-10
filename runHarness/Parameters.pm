@@ -962,6 +962,22 @@ $parameters{"description"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"runForever"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "",
+	"usageText" => "If set to true, runs using the fixed or interval runStrategy will run forever.",
+	"showUsage" => 1,
+};
+
+$parameters{"runDuration"} = {
+	"type"    => "=i",
+	"default" => "1800",
+	"parent"  => "runProc",
+	"usageText" => "This is the run duration for runs using the interval runStrategy.",
+	"showUsage" => 1,
+};
+
 $parameters{"rampUp"} = {
 	"type"    => "=i",
 	"default" => "240",
@@ -1045,7 +1061,7 @@ $parameters{"userLoadPath"} = {
 
 $parameters{"repeatUserLoadPath"} = {
 	"type"      => "!",
-	"default"   => JSON::false,
+	"default"   => JSON::true,
 	"parent"    => "workload",
 	"usageText" => "",
 	"showUsage" => 0,

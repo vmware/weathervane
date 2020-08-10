@@ -46,6 +46,7 @@ public class UniformLoadInterval extends LoadInterval {
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("UniformLoadInterval: ");
+		theStringBuilder.append("name: " + getName()); 
 		theStringBuilder.append("; duration: " + getDuration()); 
 		theStringBuilder.append("; users: " + users); 
 		

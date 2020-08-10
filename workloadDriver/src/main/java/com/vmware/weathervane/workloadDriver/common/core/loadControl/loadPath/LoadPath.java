@@ -325,7 +325,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 				String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/"
 						+ workloadName + "/statsIntervalComplete";
 				logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
-						+ ", workload " + workloadName + " to host " + hostname + ", url = " + url);
+						+ ", workload " + workloadName + ", interval " + nextInterval.getName() + " to host " + hostname + ", url = " + url);
 				ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
 						BasicResponse.class);
 

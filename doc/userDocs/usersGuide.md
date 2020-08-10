@@ -633,11 +633,12 @@ values, or takes a fixed value.
 During a run with the `interval` runStrategy, the load driven to the application
 instances will change according to the intervals specified in the userLoadPath.
 The intervals are used in the order in which they are specified.  If the
-`runDuration` is longer than the sum of the durations of the intervals, then the
-userLoadPath will continue from the first interval until the run completes.  If
-this is not the desired behavior, the `repeatUserLoadPath` parameter can be set
-to `false` to cause the load to remain at the level of the final interval until
-the run completes.
+`runDuration` is longer than the sum of the durations of the intervals, then,
+starting at the first interval, the userLoadPath will repeat the intervals in
+the `userLoadPath` until the run completes. If this is not the desired behavior,
+the `repeatUserLoadPath` parameter can be set to `false` to cause the load to
+remain at the level of the final interval until the run completes.
+
 
 Note that when specifying the `userLoadPath` according to the instructions
 below, the same load path will be used for all application instances.  It is

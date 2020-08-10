@@ -579,23 +579,23 @@ sub kubernetesExecOne {
 	$logger->debug("Output: $outString");
 	my @names = split /\s+/, $outString;
 	if ($#names < 0) {
-		$console_logger->error("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
-		exit(-1);
+		$console_logger->debug("kubernetesExecOne: There are no pods with label $serviceTypeImpl in namespace $namespace");
+		$cmdFailed = 1;
+		$outString = "";		
+	} else {	
+		# Get the name of the first pod
+		my $podName = $names[0];
+	
+		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
+		($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed) {
+			$logger->info("kubernetesExecOne exec failed: $cmdFailed");
+		}
+		$logger->debug("Command: $cmd");
+		$logger->debug("Output: $outString");
 	}
-	
-	# Get the name of the first pod
-	my $podName = $names[0];
-	
-	$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
-	($cmdFailed, $outString) = runCmd($cmd);
-	if ($cmdFailed) {
-		$logger->info("kubernetesExecOne exec failed: $cmdFailed");
-	}
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-	
+
 	return ($cmdFailed, $outString);
-	
 }
 
 # Does a kubectl exec in all p[ods] where the impl label matches  

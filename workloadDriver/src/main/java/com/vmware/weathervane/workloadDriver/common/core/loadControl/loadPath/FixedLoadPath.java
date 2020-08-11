@@ -32,6 +32,7 @@ public class FixedLoadPath extends LoadPath {
 	private long numQosPeriods = 3;
 	private long qosPeriodSec = 300;
 	private long rampDown = 120;
+	private boolean runForever = false;
 	private boolean exitOnFirstFailure = false;
 	
 	private long timeStep = 10L;
@@ -170,8 +171,9 @@ public class FixedLoadPath extends LoadPath {
 				}
 			}
 			
-			if (curPhaseInterval >= getNumQosPeriods()) {
-				// Last QOS period passed.  Move to rampDown
+			if (!runForever && (curPhaseInterval >= getNumQosPeriods())) {
+				// If runForever, never enter rampDown
+				// Last QOS period completed.  Move to rampDown
 				curPhase = Phase.RAMPDOWN;
 				curPhaseInterval = 0;
 				nextInterval = getNextInterval();
@@ -307,6 +309,14 @@ public class FixedLoadPath extends LoadPath {
 
 	public void setExitOnFirstFailure(boolean exitOnFirstFailure) {
 		this.exitOnFirstFailure = exitOnFirstFailure;
+	}
+
+	public boolean isRunForever() {
+		return runForever;
+	}
+
+	public void setRunForever(boolean runForever) {
+		this.runForever = runForever;
 	}
 
 	@Override

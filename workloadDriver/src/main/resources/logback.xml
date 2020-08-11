@@ -17,7 +17,7 @@ SPDX-License-Identifier: BSD-2-Clause
     <logger name="com.vmware.weathervane.workloadDriver.common.http" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.statistics" level="WARN" />
     <logger name="com.vmware.weathervane.workloadDriver.common.core.loadControl" level="WARN" />
-    <logger name="com.vmware.weathervane.workloadDriver.common.core.User" level="WARN" />
+    <logger name="com.vmware.weathervane.workloadDriver.common.core.Workload" level="WARN" />
 
   <root level="warn">
     <appender-ref ref="STDOUT" />

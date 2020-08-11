@@ -45,6 +45,7 @@ public class RampLoadInterval extends LoadInterval {
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder("RampLoadInterval: ");
+		theStringBuilder.append("name: " + getName()); 
 		theStringBuilder.append("; duration: " + getDuration()); 
 		theStringBuilder.append("; startUsers: " + startUsers); 
 		theStringBuilder.append("; endUsers: " + endUsers); 

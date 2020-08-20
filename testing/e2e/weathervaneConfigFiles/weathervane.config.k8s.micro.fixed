@@ -1,0 +1,36 @@
+{
+  "description" : "micro-pipeline",
+
+  "configurationSize": "micro",
+
+  "runStrategy" : "fixed",
+
+  "numAppInstances" : 1,
+
+  "users" : 60,
+
+#  "dockerNamespace" : "weathervane-docker-local.artifactory.eng.vmware.com",
+  "dockerNamespace" : "griderr",
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "appCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+  ],
+
+  "driverCluster" : "driverCluster",
+
+  "appInstanceCluster" : "appCluster",
+  "appIngressMethod" : "nodeport",
+
+  "cassandraDataStorageClass" : "fast",
+  "postgresqlStorageClass" : "fast",
+  "nginxCacheStorageClass" : "fast",
+
+}

@@ -1,0 +1,33 @@
+{
+  "description" : "xsmall",
+
+  "configurationSize": "xsmall",
+
+  "runStrategy" : "findMax",
+
+  "numAppInstances" : 1,
+
+  "dockerNamespace" : "griderr",
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "appCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+  ],
+
+  "driverCluster" : "driverCluster",
+
+  "appInstanceCluster" : "appCluster",
+  "appIngressMethod" : "nodeport",
+
+  "cassandraDataStorageClass" : "fast",
+  "postgresqlStorageClass" : "fast",
+  "nginxCacheStorageClass" : "fast",
+
+}

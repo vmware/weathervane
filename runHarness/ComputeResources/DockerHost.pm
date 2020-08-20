@@ -329,9 +329,15 @@ sub dockerRun {
 		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
 	}
 
+	#only apply docker cpu and memory limits to the tomcat appServer containers
+	my $applyLimits = 0;
+	if ( $impl eq "tomcat" ) {
+		$applyLimits = 1;
+	}
+
 	my $cpusString = "";
 	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+	if ($applyLimits && defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
 		my $cpus = $self->convertK8sCpuString($dockerConfigHashRef->{"cpus"});
 		if (!$isVicHost) {
 			$cpusString = sprintf("--cpus=%0.2f", $cpus);
@@ -350,7 +356,7 @@ sub dockerRun {
 	}
 	
 	my $memoryString = "";
-	if (defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
+	if ($applyLimits && defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
 		$memoryString = "--memory=". $self->convertK8sMemString($dockerConfigHashRef->{"memory"});
 	}
 	

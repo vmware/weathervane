@@ -13,6 +13,7 @@ COPY cassandra-init.sh /cassandra-init.sh
 COPY auction_cassandra.cql /auction_cassandra.cql
 COPY cassandra.yaml /cassandra.yaml
 COPY jvm.options /jvm.options
+COPY cassandra-env.sh /cassandra-env.sh
 ARG http_proxy
 
 RUN yum install -y java-1.8.0-openjdk && \
@@ -27,7 +28,5 @@ RUN yum install -y java-1.8.0-openjdk && \
     chmod +x /entrypoint.sh 
     
 VOLUME ["/data"]
-
-EXPOSE 7000 7001 7199 9042
 
 ENTRYPOINT ["/entrypoint.sh"]   

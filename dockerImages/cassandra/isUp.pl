@@ -6,12 +6,13 @@ use strict;
 use POSIX;
 
 my $ip = `hostname -i`;
+my $nativeTransportPort = $ENV{'CASSANDRA_NATIVE_TRANSPORT_PORT'};
 chomp($ip);
 open my $cmd, '-|', 'nodetool status';
 while (my $line = <$cmd>) {
 	print "isUp: nodetool status line: $line\n";
 	if ($line =~ /^UN\s+$ip/) {
-		open my $cmd2, '-|', "cqlsh $ip -f cqlsh.in";
+		open my $cmd2, '-|', "cqlsh $ip $nativeTransportPort -f cqlsh.in";
 		while (my $line2 = <$cmd2>) {
 			print "isUp: describe keyspaces line: $line2\n";
 			if ($line2 =~ /system_schema/) {

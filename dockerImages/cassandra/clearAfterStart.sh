@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 echo "Clearing cassandra database"
-cqlsh -f /auction_cassandra_configured.cql $HOSTNAME
+cqlsh -f /auction_cassandra_configured.cql $HOSTNAME $CASSANDRA_NATIVE_TRANSPORT_PORT

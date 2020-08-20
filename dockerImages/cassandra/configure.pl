@@ -12,6 +12,8 @@ my $clusterName  = $ENV{'CASSANDRA_CLUSTER_NAME'};
 my $memory = $ENV{'CASSANDRA_MEMORY'};
 my $cpus = $ENV{'CASSANDRA_CPUS'};
 my $numNodes = $ENV{'CASSANDRA_NUM_NODES'};
+my $nativeTransportPort = $ENV{'CASSANDRA_NATIVE_TRANSPORT_PORT'};
+my $jmxPort = $ENV{'CASSANDRA_JMX_PORT'};
 
 my $hostname = `hostname`;
 chomp($hostname);
@@ -20,6 +22,8 @@ if ($ENV{'CASSANDRA_USE_IP'}) {
 	chomp($hostnameIp);
 	if ($hostname =~ /cassandra\-0/) {
 		$seeds = $hostnameIp . "," . $seeds;
+	} else {
+		$seeds = $hostnameIp; #set seeds to the same ip as the listen_address
 	}
 	$hostname = $hostnameIp;
 }
@@ -55,7 +59,7 @@ while ( my $inline = <FILEIN> ) {
 close FILEIN;
 close FILEOUT;
 
-# Configure setenv.sh
+# Configure casandra.yaml
 open( FILEIN,  "/cassandra.yaml" ) or die "Can't open file /cassandra.yaml: $!\n";
 open( FILEOUT, ">/etc/cassandra/conf/cassandra.yaml" ) or die "Can't open file /etc/cassandra/conf/cassandra.yaml: $!\n";
 while ( my $inline = <FILEIN> ) {
@@ -75,6 +79,9 @@ while ( my $inline = <FILEIN> ) {
 	elsif ( $inline =~ /^rpc\_address\:\slocalhost/ ) {
 		print FILEOUT "rpc_address: $hostname\n";
 	}
+	elsif ( $nativeTransportPort && $inline =~ /^native\_transport\_port:\s9042/ ) {
+		print FILEOUT "native_transport_port: $nativeTransportPort\n";
+	}
 	else {
 		print FILEOUT $inline;
 	}
@@ -82,7 +89,23 @@ while ( my $inline = <FILEIN> ) {
 close FILEIN;
 close FILEOUT;
 
-# Configure setenv.sh
+# Configure cassandra-env.sh
+if ( $jmxPort ) {
+	open( FILEIN,  "/cassandra-env.sh" ) or die "Can't open file /cassandra-env.sh: $!\n";
+	open( FILEOUT, ">/etc/cassandra/default.conf/cassandra-env.sh" ) or die "Can't open file /etc/cassandra/default.conf/cassandra-env.sh: $!\n";
+	while ( my $inline = <FILEIN> ) {
+		if ( $inline =~ /^JMX\_PORT=/ ) {
+			print FILEOUT "JMX_PORT=\"$jmxPort\"\n";
+		}
+		else {
+			print FILEOUT $inline;
+		}
+	}
+	close FILEIN;
+	close FILEOUT;
+}
+
+# Configure auction_cassandra.cql
 open( FILEIN,  "/auction_cassandra.cql" ) or die "Can't open file /auction_cassandra.cql: $!\n";
 open( FILEOUT, ">/auction_cassandra_configured.cql" ) or die "Can't open file /auction_cassandra_configured.cql: $!\n";
 while ( my $inline = <FILEIN> ) {

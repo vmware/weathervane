@@ -46,7 +46,6 @@ public class StatsCollector  {
 	private BehaviorSpec behaviorSpec = null;
 	
 	private String masterHostName;
-	private int masterPortNumber;
 	private String localHostname;
 
 	private String runName;
@@ -54,11 +53,10 @@ public class StatsCollector  {
 	private LoadPath loadPath;
 	
 	public StatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
-								int masterPortNumber, String localHostname, BehaviorSpec behaviorSpec) {
+								String localHostname, BehaviorSpec behaviorSpec) {
 		this.runName = runName;
 		this.workloadName = workloadName;
 		this.masterHostName = masterHostName;
-		this.masterPortNumber = masterPortNumber;
 		this.localHostname = localHostname;
 		this.operations = operations;
 		this.behaviorSpec = behaviorSpec;
@@ -192,7 +190,7 @@ public class StatsCollector  {
 			 * Send the stats summary
 			 */
 			HttpEntity<StatsSummary> statsEntity = new HttpEntity<StatsSummary>(targetStatsSummary, requestHeaders);
-			String url = "http://" + masterHostName + ":" + masterPortNumber + "/stats/run/" + runName;
+			String url = "http://" + masterHostName + "/stats/run/" + runName;
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
 					+ " and target " + targetName + " to url " + url);
 

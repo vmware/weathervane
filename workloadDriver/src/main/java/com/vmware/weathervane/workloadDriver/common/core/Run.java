@@ -58,9 +58,6 @@ public class Run {
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
 	@JsonIgnore
-	private Integer portNumber = 7500;
-
-	@JsonIgnore
 	private List<String> hosts;
 
 	@JsonIgnore
@@ -110,7 +107,7 @@ public class Run {
 		initializeRunStatsMessage.setWorkloadNameToNumTargetsMap(workloadNameToNumTargetsMap);
 		
 		HttpEntity<InitializeRunStatsMessage> statsEntity = new HttpEntity<InitializeRunStatsMessage>(initializeRunStatsMessage, requestHeaders);
-		String url = "http://" + runStatsHost + ":" + portNumber + "/stats/initialize/run/" + name;
+		String url = "http://" + runStatsHost + "/stats/initialize/run/" + name;
 		logger.debug("Sending initialize run message to stats controller.  url = " + url + ", maessage: " + initializeRunStatsMessage);
 		ResponseEntity<BasicResponse> responseEntity 
 				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
@@ -125,7 +122,7 @@ public class Run {
 		 */
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
-			workload.initialize(name, this, hosts, runStatsHost, workloadStatsHost, portNumber, 
+			workload.initialize(name, this, hosts, runStatsHost, workloadStatsHost,
 					loadPathController, restTemplate, executorService);
 		}
 		
@@ -198,7 +195,7 @@ public class Run {
 			HttpHeaders requestHeaders = new HttpHeaders();
 			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-			String url = "http://" + hostname + ":" + portNumber + "/driver/exit/" + name;
+			String url = "http://" + hostname + "/driver/exit/" + name;
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
 					BasicResponse.class);
 
@@ -310,14 +307,6 @@ public class Run {
 
 	public void setWorkloadStatsHost(String workloadStatsHost) {
 		this.workloadStatsHost = workloadStatsHost;
-	}
-
-	public Integer getPortNumber() {
-		return portNumber;
-	}
-
-	public void setPortNumber(Integer portNumber) {
-		this.portNumber = portNumber;
 	}
 
 	public String getStatsOutputDirName() {

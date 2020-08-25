@@ -117,9 +117,9 @@ public class FindMaxLoadPath extends LoadPath {
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, 
 			LoadPathController loadPathController, List<String> hosts,
-			String statsHostName, int portNumber, RestTemplate restTemplate, ScheduledExecutorService executorService) {
+			String statsHostName, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, loadPathController,
-				hosts, statsHostName, portNumber, restTemplate,
+				hosts, statsHostName, restTemplate,
 				executorService);
 		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
 

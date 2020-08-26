@@ -238,6 +238,10 @@ override 'checkConfig' => sub {
 				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
 				return 0;
 			}
+			if (!$host->dockerVolumeReserve($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName on Docker host " . $host->name . " is already being used by another service.");
+				return 0;
+			}
 		}
 	}
 	my $dbServersRef = $self->getAllServicesByType("dbServer");
@@ -251,6 +255,10 @@ override 'checkConfig' => sub {
 			my $volumeName = $dbServer->getParamValue('postgresqlVolume');
 			if (!$host->dockerVolumeExists($volumeName)) {
 				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+			if (!$host->dockerVolumeReserve($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName on Docker host " . $host->name . " is already being used by another service.");
 				return 0;
 			}
 		}

@@ -27,6 +27,12 @@ has 'dockerNameHashRef' => (
 	default => sub { {} },
 );
 
+has 'dockerNamedVolumesHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	my $hostname   = $self->name;
@@ -483,6 +489,20 @@ sub dockerVolumeExists {
 	} 	
 	$logger->debug("dockerVolumeExists $volumeName does not exist");
 	return 0;	
+}
+
+sub dockerVolumeReserve {
+	my ( $self, $volumeName ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	$logger->debug("dockerVolumeReserve $volumeName");
+
+	if ( exists $self->dockerNamedVolumesHashRef->{$volumeName} ) {
+		$logger->debug( "Have two services on host ",
+			$self->name, " with volume name $volumeName." );
+		return 0;
+	}
+	$self->dockerNamedVolumesHashRef->{$volumeName} = 1;
+	return 1;
 }
 
 sub dockerGetIp {

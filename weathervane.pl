@@ -128,6 +128,10 @@ sub getAppInstanceHostOrCluster {
 	}
 	
 	if ($appInstanceHostname) {
+		if ( ($appInstanceHostname eq "localhost") || ($appInstanceHostname eq "127.0.0.1") ) {
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but is not valid.");
+		  exit(-1);
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
 		  $logger->debug("Creating dockerHost $appInstanceHostname specified in appInstanceHost but not in dockerHosts.");
 		  return createDockerHostFromName($appInstanceHostname, $paramsHashRef, 
@@ -211,6 +215,10 @@ sub getComputeResourceForInstance {
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
+		if ( ($serviceType ne "driver") && (($hostname eq "localhost") || ($hostname eq "127.0.0.1")) ) {
+			$console_logger->error("Hostname $hostname was specified in ${serviceType}Hosts, but is not valid.");
+			exit(-1);
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
 		  $logger->debug("Creating dockerHost $hostname specified in ${serviceType}Hosts but not in dockerHosts.");
 		  return createDockerHostFromName($hostname, $paramsHashRef, 

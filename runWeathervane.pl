@@ -239,7 +239,7 @@ sub checkStorageClasses {
 }
 END
 
-	foreach my $clusterName (keys $clusterToStorageClassNamesRef) {
+	foreach my $clusterName (keys %$clusterToStorageClassNamesRef) {
 		my $kubeconfigFileName = $clusterNameToKubeconfigRef->{$clusterName}->[0];
 		my $kubeconfigContext = $clusterNameToKubeconfigRef->{$clusterName}->[1];
 		foreach my $storageClassName (keys %{$clusterToStorageClassNamesRef->{$clusterName}}) {

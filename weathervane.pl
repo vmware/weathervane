@@ -319,7 +319,7 @@ my $paramConfig = $json->decode($paramJson);
 # Make sure that all of the parameters read from the config file are valid
 foreach my $key ( keys %$paramConfig ) {
 	if ( !( $key ~~ @validParams ) ) {
-		die "Parameter $key in configuration file $configFileName is not a valid parameter.\n";
+		die "Parameter $key in configuration file is not a valid parameter.\n";
 	}
 }
 

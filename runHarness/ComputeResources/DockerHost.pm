@@ -335,10 +335,15 @@ sub dockerRun {
 		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
 	}
 
-	#only apply docker cpu and memory limits to the tomcat appServer containers
 	my $applyLimits = 0;
-	if ( $impl eq "tomcat" ) {
-		$applyLimits = 1;
+	if (defined $dockerConfigHashRef->{"useDockerLimits"} && defined $dockerConfigHashRef->{"useAppServerLimits"}) {
+		my $useDockerLimits = $dockerConfigHashRef->{"useDockerLimits"};
+		my $useAppServerLimits = $dockerConfigHashRef->{"useAppServerLimits"};
+		if ( $useDockerLimits ) {
+			$applyLimits = 1;
+		} elsif ( $useAppServerLimits && ($impl eq "tomcat") ) {
+			$applyLimits = 1;
+		}
 	}
 
 	my $cpusString = "";

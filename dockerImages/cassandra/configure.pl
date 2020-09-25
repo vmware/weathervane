@@ -91,8 +91,8 @@ close FILEOUT;
 
 # Configure cassandra-env.sh
 if ( $jmxPort ) {
-	open( FILEIN,  "/cassandra-env.sh" ) or die "Can't open file /cassandra-env.sh: $!\n";
-	open( FILEOUT, ">/etc/cassandra/default.conf/cassandra-env.sh" ) or die "Can't open file /etc/cassandra/default.conf/cassandra-env.sh: $!\n";
+	open( FILEIN,  "/etc/cassandra/default.conf/cassandra-env.sh" ) or die "Can't open file /etc/cassandra/default.conf/cassandra-env.sh: $!\n";
+	open( FILEOUT, ">/tmp/cassandra-env.sh" ) or die "Can't open file /tmp/cassandra-env.sh: $!\n";
 	while ( my $inline = <FILEIN> ) {
 		if ( $inline =~ /^JMX\_PORT=/ ) {
 			print FILEOUT "JMX_PORT=\"$jmxPort\"\n";
@@ -103,6 +103,7 @@ if ( $jmxPort ) {
 	}
 	close FILEIN;
 	close FILEOUT;
+	`mv /tmp/cassandra-env.sh /etc/cassandra/default.conf/cassandra-env.sh`;
 }
 
 # Configure auction_cassandra.cql

@@ -263,6 +263,25 @@ override 'checkConfig' => sub {
 			}
 		}
 	}
+	my $webServersRef = $self->getAllServicesByType("webServer");
+	foreach my $webServer (@$webServersRef) {
+		my $host = $webServer->host;
+		if ((ref $host) ne "DockerHost") {
+			next;
+		}
+		if ($webServer->getParamValue('nginxUseNamedVolumes') || $host->getParamValue('vicHost')) {
+			# use named volumes.  Error if does not exist
+			my $volumeName = $webServer->getParamValue('nginxCacheVolume');
+			if (!$host->dockerVolumeExists($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName does not exist on Docker host " . $host->name);
+				return 0;
+			}
+			if (!$host->dockerVolumeReserve($volumeName)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The named volume $volumeName on Docker host " . $host->name . " is already being used by another service.");
+				return 0;
+			}
+		}
+	}
 	
 	return 1;
 };

@@ -242,10 +242,11 @@ sub getServiceByTypeAndName {
 sub getNextPortMultiplierByHostnameAndServiceType {
 	my ( $self, $hostname, $serviceType ) = @_;
 	if (   ( !exists $self->nextPortMultiplierByHostnameAndServiceType->{$hostname} )
-		|| ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname} )
-		|| ( !exists $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} )
-		|| ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} ) )
-	{
+		|| ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname} ) ) {
+		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname} = {};
+		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} = 0;
+	} elsif (   ( !exists $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} )
+		     || ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} ) ) {
 		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} = 0;
 	}
 	my $multiplier = $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType};

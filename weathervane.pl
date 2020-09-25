@@ -129,7 +129,7 @@ sub getAppInstanceHostOrCluster {
 	
 	if ($appInstanceHostname) {
 		if ( ($appInstanceHostname eq "localhost") || ($appInstanceHostname eq "127.0.0.1") ) {
-		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but is not valid.");
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but a remotely accessible address must be used.");
 		  exit(-1);
 		}
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
@@ -216,7 +216,7 @@ sub getComputeResourceForInstance {
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
 		if ( ($serviceType ne "driver") && (($hostname eq "localhost") || ($hostname eq "127.0.0.1")) ) {
-			$console_logger->error("Hostname $hostname was specified in ${serviceType}Hosts, but is not valid.");
+			$console_logger->error("Hostname $hostname was specified in ${serviceType}Hosts, but a remotely accessible address must be used.");
 			exit(-1);
 		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {

@@ -13,7 +13,6 @@ public class InitializeWorkloadMessage {
 	private Integer numNodes;
 	private BehaviorSpec behaviorSpec;
 	private String statsHostName;
-	private Integer statsPortNumber;
 	private String runName;
 	
 	public String getHostname() {
@@ -45,12 +44,6 @@ public class InitializeWorkloadMessage {
 	}
 	public void setStatsHostName(String statsHostName) {
 		this.statsHostName = statsHostName;
-	}
-	public Integer getStatsPortNumber() {
-		return statsPortNumber;
-	}
-	public void setStatsPortNumber(Integer statsPortNumber) {
-		this.statsPortNumber = statsPortNumber;
 	}
 	public String getRunName() {
 		return runName;

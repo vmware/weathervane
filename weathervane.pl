@@ -128,6 +128,10 @@ sub getAppInstanceHostOrCluster {
 	}
 	
 	if ($appInstanceHostname) {
+		if ( ($appInstanceHostname eq "localhost") || ($appInstanceHostname eq "127.0.0.1") ) {
+		  $console_logger->error("Hostname $appInstanceHostname was specified for appInstanceHost, but a remotely accessible address must be used.");
+		  exit(-1);
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$appInstanceHostname} ) {
 		  $logger->debug("Creating dockerHost $appInstanceHostname specified in appInstanceHost but not in dockerHosts.");
 		  return createDockerHostFromName($appInstanceHostname, $paramsHashRef, 
@@ -211,6 +215,10 @@ sub getComputeResourceForInstance {
 		my $hostListLength = $#{$hostListRef} + 1;
 		my $hostListIndex = ($instanceNum - 1) % $hostListLength;
 		my $hostname = $hostListRef->[$hostListIndex];
+		if ( ($serviceType ne "driver") && (($hostname eq "localhost") || ($hostname eq "127.0.0.1")) ) {
+			$console_logger->error("Hostname $hostname was specified in ${serviceType}Hosts, but a remotely accessible address must be used.");
+			exit(-1);
+		}
 		if ( !exists $nameToComputeResourceHashRef->{$hostname} ) {
 		  $logger->debug("Creating dockerHost $hostname specified in ${serviceType}Hosts but not in dockerHosts.");
 		  return createDockerHostFromName($hostname, $paramsHashRef, 
@@ -311,7 +319,7 @@ my $paramConfig = $json->decode($paramJson);
 # Make sure that all of the parameters read from the config file are valid
 foreach my $key ( keys %$paramConfig ) {
 	if ( !( $key ~~ @validParams ) ) {
-		die "Parameter $key in configuration file $configFileName is not a valid parameter.\n";
+		die "Parameter $key in configuration file is not a valid parameter.\n";
 	}
 }
 
@@ -791,7 +799,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
 		$secondary->initialize(0);
-		$secondary->namespace($workloadDriver->namespace);
 		$driverNum++;
 
 		# Add the secondary driver to the primary

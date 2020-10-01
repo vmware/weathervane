@@ -210,7 +210,8 @@ sub setPortNumbers {
 	
 	my $serviceType = $self->getParamValue( 'serviceType' );
 	my $portOffset = 0;
-	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
+	my $hostname = $self->host->name;
+	my $portMultiplier = $self->appInstance->getNextPortMultiplierByHostnameAndServiceType($hostname,$serviceType);
 	$portOffset = $self->getParamValue( $serviceType . 'PortOffset')
 	  + ( $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier );
 	$self->internalPortMap->{"http"} = 80 + $portOffset;

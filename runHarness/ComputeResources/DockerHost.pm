@@ -27,6 +27,12 @@ has 'dockerNameHashRef' => (
 	default => sub { {} },
 );
 
+has 'dockerNamedVolumesHashRef' => (
+	is      => 'rw',
+	isa     => 'HashRef',
+	default => sub { {} },
+);
+
 override 'initialize' => sub {
 	my ( $self, $paramHashRef ) = @_;
 	my $hostname   = $self->name;
@@ -62,7 +68,7 @@ sub dockerExists {
 	my $logger = get_logger("Weathervane::Hosts::DockerHost");
 	my $dockerHostString  = $self->dockerHostString;
 	
-	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps -a");
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps -a", 0);
 	if ($cmdFailed) {
 		$logger->error("dockerExists docker ps failed: $cmdFailed");
 	}
@@ -91,7 +97,7 @@ sub dockerIsRunning {
 	
 	my $dockerHostString  = $self->dockerHostString;
 	
-	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps");
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker ps", 0);
 	if ($cmdFailed) {
 		$logger->error("dockerIsRunning docker ps failed: $cmdFailed");
 	}
@@ -147,7 +153,7 @@ sub dockerStopAndRemove {
 	if ($self->dockerExists($logFileHandle, $name)) {
 		print $logFileHandle "dockerStopAndRemove $name exists on" . $self->name .  "\n";
 		$logger->debug("name = $name, exists, removing");
-		my ($cmdFailed, $out) = runCmd("$dockerHostString docker rm -vf $name");
+		my ($cmdFailed, $out) = runCmd("$dockerHostString docker rm -vf $name", 0);
 		if ($cmdFailed) {
 			$logger->error("dockerStopAndRemove failed: $cmdFailed");
 		}
@@ -192,7 +198,7 @@ sub dockerNetIsHostOrExternal {
 	$logger->debug("dockerNetIsHostOrExternal dockerNetName = $dockerNetName");
 	my $dockerHostString  = $self->dockerHostString;
 
-	my ($cmdFailed, $out) = runCmd("$dockerHostString docker network ls");
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker network ls", 0);
 	if ($cmdFailed) {
 		$logger->error("dockerNetIsHostOrExternal failed: $cmdFailed");
 	}
@@ -329,9 +335,20 @@ sub dockerRun {
 		$cpuSharesString = "--cpu-shares=". $dockerConfigHashRef->{"cpu-shares"};
 	}
 
+	my $applyLimits = 0;
+	if (defined $dockerConfigHashRef->{"useDockerLimits"} && defined $dockerConfigHashRef->{"useAppServerLimits"}) {
+		my $useDockerLimits = $dockerConfigHashRef->{"useDockerLimits"};
+		my $useAppServerLimits = $dockerConfigHashRef->{"useAppServerLimits"};
+		if ( $useDockerLimits ) {
+			$applyLimits = 1;
+		} elsif ( $useAppServerLimits && ($impl eq "tomcat") ) {
+			$applyLimits = 1;
+		}
+	}
+
 	my $cpusString = "";
 	my $cpuSetCpusString = "";
-	if (defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
+	if ($applyLimits && defined $dockerConfigHashRef->{"cpus"} && $dockerConfigHashRef->{"cpus"}) {
 		my $cpus = $self->convertK8sCpuString($dockerConfigHashRef->{"cpus"});
 		if (!$isVicHost) {
 			$cpusString = sprintf("--cpus=%0.2f", $cpus);
@@ -350,7 +367,7 @@ sub dockerRun {
 	}
 	
 	my $memoryString = "";
-	if (defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
+	if ($applyLimits && defined $dockerConfigHashRef->{"memory"} && $dockerConfigHashRef->{"memory"}) {
 		$memoryString = "--memory=". $self->convertK8sMemString($dockerConfigHashRef->{"memory"});
 	}
 	
@@ -377,7 +394,6 @@ sub dockerRun {
 		. " $cpusString $cpuSharesString $cpuSetCpusString $cpuSetMemsString "
 		. " $memoryString $memorySwapString $ttyString $entryPointString " 
 		. " --name $name $namespace/$imageName:$version $cmd";
-	$logger->debug($cmdString);
 	my $cmdFailed;
 	my $out;
 	($cmdFailed, $out) = runCmd($cmdString);
@@ -480,6 +496,20 @@ sub dockerVolumeExists {
 	return 0;	
 }
 
+sub dockerVolumeReserve {
+	my ( $self, $volumeName ) = @_;
+	my $logger = get_logger("Weathervane::Hosts::DockerHost");
+	$logger->debug("dockerVolumeReserve $volumeName");
+
+	if ( exists $self->dockerNamedVolumesHashRef->{$volumeName} ) {
+		$logger->debug( "Have two services on host ",
+			$self->name, " with volume name $volumeName." );
+		return 0;
+	}
+	$self->dockerNamedVolumesHashRef->{$volumeName} = 1;
+	return 1;
+}
+
 sub dockerGetIp {
 	my ( $self,  $name ) = @_;
 	my $logger         = get_logger("Weathervane::Hosts::DockerHost");
@@ -510,7 +540,7 @@ sub dockerExec {
 	
 	$logger->debug("name = $name, hostname = $hostname");
 		
-	my ($cmdFailed, $out) = runCmd("$dockerHostString docker exec $name $commandString");
+	my ($cmdFailed, $out) = runCmd("$dockerHostString docker exec $name $commandString", 0);
 	if ($cmdFailed) {
 		$logger->info("dockerExec failed: $cmdFailed");
 	}
@@ -531,11 +561,10 @@ sub dockerCopyTo {
 		$logger->error("dockerCopyTo error, docker cp does not support wildcards: $sourceFile");
 	}
 	my $cmdString = "$dockerHostString docker cp $sourceFile $name:$destFile";
-	my ($cmdFailed, $out) = runCmd($cmdString);
+	my ($cmdFailed, $out) = runCmd($cmdString, 0);
 	if ($cmdFailed) {
 		$logger->error("dockerCopyTo failed: $cmdFailed");
 	}
-	$logger->debug("$cmdString");
 	$logger->debug("docker cp output: $out");
 	
 	return $out;
@@ -550,11 +579,10 @@ sub dockerCopyFrom {
 		$logger->error("dockerCopyFrom error, docker cp does not support wildcards: $sourceFile");
 	}
 	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile";
-	my ($cmdFailed, $out) = runCmd($cmdString);
+	my ($cmdFailed, $out) = runCmd($cmdString, 0);
 	if ($cmdFailed) {
 		$logger->error("dockerCopyFrom failed: $cmdFailed");
 	}
-	$logger->debug("$cmdString");
 	print $logFileHandle "$cmdString\n";
 	$logger->debug("docker cp output: $out");
 	print $logFileHandle "$out\n";

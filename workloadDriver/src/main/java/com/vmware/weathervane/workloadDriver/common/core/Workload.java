@@ -76,9 +76,6 @@ public abstract class Workload implements UserFactory {
 	private String workloadStatsHost;
 
 	@JsonIgnore
-	private int statsPortNumber;
-
-	@JsonIgnore
 	private String hostname = null;
 
 	@JsonIgnore
@@ -108,7 +105,7 @@ public abstract class Workload implements UserFactory {
 	/*
 	 * Used to initialize the master workload in the RunService
 	 */
-	public void initialize(String runName, Run run, List<String> hosts, String runStatsHost, String workloadStatsHost, int statsPortNumber, 
+	public void initialize(String runName, Run run, List<String> hosts, String runStatsHost, String workloadStatsHost,
 			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService) {
 		logger.debug("Initialize workload: " + this.toString());
 
@@ -128,7 +125,6 @@ public abstract class Workload implements UserFactory {
 		
 		this.runStatsHost = runStatsHost;
 		this.workloadStatsHost = workloadStatsHost;
-		this.statsPortNumber = statsPortNumber;
 		this.LoadPathController = loadPathController;
 		this.restTemplate = restTemplate;
 		this.executorService = executorService;
@@ -143,7 +139,6 @@ public abstract class Workload implements UserFactory {
 			msg.setNodeNumber(nodeNum);
 			msg.setNumNodes(hosts.size());
 			msg.setStatsHostName(workloadStatsHost);
-			msg.setStatsPortNumber(statsPortNumber);
 			msg.setRunName(runName);
 			/*
 			 * Send the initialize workload message to the host
@@ -153,7 +148,7 @@ public abstract class Workload implements UserFactory {
 
 			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
 					requestHeaders);
-			String url = "http://" + hostname + ":" + statsPortNumber + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
 			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
 					BasicResponse.class);
@@ -170,14 +165,14 @@ public abstract class Workload implements UserFactory {
 		 * StatsIntervalSpecs run locally
 		 */
 		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
-			spec.initialize(runName, name, hosts, statsPortNumber, restTemplate, executorService);
+			spec.initialize(runName, name, hosts, restTemplate, executorService);
 		}
 		
 		/*
 		 * LoadPaths run locally
 		 */
 		getLoadPath().initialize(runName, name, this, loadPathController, 
-				hosts, runStatsHost, statsPortNumber, restTemplate, executorService);
+				hosts, runStatsHost, restTemplate, executorService);
 
 		state = WorkloadState.INITIALIZED;
 	}
@@ -189,14 +184,13 @@ public abstract class Workload implements UserFactory {
 		logger.debug("initializeNode name = " + name);
 		this.hostname = initializeWorkloadMessage.getHostname();
 		this.workloadStatsHost = initializeWorkloadMessage.getStatsHostName();
-		this.statsPortNumber = initializeWorkloadMessage.getStatsPortNumber();
 		this.numNodes = initializeWorkloadMessage.getNumNodes();
 		this.nodeNumber = initializeWorkloadMessage.getNodeNumber();
 		this.runName = initializeWorkloadMessage.getRunName();
 
 		operations = this.getOperations();
 
-		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost, statsPortNumber,
+		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
 				hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
 
 		/*
@@ -256,7 +250,7 @@ public abstract class Workload implements UserFactory {
 
 			HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
 					requestHeaders);
-			String url = "http://" + hostname + ":" + statsPortNumber + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
 			logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
 					+ " at url " + url);
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,

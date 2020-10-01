@@ -236,17 +236,26 @@ sub setPortNumbers {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
-	my $portMultiplier = $self->getNextPortMultiplier();
-	my $portOffset =
-	  $self->getParamValue('workloadDriverPortStep') * $portMultiplier;
+	my $portMultiplier = $self->getNextPortMultiplierByHostname($self->host->name);
+	my $portOffset = $self->getParamValue('workloadDriverPortStep') * $portMultiplier;
 
-	$self->internalPortMap->{'http'} =
-	  $self->getParamValue('workloadDriverPort') + $portOffset;
+	$self->internalPortMap->{'http'} = $self->getParamValue('workloadDriverPort') + $portOffset;
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
 
-	$logger->debug( "setPortNumbers.  Set http port to "
+	$logger->debug( "setPortNumbers for " . $self->name . ".  Set http port to "
 		  . $self->internalPortMap->{'http'} );
 
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		$portMultiplier = $self->getNextPortMultiplierByHostname($secondary->host->name);
+		$portOffset = $self->getParamValue('workloadDriverPortStep') * $portMultiplier;
+
+		$secondary->internalPortMap->{'http'} = $secondary->getParamValue('workloadDriverPort') + $portOffset;
+		$secondary->portMap->{'http'} = $secondary->internalPortMap->{'http'};
+
+		$logger->debug( "setPortNumbers for " . $secondary->name . ".  Set http port to "
+		  . $secondary->internalPortMap->{'http'} );
+	}
 }
 
 sub setExternalPortNumbers {
@@ -255,19 +264,15 @@ sub setExternalPortNumbers {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
 	$self->portMap->{'http'} = $self->internalPortMap->{'http'};
-	$logger->debug( "setExternalPortNumbers.  Set http port to "
+	$logger->debug( "setExternalPortNumbers for " . $self->name . ".  Set http port to "
 		  . $self->portMap->{'http'} );
 
-}
-
-sub setPortNumber {
-	my ( $self, $portNumber ) = @_;
-	my $logger =
-	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
-
-	$self->internalPortMap->{'http'} = $portNumber;
-	$self->portMap->{'http'}         = $portNumber;
-
+	my $secondariesRef = $self->secondaries;
+	foreach my $secondary (@$secondariesRef) {
+		$secondary->portMap->{'http'} = $secondary->internalPortMap->{'http'};
+		$logger->debug( "setExternalPortNumbers for " . $secondary->name . " .  Set http port to "
+			  . $secondary->portMap->{'http'} );
+	}
 }
 
 sub adjustUsersForLoadInterval {
@@ -338,27 +343,27 @@ sub getHosts {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my @hosts;
 	my $secondariesRef = $self->secondaries;
-	push @hosts, $self->host->name;
+	my $hostStr = $self->host->name . ":" . $self->portMap->{'http'};
+	$logger->debug("getHosts adding primary host:port " . $hostStr);
+	push @hosts, $hostStr;
 	foreach my $secondary (@$secondariesRef) {
-		$logger->debug("getHosts adding host " . $secondary->host->name);
-		push @hosts, $secondary->host->name;
+		$hostStr = $secondary->host->name . ":" . $secondary->portMap->{'http'};
+		$logger->debug("getHosts adding secondary host:port " . $hostStr);
+		push @hosts, $hostStr;
 	}
 	return \@hosts;
 }
 
-sub getHostPort {
-	my ( $self ) = @_;
-	return $self->portMap->{'http'};
-}
-
 sub getRunStatsHost {
 	my ( $self ) = @_;
-	return $self->host->name
+	my $hostStr = $self->host->name . ":" . $self->portMap->{'http'};
+	return $hostStr;
 }
 
 sub getWorkloadStatsHost {
 	my ( $self ) = @_;
-	return $self->host->name
+	my $hostStr = $self->host->name . ":" . $self->portMap->{'http'};
+	return $hostStr;
 }
 
 sub createRunConfigHash {
@@ -786,7 +791,7 @@ sub startAuctionWorkloadDriverContainer {
 		$driverJvmOpts .= " -DNUMSCHEDULEDPOOLTHREADS=" . $driverThreads . " ";
 	}
 	my %envVarMap;
-	my $port = $self->portMap->{'http'};
+	my $port = $driver->portMap->{'http'};
 	$envVarMap{"PORT"} = $port;	
 	$envVarMap{"JVMOPTS"} = "\"$driverJvmOpts\"";	
 	$envVarMap{"WORKLOADNUM"} = $workloadNum;	
@@ -932,7 +937,7 @@ sub initializeRun {
 	my $res;
 	my $baseUrl = $self->getControllerURL() . "/run";
 
-	# Send the hosts and port number to the controller
+	# Send the hosts and port numbers to the controller
 	my $runContent = $self->json->encode($self->getHosts());
 	my $url = $baseUrl . "/hosts";
 
@@ -949,26 +954,6 @@ sub initializeRun {
 	} while ((!$success) && ($retryCount < 12));
 	if (!$success) {
 		$console_logger->warn("Could not send hosts message to workload controller. Exiting");
-		return 0;
-	}
-		
-	my %portHash;
-	$portHash{"port"} = $self->getHostPort();
-	$runContent = $self->json->encode(\%portHash);
-	$url = $baseUrl . "/port";
-	$retryCount = 0;
-	$success = 0;
-	do {
-		$res = $self->doHttpPost($url, $runContent);
-		if ( $res->{"is_success"} ) {
-			$success = 1;
-		} else {
-			sleep 10;
-		}
-		$retryCount++
-	} while ((!$success) && ($retryCount < 12));
-	if (!$success) {
-		$console_logger->warn("Could not send port message to workload controller. Exiting");
 		return 0;
 	}
 
@@ -2305,7 +2290,6 @@ sub parseStats {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum             = $self->workload->instanceNum;
 	my $runName                 = "runW${workloadNum}";
-	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
 
 	if ($self->resultsValid) {

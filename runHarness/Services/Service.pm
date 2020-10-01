@@ -109,7 +109,9 @@ override 'initialize' => sub {
 	if ($self->getParamValue('dockerMemorySwap')) {
 		$self->dockerConfigHashRef->{'memory-swap'} = $self->getParamValue('dockerMemorySwap');
 	}
-		
+
+	$self->dockerConfigHashRef->{'useDockerLimits'} = $self->getParamValue('useDockerLimits');
+	$self->dockerConfigHashRef->{'useAppServerLimits'} = $self->getParamValue('useAppServerLimits');
 	
 	super();
 

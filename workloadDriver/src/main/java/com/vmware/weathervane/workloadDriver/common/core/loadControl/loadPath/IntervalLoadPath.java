@@ -66,10 +66,10 @@ public class IntervalLoadPath extends LoadPath {
 	
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, LoadPathController loadPathController,
-			List<String> hosts, String statsHostName, int portNumber, RestTemplate restTemplate, 
+			List<String> hosts, String statsHostName, RestTemplate restTemplate,
 			ScheduledExecutorService executorService) {
 		super.initialize(runName, workloadName, workload, loadPathController, 
-				hosts, statsHostName, portNumber, restTemplate, executorService);
+				hosts, statsHostName, restTemplate, executorService);
 		logger.debug("initialize: There are " + loadIntervals.size() + " loadIntervals" 
 				+ ", runDuration = " + runDuration
 				+ ", repeatLoadPath = " + repeatLoadPath

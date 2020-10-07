@@ -59,6 +59,7 @@ our @viMgmtHostTypes            = ('virtualCenter');
 our @runStrategy   = ( 'fixed', 'single',
                        'interval',
                        'findMaxSingleRun', 'findMax',
+                       'findMaxSingleRunSync',
                        'findMaxMultiRun',
                        'findMaxSingleRunWithScaling',
                        'findMaxMultiAI' );

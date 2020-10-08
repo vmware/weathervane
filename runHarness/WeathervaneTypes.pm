@@ -56,9 +56,13 @@ our @viTypes                    = ('vsphere');
 our @viHostTypes                = ('esxi');
 our @viMgmtHostTypes            = ('virtualCenter');
 
-our @runStrategy   = ( 'fixed', 'interval', 'findMaxSingleRun', 'findMaxSingleRunSync', 
-							'findMaxSingleRunWithScaling',
-							'findMaxMultiAI', 'findMaxMultiRun', 'single' );
+our @runStrategy   = ( 'fixed', 'single',
+                       'interval',
+                       'findMaxSingleRun', 'findMax',
+                       'findMaxSingleRunSync',
+                       'findMaxMultiRun',
+                       'findMaxSingleRunWithScaling',
+                       'findMaxMultiAI' );
 our @runProcedures = ( 'full',   'loadOnly', 'prepareOnly', 'runOnly', 'stop' );
 
 # These are all of the workload profiles that are supported for each workload

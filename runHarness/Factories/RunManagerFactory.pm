@@ -29,7 +29,9 @@ sub getRunManager {
 		$runManager =
 		  IntervalRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
-	elsif (($runStrategy eq 'findMaxSingleRun') || ($runStrategy eq 'findMaxSingleRunSync')) {
+	elsif (($runStrategy eq 'findMaxSingleRun') 
+		|| ($runStrategy eq 'findMax' )
+		|| ($runStrategy eq 'findMaxSingleRunSync')) {
 		$runManager =
 		  FindMaxSingleRunRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
@@ -41,7 +43,7 @@ sub getRunManager {
 		$runManager =
 		  FindMaxMultiAIRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}
-	elsif (( $runStrategy eq 'findMaxMultiRun' ) || ($runStrategy eq 'findMax' )) {
+	elsif ( $runStrategy eq 'findMaxMultiRun' ) {
 		$runManager =
 		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
 	}

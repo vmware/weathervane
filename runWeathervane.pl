@@ -514,7 +514,7 @@ if ($backgroundScript) {
 print "Starting Weathervane Run-Harness.  Pulling container image may take a few minutes.\n";
 `docker pull $dockerNamespace/weathervane-runharness:$version`;
 
-my $cmdString = "docker run --name weathervane --net host $tzEnvString --rm -d -w /root/weathervane " 
+my $cmdString = "docker run --name weathervane --net host $tzEnvString -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString $fixedConfigsMountString " 
 		. "$outputMountString $tmpMountString $sshMountString " 
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
@@ -531,4 +531,12 @@ while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
 
 if ($pid) {
 	kill 9, $pid;
+}
+
+my $exitCode = `docker inspect weathervane --format='{{.State.ExitCode}}'`;
+`docker rm weathervane`;
+chomp($exitCode);
+if ($exitCode != 0) {
+	print "Exit code for Run-Harness container is $exitCode.\n";
+	exit $exitCode;
 }

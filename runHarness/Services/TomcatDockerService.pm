@@ -240,6 +240,8 @@ sub isUp {
 
 	my $warmerTarget = $self->warmerTarget;
 	$response = `curl -s http://$warmerTarget/warmer/ready`;
+	print $applog "curl -s http://$warmerTarget/warmer/ready\n";
+	print $applog "$response\n";
 	if ( $response =~ /ready/ ) {
 		return 1;
 	}

@@ -52,6 +52,9 @@ public class WarmerServiceImpl implements WarmerService {
 	@Value("${spring.profiles.active:Unknown}")
 	private String activeProfile;
 
+	@Value("${appServerTarget:localhost:8080}")
+	private String appServerTarget;
+
 	/*
 	 * This method is used to warm up the app server before allowing it to be
 	 * integrated into a running configuration. The main goal of the warmup is to
@@ -68,7 +71,7 @@ public class WarmerServiceImpl implements WarmerService {
 		/*
 		 * Wait until app server is ready before starting warmer threads
 		 */
-		String readyUrl = "http://localhost:8080/auction/healthCheck";
+		String readyUrl = "http://"+appServerTarget+"/auction/healthCheck";
 		String readyString = "";
 		while (!readyString.equals("alive")) {
 			try {
@@ -143,7 +146,7 @@ public class WarmerServiceImpl implements WarmerService {
 		@Override
 		public void run() {
 
-			String baseUrl = "http://localhost:8080/auction";
+			String baseUrl = "http://"+appServerTarget+"/auction";
 			String registerUrl = baseUrl + "/user";
 			String loginUrl = baseUrl + "/login";
 			String logoutUrl = baseUrl + "/logout";

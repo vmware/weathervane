@@ -18,6 +18,12 @@ with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 extends 'Service';
 
+has 'warmerTarget' => (
+	is      => 'rw',
+	isa     => 'Str',
+	default => "",
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 
@@ -107,6 +113,43 @@ override 'create' => sub {
 		$entryPoint, $cmd, $self->needsTty
 	);
 
+	# now start the warmer
+	if ($self->getParamValue('prewarmAppServers')) {
+		my $nameWarmer = $self->name . "Warmer";
+		my $implWarmer = $impl . "warmer";
+
+		my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+		my $appServerIp = $self->host->dockerGetIp($name);
+		my $appServerPort;
+		if ($useTLS) {
+			$appServerPort = $self->internalPortMap->{"https"};
+		} else {
+			$appServerPort = $self->internalPortMap->{"http"};
+		}
+
+		my $warmerJvmOpts = "-Xmx250m -Xms250m -XX:+AlwaysPreTouch";
+		$warmerJvmOpts .= " -Dspring.profiles.active=$springProfilesActive ";
+		$warmerJvmOpts .= " -DappServerTarget=" . $appServerIp. ":" . $appServerPort;
+
+		my %envVarMapWarmer;
+		$envVarMapWarmer{"WARMER_JVMOPTS"} = "\"$warmerJvmOpts\"";
+		$envVarMapWarmer{"WARMER_THREADS_PER_SERVER"} = $self->getParamValue('appServerWarmerThreadsPerServer');
+		$envVarMapWarmer{"WARMER_ITERATIONS"} = $self->getParamValue('appServerWarmerIterations');
+
+		my $warmerPort = 8888;
+		my %portMapWarmer;
+		$portMapWarmer{"$warmerPort"} = $warmerPort;
+
+		my $portMapRef = $self->host->dockerRun(
+			$applog, $nameWarmer,
+			$implWarmer, $directMap, \%portMapWarmer, \%volumeMap, \%envVarMapWarmer, $self->dockerConfigHashRef,
+			$entryPoint, $cmd, $self->needsTty
+		);
+
+		my $warmerTarget = $hostname . ":" . $portMapRef->{ $warmerPort };
+		$self->warmerTarget($warmerTarget);
+	}
+
 	close $applog;
 };
 
@@ -124,6 +167,8 @@ sub stopInstance {
 	  || die "Error opening /$logName:$!";
 
 	$self->host->dockerStop( $applog, $name );
+	my $nameWarmer = $name . "Warmer";
+	$self->host->dockerStop( $applog, $nameWarmer );
 
 	close $applog;
 }
@@ -169,6 +214,8 @@ override 'remove' => sub {
 	  || die "Error opening /$logName:$!";
 
 	$self->host->dockerStopAndRemove( $applog, $name );
+	my $nameWarmer = $name . "Warmer";
+	$self->host->dockerStopAndRemove( $applog, $nameWarmer );
 
 	close $applog;
 };
@@ -183,6 +230,17 @@ sub isUp {
 	print $applog "$response\n";
 
 	if ( $response =~ /alive/ ) {
+		if (!$self->getParamValue('prewarmAppServers')) {
+			return 1;
+		}
+	}
+	else {
+		return 0;
+	}
+
+	my $warmerTarget = $self->warmerTarget;
+	$response = `curl -s http://$warmerTarget/warmer/ready`;
+	if ( $response =~ /ready/ ) {
 		return 1;
 	}
 	else {

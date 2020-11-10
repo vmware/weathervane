@@ -292,7 +292,7 @@ if (!$private || $username) {
 
 	print "Logging into $hostString\n";
 	print $fileout "Logging into $hostString\n";
-	my $cmd = "docker login -u=$username -p=$password $host";
+	my $cmd = "docker login -u=\'$username\' -p=$password $host";
 	my $response = `$cmd 2>&1`;
 	print $fileout "result: $response\n";
 	if ($response =~ /unauthorized/) {

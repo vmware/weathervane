@@ -402,6 +402,8 @@ The process using a private repository is as follows:
         * `./buildDockerImages.pl --private --host hostname --port 5001 --username yourUserName`
         * The script will prompt for password.
 
+If yourUserName contains special characters, such as the $ sign, wrap yourUserName in single quotes so it is passed as intended to the script.
+
 The process to build and push the images can take as long as an hour to complete.
 
 ## Using Weathervane<a name="using"></a>

@@ -103,14 +103,13 @@ sub usage {
 }
 
 sub parseConfigFile {
-	my ($configFileName) = @_;
+	my ($configFileName, $dockerNamespace) = @_;
 	
 	# Read in the config file
 	open( my $configFile, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
 
 	my @k8sConfigFiles;
 	my %clusterNameToKubeconfig;
-	my $dockerNamespace;
 	my $topLevelAppInstanceCluster = "";
 	my %topLevelStorageClassNames;
 	# Parsing the config file manually to avoid requiring the JSON package
@@ -186,7 +185,7 @@ sub parseConfigFile {
 			$topLevelStorageClassNames{$1} = 1;
 		} elsif ($_ =~ /appInstanceCluster"\s*\:\s*"(.*)"\s*,/) {
 			$topLevelAppInstanceCluster = $1;
-		} elsif ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/) {
+		} elsif (!$dockerNamespace && ($_ =~ /^\s*"dockerNamespace"\s*\:\s*"(.*)"\s*,/)) {
 			$dockerNamespace = $1;
 		} elsif ($_ =~ /useLoadBalancer/) {
 			print "The useLoadBalancer parameter has been replaced with the appIngressMethod parameter. " . 
@@ -198,7 +197,7 @@ sub parseConfigFile {
 	close $configFile;
 
 	if (!$dockerNamespace) {
-		print "You must specify the dockerNamespace parameter in configuration file $configFileName.\n";
+		print "You must specify the dockerNamespace parameter either in configuration file $configFileName or on the command-line.\n";
 		usage();
 		exit 1;									
 	}
@@ -279,7 +278,6 @@ sub parseKubeconfigFile {
 	# Read in the config file
 	open( CONFIGFILE, "<$configFileName" ) or die "Couldn't open configuration file $configFileName: $!\n";
 	my @files;
-	my $dockerNamespace;
 	while (<CONFIGFILE>) {
 		if ($_ =~ /^\s*[a-zA-Z0-9\-_]+:\s*(\/.*)$/) {
 			push @files, $1;
@@ -449,9 +447,16 @@ if ($mapSsh && (-e "$homeDir/.ssh") && (-d "$homeDir/.ssh")) {
     $sshMountString = "-v $homeDir/.ssh:/root/.ssh";
 }
 
-my $retRef = parseConfigFile($configFile);
+my $dockerNamespace;
+# Determine whether the dockerNamespace is set in the command-line
+# options that are getting passed to the runHarness
+if ($wvCommandLineArgs =~ /\-\-dockerNamespace(\=|\s)([^\s]*)(\s|$)/) {
+	$dockerNamespace = $2;
+}
+
+my $retRef = parseConfigFile($configFile, $dockerNamespace);
 my $k8sConfigFilesRef = $retRef->[0];
-my $dockerNamespace = $retRef->[1];
+$dockerNamespace = $retRef->[1];
 my $clusterNameToKubeconfigRef = $retRef->[2];
 my $clusterToStorageClassNamesRef = $retRef->[3];
 

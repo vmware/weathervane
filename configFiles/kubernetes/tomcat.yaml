@@ -22,7 +22,7 @@ data:
   TOMCAT_JDBC_MAXIDLE: "26"
   TOMCAT_HTTP_PORT: "8080"
   TOMCAT_DB_PORT: "5432"
-  WARMER_JVMOPTS: "-Xmx250m -Xms250 -XX:+AlwaysPreTouch -XX:+PreserveFramePointer  -Dspring.profiles.active=postgresql,ehcache,imagesInCassandra,singleRabbit "
+  WARMER_JVMOPTS: "-Xmx250m -Xms250m -XX:+AlwaysPreTouch -XX:+PreserveFramePointer  -Dspring.profiles.active=postgresql,ehcache,imagesInCassandra,singleRabbit "
   WARMER_THREADS_PER_SERVER: "1"
   WARMER_ITERATIONS: "500"
 ---

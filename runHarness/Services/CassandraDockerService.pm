@@ -110,6 +110,9 @@ sub create {
 	$envVarMap{"CASSANDRA_CPUS"} = $self->getParamValue('nosqlServerCpus');
 	$envVarMap{"CASSANDRA_NUM_NODES"} = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
 
+	$envVarMap{"CASSANDRA_NATIVE_TRANSPORT_PORT"} = $self->internalPortMap->{$impl};
+	$envVarMap{"CASSANDRA_JMX_PORT"} = $self->internalPortMap->{"cassandrajmx"};
+
 	# Create the container
 	my %portMap;
 	my $directMap = 1;
@@ -208,9 +211,11 @@ sub setPortNumbers {
 
 	my $serviceType    = $self->getParamValue('serviceType');
 	my $impl           = $self->getParamValue( $serviceType . "Impl" );
-	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
+	my $hostname = $self->host->name;
+	my $portMultiplier = $self->appInstance->getNextPortMultiplierByHostnameAndServiceType($hostname,$serviceType);
 	my $portOffset     = $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier;
 	$self->internalPortMap->{$impl} = $self->getParamValue('cassandraPort') + $portOffset;
+	$self->internalPortMap->{"cassandrajmx"} = 7199 + $portOffset;
 }
 
 sub setExternalPortNumbers {

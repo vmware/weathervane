@@ -31,10 +31,10 @@ has 'workload' => (
 	isa => 'Workload',
 );
 
-class_has 'nextPortMultiplier' => (
+class_has 'nextPortMultiplierByHostName' => (
 	is      => 'rw',
-	isa     => 'Int',
-	default => 0,
+	isa     => 'HashRef[Int]',
+	default => sub { {} },
 );
 
 # internalPortMap: A map from a name for a port (e.g. http) to
@@ -71,12 +71,16 @@ sub redeploy {
 	
 }
 
-sub getNextPortMultiplier {
-	my ($self, $logfile) = @_;
-	my $retVal = $self->nextPortMultiplier;
-	$self->nextPortMultiplier($retVal + 1);
-	
-	return $retVal;
+sub getNextPortMultiplierByHostname {
+	my ($self, $hostname) = @_;
+	if (   ( !exists $self->nextPortMultiplierByHostName->{$hostname} )
+		|| ( !defined $self->nextPortMultiplierByHostName->{$hostname} ) )
+	{
+		$self->nextPortMultiplierByHostName->{$hostname} = 0;
+	}
+	my $multiplier = $self->nextPortMultiplierByHostName->{$hostname};
+	$self->nextPortMultiplierByHostName->{$hostname} = $multiplier + 1;
+	return $multiplier;
 }
 
 sub setWorkload {

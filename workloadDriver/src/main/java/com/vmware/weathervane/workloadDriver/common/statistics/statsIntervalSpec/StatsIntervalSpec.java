@@ -46,9 +46,6 @@ public abstract class StatsIntervalSpec implements Runnable {
 	private List<String> hosts;
 
 	@JsonIgnore
-	private int portNumber;
-
-	@JsonIgnore
 	private String runName = null;
 
 	@JsonIgnore
@@ -78,12 +75,11 @@ public abstract class StatsIntervalSpec implements Runnable {
 	@JsonIgnore
 	protected abstract StatsInterval getNextInterval();
 
-	public void initialize(String runName, String workloadName, List<String> hosts, int portNumber, RestTemplate resetTemplate,
+	public void initialize(String runName, String workloadName, List<String> hosts, RestTemplate resetTemplate,
 			ScheduledExecutorService executorService) {
 		this.runName = runName;
 		this.workloadName = workloadName;
 		this.hosts = hosts;
-		this.portNumber = portNumber;
 		this.restTemplate = resetTemplate;
 		this.statsExecutor = executorService;				
 	}
@@ -136,7 +132,7 @@ public abstract class StatsIntervalSpec implements Runnable {
 			HttpEntity<StatsIntervalCompleteMessage> msgEntity 
 				= new HttpEntity<StatsIntervalCompleteMessage>(statsIntervalCompleteMessage,
 					requestHeaders);
-			String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/" + workloadName + "/statsIntervalComplete";
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + workloadName + "/statsIntervalComplete";
 			logger.debug("run sending statsIntervalComplete message for run " + runName + ", workload " + workloadName 
 					+ " to host " + hostname + ", url = " + url);
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,

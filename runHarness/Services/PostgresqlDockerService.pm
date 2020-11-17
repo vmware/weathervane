@@ -217,7 +217,8 @@ sub setPortNumbers {
 
 	my $serviceType    = $self->getParamValue('serviceType');
 	my $impl           = $self->getParamValue( $serviceType . "Impl" );
-	my $portMultiplier = $self->appInstance->getNextPortMultiplierByServiceType($serviceType);
+	my $hostname = $self->host->name;
+	my $portMultiplier = $self->appInstance->getNextPortMultiplierByHostnameAndServiceType($hostname,$serviceType);
 	my $portOffset     = $self->getParamValue( $serviceType . 'PortStep' ) * $portMultiplier;
 	$self->internalPortMap->{$impl} = $self->getParamValue('postgresqlPort') + $portOffset;
 }

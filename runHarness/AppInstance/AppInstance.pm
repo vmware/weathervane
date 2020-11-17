@@ -79,9 +79,9 @@ has 'dataManager' => (
 	isa => 'DataManager',
 );
 
-class_has 'nextPortMultiplierByServiceType' => (
+class_has 'nextPortMultiplierByHostnameAndServiceType' => (
 	is      => 'rw',
-	isa     => 'HashRef[Int]',
+	isa     => 'HashRef[HashRef[Int]]',
 	default => sub { {} },
 );
 
@@ -239,15 +239,18 @@ sub getServiceByTypeAndName {
 	return "";
 }
 
-sub getNextPortMultiplierByServiceType {
-	my ( $self, $serviceType ) = @_;
-	if (   ( !exists $self->nextPortMultiplierByServiceType->{$serviceType} )
-		|| ( !defined $self->nextPortMultiplierByServiceType->{$serviceType} ) )
-	{
-		$self->nextPortMultiplierByServiceType->{$serviceType} = 0;
+sub getNextPortMultiplierByHostnameAndServiceType {
+	my ( $self, $hostname, $serviceType ) = @_;
+	if (   ( !exists $self->nextPortMultiplierByHostnameAndServiceType->{$hostname} )
+		|| ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname} ) ) {
+		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname} = {};
+		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} = 0;
+	} elsif (   ( !exists $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} )
+		     || ( !defined $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} ) ) {
+		$self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} = 0;
 	}
-	my $multiplier = $self->nextPortMultiplierByServiceType->{$serviceType};
-	$self->nextPortMultiplierByServiceType->{$serviceType} = $multiplier + 1;
+	my $multiplier = $self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType};
+	$self->nextPortMultiplierByHostnameAndServiceType->{$hostname}->{$serviceType} = $multiplier + 1;
 	return $multiplier;
 }
 

@@ -42,8 +42,6 @@ public interface RunService {
 
 	void setHosts(List<String> hosts);
 
-	void setPortNumber(Integer portNumber);
-
 	Boolean addBehaviorSpec(BehaviorSpec theSpec);
 
 }

@@ -42,8 +42,6 @@ public class RunServiceImpl implements RunService {
 	
 	private List<String> hosts;
 
-	private Integer portNumber = 7500;
-
 	@Override
 	public Run getRun(String runName) throws RunNotInitializedException {
 		// Make sure that this run isn't already being handled
@@ -76,7 +74,6 @@ public class RunServiceImpl implements RunService {
 			theRun.setState(RunState.PENDING);
 		}
 		theRun.setHosts(hosts);
-		theRun.setPortNumber(portNumber);
 		runs.put(runName, theRun);
 
 		/*
@@ -90,7 +87,7 @@ public class RunServiceImpl implements RunService {
 			HttpHeaders requestHeaders = new HttpHeaders();
 			HttpEntity<String> stringEntity = new HttpEntity<String>(runName, requestHeaders);
 			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-			String url = "http://" + hostname + ":" + theRun.getPortNumber() + "/driver/run/" + runName;
+			String url = "http://" + hostname + "/driver/run/" + runName;
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
 					BasicResponse.class);
 
@@ -109,7 +106,7 @@ public class RunServiceImpl implements RunService {
 				HttpEntity<Workload> workloadEntity = new HttpEntity<Workload>(workload, requestHeaders);
 				requestHeaders = new HttpHeaders();
 				requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-				url = "http://" + hostname + ":" + theRun.getPortNumber() + "/driver/run/" + runName + "/workload/"
+				url = "http://" + hostname + "/driver/run/" + runName + "/workload/"
 						+ workload.getName();
 				logger.debug("addRun: For run " + runName + " adding workload " + workload.getName() 
 								+ " to host " + hostname);
@@ -202,16 +199,16 @@ public class RunServiceImpl implements RunService {
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		for (String hostname : hosts) {
-			String url = "http://" + hostname + ":" + portNumber + "/driver/up";
+			String url = "http://" + hostname + "/driver/up";
 			logger.debug("areDriversUp: Peforming get for url: {}", url);
 			ResponseEntity<IsStartedResponse> responseEntity = restTemplate.getForEntity(url, IsStartedResponse.class);
 
 			IsStartedResponse response = responseEntity.getBody();
 			if ((responseEntity.getStatusCode() != HttpStatus.OK) || !response.getIsStarted()) {
-				logger.debug("Host " + hostname + " is not up.");			
+				logger.debug("Host " + hostname + " is not up.");
 				return false;
 			}
-			logger.debug("Host " + hostname + " is up.");			
+			logger.debug("Host " + hostname + " is up.");
 		}
 		return true;
 	}
@@ -223,7 +220,7 @@ public class RunServiceImpl implements RunService {
 		HttpEntity<BehaviorSpec> specEntity = new HttpEntity<BehaviorSpec>(theSpec, requestHeaders);
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		for (String hostname : hosts) {
-			String url = "http://" + hostname + ":" + portNumber + "/driver/behaviorSpec";
+			String url = "http://" + hostname + "/driver/behaviorSpec";
 			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, specEntity,
 					BasicResponse.class);
 
@@ -275,15 +272,6 @@ public class RunServiceImpl implements RunService {
 	@Override
 	public void setHosts(List<String> hosts) {
 		this.hosts = hosts;
-	}
-
-	public Integer getPortNumber() {
-		return portNumber;
-	}
-
-	@Override
-	public void setPortNumber(Integer portNumber) {
-		this.portNumber = portNumber;
 	}
 
 }

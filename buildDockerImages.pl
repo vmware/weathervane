@@ -116,7 +116,7 @@ sub buildImage {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
-		exit;
+		exit(-1);
 	}
 
 	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
@@ -127,7 +127,7 @@ sub buildImage {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
-		exit;
+		exit(-1);
 	}
 
 	if ($imageName ne "centos7") {		
@@ -210,7 +210,7 @@ if ($private) {
 	if ($host eq "") {
 		print "When using a private repository, you must specify the host parameter.\n";
 		usage();
-		exit;
+		exit(-1);
 	}
 	$namespace = $host;
 	if ($port) {
@@ -220,14 +220,14 @@ if ($private) {
 	if ($username eq "") {
 			print "When using Docker Hub, you must specify the username parameter.\n";
 			usage();
-			exit;
+			exit(-1);
 	}
 	$namespace = $username;
 }
 
 if (!(-e "./buildDockerImages.pl")) {
 	print "You must run in the weathervane directory with buildDockerImages.pl\n";
-	exit;
+	exit(-1);
 }
 
 my $cmdout;
@@ -258,7 +258,7 @@ foreach my $imageName (@imageNames) {
 		my $exitValue=$? >> 8;
 		if ($exitValue) {
 			print "Error: Building failed with exitValue $exitValue, check $logFile.\n";
-			exit;
+			exit(-1);
 		}
 		last;
 	}
@@ -292,13 +292,13 @@ if (!$private || $username) {
 
 	print "Logging into $hostString\n";
 	print $fileout "Logging into $hostString\n";
-	my $cmd = "docker login -u=$username -p=$password $host";
+	my $cmd = "docker login -u=\'$username\' -p=$password $host";
 	my $response = `$cmd 2>&1`;
 	print $fileout "result: $response\n";
 	if ($response =~ /unauthorized/) {
 		print "Could not login to $hostString with the supplied username and password.\n";
 		cleanupAfterBuild($fileout);
-		exit;
+		exit(-1);
 	}
 } 
 

@@ -57,6 +57,14 @@ override 'getControllerURL' => sub {
 	return $self->controllerUrl;
 };
 
+override 'setPortNumbers' => sub {
+	my ( $self ) = @_;
+};
+
+override 'setExternalPortNumbers' => sub {
+	my ( $self ) = @_;
+};
+
 override 'getHosts' => sub {
 	my ( $self ) = @_;
 	my $numDrivers = $#{$self->secondaries} + 2;
@@ -67,19 +75,14 @@ override 'getHosts' => sub {
 	return \@hosts;
 };
 
-sub getHostPort {
-	my ( $self ) = @_;
-	return 80;
-}
-
 override 'getRunStatsHost' => sub {
 	my ( $self ) = @_;
-	return "localhost";
+	return "localhost:80";
 };
 
 override 'getWorkloadStatsHost' => sub {
 	my ( $self ) = @_;
-	return "wkldcontroller";
+	return "wkldcontroller:80";
 };
 
 override 'killOld' => sub {

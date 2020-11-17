@@ -1236,6 +1236,14 @@ $parameters{"useKubernetesLimits"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"useDockerLimits"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "workload",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"limitsExpansionPct"} = {
 	"type"      => "=i",
 	"default"   => 0,
@@ -1328,6 +1336,7 @@ $parameters{"dockerServiceImages"} = {
 		"zookeeper"  => "weathervane-zookeeper",
 		"auctiondatamanager"  => "weathervane-auctiondatamanager",
 		"auctionworkloaddriver"  => "weathervane-auctionworkloaddriver",
+		"tomcatwarmer"     => "weathervane-auctionappserverwarmer",
 	},
 	"parent"    => "dockerHost",
 	"usageText" => "",

@@ -116,9 +116,9 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	@Override
 	public void initialize(String runName, String workloadName, Workload workload, LoadPathController loadPathController,
-			List<String> hosts, String statsHostName, int portNumber, RestTemplate restTemplate, 
+			List<String> hosts, String statsHostName, RestTemplate restTemplate,
 			ScheduledExecutorService executorService) {
-		super.initialize(runName, workloadName, workload, loadPathController, hosts, statsHostName, portNumber, restTemplate,
+		super.initialize(runName, workloadName, workload, loadPathController, hosts, statsHostName, restTemplate,
 				executorService);
 		logger.debug("initialize " + this.getName() + ": minUsers = {}, maxUsers = {}", getMinUsers(), maxUsers);
 

@@ -100,17 +100,14 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	protected RestTemplate restTemplate = null;
 
 	@JsonIgnore
-	protected int portNumber;	
-	
-	@JsonIgnore
 	private StatsIntervalTracker statsTracker = null;
 
 	@JsonIgnore
 	protected List<StatsSummaryRollup> intervalStatsSummaries = new ArrayList<StatsSummaryRollup>();
 
 	public void initialize(String runName, String workloadName, Workload workload, 
-			LoadPathController loadPathController,  List<String> hosts, String statsHostName, 
-			int portNumber, RestTemplate restTemplate, 
+			LoadPathController loadPathController,  List<String> hosts, String statsHostName,
+			RestTemplate restTemplate,
 			ScheduledExecutorService executorService) {
 		logger.debug("initialize for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		this.runName = runName;
@@ -121,7 +118,6 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		this.executorService = executorService;
 		this.hosts = hosts;
 		this.statsHostName = statsHostName;
-		this.portNumber = portNumber;
 		this.restTemplate = restTemplate;
 		this.curStatusInterval = new RampLoadInterval();
 	}
@@ -202,7 +198,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 			HttpEntity<ChangeUsersMessage> msgEntity = new HttpEntity<ChangeUsersMessage>(changeUsersMessage,
 					requestHeaders);
-			String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/" + workloadName + "/users";
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + workloadName + "/users";
 			
 			boolean succeeded = false;
 			int tries = 5;
@@ -240,7 +236,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-		String url = "http://" + statsHostName + ":" + portNumber + "/stats/run/" + runName + "/workload/" + workloadName 
+		String url = "http://" + statsHostName + "/stats/run/" + runName + "/workload/" + workloadName
 				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
 		logger.debug("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
 		
@@ -322,7 +318,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 				HttpEntity<StatsIntervalCompleteMessage> msgEntity = new HttpEntity<StatsIntervalCompleteMessage>(
 						statsIntervalCompleteMessage, requestHeaders);
-				String url = "http://" + hostname + ":" + portNumber + "/driver/run/" + runName + "/workload/"
+				String url = "http://" + hostname + "/driver/run/" + runName + "/workload/"
 						+ workloadName + "/statsIntervalComplete";
 				logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
 						+ ", workload " + workloadName + ", interval " + nextInterval.getName() + " to host " + hostname + ", url = " + url);

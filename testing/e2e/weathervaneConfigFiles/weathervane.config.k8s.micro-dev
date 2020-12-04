@@ -1,0 +1,34 @@
+{
+  "description" : "micro",
+
+  "configurationSize": "micro",
+
+  "runStrategy" : "findMaxSingleRun",
+
+  "numAppInstances" : 1,
+
+  "dockerNamespace" : "harbor-repo.vmware.com/weathervaneci",
+
+  "kubernetesClusters" : [ 
+    { 
+      "name" : "appCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+    { 
+      "name" : "driverCluster", 
+      "kubeconfigFile" : "/root/.kube/config",
+      "kubeconfigContext" : "kubernetes-admin@kubernetes",
+    },
+  ],
+
+  "driverCluster" : "driverCluster",
+
+  "appInstanceCluster" : "appCluster",
+  "appIngressMethod" : "nodeport",
+
+  "cassandraDataStorageClass" : "fast",
+  "postgresqlStorageClass" : "fast",
+  "nginxCacheStorageClass" : "fast",
+
+}

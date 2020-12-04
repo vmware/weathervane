@@ -1,0 +1,50 @@
+// Will run on the agent with name or tag wvtest-AuctionDriver
+node('wvtest-AuctionDriver') {
+    try {
+
+	checkout scm
+
+        // Perform routine maintenance tasks since AuctionDriver is a persistent VM
+        stage('maintain driver') {
+        // Remove unneeded docker images which take up lots of space on the AuctionDriver. These accumulate after each build.
+        // docker rmi typically returns a code of 1 because it's unable to delete some images.
+        // Specifying '|| true' ignores the error code
+        sh label: '', script: 'docker rmi $(docker images -q) || true'
+        // may also need to zip, delete, or archive large/unnecessary run results files
+        sh label: '', script: 'docker container prune -f'
+        }
+        //stage('checkout') {
+            // This is the 'checkout' function. 'git' function doesn't work because 'git' command doesn't support remote branches?
+            //checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/vmware/weathervane']]])
+        }
+        stage('build') {
+            
+            // Pull openjdk:8 image from Harbor Proxy Cache; will default to DockerHub otherwise and probably fail
+            sh label: '', script: 'docker pull harbor-repo.vmware.com/dockerhub-proxy-cache/library/openjdk:8' 
+            sh label: '', script: 'docker tag harbor-repo.vmware.com/dockerhub-proxy-cache/library/openjdk:8 openjdk:8'
+            
+            withCredentials([usernamePassword(credentialsId: 'robot-credentials', passwordVariable: 'ROBOT_PASSWORD', usernameVariable: 'ROBOT_USERNAME')]) {
+                // Build executables and images, push to Harbor
+                sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
+            }
+ }
+        stage('test') {
+            sh label: '', script: 'python3 /root/weathervane/testing/e2e/runE2eTests-dev.py'
+        }
+        return
+    } catch (err) {
+        notify("Error: ${err}")
+        currentBuild.result = 'FAILURE'
+    }
+}
+
+def notify(status){
+    withCredentials([string(credentialsId: 'notify-emailaddress', variable: 'NOTIFY_EMAILADDRESS')]) {
+        emailext (
+          to: "$NOTIFY_EMAILADDRESS",
+          subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+          body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+        )
+    }
+}

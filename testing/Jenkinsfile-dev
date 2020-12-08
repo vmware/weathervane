@@ -13,7 +13,7 @@ node('wvtest-AuctionDriver') {
         // may also need to zip, delete, or archive large/unnecessary run results files
         sh label: '', script: 'docker container prune -f'
         }
-        //stage('checkout') {
+        stage('checkout') {
             // This is the 'checkout' function. 'git' function doesn't work because 'git' command doesn't support remote branches?
             //checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/vmware/weathervane']]])
         }

@@ -26,7 +26,7 @@ node('wvtest-AuctionDriver') {
             
             withCredentials([usernamePassword(credentialsId: 'robot-credentials', passwordVariable: 'ROBOT_PASSWORD', usernameVariable: 'ROBOT_USERNAME')]) {
                 // Build executables and images, push to Harbor
-             // Bypass build temporarily  sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
+				sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
             }
  }
         stage('test') {

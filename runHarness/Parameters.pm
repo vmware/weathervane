@@ -2687,6 +2687,14 @@ $parameters{"showPeriodicOutput"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"printStatsCsv"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "workloadDriver",
+	"usageText" => "Controls whether csv files containing detailed stats are printed by the workload controller.",
+	"showUsage" => 1,
+};
+
 $parameters{"fullHelp"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

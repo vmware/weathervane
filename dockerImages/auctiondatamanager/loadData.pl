@@ -46,10 +46,16 @@ my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 my $cmdString = "java $jvmopts $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
 				" -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" .
 				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" . 
-				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions 2>/dev/null";
+				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions";
 				
-print "Running for appInstance $appInstanceNum: $cmdString\n";
-system($cmdString);
+print "Running dbLoader for Workload $workloadNum, appInstance $appInstanceNum: $cmdString\n";
+my $exitCode = system($cmdString);
+
+if ($exitCode) {
+	$exitCode = $exitCode >> 8;
+	print "loadData.pl for Workload $workloadNum, appInstance $appInstanceNum: dbLoader exited with exitCode $exitCode, error: $!\n";
+	exit $exitCode;
+}
 
 print "Catting /images/.db*\n";
 `cat /images/.db*`;

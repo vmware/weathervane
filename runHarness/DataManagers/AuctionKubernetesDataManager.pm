@@ -148,17 +148,8 @@ sub stopDataManagerContainer {
 	if ($context) {
 	  $contextString = "--context=$context";	
 	}
-	my $cmd = "kubectl get pod --namespace=$namespace --show-labels --kubeconfig=$kubernetesConfigFile $contextString";
+	my $cmd = "kubectl describe pod --namespace=$namespace --selector=impl=auctiondatamanager --kubeconfig=$kubernetesConfigFile $contextString";
     my ($cmdFailed, $outString) = runCmd($cmd);
-    if ($cmdFailed) {
-        $logger->error("stopDataManagerContainer kubernetes get pod failed: $cmdFailed");
-    }
-    $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
-	print $applog "Command: $cmd\n";
-	print $applog "Output: $outString\n";
-	$cmd = "kubectl describe pod --namespace=$namespace --selector=impl=auctiondatamanager --kubeconfig=$kubernetesConfigFile $contextString";
-    ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
         $logger->error("stopDataManagerContainer kubernetes describe pod failed: $cmdFailed");
     }

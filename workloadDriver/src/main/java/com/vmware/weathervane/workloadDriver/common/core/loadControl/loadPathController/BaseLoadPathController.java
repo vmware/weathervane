@@ -30,6 +30,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 
 	private ScheduledExecutorService executorService;
 
+	@Override
 	public void initialize(ScheduledExecutorService executorService) {
 		this.executorService = executorService;
 	}
@@ -89,7 +90,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 					logger.debug("notifyWatchers for interval {}, in scheduled notification");
 					entry.getValue().intervalResult(intervalName, passed);					
 				}
-			}, 0, TimeUnit.SECONDS);
+			}, 0, TimeUnit.MILLISECONDS);
 			logger.debug("notifyWatchers for interval {}, scheduled a notification", intervalName);
 			sfList.add(sf);
 		}

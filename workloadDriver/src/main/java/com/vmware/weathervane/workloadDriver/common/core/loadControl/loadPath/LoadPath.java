@@ -7,6 +7,7 @@ package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -186,46 +187,62 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	public void changeActiveUsers(long numUsers) {
 		logger.debug("changeActiveUsers for loadPath {} to {}", name, numUsers);
 		numActiveUsers = numUsers;
+		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			/*
-			 * Send the changeusers message for the workload to the host
-			 */
-			ChangeUsersMessage changeUsersMessage = new ChangeUsersMessage();
-			changeUsersMessage.setActiveUsers(numUsers);
-
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-			HttpEntity<ChangeUsersMessage> msgEntity = new HttpEntity<ChangeUsersMessage>(changeUsersMessage,
-					requestHeaders);
-			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + workloadName + "/users";
-			
-			boolean succeeded = false;
-			int tries = 5;
-			while (!succeeded && (tries > 0)) {
-				ResponseEntity<BasicResponse> responseEntity = null;
-				try {
-					tries--;
-					responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
-				} catch (Throwable t) {
-					if (tries > 0) {
-						logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
-								hostname, this.getName(), t.getMessage());
-					} else {
-						throw t;
-					}
-				}
+			sfList.add(executorService.schedule(new Runnable() {
 				
-				if (responseEntity != null) {
-					BasicResponse response = responseEntity.getBody();
-					if (responseEntity.getStatusCode() != HttpStatus.OK) {
-						logger.error("Error posting changeUsers message to " + url);
-					} else {
-						succeeded = true;
+				@Override
+				public void run() {
+					/*
+					 * Send the changeusers message for the workload to the host
+					 */
+					ChangeUsersMessage changeUsersMessage = new ChangeUsersMessage();
+					changeUsersMessage.setActiveUsers(numUsers);
+
+					HttpHeaders requestHeaders = new HttpHeaders();
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+					HttpEntity<ChangeUsersMessage> msgEntity = new HttpEntity<ChangeUsersMessage>(changeUsersMessage,
+							requestHeaders);
+					String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + workloadName + "/users";
+					
+					boolean succeeded = false;
+					int tries = 5;
+					while (!succeeded && (tries > 0)) {
+						ResponseEntity<BasicResponse> responseEntity = null;
+						try {
+							tries--;
+							responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
+						} catch (Throwable t) {
+								logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
+										hostname, this.getName(), t.getMessage());
+						}
+						
+						if (responseEntity != null) {
+							BasicResponse response = responseEntity.getBody();
+							if (responseEntity.getStatusCode() != HttpStatus.OK) {
+								logger.error("Error posting changeUsers message to " + url);
+							} else {
+								succeeded = true;
+							}
+						}
 					}
 				}
-			}
+			}, 0, TimeUnit.MILLISECONDS));
 		}
+		
+		/*
+		 * Now wait for all of the nodes to be notified of the change
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("changeActiveUsers getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node for interval " + intervalName 
+						+ " get exception: " + e.getMessage());
+			};
+		});
 
 	}
 

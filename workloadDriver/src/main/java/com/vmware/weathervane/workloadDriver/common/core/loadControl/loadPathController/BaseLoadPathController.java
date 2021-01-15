@@ -105,7 +105,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 				sf.get(); 
 			} catch (Exception e) {
 				logger.warn("When notifying watcher for interval " + intervalName 
-						+ " get exception: " + e.getMessage());
+						+ " got exception: " + e.getMessage());
 			};
 		});
 	}

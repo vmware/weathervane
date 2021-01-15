@@ -215,7 +215,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 							responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
 						} catch (Throwable t) {
 								logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
-										hostname, this.getName(), t.getMessage());
+										hostname, name, t.getMessage());
 						}
 						
 						if (responseEntity != null) {
@@ -239,8 +239,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 				logger.debug("changeActiveUsers getting a result of a notification");
 				sf.get(); 
 			} catch (Exception e) {
-				logger.warn("When notifying node for interval " + intervalName 
-						+ " get exception: " + e.getMessage());
+				logger.warn("When notifying node got exception: " + e.getMessage());
 			};
 		});
 

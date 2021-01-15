@@ -116,6 +116,8 @@ public class Run {
 		if (responseEntity.getStatusCode() != HttpStatus.OK) {
 			logger.error("Error posting workload initialization to " + url);
 		}
+		
+		loadPathController.initialize(executorService);
 
 		/*
 		 * Initialize the workloads

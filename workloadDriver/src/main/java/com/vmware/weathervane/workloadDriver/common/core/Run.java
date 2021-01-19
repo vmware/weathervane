@@ -56,6 +56,8 @@ public class Run {
 	private LoadPathController loadPathController;
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
+	
+	private int threadPoolMultiplier = 4;
 		
 	@JsonIgnore
 	private List<String> hosts;
@@ -79,7 +81,7 @@ public class Run {
 			System.exit(1);
 		}
 		
-		executorService = Executors.newScheduledThreadPool(4 * workloads.size());
+		executorService = Executors.newScheduledThreadPool(threadPoolMultiplier * workloads.size());
 		
 		/*
 		 * Convert all of the host names to lower case

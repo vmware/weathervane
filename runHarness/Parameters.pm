@@ -1812,6 +1812,14 @@ $parameters{"driverHttpThreads"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"driverRunPoolMultiplier"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "workloadDriver",
+	"usageText" => "",
+	"showUsage" => 1,
+};
+
 $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 	"type"      => "=f",
 	"default"   => 2,

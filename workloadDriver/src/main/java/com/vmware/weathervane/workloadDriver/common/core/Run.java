@@ -57,7 +57,7 @@ public class Run {
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 	
-	private int threadPoolMultiplier = 4;
+	private int threadPoolMultiplier;
 		
 	@JsonIgnore
 	private List<String> hosts;
@@ -274,6 +274,14 @@ public class Run {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public int getThreadPoolMultiplier() {
+		return threadPoolMultiplier;
+	}
+
+	public void setThreadPoolMultiplier(int threadPoolMultiplier) {
+		this.threadPoolMultiplier = threadPoolMultiplier;
 	}
 
 	public void setWorkloads(List<Workload> workloads) {

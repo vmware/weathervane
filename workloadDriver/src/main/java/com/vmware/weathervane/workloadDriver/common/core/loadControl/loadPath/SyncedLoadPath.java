@@ -19,7 +19,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 	
 	@Override
 	public void run() {
-		logger.debug("run for run " + runName + ", workload " + workloadName + ", loadPath " + getName() );
+		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + getName() );
 		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
@@ -52,7 +52,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 	
 	@Override
 	public void intervalResult(String intervalName, boolean intervalResult) {
-		logger.debug("intervalResult for interval {} = {}", intervalName, intervalResult);
+		logger.info("intervalResult for interval {} = {}", intervalName, intervalResult);
 		
 		if (!intervalName.equals(curIntervalName)) {
 			/*

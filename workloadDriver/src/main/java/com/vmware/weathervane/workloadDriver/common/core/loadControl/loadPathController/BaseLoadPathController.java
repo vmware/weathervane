@@ -75,7 +75,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 									boolean latestResult, boolean isLastInInterval);
 	
 	protected void notifyWatchers(String intervalName, boolean passed) {
-		logger.debug("notifyWatchers for interval {}, result = {}", intervalName, passed);
+		logger.info("notifyWatchers for interval {}, result = {}", intervalName, passed);
 		/*
 		 * Notify the watchers in parallel to avoid waiting for all of the driver nodes 
 		 * to be notified of changes in the number of users
@@ -87,7 +87,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 				
 				@Override
 				public void run() {
-					logger.debug("notifyWatchers for interval {}, in scheduled notification");
+					logger.info("notifyWatchers for interval {}, in scheduled notification");
 					entry.getValue().intervalResult(intervalName, passed);					
 				}
 			}, 0, TimeUnit.MILLISECONDS);
@@ -108,6 +108,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 						+ " got exception: " + e.getMessage());
 			};
 		});
+		logger.info("notifyWatchers complete for interval {}", intervalName);
 	}
 	
 	

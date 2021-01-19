@@ -24,6 +24,9 @@ public class SyncUntilHalfFailThenAsyncLoadPathController extends BaseLoadPathCo
 			 * Once all loadPaths fail an interval, we treat this as an async
 			 * loadPath and just return to each loadPath its own result
 			 */
+			logger.info(
+					"postIntervalResult for loadPath {}, interval {}, passed {}, In runAsync",
+					loadPathName, intervalName, passed);
 			watchers.get(loadPathName).intervalResult(intervalName, passed);
 		} else {
 			int curNumResults = 0;
@@ -41,11 +44,11 @@ public class SyncUntilHalfFailThenAsyncLoadPathController extends BaseLoadPathCo
 			}
 			numIntervalResults.put(intervalName, curNumResults);
 
-			logger.debug(
+			logger.info(
 					"postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
 					loadPathName, intervalName, passed, curNumResults, numWatchers, intervalResults.get(intervalName));
 			if (curNumResults == numWatchers) {
-				logger.debug("postIntervalResult notifying watchers for interval {} with result {}", intervalName,
+				logger.info("postIntervalResult notifying watchers for interval {} with result {}", intervalName,
 						intervalResults.get(intervalName));
 				numPassed = 0;
 				numFailed = 0;

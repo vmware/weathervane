@@ -146,7 +146,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 	@Override
 	public void run() {
-		logger.debug("run for run " + runName + ", workload " + workloadName + ", loadPath " + name );
+		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + name );
 		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
@@ -185,7 +185,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	}
 
 	public void changeActiveUsers(long numUsers) {
-		logger.debug("changeActiveUsers for loadPath {} to {}", name, numUsers);
+		logger.info("changeActiveUsers for loadPath {} to {}", name, numUsers);
 		numActiveUsers = numUsers;
 		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
@@ -212,7 +212,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 						ResponseEntity<BasicResponse> responseEntity = null;
 						try {
 							tries--;
+							logger.info("changeActiveUsers for loadPath {}: Starting HTTP Post to {}", name, url);
 							responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
+							logger.info("changeActiveUsers for loadPath {}: Completed HTTP Post to {}", name, url);
 						} catch (Throwable t) {
 								logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
 										hostname, name, t.getMessage());
@@ -242,7 +244,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 				logger.warn("When notifying node got exception: " + e.getMessage());
 			};
 		});
-
+		logger.info("Finished changeActiveUsers for loadPath {}", name);
 	}
 
 	protected StatsSummaryRollup fetchStatsSummaryRollup(String intervalNum) {

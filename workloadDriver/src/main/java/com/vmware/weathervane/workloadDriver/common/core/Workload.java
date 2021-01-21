@@ -7,6 +7,8 @@ package com.vmware.weathervane.workloadDriver.common.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,34 +135,51 @@ public abstract class Workload implements UserFactory {
 		 * Send initialize workload message to all of the driver nodes
 		 */
 		int nodeNum = 0;
+		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
-			msg.setHostname(hostname);
-			msg.setNodeNumber(nodeNum);
-			msg.setNumNodes(hosts.size());
-			msg.setStatsHostName(workloadStatsHost);
-			msg.setRunName(runName);
-			/*
-			 * Send the initialize workload message to the host
-			 */
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+			sfList.add(executorService.schedule(new Runnable() {
+				
+				@Override
+				public void run() {
+					InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
+					msg.setHostname(hostname);
+					msg.setNodeNumber(nodeNum);
+					msg.setNumNodes(hosts.size());
+					msg.setStatsHostName(workloadStatsHost);
+					msg.setRunName(runName);
+					/*
+					 * Send the initialize workload message to the host
+					 */
+					HttpHeaders requestHeaders = new HttpHeaders();
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
-					requestHeaders);
-			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
-			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-					BasicResponse.class);
+					HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
+							requestHeaders);
+					String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
+					logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+							BasicResponse.class);
 
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload initialization to " + url);
-			}
-
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting workload initialization to " + url);
+					}
+				}
+			}, 0, TimeUnit.MILLISECONDS));
 			nodeNum++;
 		}
-		
+		/*
+		 * Now wait for all of the nodes to be notified of the change
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("initialize getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		/* 
 		 * StatsIntervalSpecs run locally
 		 */
@@ -239,30 +258,47 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * Send stop messages to workloads on all nodes
 		 */
+		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			StopWorkloadMessage msg = new StopWorkloadMessage();
-			msg.setRunName(runName);
-			/*
-			 * Send the initialize workload message to the host
-			 */
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+			sfList.add(executorService.schedule(new Runnable() {
+				
+				@Override
+				public void run() {
+					StopWorkloadMessage msg = new StopWorkloadMessage();
+					msg.setRunName(runName);
+					/*
+					 * Send the initialize workload message to the host
+					 */
+					HttpHeaders requestHeaders = new HttpHeaders();
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-			HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
-					requestHeaders);
-			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
-			logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
-					+ " at url " + url);
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-					BasicResponse.class);
+					HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
+							requestHeaders);
+					String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
+					logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
+							+ " at url " + url);
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+							BasicResponse.class);
 
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload stop to " + url);
-			}
-
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting workload stop to " + url);
+					}
+				}
+			}, 0, TimeUnit.MILLISECONDS));
 		}
-		
+		/*
+		 * Now wait for all of the nodes to be notified of the change
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("stop getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		state = WorkloadState.STOPPING;
 
 	}

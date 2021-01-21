@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -176,6 +177,45 @@ public class Run {
 	public void shutdown() {
 		logger.debug("shutdown for run " + name);
 
+		/*
+		 * Send exit messages to the other driver nodes
+		 */
+		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		for (String hostname : hosts) {
+			if (hostname.equals(workloadStatsHost)) {
+				continue;
+			}
+			
+			sfList.add(executorService.schedule(new Runnable() {
+				
+				@Override
+				public void run() {
+					HttpHeaders requestHeaders = new HttpHeaders();
+					HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+					String url = "http://" + hostname + "/driver/exit/" + name;
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
+							BasicResponse.class);
+
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting workload to " + url);
+					}
+				}
+			}, 0, TimeUnit.MILLISECONDS));
+		}
+		/*
+		 * Now wait for all of the nodes to be notified of the exit
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("shutdown getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		executorService.shutdown();
 		try {
 			executorService.awaitTermination(10, TimeUnit.SECONDS);
@@ -189,26 +229,6 @@ public class Run {
 		}
 		logger.debug("stopped Operation executor");
 
-		/*
-		 * Send exit messages to the other driver nodes
-		 */
-		for (String hostname : hosts) {
-			if (hostname.equals(workloadStatsHost)) {
-				continue;
-			}
-			HttpHeaders requestHeaders = new HttpHeaders();
-			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-			String url = "http://" + hostname + "/driver/exit/" + name;
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
-					BasicResponse.class);
-
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload to " + url);
-			}
-		}
-		
 		/*
 		 * Shutdown the driver after returning so that the web interface can
 		 * send a response

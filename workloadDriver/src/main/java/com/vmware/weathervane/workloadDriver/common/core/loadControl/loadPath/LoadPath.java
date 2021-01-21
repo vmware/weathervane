@@ -314,43 +314,64 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			UniformLoadInterval nextInterval = getCurStatsInterval();
 			long intervalEndUsers = nextInterval.getUsers();
 			long lastIntervalEndTime = System.currentTimeMillis();
-			logger.debug("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
+			logger.info("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
 
 			/*
 			 * Send messages to workloadService on driver nodes that interval has completed.
 			 */
+			List<ScheduledFuture<?>> sfList = new ArrayList<>();
 			for (String hostname : hosts) {
-				/*
-				 * Send the statsIntervalComplete message for the workload to the host
-				 */
-				StatsIntervalCompleteMessage statsIntervalCompleteMessage = new StatsIntervalCompleteMessage();
-				statsIntervalCompleteMessage.setCompletedSpecName(name);
-				statsIntervalCompleteMessage.setCurIntervalName(nextInterval.getName());
-				statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
-				statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
-				statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
-				statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
+				sfList.add(executorService.schedule(new Runnable() {
+					
+					@Override
+					public void run() {
+						/*
+						 * Send the statsIntervalComplete message for the workload to the host
+						 */
+						StatsIntervalCompleteMessage statsIntervalCompleteMessage = new StatsIntervalCompleteMessage();
+						statsIntervalCompleteMessage.setCompletedSpecName(name);
+						statsIntervalCompleteMessage.setCurIntervalName(nextInterval.getName());
+						statsIntervalCompleteMessage.setCurIntervalStartTime(curIntervalStartTime);
+						statsIntervalCompleteMessage.setLastIntervalEndTime(lastIntervalEndTime);
+						statsIntervalCompleteMessage.setIntervalStartUsers(intervalStartUsers);
+						statsIntervalCompleteMessage.setIntervalEndUsers(intervalEndUsers);
 
-				HttpHeaders requestHeaders = new HttpHeaders();
-				requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+						HttpHeaders requestHeaders = new HttpHeaders();
+						requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-				HttpEntity<StatsIntervalCompleteMessage> msgEntity = new HttpEntity<StatsIntervalCompleteMessage>(
-						statsIntervalCompleteMessage, requestHeaders);
-				String url = "http://" + hostname + "/driver/run/" + runName + "/workload/"
-						+ workloadName + "/statsIntervalComplete";
-				logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
-						+ ", workload " + workloadName + ", interval " + nextInterval.getName() + " to host " + hostname + ", url = " + url);
-				ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-						BasicResponse.class);
+						HttpEntity<StatsIntervalCompleteMessage> msgEntity = new HttpEntity<StatsIntervalCompleteMessage>(
+								statsIntervalCompleteMessage, requestHeaders);
+						String url = "http://" + hostname + "/driver/run/" + runName + "/workload/"
+								+ workloadName + "/statsIntervalComplete";
+						logger.info("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
+								+ ", workload " + workloadName + ", interval " + nextInterval.getName() + " to host " + hostname + ", url = " + url);
+						ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+								BasicResponse.class);
 
-				BasicResponse response = responseEntity.getBody();
-				if (responseEntity.getStatusCode() != HttpStatus.OK) {
-					logger.error("Error posting statsIntervalComplete message to " + url);
-				} else {
-					logger.debug("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
-							+ ", workload " + workloadName + " to host " + hostname);
-				}
+						BasicResponse response = responseEntity.getBody();
+						if (responseEntity.getStatusCode() != HttpStatus.OK) {
+							logger.error("Error posting statsIntervalComplete message to " + url);
+						} else {
+							logger.debug("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
+									+ ", workload " + workloadName + " to host " + hostname);
+						}
+					}
+				},  0, TimeUnit.MILLISECONDS));
 			}
+			/*
+			 * Now wait for all of the nodes to be notified of the change
+			 */
+			sfList.stream().forEach(sf -> {
+				try {
+					logger.debug("statsIntervalComplete getting a result of a notification");
+					sf.get(); 
+				} catch (Exception e) {
+					logger.warn("When notifying node got exception: " + e.getMessage());
+				};
+			});
+			logger.info("Finished statsIntervalComplete for loadPath {}", name);
+
+			
 			intervalStartUsers = intervalEndUsers;
 			curIntervalStartTime = lastIntervalEndTime;
 		}

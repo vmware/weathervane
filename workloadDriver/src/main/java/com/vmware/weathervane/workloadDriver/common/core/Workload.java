@@ -137,35 +137,7 @@ public abstract class Workload implements UserFactory {
 		int nodeNum = 0;
 		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.schedule(new Runnable() {
-				
-				@Override
-				public void run() {
-					InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
-					msg.setHostname(hostname);
-					msg.setNodeNumber(nodeNum);
-					msg.setNumNodes(hosts.size());
-					msg.setStatsHostName(workloadStatsHost);
-					msg.setRunName(runName);
-					/*
-					 * Send the initialize workload message to the host
-					 */
-					HttpHeaders requestHeaders = new HttpHeaders();
-					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-					HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
-							requestHeaders);
-					String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
-					logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
-					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-							BasicResponse.class);
-
-					BasicResponse response = responseEntity.getBody();
-					if (responseEntity.getStatusCode() != HttpStatus.OK) {
-						logger.error("Error posting workload initialization to " + url);
-					}
-				}
-			}, 0, TimeUnit.MILLISECONDS));
+			sfList.add(executorService.schedule(new SendInitMsgRunner(nodeNum), 0, TimeUnit.MILLISECONDS));
 			nodeNum++;
 		}
 		/*
@@ -196,6 +168,41 @@ public abstract class Workload implements UserFactory {
 		state = WorkloadState.INITIALIZED;
 	}
 
+	private class SendInitMsgRunner implements Runnable {
+		private int nodeNum;
+
+		public SendInitMsgRunner(int nodeNum) {
+			this.nodeNum = nodeNum;
+		}
+
+		@Override
+		public void run() {
+			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
+			msg.setHostname(hostname);
+			msg.setNodeNumber(nodeNum);
+			msg.setNumNodes(hosts.size());
+			msg.setStatsHostName(workloadStatsHost);
+			msg.setRunName(runName);
+			/*
+			 * Send the initialize workload message to the host
+			 */
+			HttpHeaders requestHeaders = new HttpHeaders();
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
+					requestHeaders);
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
+			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+					BasicResponse.class);
+
+			BasicResponse response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload initialization to " + url);
+			}			
+		}
+	}
+	
 	/*
 	 * Used to initialize the workload in each DriverService
 	 */

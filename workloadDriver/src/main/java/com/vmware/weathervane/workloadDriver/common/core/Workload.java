@@ -137,7 +137,7 @@ public abstract class Workload implements UserFactory {
 		int nodeNum = 0;
 		List<ScheduledFuture<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.schedule(new SendInitMsgRunner(nodeNum), 0, TimeUnit.MILLISECONDS));
+			sfList.add(executorService.schedule(new SendInitMsgRunner(nodeNum, hostname, hosts.size()), 0, TimeUnit.MILLISECONDS));
 			nodeNum++;
 		}
 		/*
@@ -170,9 +170,14 @@ public abstract class Workload implements UserFactory {
 
 	private class SendInitMsgRunner implements Runnable {
 		private int nodeNum;
+		private String hostname;
+		private int numNodes;
 
-		public SendInitMsgRunner(int nodeNum) {
+		public SendInitMsgRunner(int nodeNum, String hostname, int numNodes) {
+			super();
 			this.nodeNum = nodeNum;
+			this.hostname = hostname;
+			this.numNodes = numNodes;
 		}
 
 		@Override
@@ -180,7 +185,7 @@ public abstract class Workload implements UserFactory {
 			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
 			msg.setHostname(hostname);
 			msg.setNodeNumber(nodeNum);
-			msg.setNumNodes(hosts.size());
+			msg.setNumNodes(numNodes);
 			msg.setStatsHostName(workloadStatsHost);
 			msg.setRunName(runName);
 			/*

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -180,13 +181,13 @@ public class Run {
 		/*
 		 * Send exit messages to the other driver nodes
 		 */
-		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
 			if (hostname.equals(workloadStatsHost)) {
 				continue;
 			}
 			
-			sfList.add(executorService.schedule(new Runnable() {
+			sfList.add(executorService.submit(new Runnable() {
 				
 				@Override
 				public void run() {
@@ -202,7 +203,7 @@ public class Run {
 						logger.error("Error posting workload to " + url);
 					}
 				}
-			}, 0, TimeUnit.MILLISECONDS));
+			}));
 		}
 		/*
 		 * Now wait for all of the nodes to be notified of the exit

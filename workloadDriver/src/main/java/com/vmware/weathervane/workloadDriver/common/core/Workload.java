@@ -6,6 +6,7 @@ package com.vmware.weathervane.workloadDriver.common.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -135,9 +136,9 @@ public abstract class Workload implements UserFactory {
 		 * Send initialize workload message to all of the driver nodes
 		 */
 		int nodeNum = 0;
-		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.schedule(new SendInitMsgRunner(nodeNum, hostname, hosts.size()), 0, TimeUnit.MILLISECONDS));
+			sfList.add(executorService.submit(new SendInitMsgRunner(nodeNum, hostname, hosts.size())));
 			nodeNum++;
 		}
 		/*
@@ -270,9 +271,9 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * Send stop messages to workloads on all nodes
 		 */
-		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.schedule(new Runnable() {
+			sfList.add(executorService.submit(new Runnable() {
 				
 				@Override
 				public void run() {
@@ -297,7 +298,7 @@ public abstract class Workload implements UserFactory {
 						logger.error("Error posting workload stop to " + url);
 					}
 				}
-			}, 0, TimeUnit.MILLISECONDS));
+			}));
 		}
 		/*
 		 * Now wait for all of the nodes to be notified of the change

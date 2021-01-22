@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -80,19 +81,18 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		 * Notify the watchers in parallel to avoid waiting for all of the driver nodes 
 		 * to be notified of changes in the number of users
 		 */
-		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		List<Future<?>> sfList = new ArrayList<>();
 		for (Entry<String, LoadPathIntervalResultWatcher> entry : watchers.entrySet()) {
 			logger.debug("notifyWatchers for interval {}, scheduling a notification", intervalName);
-			ScheduledFuture<?> sf = executorService.schedule(new Runnable() {
+			sfList.add(executorService.submit(new Runnable() {
 				
 				@Override
 				public void run() {
 					logger.info("notifyWatchers for interval {}, in scheduled notification");
 					entry.getValue().intervalResult(intervalName, passed);					
 				}
-			}, 0, TimeUnit.MILLISECONDS);
+			}));
 			logger.debug("notifyWatchers for interval {}, scheduled a notification", intervalName);
-			sfList.add(sf);
 		}
 		logger.debug("notifyWatchers for interval {}, scheduled all notifications", intervalName, passed);
 		

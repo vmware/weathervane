@@ -6,6 +6,7 @@ package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -187,9 +188,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	public void changeActiveUsers(long numUsers) {
 		logger.info("changeActiveUsers for loadPath {} to {}", name, numUsers);
 		numActiveUsers = numUsers;
-		List<ScheduledFuture<?>> sfList = new ArrayList<>();
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.schedule(new Runnable() {
+			sfList.add(executorService.submit(new Runnable() {
 				
 				@Override
 				public void run() {
@@ -230,7 +231,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 						}
 					}
 				}
-			}, 0, TimeUnit.MILLISECONDS));
+			}));
 		}
 		
 		/*
@@ -319,9 +320,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			/*
 			 * Send messages to workloadService on driver nodes that interval has completed.
 			 */
-			List<ScheduledFuture<?>> sfList = new ArrayList<>();
+			List<Future<?>> sfList = new ArrayList<>();
 			for (String hostname : hosts) {
-				sfList.add(executorService.schedule(new Runnable() {
+				sfList.add(executorService.submit(new Runnable() {
 					
 					@Override
 					public void run() {
@@ -352,11 +353,11 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 						if (responseEntity.getStatusCode() != HttpStatus.OK) {
 							logger.error("Error posting statsIntervalComplete message to " + url);
 						} else {
-							logger.debug("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
+							logger.info("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
 									+ ", workload " + workloadName + " to host " + hostname);
 						}
 					}
-				},  0, TimeUnit.MILLISECONDS));
+				}));
 			}
 			/*
 			 * Now wait for all of the nodes to be notified of the change

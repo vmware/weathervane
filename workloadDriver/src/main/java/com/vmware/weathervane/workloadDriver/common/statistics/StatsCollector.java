@@ -4,9 +4,14 @@ SPDX-License-Identifier: BSD-2-Clause
 */
 package com.vmware.weathervane.workloadDriver.common.statistics;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +57,8 @@ public class StatsCollector  {
 
 	private LoadPath loadPath;
 	
+	private ExecutorService executorService = null;
+	
 	public StatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
 								String localHostname, BehaviorSpec behaviorSpec) {
 		this.runName = runName;
@@ -63,6 +70,8 @@ public class StatsCollector  {
 		this.statsIntervalSpecs = statsIntervalSpecs;
 		this.loadPath = loadPath;
 		
+		executorService = Executors.newCachedThreadPool();
+
 		/*
 		 * A collector gets a message for each interval it uses.  The
 		 * message triggers the roll-up of stats for that interval
@@ -173,10 +182,35 @@ public class StatsCollector  {
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		String completedSpecName = completeMessage.getCompletedSpecName();
 		logger.info("Preparing to send target summaries for spec " + completedSpecName);
+		List<Future<?>> sfList = new ArrayList<>();
 		Map<String, StatsSummary> specTargetToCurrentStatsMap = specNameToTargetToIntervalStatsMap.get(completedSpecName);
 		for (String targetName : specTargetToCurrentStatsMap.keySet()) {
+			sfList.add(executorService.submit(
+					new SendTargetSummaryRunner(specTargetToCurrentStatsMap.get(targetName), 
+							requestHeaders, completedSpecName, targetName, completeMessage)));
+		}
+	}
+	
+	private class SendTargetSummaryRunner implements Runnable {
+		private StatsSummary targetStatsSummary;
+		private HttpHeaders requestHeaders;
+		private String completedSpecName;
+		private String targetName;
+		private StatsIntervalCompleteMessage completeMessage;
 
-			StatsSummary targetStatsSummary = specTargetToCurrentStatsMap.get(targetName);
+		public SendTargetSummaryRunner(StatsSummary targetStatsSummary,
+				HttpHeaders requestHeaders, String completedSpecName, String targetName,
+				StatsIntervalCompleteMessage completeMessage) {
+			this.targetStatsSummary = targetStatsSummary;
+			this.requestHeaders = requestHeaders;
+			this.completedSpecName = completedSpecName;
+			this.targetName = targetName;
+			this.completeMessage = completeMessage;
+		}
+
+
+		@Override
+		public void run() {
 			targetStatsSummary.setIntervalStartTime(completeMessage.getCurIntervalStartTime());
 			targetStatsSummary.setIntervalEndTime(completeMessage.getLastIntervalEndTime());
 			targetStatsSummary.setIntervalName(completeMessage.getCurIntervalName());
@@ -184,8 +218,7 @@ public class StatsCollector  {
 			targetStatsSummary.setStartActiveUsers(completeMessage.getIntervalStartUsers());
 
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
-					+ " and target " + targetName + ", summary = " + targetStatsSummary);
-
+						+ " and target " + targetName + ", summary = " + targetStatsSummary);
 			/*
 			 * Send the stats summary
 			 */
@@ -204,13 +237,11 @@ public class StatsCollector  {
 
 			logger.info("statsIntervalComplete: sent target summary for spec " + completedSpecName
 					+ " and target " + targetName + ", summary = " + targetStatsSummary + ". Resetting stats");
-
-			targetStatsSummary.reset();
+			targetStatsSummary.reset();								
 		}
-
 		
 	}
-
+	
 	public String getWorkloadName() {
 		return workloadName;
 	}

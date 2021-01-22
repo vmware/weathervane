@@ -1,7 +1,7 @@
 // Will run on the agent with name or tag wvtest-AuctionDriver
 node('wvtest-AuctionDriver') {
     try {
-
+	// Checkout command for Jenkinsfile
 	checkout scm
 
         // Perform routine maintenance tasks since AuctionDriver is a persistent VM
@@ -15,7 +15,7 @@ node('wvtest-AuctionDriver') {
         sh label: '', script: 'docker container prune -f'
         }
         stage('checkout') {
-            // This is the 'checkout' function. 'git' function doesn't work because 'git' command doesn't support remote branches?
+            // Checkout command for Jenkins UI
             //checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/vmware/weathervane']]])
         }
         stage('build') {
@@ -30,7 +30,7 @@ node('wvtest-AuctionDriver') {
             }
  }
         stage('test') {
-            sh label: '', script: 'python3 testing/e2e/runE2eTests-dev.py'
+            sh label: '', script: 'python3 testing/e2e/runE2eTests.py'
         }
         return
     } catch (err) {

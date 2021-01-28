@@ -34,7 +34,7 @@ import com.vmware.weathervane.workloadDriver.common.http.FileUploadInfo;
 import com.vmware.weathervane.workloadDriver.common.http.HttpRequestCompleteCallback;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
 import com.vmware.weathervane.workloadDriver.common.statistics.OperationStats;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;

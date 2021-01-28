@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 @JsonTypeName(value = "http")
 public class HttpTarget extends Target {

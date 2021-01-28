@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.common.core.LoadProfileChangeCallback;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.factory.UserFactory;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
 @JsonSubTypes({ @Type(value = HttpTarget.class, name = "http")
@@ -110,7 +110,7 @@ public abstract class Target {
 			long globalOrderingId = orderingId + targetOrderingId + targetStep;
 			logger.info("initialize: Target " + name + " creating User with userId = " + userId + ", orderingId = " + orderingId + ", globalOrderingId = " + globalOrderingId );
 			User user = getUserFactory().createUser(userId, orderingId, globalOrderingId, this);
-			user.setStatsCollector(getStatsCollector());
+			user.setStatsCollector(statsCollector);
 			this.registerLoadProfileChangeCallback(user);
 		}
 	}
@@ -213,9 +213,4 @@ public abstract class Target {
 	public UserFactory getUserFactory() {
 		return userFactory;
 	}
-
-	public StatsCollector getStatsCollector() {
-		return statsCollector;
-	}
-
 }

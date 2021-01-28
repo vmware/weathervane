@@ -29,10 +29,11 @@ public class StatsServiceImpl implements StatsService {
 
 	private long curPeriod = 0;
 	
-	private Map<String, List<String>> runNameToHostsListMap = new HashMap<String, List<String>>();
-	private Map<String, String> runNameToStatsOutputDirName = new HashMap<String, String>();
-	private Map<String, Map<String, Integer>> runNameToWorkloadNameToNumTargetsMap = new HashMap<String, Map<String, Integer>>();
-	
+	private Map<String, List<String>> runNameToHostsListMap = new HashMap<>();
+	private Map<String, String> runNameToStatsOutputDirName = new HashMap<>();
+	private Map<String, Map<String, Integer>> runNameToWorkloadNameToNumTargetsMap = new HashMap<>();
+	private Map<String, Boolean> runNameToIsPerTargetStatsMap = new HashMap<>();
+
 	/*
 	 * Writers for csv files.
 	 * workload -> (statsIntervalSpec -> Writer)
@@ -62,6 +63,7 @@ public class StatsServiceImpl implements StatsService {
 	private Map<String, Boolean> statsIntervalSpecPrintSummary = new HashMap<String, Boolean>();
 	
 	private Map<String, Map<String, Queue<String>>> workloadToStatsSpecToIntervalOrder = new HashMap<String, Map<String, Queue<String>>>();
+
 	
 	@Override
 	public synchronized void postStatsSummary(String runName, StatsSummary statsSummary) throws IOException {
@@ -71,6 +73,7 @@ public class StatsServiceImpl implements StatsService {
 		String targetName = statsSummary.getTargetName();
 		logger.info("postStatsSummary for runName = " + runName + ", workloadName = " + workloadName +
 				", targetName = " + targetName + ", specName = " + statsIntervalSpecName + ", intervalName = " + intervalName);
+		boolean isPerTarget = runNameToIsPerTargetStatsMap.get(runName);
 		Map<String, Integer> workloadNameToNumTargetsMap = runNameToWorkloadNameToNumTargetsMap.get(runName);
 		
 		if (statsSummary.getPrintSummary()) {
@@ -136,11 +139,16 @@ public class StatsServiceImpl implements StatsService {
 			
 			/*
 			 * Check whether we have received all of the samples for this interval.
-			 * We should have received numHosts * workload->numTargets
+			 * If isPerTarget is true, then we should have received numHosts * workload->numTargets
+			 * otherwise, we just need to receive numHosts samples 
 			 */
 			List<String> hosts = runNameToHostsListMap.get(runName);
+			int numSamplesExpected = hosts.size();
+			if (isPerTarget) {
+				numSamplesExpected *= workloadNameToNumTargetsMap.get(workloadName);
+			}
 			String statsOutputDirName = runNameToStatsOutputDirName.get(runName);
-			if (intervalSamplesReceived < (hosts.size() * workloadNameToNumTargetsMap.get(workloadName))) {
+			if (intervalSamplesReceived < numSamplesExpected) {
 				logger.debug("postStatsSummary: This is sample " + intervalSamplesReceived + ". Haven't received all samples for workload " + workloadName
 						+ ", statsIntervalSpec " + statsIntervalSpecName + ", and interval " + intervalName);
 				/*
@@ -248,9 +256,14 @@ public class StatsServiceImpl implements StatsService {
 	@Override
 	public StatsSummaryResponseMessage getStatsSummary(String runName, String workloadName, String specName,
 			String intervalName) {
+		boolean isPerTarget = runNameToIsPerTargetStatsMap.get(runName);
+		int numSamplesExpected = runNameToHostsListMap.get(runName).size();
+		if (isPerTarget) {
+			numSamplesExpected *= runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName);
+		}
+
 		StatsSummaryResponseMessage statsSummaryResponseMessage = new StatsSummaryResponseMessage();
-		statsSummaryResponseMessage.setNumSamplesExpected(runNameToHostsListMap.get(runName).size() 
-				* runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName));
+		statsSummaryResponseMessage.setNumSamplesExpected(numSamplesExpected);
 		statsSummaryResponseMessage.setNumSamplesReceived(0);
 		statsSummaryResponseMessage.setStatsSummary(null);
 		
@@ -278,9 +291,14 @@ public class StatsServiceImpl implements StatsService {
 			String intervalName) {
 		logger.info("getStatsSummaryRollup for runName = " + runName + ", workloadName = " + workloadName + 
 				", specName = " + specName + ", intervalName = " + intervalName);				
+		boolean isPerTarget = runNameToIsPerTargetStatsMap.get(runName);
+		int numSamplesExpected = runNameToHostsListMap.get(runName).size();
+		if (isPerTarget) {
+			numSamplesExpected *= runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName);
+		}
+		
 		StatsSummaryRollupResponseMessage responseMessage = new StatsSummaryRollupResponseMessage();
-		responseMessage.setNumSamplesExpected(runNameToHostsListMap.get(runName).size() 
-				* runNameToWorkloadNameToNumTargetsMap.get(runName).get(workloadName));
+		responseMessage.setNumSamplesExpected(numSamplesExpected);
 		responseMessage.setNumSamplesReceived(0);
 		responseMessage.setStatsSummaryRollup(null);
 		
@@ -318,6 +336,8 @@ public class StatsServiceImpl implements StatsService {
 				initializeRunStatsMessage.getStatsOutputDirName());
 		
 		runNameToWorkloadNameToNumTargetsMap.put(runName, initializeRunStatsMessage.getWorkloadNameToNumTargetsMap());
+		
+		runNameToIsPerTargetStatsMap.put(runName, initializeRunStatsMessage.getIsPerTargetStats());
 	}
 	
 	@Override

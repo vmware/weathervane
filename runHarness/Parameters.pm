@@ -1067,7 +1067,7 @@ $parameters{"repeatUserLoadPath"} = {
 	"showUsage" => 0,
 };
 
-# Parameters for selecting the runManager
+# Parameter for selecting the runManager
 $parameters{"runStrategy"} = {
 	"type"      => "=s",
 	"default"   => "findMaxSingleRun",
@@ -1089,6 +1089,14 @@ $parameters{"instanceNodeLabels"} = {
 	"default"   => JSON::false,
 	"parent"    => "runManager",
 	"usageText" => "If true, the appInstances will only run on Kubernetes nodes with the appropriate label, e.g. wvauctionw1i1=",
+	"showUsage" => 1,
+};
+
+$parameters{"perTargetStats"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "workload",
+	"usageText" => "If true, the workload driver will collect stats for each target, which adds overhead",
 	"showUsage" => 1,
 };
 

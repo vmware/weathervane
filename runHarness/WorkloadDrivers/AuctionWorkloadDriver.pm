@@ -402,6 +402,7 @@ sub createRunConfigHash {
 		$driverRunPoolMultiplier = 20;
 	}
 	$runRef->{"threadPoolMultiplier"} = $driverRunPoolMultiplier;
+	$runRef->{"perTargetStats"}     = $self->getParamValue('perTargetStats');
 
 	$runRef->{"workloads"} = [];
 	

@@ -25,7 +25,7 @@ import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.factory.OperationFactory;
 import com.vmware.weathervane.workloadDriver.common.factory.TransitionChooserFactory;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 /**
  * @author Hal

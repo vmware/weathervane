@@ -2,7 +2,7 @@
 Copyright 2017-2019 VMware, Inc.
 SPDX-License-Identifier: BSD-2-Clause
 */
-package com.vmware.weathervane.workloadDriver.common.statistics;
+package com.vmware.weathervane.workloadDriver.common.statistics.statsCollector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +27,12 @@ import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath.LoadPath;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
+import com.vmware.weathervane.workloadDriver.common.statistics.OperationStats;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
-public class StatsCollector  {
-	private static final Logger logger = LoggerFactory.getLogger(StatsCollector.class);
+public class PerTargetStatsCollector implements StatsCollector {
+	private static final Logger logger = LoggerFactory.getLogger(PerTargetStatsCollector.class);
 
 	private static final RestTemplate restTemplate = new RestTemplate();
 
@@ -59,7 +60,7 @@ public class StatsCollector  {
 	
 	private ExecutorService executorService = null;
 	
-	public StatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
+	public PerTargetStatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
 								String localHostname, BehaviorSpec behaviorSpec) {
 		this.runName = runName;
 		this.workloadName = workloadName;
@@ -83,7 +84,7 @@ public class StatsCollector  {
 		
 	}
 	
-	
+	@Override
 	public void submitOperationStats(OperationStats operationStats) {
 		logger.debug("submitOperationStats: " + operationStats);
 		String targetName = operationStats.getTargetName();
@@ -107,6 +108,7 @@ public class StatsCollector  {
 	 * For the intervalSpec that actually ended, send the rollup to the stats service
 	 * on the master node and reset the stats.
 	 */
+	@Override
 	public synchronized void statsIntervalComplete(StatsIntervalCompleteMessage completeMessage) {
 		logger.debug("statsIntervalComplete: " + completeMessage);
 
@@ -242,6 +244,11 @@ public class StatsCollector  {
 		
 	}
 	
+	@Override
+	public void setTargetNames(List<String> targetNames) {
+		this.targetNames = targetNames;
+	}
+	
 	public String getWorkloadName() {
 		return workloadName;
 	}
@@ -260,11 +267,6 @@ public class StatsCollector  {
 
 	public List<String> getTargetNames() {
 		return targetNames;
-	}
-	
-	public void setTargetNames(List<String> targetNames) {
-		this.targetNames = targetNames;
-	}
-	
+	}	
 
 }

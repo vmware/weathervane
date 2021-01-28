@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +34,9 @@ import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StopWorkloadMessage;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.PerTargetStatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.PerWorkloadStatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
@@ -62,6 +62,9 @@ public abstract class Workload implements UserFactory {
 	private LoadPath loadPath;
 
 	private List<StatsIntervalSpec> statsIntervalSpecs;
+	
+	@JsonIgnore
+	private boolean perTargetStats = false;
 
 	@JsonIgnore
 	private List<String> hosts;
@@ -109,7 +112,8 @@ public abstract class Workload implements UserFactory {
 	 * Used to initialize the master workload in the RunService
 	 */
 	public void initialize(String runName, Run run, List<String> hosts, String runStatsHost, String workloadStatsHost,
-			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService) {
+			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService,
+			boolean perTargetStats) {
 		logger.debug("Initialize workload: " + this.toString());
 
 		if (getLoadPath() == null) {
@@ -131,6 +135,7 @@ public abstract class Workload implements UserFactory {
 		this.LoadPathController = loadPathController;
 		this.restTemplate = restTemplate;
 		this.executorService = executorService;
+		this.perTargetStats = perTargetStats;
 		
 		/*
 		 * Send initialize workload message to all of the driver nodes
@@ -189,6 +194,7 @@ public abstract class Workload implements UserFactory {
 			msg.setNumNodes(numNodes);
 			msg.setStatsHostName(workloadStatsHost);
 			msg.setRunName(runName);
+			msg.setPerTargetStats(perTargetStats);
 			/*
 			 * Send the initialize workload message to the host
 			 */
@@ -219,11 +225,17 @@ public abstract class Workload implements UserFactory {
 		this.numNodes = initializeWorkloadMessage.getNumNodes();
 		this.nodeNumber = initializeWorkloadMessage.getNodeNumber();
 		this.runName = initializeWorkloadMessage.getRunName();
+		this.perTargetStats = initializeWorkloadMessage.isPerTargetStats();
 
 		operations = this.getOperations();
 
-		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
-				hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		if (perTargetStats) {
+			statsCollector = new PerTargetStatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
+					hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		} else {
+			statsCollector = new PerWorkloadStatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
+					hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		}
 
 		/*
 		 * Initialize all of the targets in the workload
@@ -398,6 +410,14 @@ public abstract class Workload implements UserFactory {
 		return status;
 	}
 
+	public void setActiveUsers(long users) {
+		logger.debug("setActiveUsers: users set to " + users);
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
+			spec.setActiveUsers(users);
+		}		
+		logger.debug("setActiveUsers: finished");
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -428,14 +448,6 @@ public abstract class Workload implements UserFactory {
 
 	public void setUseThinkTime(Boolean useThinkTime) {
 		this.useThinkTime = useThinkTime;
-	}
-
-	public StatsCollector getStatsCollector() {
-		return statsCollector;
-	}
-
-	public void setStatsCollector(StatsCollector statsCollector) {
-		this.statsCollector = statsCollector;
 	}
 
 	@JsonIgnore
@@ -492,6 +504,14 @@ public abstract class Workload implements UserFactory {
 		this.workloadStatsHost = workloadStatsHost;
 	}
 
+	public boolean isPerTargetStats() {
+		return perTargetStats;
+	}
+
+	public void setPerTargetStats(boolean perTargetStats) {
+		this.perTargetStats = perTargetStats;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder();
@@ -522,14 +542,6 @@ public abstract class Workload implements UserFactory {
 
 		
 		return theStringBuilder.toString();
-	}
-
-	public void setActiveUsers(long users) {
-		logger.debug("setActiveUsers: users set to " + users);
-		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
-			spec.setActiveUsers(users);
-		}		
-		logger.debug("setActiveUsers: finished");
 	}
 
 }

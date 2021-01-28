@@ -21,7 +21,7 @@ import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class GetUserProfileOperation extends AuctionOperation implements NeedsLoginResponse, 
 	ContainsUserProfile {

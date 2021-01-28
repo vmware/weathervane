@@ -60,7 +60,9 @@ public class Run {
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 	
 	private int threadPoolMultiplier;
-		
+	
+	private boolean perTargetStats = false;
+			
 	@JsonIgnore
 	private List<String> hosts;
 
@@ -104,6 +106,7 @@ public class Run {
 		InitializeRunStatsMessage initializeRunStatsMessage = new InitializeRunStatsMessage();
 		initializeRunStatsMessage.setHosts(hosts);
 		initializeRunStatsMessage.setStatsOutputDirName(getStatsOutputDirName());
+		initializeRunStatsMessage.setIsPerTargetStats(perTargetStats);
 		Map<String, Integer> workloadNameToNumTargetsMap = new HashMap<String, Integer>();
 		for (Workload workload : workloads) {
 			workloadNameToNumTargetsMap.put(workload.getName(), workload.getNumTargets());
@@ -129,7 +132,7 @@ public class Run {
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
 			workload.initialize(name, this, hosts, runStatsHost, workloadStatsHost,
-					loadPathController, restTemplate, executorService);
+					loadPathController, restTemplate, executorService, perTargetStats);
 		}
 		
 		state = RunState.INITIALIZED;
@@ -309,7 +312,6 @@ public class Run {
 		this.workloads = workloads;
 	}
 
-
 	public List<String> getHosts() {
 		return hosts;
 	}
@@ -356,6 +358,14 @@ public class Run {
 
 	public void setLoadPathController(LoadPathController loadPathController) {
 		this.loadPathController = loadPathController;
+	}
+
+	public boolean isPerTargetStats() {
+		return perTargetStats;
+	}
+
+	public void setPerTargetStats(boolean perTargetStats) {
+		this.perTargetStats = perTargetStats;
 	}
 
 	@Override

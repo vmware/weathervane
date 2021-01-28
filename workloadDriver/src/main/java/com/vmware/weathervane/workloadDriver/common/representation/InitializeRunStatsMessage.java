@@ -13,6 +13,7 @@ public class InitializeRunStatsMessage {
 	private List<String> hosts;
 	private String statsOutputDirName;
 	private Map<String, Integer> workloadNameToNumTargetsMap;
+	private Boolean isPerTargetStats;
 	
 	public List<String> getHosts() {
 		return hosts;
@@ -59,6 +60,14 @@ public class InitializeRunStatsMessage {
 
 	public void setWorkloadNameToNumTargetsMap(Map<String, Integer> workloadNameToNumTargetsMap) {
 		this.workloadNameToNumTargetsMap = workloadNameToNumTargetsMap;
+	}
+
+	public Boolean getIsPerTargetStats() {
+		return isPerTargetStats;
+	}
+
+	public void setIsPerTargetStats(Boolean isPerTargetStats) {
+		this.isPerTargetStats = isPerTargetStats;
 	}
 	
 }

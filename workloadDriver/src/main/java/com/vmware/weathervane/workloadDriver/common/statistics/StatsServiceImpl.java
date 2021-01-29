@@ -71,7 +71,8 @@ public class StatsServiceImpl implements StatsService {
 		String statsIntervalSpecName = statsSummary.getStatsIntervalSpecName();
 		String intervalName = statsSummary.getIntervalName();
 		String targetName = statsSummary.getTargetName();
-		logger.info("postStatsSummary for runName = " + runName + ", workloadName = " + workloadName +
+		String localHostname = statsSummary.getHostName();
+		logger.info("postStatsSummary from host " + localHostname + " for runName = " + runName + ", workloadName = " + workloadName +
 				", targetName = " + targetName + ", specName = " + statsIntervalSpecName + ", intervalName = " + intervalName);
 		boolean isPerTarget = runNameToIsPerTargetStatsMap.get(runName);
 		Map<String, Integer> workloadNameToNumTargetsMap = runNameToWorkloadNameToNumTargetsMap.get(runName);

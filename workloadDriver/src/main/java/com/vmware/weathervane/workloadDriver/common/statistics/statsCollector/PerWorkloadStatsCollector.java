@@ -114,7 +114,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 	 */
 	@Override
 	public synchronized void statsIntervalComplete(StatsIntervalCompleteMessage completeMessage) {
-		logger.debug("statsIntervalComplete: " + completeMessage);
+		logger.info("statsIntervalComplete: " + completeMessage);
 
 		/*
 		 * First take the current stats list and replace it with a fresh list so that we don't start
@@ -163,7 +163,8 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		completedStats.setIntervalName(completeMessage.getCurIntervalName());
 		completedStats.setEndActiveUsers(completeMessage.getIntervalEndUsers());
 		completedStats.setStartActiveUsers(completeMessage.getIntervalStartUsers());
-
+		completedStats.setHostName(localHostname);
+		
 		HttpHeaders requestHeaders = new HttpHeaders();
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<StatsSummary> statsEntity = new HttpEntity<StatsSummary>(completedStats, requestHeaders);

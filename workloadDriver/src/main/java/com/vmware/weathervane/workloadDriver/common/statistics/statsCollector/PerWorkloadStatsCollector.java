@@ -130,11 +130,16 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		}
 		
 		/*
-		 * Compute a StatsSummary for the operationStats in this interval 
+		 * Compute a StatsSummary for the operationStats in this interval, ignoring
+		 * operations that started before this interval or ended after.
 		 */
+		long intervalStartTime = completeMessage.getCurIntervalStartTime();
+		long intervalEndTime = completeMessage.getLastIntervalEndTime();
 		StatsSummary curIntervalStatsSummary = 
 				new StatsSummary(workloadName, operations, behaviorSpec, "all", localHostname, "");
-		curPeriodOpStats.stream().forEach(opStats -> curIntervalStatsSummary.addStats(opStats));
+		curPeriodOpStats.stream().filter(opStats -> opStats.getStartTime() < intervalStartTime)
+					.filter(opStats -> opStats.getEndTime() >= intervalEndTime)
+					.forEach(opStats -> curIntervalStatsSummary.addStats(opStats));
 		
 		/*
 		 * Now merge the current stats into every active statsInterval
@@ -158,8 +163,8 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		 */
 		String completedSpecName = completeMessage.getCompletedSpecName();
 		StatsSummary completedStats = specNameToIntervalStatsMap.get(completedSpecName);
-		completedStats.setIntervalStartTime(completeMessage.getCurIntervalStartTime());
-		completedStats.setIntervalEndTime(completeMessage.getLastIntervalEndTime());
+		completedStats.setIntervalStartTime(intervalStartTime);
+		completedStats.setIntervalEndTime(intervalEndTime);
 		completedStats.setIntervalName(completeMessage.getCurIntervalName());
 		completedStats.setEndActiveUsers(completeMessage.getIntervalEndUsers());
 		completedStats.setStartActiveUsers(completeMessage.getIntervalStartUsers());

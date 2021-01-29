@@ -16,6 +16,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(SyncedLoadPath.class);
 
 	private String curIntervalName;
+	private long nextIntervalWait;
 	
 	@Override
 	public void run() {
@@ -45,13 +46,14 @@ public abstract class SyncedLoadPath extends LoadPath {
 			/*
 			 * Invoke the steps to get the next interval directly
 			 */
-			this.intervalResult(curIntervalName, result.isPassed());
+			this.changeInterval(curIntervalName, result.isPassed());
+			this.startNextInterval();
 		}
 
 	}
 	
 	@Override
-	public void intervalResult(String intervalName, boolean intervalResult) {
+	public void changeInterval(String intervalName, boolean intervalResult) {
 		logger.info("intervalResult for interval {} = {}", intervalName, intervalResult);
 		
 		if (!intervalName.equals(curIntervalName)) {
@@ -75,6 +77,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 		UniformLoadInterval nextInterval = this.getNextIntervalSynced(intervalResult);
 		logger.debug("intervalResult: nextInterval = " + nextInterval);
 		long users = nextInterval.getUsers();
+		nextIntervalWait = nextInterval.getDuration();
 
 		/*
 		 * Notify the workload, so that it can notify the statsIntervalSpec
@@ -92,12 +95,17 @@ public abstract class SyncedLoadPath extends LoadPath {
 			logger.warn("intervalResult: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
 							this.getName(), t.getMessage());
 		}
-		
-		long wait = nextInterval.getDuration();
-		logger.debug("intervalResult: interval duration is " + wait + " seconds");
-		if (!isFinished() && (wait > 0)) {
-			logger.debug("run: sleeping for  " + wait + " seconds");
-			getExecutorService().schedule(this, wait, TimeUnit.SECONDS);
+	}
+	
+	@Override
+	public void startNextInterval() {
+		logger.debug("startNextInterval: interval duration is " + nextIntervalWait + " seconds");
+		if (!isFinished() && (nextIntervalWait > 0)) {
+			logger.debug("run: sleeping for  " + nextIntervalWait + " seconds");
+			getExecutorService().schedule(this, nextIntervalWait, TimeUnit.SECONDS);
+			// The interval really starts now
+			getStatsTracker().setCurIntervalStartTime(System.currentTimeMillis());
+
 		}
 	}
 

@@ -181,6 +181,8 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		if (!isFinished() && (wait > 0)) {
 			logger.debug("run: sleeping for  " + wait + " seconds");
 			getExecutorService().schedule(this, wait, TimeUnit.SECONDS);
+			// The interval really starts now
+			getStatsTracker().setCurIntervalStartTime(System.currentTimeMillis());
 		}
 	}
 
@@ -296,17 +298,27 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	}
 
 	@Override
-	public void intervalResult(String intervalName, boolean intervalResult) {
+	public void changeInterval(String intervalName, boolean intervalResult) {
 		/*
 		 * Base implementation for loadPath types that don't use the global
 		 * interval result.  We just log the result.
 		 */
 		logger.debug("intervalResult for interval {} = {}", intervalName, intervalResult);
 	}
+	
+	@Override
+	public void startNextInterval() {
+		/*
+		 * Base implementation for loadPath types that don't use the global
+		 * interval result.  We just log the result.
+		 */
+		logger.debug("startNextInterval");
+	}
 
 	protected class StatsIntervalTracker {
 
 		private long curIntervalStartTime = System.currentTimeMillis();
+
 		private long intervalStartUsers = 0;
 
 		public void statsIntervalComplete() {
@@ -374,6 +386,14 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			
 			intervalStartUsers = intervalEndUsers;
 			curIntervalStartTime = lastIntervalEndTime;
+		}
+		
+		public long getCurIntervalStartTime() {
+			return curIntervalStartTime;
+		}
+
+		public void setCurIntervalStartTime(long curIntervalStartTime) {
+			this.curIntervalStartTime = curIntervalStartTime;
 		}
 	}
 

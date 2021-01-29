@@ -383,6 +383,7 @@ public abstract class Workload implements UserFactory {
 			
 			target.setUserLoad(targetNumUsers);
 		}
+		
 	}
 	
 

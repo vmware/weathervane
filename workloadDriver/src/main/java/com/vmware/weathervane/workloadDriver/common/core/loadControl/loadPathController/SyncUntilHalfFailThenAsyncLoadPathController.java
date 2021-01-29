@@ -17,47 +17,6 @@ public class SyncUntilHalfFailThenAsyncLoadPathController extends BaseLoadPathCo
 	private int numFailed = 0;
 
 	@Override
-	public synchronized void postIntervalResult(String loadPathName, String intervalName, boolean passed) {
-		
-		if (runAsync) {
-			/*
-			 * Once all loadPaths fail an interval, we treat this as an async
-			 * loadPath and just return to each loadPath its own result
-			 */
-			logger.info(
-					"postIntervalResult for loadPath {}, interval {}, passed {}, In runAsync",
-					loadPathName, intervalName, passed);
-			watchers.get(loadPathName).intervalResult(intervalName, passed);
-		} else {
-			int curNumResults = 0;
-			if (!numIntervalResults.containsKey(intervalName)) {
-				curNumResults = 1;
-				intervalResults.put(intervalName, passed);
-			} else {
-				curNumResults = numIntervalResults.get(intervalName) + 1;
-				boolean isLastInInterval = false;
-				if (curNumResults == numWatchers) {
-					isLastInInterval = true;
-				}
-				intervalResults.put(intervalName,
-						combineIntervalResults(intervalResults.get(intervalName), passed, isLastInInterval));
-			}
-			numIntervalResults.put(intervalName, curNumResults);
-
-			logger.info(
-					"postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
-					loadPathName, intervalName, passed, curNumResults, numWatchers, intervalResults.get(intervalName));
-			if (curNumResults == numWatchers) {
-				logger.info("postIntervalResult notifying watchers for interval {} with result {}", intervalName,
-						intervalResults.get(intervalName));
-				numPassed = 0;
-				numFailed = 0;
-				notifyWatchers(intervalName, intervalResults.get(intervalName));
-			}
-		}
-	}
-
-	@Override
 	protected boolean combineIntervalResults(boolean previousResult, boolean latestResult, boolean isLastInInverval) {
 		logger.debug("combineIntervalResults previousResult = {}, latestResult = {}, isLastInInverval = {}, allFailed = {}", 
 				previousResult, latestResult, isLastInInverval, runAsync);
@@ -66,15 +25,27 @@ public class SyncUntilHalfFailThenAsyncLoadPathController extends BaseLoadPathCo
 		} else {
 			numFailed++;
 		}
-	
-		boolean combinedValue = previousResult || latestResult;
-		if (isLastInInverval && (numFailed >= numPassed)) {
+		
+		boolean combinedValue = true;
+		if (numFailed >= numPassed) {
+			combinedValue = false;
+		}
+		
+		if (isLastInInverval) {
+			numPassed = 0;
+			numFailed = 0;
+
+			if (runAsync) {
+				useCombinedResults = false;
+			}
+			
 			/*
 			 * Switch to running async when more instances fail in
-			 * an interval than pass 
+			 * an interval than pass.  This takes effect next interval 
 			 */
-			runAsync = true;
-			combinedValue = false;
+			if (!combinedValue) {
+				runAsync = true;
+			}
 		}
 		logger.debug("combineIntervalResults combinedValue = {}", combinedValue);
 		return combinedValue;

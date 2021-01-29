@@ -27,7 +27,11 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	protected Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
 	protected int numWatchers = 0;
 	protected Map<String, Integer> numIntervalResults = new HashMap<>();
-	protected Map<String, Boolean> intervalResults = new HashMap<>();
+
+	boolean useCombinedResults = true;
+	protected Map<String, Boolean> intervalCombinedResults = new HashMap<>();	
+	protected Map<String, Boolean> loadPathIndividualResults = new HashMap<>();
+	
 
 	private ScheduledExecutorService executorService;
 
@@ -48,60 +52,72 @@ public abstract class BaseLoadPathController implements LoadPathController {
 
 	@Override
 	public synchronized void postIntervalResult(String loadPathName, String intervalName, boolean passed) {
+		loadPathIndividualResults.put(loadPathName, passed);
+		
 		int curNumResults = 0;
 		if (!numIntervalResults.containsKey(intervalName)) {
 			curNumResults = 1;
-			intervalResults.put(intervalName, passed);
+			intervalCombinedResults.put(intervalName, passed);
 		} else {
 			curNumResults = numIntervalResults.get(intervalName) + 1;
 			boolean isLastInInterval = false;
 			if (curNumResults == numWatchers) {
 				isLastInInterval = true;
 			}
-			intervalResults.put(intervalName, 
-					combineIntervalResults(intervalResults.get(intervalName), passed, isLastInInterval));
+			intervalCombinedResults.put(intervalName, 
+					combineIntervalResults(intervalCombinedResults.get(intervalName), passed, isLastInInterval));
 		}
 		numIntervalResults.put(intervalName, curNumResults);
 
 		logger.debug("postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
-				loadPathName, intervalName, passed, curNumResults, numWatchers, intervalResults.get(intervalName));
+				loadPathName, intervalName, passed, curNumResults, numWatchers, intervalCombinedResults.get(intervalName));
 		if (curNumResults == numWatchers) {
 			logger.debug("postIntervalResult notifying watchers for interval {} with result {}", 
-					intervalName, intervalResults.get(intervalName));
-			notifyWatchers(intervalName, intervalResults.get(intervalName));
+					intervalName, intervalCombinedResults.get(intervalName));
+			notifyWatchers(intervalName);
 		}
 	}
 	
 	protected abstract boolean combineIntervalResults(boolean previousResult, 
 									boolean latestResult, boolean isLastInInterval);
 	
-	protected void notifyWatchers(String intervalName, boolean passed) {
-		logger.info("notifyWatchers for interval {}, result = {}", intervalName, passed);
+	protected void notifyWatchers(String intervalName) {
+		logger.info("notifyWatchers for interval {}", intervalName);
+		boolean intervalCombinedResult = intervalCombinedResults.get(intervalName);
 		/*
 		 * Notify the watchers in parallel to avoid waiting for all of the driver nodes 
-		 * to be notified of changes in the number of users
+		 * to be notified of changes in the number of users.
+		 * Schedule the change 10ms into the future to allow all 
 		 */
 		List<Future<?>> sfList = new ArrayList<>();
 		for (Entry<String, LoadPathIntervalResultWatcher> entry : watchers.entrySet()) {
-			logger.debug("notifyWatchers for interval {}, scheduling a notification", intervalName);
+			String loadPathName = entry.getKey();
+			logger.debug("notifyWatchers for loadPath {}, interval {}, scheduling a notification", 
+					loadPathName, intervalName);
 			sfList.add(executorService.submit(new Runnable() {
 				
 				@Override
 				public void run() {
-					logger.info("notifyWatchers for interval {}, in scheduled notification");
-					entry.getValue().intervalResult(intervalName, passed);					
+					logger.info("notifyWatchers for loadPath {}, interval {}, in scheduled notification", 
+							loadPathName, intervalName);
+					boolean loadPathResult = intervalCombinedResult;
+					if (!useCombinedResults) {
+						loadPathResult = loadPathIndividualResults.get(loadPathName);
+					}
+					entry.getValue().changeInterval(intervalName, loadPathResult);					
 				}
 			}));
-			logger.debug("notifyWatchers for interval {}, scheduled a notification", intervalName);
+			logger.debug("notifyWatchers for loadPath {},  interval {}, scheduled a notification", 
+					loadPathName, intervalName);
 		}
-		logger.debug("notifyWatchers for interval {}, scheduled all notifications", intervalName, passed);
+		logger.debug("notifyWatchers for interval {}, scheduled all notifications", intervalName);
 		
 		/*
-		 * Now wait for all of the watchers to be notified
+		 * Now wait for all of the watchers to be notified of the change in interval
 		 */
 		sfList.stream().forEach(sf -> {
 			try {
-				logger.debug("notifyWatchers for interval {}, getting a result of a notification", intervalName, passed);
+				logger.debug("notifyWatchers for interval {}, getting a result of a notification", intervalName);
 				sf.get(); 
 			} catch (Exception e) {
 				logger.warn("When notifying watcher for interval " + intervalName 
@@ -109,6 +125,15 @@ public abstract class BaseLoadPathController implements LoadPathController {
 			};
 		});
 		logger.info("notifyWatchers complete for interval {}", intervalName);
+		
+		
+		/*
+		 * Now that all loadPaths have changed users, actually start the next interval.
+		 * This call doesn't block so it can happen in series
+		 */
+		for (Entry<String, LoadPathIntervalResultWatcher> entry : watchers.entrySet()) {
+			entry.getValue().startNextInterval();
+		}
 	}
 	
 	

@@ -115,6 +115,7 @@ public class DriverController {
 		try {
 			driverService.changeActiveUsers(runName, workloadName, changeUsersMessage.getActiveUsers());
 		} catch (Exception e) {
+			logger.warn("changeUsers: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -133,6 +134,7 @@ public class DriverController {
 		try {
 			driverService.statsIntervalComplete(runName, workloadName, statsIntervalCompleteMessage);
 		} catch (Exception e) {
+			logger.warn("statsIntervalComplete: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;

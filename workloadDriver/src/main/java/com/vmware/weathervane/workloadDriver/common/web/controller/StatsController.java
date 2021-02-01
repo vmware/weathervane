@@ -43,7 +43,8 @@ public class StatsController {
 		
 		try {
 			statsService.postStatsSummary(runName, statsSummary);
-		} catch (IOException e) {
+		} catch (Exception e) {
+			logger.warn("postStatsSummary: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;

@@ -43,6 +43,7 @@ public class DriverController {
 		try {
 			driverService.addRun(runName);
 		} catch (Exception e) {
+			logger.warn("addRun: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -61,6 +62,7 @@ public class DriverController {
 		try {
 			driverService.removeRun(runName);
 		} catch (Exception e) {
+			logger.warn("deleteRun: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -79,6 +81,7 @@ public class DriverController {
 		try {
 			driverService.addWorkload(runName, workloadName, theWorkload);
 		} catch (Exception e) {
+			logger.warn("addWorkload: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -97,6 +100,7 @@ public class DriverController {
 		try {
 			driverService.initializeWorkload(runName, workloadName, initializeWorkloadMessage);
 		} catch (Exception e) {
+			logger.warn("initializeWorkload: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -152,6 +156,7 @@ public class DriverController {
 		try {
 			driverService.stopWorkload(runName, workloadName);
 		} catch (Exception e) {
+			logger.warn("stopWorkload: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;
@@ -170,6 +175,7 @@ public class DriverController {
 		try {
 			driverService.exit(runName);
 		} catch (Exception e) {
+			logger.warn("exit: caught exception: {}", e.getMessage());
 			response.setMessage(e.getMessage());
 			response.setStatus("Failure");
 			status = HttpStatus.CONFLICT;

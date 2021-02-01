@@ -99,10 +99,12 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		 * is added.  The list is replaced when a statsInterval completes.
 		 */
 		curStatsRWLock.readLock().lock();
+		logger.debug("submitOperationStats locked readLock: " + operationStats);
 		try {
 			curStatsList.add(operationStats);
 		} finally {
 			curStatsRWLock.readLock().unlock();
+			logger.debug("submitOperationStats unlocked readLock: " + operationStats);
 		}
 	}
 
@@ -122,6 +124,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		 */
 		List<OperationStats> curPeriodOpStats;
 		curStatsRWLock.writeLock().lock();
+		logger.info("statsIntervalComplete: Got writeLock" + completeMessage);
 		try {
 			curPeriodOpStats = curStatsList;
 			curStatsList = new ArrayList<>();
@@ -133,12 +136,14 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		 * Compute a StatsSummary for the operationStats in this interval, ignoring
 		 * operations that started before this interval or ended after.
 		 */
+		logger.debug("statsIntervalComplete processing curPeriodOpStats.  Number of samples is {}", curPeriodOpStats.size());
 		long intervalStartTime = completeMessage.getCurIntervalStartTime();
 		long intervalEndTime = completeMessage.getLastIntervalEndTime();
 		StatsSummary curIntervalStatsSummary = 
 				new StatsSummary(workloadName, operations, behaviorSpec, "all", localHostname, "");
-		curPeriodOpStats.stream().filter(opStats -> opStats.getStartTime() < intervalStartTime)
-					.filter(opStats -> opStats.getEndTime() >= intervalEndTime)
+		curPeriodOpStats.stream()
+					.filter(opStats -> opStats.getStartTime() >= intervalStartTime)
+					.filter(opStats -> opStats.getEndTime() < intervalEndTime)
 					.forEach(opStats -> curIntervalStatsSummary.addStats(opStats));
 		
 		/*

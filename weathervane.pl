@@ -721,11 +721,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
 		$logger->debug("For workload $workloadNum, have $numAppInstances appInstances");
-		$logger->debug("Their Param hash refs are:");
-		foreach my $paramHashRef (@$appInstanceParamHashRefs) {
-			my $tmp = $json->encode($paramHashRef);
-			$logger->debug($tmp);
-		}
+		#$logger->debug("Their Param hash refs are:");
+		#foreach my $paramHashRef (@$appInstanceParamHashRefs) {
+		#	my $tmp = $json->encode($paramHashRef);
+		#	$logger->debug($tmp);
+		#}
 	}
 
 	# Get the parameters for the driver instances
@@ -779,11 +779,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $numSecondaries = $#{$driversParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
 		$logger->debug("For workload $workloadNum, have $numSecondaries secondary drivers");
-		$logger->debug("Their Param hash refs are:");
-		foreach my $paramHashRef (@$driversParamHashRefs) {
-			my $tmp = $json->encode($paramHashRef);
-			$logger->debug($tmp);
-		}
+		#$logger->debug("Their Param hash refs are:");
+		#foreach my $paramHashRef (@$driversParamHashRefs) {
+		#	my $tmp = $json->encode($paramHashRef);
+		#	$logger->debug($tmp);
+		#}
 	}
 
 	my $numDrivers = $numSecondaries + 1;
@@ -907,11 +907,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 				$logger->debug(
 					"For workload $workloadNum and appInstance $appInstanceNum, have $numScvInstances ${serviceType}s."
 				);
-				$logger->debug("Their Param hash refs are:");
-				foreach my $paramHashRef (@$svcInstanceParamHashRefs) {
-					my $tmp = $json->encode($paramHashRef);
-					$logger->debug($tmp);
-				}
+				#$logger->debug("Their Param hash refs are:");
+				#foreach my $paramHashRef (@$svcInstanceParamHashRefs) {
+				#	my $tmp = $json->encode($paramHashRef);
+				#	$logger->debug($tmp);
+				#}
 			}
 			if (!$allAiSameConfig || ($commonConfigSize eq "custom")) {
 				$console_logger->info( "\t$numScvInstances " . ucfirst($serviceType) . "s" );
@@ -948,12 +948,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		# Create and add the dataManager
 		my $dataManagerParamHashRef =
 		  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $appInstanceParamHashRef, "dataManagerInstance");
-		if ( $logger->is_debug() ) {
-			my $tmp = $json->encode($dataManagerParamHashRef);
-			$logger->debug(
-				"For workload $workloadNum and appInstance $appInstanceNum, the dataManager instance paramHashRef is:\n"
-				  . $tmp );
-		}
+		#if ( $logger->is_debug() ) {
+		#	my $tmp = $json->encode($dataManagerParamHashRef);
+		#	$logger->debug(
+		#		"For workload $workloadNum and appInstance $appInstanceNum, the dataManager instance paramHashRef is:\n"
+		#		  . $tmp );
+		#}
 	
 		
 		$host = getComputeResourceForInstance( $dataManagerParamHashRef, 1, "dataManager", 

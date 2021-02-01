@@ -20,7 +20,8 @@ public abstract class SyncedLoadPath extends LoadPath {
 	
 	@Override
 	public void run() {
-		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + getName() );
+		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + getName() 
+		+ ", isStatsInterval " + getIsStatsInterval() + ", isStatsIntervalComplete " + isStatsIntervalComplete());
 		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
@@ -54,14 +55,14 @@ public abstract class SyncedLoadPath extends LoadPath {
 	
 	@Override
 	public void changeInterval(String intervalName, boolean intervalResult) {
-		logger.info("intervalResult for interval {} = {}", intervalName, intervalResult);
+		logger.info("changeInterval for interval {} = {}", intervalName, intervalResult);
 		
 		if (!intervalName.equals(curIntervalName)) {
 			/*
 			 *  Got a result for the wrong interval.  Something
 			 *  has gone wrong so we end things here.
 			 */
-			logger.warn("intervalResult: expecting result for interval {}, got result for interval {}", 
+			logger.warn("changeInterval: expecting result for interval {}, got result for interval {}", 
 					curIntervalName, intervalName);
 			WorkloadStatus status = new WorkloadStatus();
 			status.setIntervalStatsSummaries(getIntervalStatsSummaries());
@@ -75,7 +76,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 		}
 		
 		UniformLoadInterval nextInterval = this.getNextIntervalSynced(intervalResult);
-		logger.debug("intervalResult: nextInterval = " + nextInterval);
+		logger.debug("changeInterval: nextInterval = " + nextInterval);
 		long users = nextInterval.getUsers();
 		nextIntervalWait = nextInterval.getDuration();
 
@@ -92,7 +93,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 		try {
 			changeActiveUsers(users);
 		} catch (Throwable t) {
-			logger.warn("intervalResult: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
+			logger.warn("changeInterval: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
 							this.getName(), t.getMessage());
 		}
 	}
@@ -101,7 +102,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 	public void startNextInterval() {
 		logger.debug("startNextInterval: interval duration is " + nextIntervalWait + " seconds");
 		if (!isFinished() && (nextIntervalWait > 0)) {
-			logger.debug("run: sleeping for  " + nextIntervalWait + " seconds");
+			logger.debug("startNextInterval: sleeping for  " + nextIntervalWait + " seconds");
 			getExecutorService().schedule(this, nextIntervalWait, TimeUnit.SECONDS);
 			// The interval really starts now
 			getStatsTracker().setCurIntervalStartTime(System.currentTimeMillis());

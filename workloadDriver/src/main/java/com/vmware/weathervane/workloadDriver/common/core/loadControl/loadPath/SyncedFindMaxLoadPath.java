@@ -140,7 +140,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	@Override
 	protected IntervalCompleteResult intervalComplete() {
-		logger.debug("intervalComplete: " + this.getName());
+		logger.info("intervalComplete: " + this.getName());
 		statsIntervalComplete = false;
 		if (Phase.INITIALRAMP.equals(curPhase)) {
 			return initialRampIntervalComplete();			
@@ -152,8 +152,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	@JsonIgnore
 	@Override
 	public UniformLoadInterval getNextIntervalSynced(boolean passed) {
-
-		logger.debug("getNextIntervalSynced: " + this.getName());
+		logger.info("getNextIntervalSynced: " + this.getName());
 		statsIntervalComplete = false;
 		if (Phase.INITIALRAMP.equals(curPhase)) {
 			curInterval = getNextInitialRampInterval(passed);			
@@ -217,7 +216,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 			result.setPassed(true);			
 		}
 		
-		logger.debug("initialRampIntervalComplete " + this.getName() 
+		logger.info("initialRampIntervalComplete " + this.getName() 
 			+ ": Interval " + intervalNum + " prevIntervalPassed = "
 			+ prevIntervalPassed);
 		return result;

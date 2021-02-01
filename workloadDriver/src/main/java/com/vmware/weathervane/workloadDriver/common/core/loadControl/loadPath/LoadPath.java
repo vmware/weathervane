@@ -258,7 +258,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 		String url = "http://" + statsHostName + "/stats/run/" + runName + "/workload/" + workloadName
 				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
-		logger.debug("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
+		logger.info("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
 		
 		/*
 		 * Need to keep getting rollup for the interval until the stats server

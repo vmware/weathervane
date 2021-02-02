@@ -85,7 +85,7 @@ override 'getConfigFiles' => sub {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
+    #$logger->debug("Output: $outString");
     open( FILEOUT, ">$destinationPath/" . "$name-GetAllPods.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAllPods.txt: $!\n";   
     my @outString = split /\n/, $outString;
     for my $line (@outString) {
@@ -94,12 +94,12 @@ override 'getConfigFiles' => sub {
     close FILEOUT;
 
     $cmd = "kubectl describe pod --all-namespaces --selector=app=auction --kubeconfig=$kubeconfigFile $contextString";
-    ($cmdFailed, $outString) = runCmd($cmd);
+    ($cmdFailed, $outString) = runCmd($cmd, 0);
     if ($cmdFailed) {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
+    #$logger->debug("Output: $outString");
     open( FILEOUT, ">$destinationPath/" . "$name-DescribePods.txt" ) or die "Can't open file $destinationPath/" . "$name-DescribePods.txt: $!\n";   
     @outString = split /\n/, $outString;
     for my $line (@outString) {
@@ -113,7 +113,7 @@ override 'getConfigFiles' => sub {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
+    #$logger->debug("Output: $outString");
     open( FILEOUT, ">$destinationPath/" . "$name-GetAll.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAll.txt: $!\n";   
     @outString = split /\n/, $outString;
     for my $line (@outString) {
@@ -127,7 +127,7 @@ override 'getConfigFiles' => sub {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
+    #$logger->debug("Output: $outString");
     open( FILEOUT, ">$destinationPath/" . "$name-GetAllPVC.txt" ) or die "Can't open file $destinationPath/" . "$name-GetAllPVC.txt: $!\n";   
     @outString = split /\n/, $outString;
     for my $line (@outString) {
@@ -136,12 +136,12 @@ override 'getConfigFiles' => sub {
     close FILEOUT;
 
     $cmd = "kubectl describe node --kubeconfig=$kubeconfigFile $contextString";
-    ($cmdFailed, $outString) = runCmd($cmd);
+    ($cmdFailed, $outString) = runCmd($cmd, 0);
     if ($cmdFailed) {
         $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
-    $logger->debug("Output: $outString");
+    #$logger->debug("Output: $outString");
     open( FILEOUT, ">$destinationPath/" . "$name-DescribeNode.txt" ) or die "Can't open file $destinationPath/" . "$name-DescribeNode.txt: $!\n";   
     @outString = split /\n/, $outString;
     for my $line (@outString) {
@@ -1120,7 +1120,7 @@ sub kubernetesCopyFromFirst {
 	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=$podLabelString --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
-		$logger->error("kubernetesGetLogs get pod failed: $cmdFailed");
+		$logger->error("kubernetesCopyFromFirst get pod failed: $cmdFailed");
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
@@ -1224,7 +1224,7 @@ sub kubernetesGetLogs {
 		} else {
 			$cmd = "kubectl logs -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName";
 		}
-		($cmdFailed, $outString) = runCmd($cmd);
+		($cmdFailed, $outString) = runCmd($cmd, 0);
 		if ($cmdFailed) {
 			$logger->error("kubernetesGetLogs logs failed: $cmdFailed");
 		}

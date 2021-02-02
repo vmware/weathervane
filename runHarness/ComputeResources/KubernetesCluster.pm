@@ -571,7 +571,7 @@ sub kubernetesExecOne {
 	my $outString;
 	my $cmdFailed;
 	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=$serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
-	($cmdFailed, $outString) = runCmd($cmd);
+	($cmdFailed, $outString) = runCmd($cmd, 0);
 	if ($cmdFailed) {
 		$logger->error("kubernetesExecOne get pod failed: $cmdFailed");
 	}
@@ -587,7 +587,7 @@ sub kubernetesExecOne {
 		my $podName = $names[0];
 	
 		$cmd = "kubectl exec -c $serviceTypeImpl --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName -- $commandString";
-		($cmdFailed, $outString) = runCmd($cmd);
+		($cmdFailed, $outString) = runCmd($cmd, 0);
 		if ($cmdFailed) {
 			$logger->info("kubernetesExecOne exec failed: $cmdFailed");
 		}

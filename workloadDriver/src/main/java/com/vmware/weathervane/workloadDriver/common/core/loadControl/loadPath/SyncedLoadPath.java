@@ -100,7 +100,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 	
 	@Override
 	public void startNextInterval() {
-		logger.debug("startNextInterval: interval duration is " + nextIntervalWait + " seconds");
+		logger.info("startNextInterval: interval duration is " + nextIntervalWait + " seconds");
 		if (!isFinished() && (nextIntervalWait > 0)) {
 			logger.debug("startNextInterval: sleeping for  " + nextIntervalWait + " seconds");
 			getExecutorService().schedule(this, nextIntervalWait, TimeUnit.SECONDS);

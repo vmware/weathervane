@@ -131,7 +131,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		} finally {
 			curStatsRWLock.writeLock().unlock();
 		}
-		
+
 		/*
 		 * Compute a StatsSummary for the operationStats in this interval, ignoring
 		 * operations that started before this interval or ended after.
@@ -142,8 +142,8 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		StatsSummary curIntervalStatsSummary = 
 				new StatsSummary(workloadName, operations, behaviorSpec, "all", localHostname, "");
 		curPeriodOpStats.stream()
-					.filter(opStats -> opStats.getStartTime() >= intervalStartTime)
-					.filter(opStats -> opStats.getEndTime() < intervalEndTime)
+//					.filter(opStats -> opStats.getStartTime() >= intervalStartTime)
+//					.filter(opStats -> opStats.getEndTime() < intervalEndTime)
 					.forEach(opStats -> curIntervalStatsSummary.addStats(opStats));
 		
 		/*

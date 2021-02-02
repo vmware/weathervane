@@ -6,6 +6,8 @@ package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +100,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	private ScheduledExecutorService executorService = null;
 	
 	@JsonIgnore
+	private ExecutorService notifyExecutor = null;
+	
+	@JsonIgnore
 	protected RestTemplate restTemplate = null;
 
 	@JsonIgnore
@@ -121,6 +126,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		this.statsHostName = statsHostName;
 		this.restTemplate = restTemplate;
 		this.curStatusInterval = new RampLoadInterval();
+		notifyExecutor = Executors.newFixedThreadPool(hosts.size());
 	}
 
 	public void start() {
@@ -136,7 +142,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			statsTracker = new StatsIntervalTracker();
 		}
 
-		getExecutorService().execute(this);
+		executorService.execute(this);
 
 	}
 
@@ -180,7 +186,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		logger.debug("run: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {
 			logger.debug("run: sleeping for  " + wait + " seconds");
-			getExecutorService().schedule(this, wait, TimeUnit.SECONDS);
+			executorService.schedule(this, wait, TimeUnit.SECONDS);
 			// The interval really starts now
 			getStatsTracker().setCurIntervalStartTime(System.currentTimeMillis());
 		}
@@ -191,7 +197,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		numActiveUsers = numUsers;
 		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(executorService.submit(new Runnable() {
+			sfList.add(notifyExecutor.submit(new Runnable() {
 				
 				@Override
 				public void run() {
@@ -333,7 +339,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			 */
 			List<Future<?>> sfList = new ArrayList<>();
 			for (String hostname : hosts) {
-				sfList.add(executorService.submit(new Runnable() {
+				sfList.add(notifyExecutor.submit(new Runnable() {
 					
 					@Override
 					public void run() {

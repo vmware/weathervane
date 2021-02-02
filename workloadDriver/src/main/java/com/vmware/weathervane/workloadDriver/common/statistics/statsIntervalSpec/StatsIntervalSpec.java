@@ -6,6 +6,8 @@ package com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpe
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +62,9 @@ public abstract class StatsIntervalSpec implements Runnable {
 	private ScheduledExecutorService statsExecutor;
 
 	@JsonIgnore
+	private ExecutorService notifyExecutor;
+
+	@JsonIgnore
 	private RestTemplate restTemplate;
 
 	@JsonIgnore
@@ -83,7 +88,8 @@ public abstract class StatsIntervalSpec implements Runnable {
 		this.workloadName = workloadName;
 		this.hosts = hosts;
 		this.restTemplate = resetTemplate;
-		this.statsExecutor = executorService;				
+		this.statsExecutor = executorService;	
+		notifyExecutor = Executors.newFixedThreadPool(hosts.size());
 	}
 
 	public void start() {
@@ -118,7 +124,7 @@ public abstract class StatsIntervalSpec implements Runnable {
 		 */
 		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			sfList.add(statsExecutor.submit(new Runnable() {
+			sfList.add(notifyExecutor.submit(new Runnable() {
 
 				@Override
 				public void run() {

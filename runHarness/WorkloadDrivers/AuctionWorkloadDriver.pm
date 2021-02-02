@@ -397,11 +397,6 @@ sub createRunConfigHash {
 	$runRef->{"runStatsHost"}          = $self->getRunStatsHost();
 	$runRef->{"workloadStatsHost"}     = $self->getWorkloadStatsHost();
 	$runRef->{"statsOutputDirName"} = "/tmp";
-	my $driverRunPoolMultiplier = $self->getParamValue('driverRunPoolMultiplier');
-	if (!$driverRunPoolMultiplier) {
-		$driverRunPoolMultiplier = 20;
-	}
-	$runRef->{"threadPoolMultiplier"} = $driverRunPoolMultiplier;
 	$runRef->{"perTargetStats"}     = $self->getParamValue('perTargetStats');
 
 	$runRef->{"workloads"} = [];

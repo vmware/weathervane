@@ -9,16 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.vmware.weathervane.workloadDriver.common.core.Workload;
-import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.RampLoadInterval;
 
 public abstract class BaseLoadPathController implements LoadPathController {
 
@@ -32,12 +28,11 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	protected Map<String, Boolean> intervalCombinedResults = new HashMap<>();	
 	protected Map<String, Boolean> loadPathIndividualResults = new HashMap<>();
 	
-
-	private ScheduledExecutorService executorService;
-
+	private ExecutorService executorService;
+	
 	@Override
-	public void initialize(ScheduledExecutorService executorService) {
-		this.executorService = executorService;
+	public void initialize(int numWorkloads) {
+		executorService = Executors.newFixedThreadPool(numWorkloads);
 	}
 	
 	@Override

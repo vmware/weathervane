@@ -58,9 +58,7 @@ public class Run {
 	private LoadPathController loadPathController;
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
-	
-	private int threadPoolMultiplier;
-	
+		
 	private boolean perTargetStats = false;
 			
 	@JsonIgnore
@@ -85,7 +83,7 @@ public class Run {
 			System.exit(1);
 		}
 		
-		executorService = Executors.newScheduledThreadPool(threadPoolMultiplier * Runtime.getRuntime().availableProcessors());
+		executorService = Executors.newScheduledThreadPool(3 * workloads.size());
 		
 		/*
 		 * Convert all of the host names to lower case
@@ -124,7 +122,11 @@ public class Run {
 			logger.error("Error posting workload initialization to " + url);
 		}
 		
-		loadPathController.initialize(executorService);
+		/*
+		 * Let the loadPathController know how many workloads there
+		 * are so that it can size resources.
+		 */
+		loadPathController.initialize(workloads.size());
 
 		/*
 		 * Initialize the workloads
@@ -298,14 +300,6 @@ public class Run {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public int getThreadPoolMultiplier() {
-		return threadPoolMultiplier;
-	}
-
-	public void setThreadPoolMultiplier(int threadPoolMultiplier) {
-		this.threadPoolMultiplier = threadPoolMultiplier;
 	}
 
 	public void setWorkloads(List<Workload> workloads) {

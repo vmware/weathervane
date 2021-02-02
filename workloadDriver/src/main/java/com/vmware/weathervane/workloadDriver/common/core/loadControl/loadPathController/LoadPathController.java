@@ -4,11 +4,9 @@ SPDX-License-Identifier: BSD-2-Clause
 */
 package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
@@ -30,5 +28,5 @@ public interface LoadPathController {
 	
 	void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher);
 
-	void initialize(ScheduledExecutorService executorService);
+	void initialize(int numLoadPaths);
 }

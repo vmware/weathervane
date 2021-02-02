@@ -131,12 +131,13 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		} finally {
 			curStatsRWLock.writeLock().unlock();
 		}
+		logger.info("statsIntervalComplete: Released writeLock" + completeMessage);
 
 		/*
 		 * Compute a StatsSummary for the operationStats in this interval, ignoring
 		 * operations that started before this interval or ended after.
 		 */
-		logger.debug("statsIntervalComplete processing curPeriodOpStats.  Number of samples is {}", curPeriodOpStats.size());
+		logger.info("statsIntervalComplete processing curPeriodOpStats.  Number of samples is {}", curPeriodOpStats.size());
 		long intervalStartTime = completeMessage.getCurIntervalStartTime();
 		long intervalEndTime = completeMessage.getLastIntervalEndTime();
 		StatsSummary curIntervalStatsSummary = 

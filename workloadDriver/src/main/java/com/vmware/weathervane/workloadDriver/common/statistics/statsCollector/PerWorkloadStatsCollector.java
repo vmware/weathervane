@@ -142,11 +142,25 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		long intervalEndTime = completeMessage.getLastIntervalEndTime();
 		StatsSummary curIntervalStatsSummary = 
 				new StatsSummary(workloadName, operations, behaviorSpec, "all", localHostname, "");
-		curPeriodOpStats.stream()
-//					.filter(opStats -> opStats.getStartTime() >= intervalStartTime)
-//					.filter(opStats -> opStats.getEndTime() < intervalEndTime)
-					.forEach(opStats -> curIntervalStatsSummary.addStats(opStats));
-		
+		long inItervalOps = 0;
+		long outIntervalOps = 0;
+		for (OperationStats operationStats : curPeriodOpStats) {
+			if ((operationStats.getStartTime() < intervalStartTime) || (operationStats.getEndTime() >= intervalEndTime)) {
+				logger.info("statsIntervalComplete processing op outside interval. startTime = {}, endTime = {}",
+						operationStats.getStartTime(), operationStats.getEndTime());
+				outIntervalOps++;
+			} else {
+				inItervalOps++;
+			}
+			try {
+				curIntervalStatsSummary.addStats(operationStats);
+			} catch (Exception e) {
+				logger.warn("statsIntervalComplete processing op got exception after {} inIntervalOps and {} outIntervalOps",
+						inItervalOps, outIntervalOps);
+			}
+		}
+		logger.info("statsIntervalComplete processed {} inIntervalOps and {} outIntervalOps", inItervalOps, outIntervalOps);
+
 		/*
 		 * Now merge the current stats into every active statsInterval
 		 */

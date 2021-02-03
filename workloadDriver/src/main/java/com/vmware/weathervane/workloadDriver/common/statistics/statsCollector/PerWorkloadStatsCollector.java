@@ -101,7 +101,11 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		curStatsRWLock.readLock().lock();
 		logger.debug("submitOperationStats locked readLock: " + operationStats);
 		try {
-			curStatsList.add(operationStats);
+			if (operationStats != null) {
+				curStatsList.add(operationStats);
+			} else {
+				logger.warn("submitOperationStats for workload {}, received null operationStats", workloadName);
+			}
 		} finally {
 			curStatsRWLock.readLock().unlock();
 			logger.debug("submitOperationStats unlocked readLock: " + operationStats);
@@ -116,7 +120,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 	 */
 	@Override
 	public synchronized void statsIntervalComplete(StatsIntervalCompleteMessage completeMessage) {
-		logger.info("statsIntervalComplete: " + completeMessage);
+		logger.info("statsIntervalComplete for workload {}: {}", workloadName, completeMessage);
 
 		/*
 		 * First take the current stats list and replace it with a fresh list so that we don't start

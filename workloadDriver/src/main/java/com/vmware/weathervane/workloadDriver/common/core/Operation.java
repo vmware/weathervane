@@ -647,7 +647,14 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 
 			logger.debug("Submitting operationStats to statsCollector for operation " + getOperationName() + " for behavior UUID "
 						+ _behavior.getBehaviorId() );
-			_statsCollector.submitOperationStats(new OperationStats(this));
+			OperationStats opStats;
+			try {
+				opStats = new OperationStats(this);
+				_statsCollector.submitOperationStats(opStats);
+			} catch (Exception e) {
+				logger.warn("Operation:run caught exception when creating opStats: {}, {}",
+						e.getCause(), e.getMessage());
+			}
 			
 			/*
 			 * If the operation has failed, then we need to reset the user and restart 

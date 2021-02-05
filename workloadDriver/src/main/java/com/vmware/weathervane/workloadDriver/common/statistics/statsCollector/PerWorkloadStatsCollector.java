@@ -150,17 +150,16 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		long outIntervalOps = 0;
 		for (OperationStats operationStats : curPeriodOpStats) {
 			if ((operationStats.getStartTime() < intervalStartTime) || (operationStats.getEndTime() >= intervalEndTime)) {
-				logger.info("statsIntervalComplete processing op outside interval. startTime = {}, endTime = {}",
+				logger.debug("statsIntervalComplete processing op outside interval. startTime = {}, endTime = {}",
 						operationStats.getStartTime(), operationStats.getEndTime());
 				outIntervalOps++;
 			} else {
+				if (operationStats != null) {
+					curIntervalStatsSummary.addStats(operationStats);
+				} else {
+					logger.warn("statsIntervalComplete: Found null operationStats");
+				}
 				inItervalOps++;
-			}
-			try {
-				curIntervalStatsSummary.addStats(operationStats);
-			} catch (Exception e) {
-				logger.warn("statsIntervalComplete processing op got exception after {} inIntervalOps and {} outIntervalOps",
-						inItervalOps, outIntervalOps);
 			}
 		}
 		logger.info("statsIntervalComplete processed {} inIntervalOps and {} outIntervalOps", inItervalOps, outIntervalOps);

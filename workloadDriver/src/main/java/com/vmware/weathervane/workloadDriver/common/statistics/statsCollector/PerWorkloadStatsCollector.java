@@ -150,7 +150,8 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		long outIntervalOps = 0;
 		for (OperationStats operationStats : curPeriodOpStats) {
 			if (operationStats == null) {
-				logger.warn("statsIntervalComplete: caught null operationStats");
+				logger.warn("statsIntervalComplete: caught null operationStats. NumSamples = {}, inIntervalOps = {}, outIntervalOps = {}", 
+						curPeriodOpStats.size(), inItervalOps, outIntervalOps);
 				continue;
 			}
 			if ((operationStats.getStartTime() < intervalStartTime) || (operationStats.getEndTime() >= intervalEndTime)) {
@@ -198,7 +199,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		HttpEntity<StatsSummary> statsEntity = new HttpEntity<StatsSummary>(completedStats, requestHeaders);
 		String url = "http://" + masterHostName + "/stats/run/" + runName;
 		logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
-				+ " to url " + url + ", summary = " + completedStats);
+				+ " to url " + url);
 
 		ResponseEntity<BasicResponse> responseEntity 
 				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);

@@ -59,7 +59,7 @@ public class OperationStatsSummary {
 	}
 
 	public void addStats(OperationStats operationStats) {
-		logger.debug("addStats: OperationStats = " + operationStats);
+		logger.info("addStats: OperationStats = " + operationStats);
 
 		/*
 		 * Check the start and end times to make sure they were set properly
@@ -105,6 +105,8 @@ public class OperationStatsSummary {
 		}
 		
 		totalSteps += operationStats.getTotalSteps();
+		
+		logger.info("addStats: added OperationStats = " + operationStats);
 	}
 
 	public void merge(OperationStatsSummary that) {
@@ -348,7 +350,7 @@ public class OperationStatsSummary {
 		double maxLimit = mixPct + (mixPct * getMixPctTolerance());
 		
 		if ((pct < minLimit) || (pct > maxLimit)) {
-			logger.info("passedMixPct failed for operation " + operationName + ", requiredMixPct = "
+			logger.debug("passedMixPct failed for operation " + operationName + ", requiredMixPct = "
 					+ getRequiredMixPct() + ", mixTolerence = " + getMixPctTolerance() + ", pct = " 
 					+ pct + ", mixPct = " + mixPct + ", minLimit = " + minLimit 
 					+ ", maxLimit = " + maxLimit  + ", totalNumOps = " + getTotalNumOps()

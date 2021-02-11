@@ -201,11 +201,32 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
 				+ " to url " + url);
 
-		ResponseEntity<BasicResponse> responseEntity 
-				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
-		BasicResponse response = responseEntity.getBody();
-		if (responseEntity.getStatusCode() != HttpStatus.OK) {
-			logger.error("Error posting statsSummary to " + url);
+		boolean succeeded = false;
+		int tries = 5;
+		while (!succeeded && (tries > 0)) {
+			ResponseEntity<BasicResponse> responseEntity = null;
+			try {
+				tries--;
+				logger.debug("statsIntervalComplete: Starting HTTP Post to {}", url);
+				responseEntity = restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
+				logger.debug("statsIntervalComplete: Completed HTTP Post to {}", url);
+			} catch (Throwable t) {
+					logger.warn("statsIntervalComplete: Got throwable when posting to url {}: {}", 
+							url, t.getMessage());
+					if (tries == 0) {
+						// Give up and rethrow the exception
+						throw t;
+					}
+			}
+			
+			if (responseEntity != null) {
+				BasicResponse response = responseEntity.getBody();
+				if (responseEntity.getStatusCode() != HttpStatus.OK) {
+					logger.warn("Error sending stats message to " + url);
+				} else {
+					succeeded = true;
+				}
+			}
 		}
 
 		logger.info("statsIntervalComplete: sent summary for spec " + completedSpecName + " to url " + url + ". Resetting stats");

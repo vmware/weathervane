@@ -141,7 +141,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			logger.debug("start: Creating statsWatcher");
 			statsTracker = new StatsIntervalTracker();
 		}
-
+		
 		executorService.execute(this);
 
 	}
@@ -152,7 +152,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 	@Override
 	public void run() {
-		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + name );
+		logger.info("run for run {}, workload {}, loadPath {}", runName, workloadName, name);
 		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
@@ -255,7 +255,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		logger.info("Finished changeActiveUsers for loadPath {}", name);
 	}
 
-	protected StatsSummaryRollup fetchStatsSummaryRollup(String intervalNum) {
+	protected StatsSummaryRollup fetchStatsSummaryRollup(String intervalName) {
 		/*
 		 * Get the statsSummaryRollup for the previous interval over all hosts and targets
 		 */
@@ -263,7 +263,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
 		String url = "http://" + statsHostName + "/stats/run/" + runName + "/workload/" + workloadName
-				+ "/specName/" + getName() + "/intervalName/" + intervalNum +"/rollup";
+				+ "/specName/" + getName() + "/intervalName/" + intervalName +"/rollup";
 		logger.info("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
 		
 		/*
@@ -304,12 +304,12 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 	}
 
 	@Override
-	public void changeInterval(String intervalName, boolean intervalResult) {
+	public void changeInterval(long intervalNum, boolean intervalResult) {
 		/*
 		 * Base implementation for loadPath types that don't use the global
 		 * interval result.  We just log the result.
 		 */
-		logger.debug("intervalResult for interval {} = {}", intervalName, intervalResult);
+		logger.debug("intervalResult for interval {} = {}", intervalNum, intervalResult);
 	}
 	
 	@Override

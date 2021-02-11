@@ -17,7 +17,7 @@ public abstract class LoadInterval {
 	private Long duration = null;
 
 	private String name = "unset";
-	
+		
 	public void initialize() {
 		
 	}

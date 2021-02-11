@@ -168,12 +168,11 @@ public class FindMaxLoadPath extends LoadPath {
 		 */
 		boolean prevIntervalPassed = true;
 		if (intervalNum != 1) {
-			String curIntervalName = curInterval.getName();
-
 			/*
 			 * This is the not first interval. Need to know whether the previous interval
 			 * passed. Get the statsSummaryRollup for the previous interval
 			 */
+			String curIntervalName = curInterval.getName();
 			StatsSummaryRollup rollup = fetchStatsSummaryRollup(curIntervalName);
 
 			// For initial ramp, only interested in response-time

@@ -24,7 +24,7 @@ public interface LoadPathController {
 	 * @param intervalName The name of the interval to which this result belongs
 	 * @param passed True if the interval passed, false otherwise
 	 */
-	void postIntervalResult(String loadPathName, String intervalName, boolean passed);
+	void postIntervalResult(String loadPathName, Long intervalNum, boolean passed);
 	
 	void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher);
 

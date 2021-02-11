@@ -9,20 +9,27 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vmware.weathervane.workloadDriver.common.core.WorkloadStatus;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.UniformLoadInterval;
 
 public abstract class SyncedLoadPath extends LoadPath {
 	private static final Logger logger = LoggerFactory.getLogger(SyncedLoadPath.class);
 
+	
+	@JsonIgnore
+	private long curIntervalNum;
+
+	@JsonIgnore
 	private String curIntervalName;
+
+	@JsonIgnore
 	private long nextIntervalWait;
 	
 	@Override
 	public void run() {
-		logger.info("run for run " + runName + ", workload " + workloadName + ", loadPath " + getName() 
-		+ ", isStatsInterval " + getIsStatsInterval() + ", isStatsIntervalComplete " + isStatsIntervalComplete());
-		
+		logger.info("run for run {}, workload {}, loadPath {}, intervalNum {}, isStatsInterval {}, isStatsIntervalComplete {}", 
+				runName, workloadName, getName(), curIntervalNum, getIsStatsInterval(), isStatsIntervalComplete());		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
 		 */
@@ -42,28 +49,28 @@ public abstract class SyncedLoadPath extends LoadPath {
 			/*
 			 * Post the result to the loadPathController
 			 */
-			loadPathController.postIntervalResult(getName(), curIntervalName, result.isPassed());
+			loadPathController.postIntervalResult(getName(), curIntervalNum, result.isPassed());
 		} else {
 			/*
 			 * Invoke the steps to get the next interval directly
 			 */
-			this.changeInterval(curIntervalName, result.isPassed());
+			this.changeInterval(curIntervalNum, result.isPassed());
 			this.startNextInterval();
 		}
 
 	}
 	
 	@Override
-	public void changeInterval(String intervalName, boolean intervalResult) {
-		logger.info("changeInterval for interval {} = {}", intervalName, intervalResult);
+	public void changeInterval(long intervalNum, boolean intervalResult) {
+		logger.info("changeInterval for interval {} = {}", intervalNum, intervalResult);
 		
-		if (!intervalName.equals(curIntervalName)) {
+		if (intervalNum != curIntervalNum) {
 			/*
 			 *  Got a result for the wrong interval.  Something
 			 *  has gone wrong so we end things here.
 			 */
 			logger.warn("changeInterval: expecting result for interval {}, got result for interval {}", 
-					curIntervalName, intervalName);
+					curIntervalNum, intervalNum);
 			WorkloadStatus status = new WorkloadStatus();
 			status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 			status.setMaxPassUsers(0);
@@ -103,13 +110,14 @@ public abstract class SyncedLoadPath extends LoadPath {
 		logger.info("startNextInterval: interval duration is " + nextIntervalWait + " seconds");
 		if (!isFinished() && (nextIntervalWait > 0)) {
 			logger.debug("startNextInterval: sleeping for  " + nextIntervalWait + " seconds");
+			curIntervalNum++;;
 			getExecutorService().schedule(this, nextIntervalWait, TimeUnit.SECONDS);
 			// The interval really starts now
 			getStatsTracker().setCurIntervalStartTime(System.currentTimeMillis());
 
 		}
 	}
-
+	
 	protected abstract IntervalCompleteResult intervalComplete();
 
 	protected abstract UniformLoadInterval getNextIntervalSynced(boolean passed);

@@ -67,7 +67,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	private long curUsers = 0;
 
 	@JsonIgnore
-	private long intervalNum = 0;
+	private long phaseIntervalNum = 0;
 
 	@JsonIgnore
 	private UniformLoadInterval curInterval = null;
@@ -175,7 +175,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	@JsonIgnore
 	private IntervalCompleteResult initialRampIntervalComplete() {
 		logger.debug("initialRampIntervalComplete loadPath {}, intervalNum {}",
-				this.getName(), intervalNum);
+				this.getName(), phaseIntervalNum);
 		IntervalCompleteResult result = new IntervalCompleteResult();
 		result.setIntervalName(curInterval.getName());
 		result.setDecisionInterval(true);
@@ -184,7 +184,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		 * based on the results of the previous interval.
 		 */
 		boolean prevIntervalPassed = true;
-		if (intervalNum > 1) {
+		if (phaseIntervalNum > 1) {
 			String curIntervalName = curInterval.getName();
 
 			/*
@@ -198,7 +198,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 				/*
 				 * We always pass the first interval as well to avoid warmup issues
 				 */
-				if (intervalNum != 2) {
+				if (phaseIntervalNum != 2) {
 					/*
 					 * InitialRamp intervals pass if 99% of all operations pass response-time QOS. The mix QoS
 					 * is not used in initialRamp
@@ -217,7 +217,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		}
 		
 		logger.info("initialRampIntervalComplete " + this.getName() 
-			+ ": Interval " + intervalNum + " prevIntervalPassed = "
+			+ ": Interval " + phaseIntervalNum + " prevIntervalPassed = "
 			+ prevIntervalPassed);
 		return result;
 	}
@@ -226,8 +226,8 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 	private UniformLoadInterval getNextInitialRampInterval(boolean prevIntervalPassed) {
 
 		UniformLoadInterval nextInterval = curInterval;
-		intervalNum++;
-		logger.debug("getNextInitialRampInterval " + this.getName() + ": interval " + intervalNum);
+		phaseIntervalNum++;
+		logger.debug("getNextInitialRampInterval " + this.getName() + ": interval " + phaseIntervalNum);
 
 		/*
 		 * If the previous interval failed, then to go to
@@ -290,7 +290,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 				prevIntervalPassed = rollup.isIntervalPassed();
 				getIntervalStatsSummaries().add(rollup);
 			}
-			logger.debug("otherIntervalComplete " + this.getName() + ": Interval " + intervalNum
+			logger.debug("otherIntervalComplete " + this.getName() + ": Interval " + phaseIntervalNum
 					+ " prevIntervalPassed = " + prevIntervalPassed);
 			result.setDecisionInterval(true);
 			result.setPassed(prevIntervalPassed);
@@ -300,14 +300,14 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	@JsonIgnore
 	private UniformLoadInterval nextInterval(boolean prevIntervalPassed) {
-		intervalNum++;
+		phaseIntervalNum++;
 		if (loadPathComplete) {
-			curInterval.setName("PostRun-" + intervalNum);
+			curInterval.setName("PostRun-" + phaseIntervalNum);
 			return curInterval;
 		}
 		
 		if (!rampIntervals.isEmpty()) {
-			logger.debug("nextInterval {}: returning next ramp subinterval for interval {}", getName(), intervalNum);
+			logger.debug("nextInterval {}: returning next ramp subinterval for interval {}", getName(), phaseIntervalNum);
 			return rampIntervals.pop();				
 		} else {
 			if (SubInterval.RAMP.equals(nextSubInterval)) {
@@ -496,7 +496,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 				/*
 				 * Set up an interval for WARMUP
 				 */
-				logger.debug("getNextFindFirstMaxInterval " + getName() + ": WARMUP subinterval for interval " + intervalNum);
+				logger.debug("getNextFindFirstMaxInterval " + getName() + ": WARMUP subinterval for interval " + phaseIntervalNum);
 				UniformLoadInterval nextInterval = new UniformLoadInterval();
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(warmupIntervalSec);
@@ -519,7 +519,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 				 * Do the sub-interval used for decisions. This is run at the same number of
 				 * users for the previous interval, but with the non-warmup duration
 				 */
-				logger.debug("getNextFindFirstMaxInterval " + getName() + ": STEADY subinterval for interval " + intervalNum);
+				logger.debug("getNextFindFirstMaxInterval " + getName() + ": STEADY subinterval for interval " + phaseIntervalNum);
 				UniformLoadInterval nextInterval = new UniformLoadInterval();
 				nextInterval.setUsers(curUsers);
 				nextInterval.setDuration(getQosPeriodSec());
@@ -555,7 +555,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 		curRateStep = (long) Math.ceil(maxPassUsers * getFindMaxStopPct());
 		curUsers = maxPassUsers;
 
-		intervalNum = 0;
+		phaseIntervalNum = 0;
 		numSucessiveIntervalsPassed = 0;
 		numSucessiveIntervalsFailed = 0;
 		curPhase = Phase.VERIFYMAX;
@@ -614,7 +614,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 			logger.debug("moveToFindFirstMax " + getName() + ": rounding curUsers from "+logCurUsers+ " to "+curUsers);
 		}
 
-		intervalNum = 0;
+		phaseIntervalNum = 0;
 		numSucessiveIntervalsPassed = 0;
 		numSucessiveIntervalsFailed = 0;
 		curPhase = Phase.FINDFIRSTMAX;
@@ -730,7 +730,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 	private void loadPathComplete(boolean passed) {
 		loadPathComplete = true;
-		intervalNum = 0;
+		phaseIntervalNum = 0;
 		WorkloadStatus status = new WorkloadStatus();
 		status.setIntervalStatsSummaries(getIntervalStatsSummaries());
 		status.setMaxPassUsers(maxPassUsers);
@@ -740,7 +740,7 @@ public class SyncedFindMaxLoadPath extends SyncedLoadPath {
 
 		curInterval.setUsers(maxPassUsers);
 		curInterval.setDuration(getQosPeriodSec());
-		curInterval.setName("PostRun-" + intervalNum);
+		curInterval.setName("PostRun-" + phaseIntervalNum);
 
 		curStatusInterval.setName(curInterval.getName());
 		curStatusInterval.setStartUsers(curUsers);

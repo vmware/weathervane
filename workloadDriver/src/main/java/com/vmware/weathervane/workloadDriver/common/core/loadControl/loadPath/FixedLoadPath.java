@@ -224,6 +224,7 @@ public class FixedLoadPath extends LoadPath {
 				}
 				status.setPassed(passedQos);
 				status.setLoadPathName(this.getName());
+				loadPathController.removeIntervalResultCallback(getName());
 				workload.loadPathComplete(status);
 			}
 			curPhaseInterval++;

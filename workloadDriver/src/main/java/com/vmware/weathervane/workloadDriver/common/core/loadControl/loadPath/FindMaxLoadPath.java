@@ -697,6 +697,7 @@ public class FindMaxLoadPath extends LoadPath {
 		curStatusInterval.setEndUsers(curUsers);
 		curStatusInterval.setDuration(getQosPeriodSec());
 
+		loadPathController.removeIntervalResultCallback(getName());
 		workload.loadPathComplete(status);
 	}
 

@@ -29,4 +29,6 @@ public interface LoadPathController {
 	void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher);
 
 	void initialize(int numLoadPaths);
+
+	void removeIntervalResultCallback(String name);
 }

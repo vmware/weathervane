@@ -46,6 +46,16 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	}
 
 	@Override
+	public void removeIntervalResultCallback(String name) {
+		logger.debug("removeIntervalResultCallback for loadPath {}", name);
+
+		watchers.remove(name);
+		numWatchers--;
+		logger.debug("registerIntervalResultCallback for loadPath {}, numWatchers = {}", 
+				name, numWatchers);
+	}
+
+	@Override
 	public synchronized void postIntervalResult(String loadPathName, Long intervalNum, boolean passed) {
 		logger.info("postIntervalResult for loadPath {}, interval {}, passed {}",
 				loadPathName, intervalNum, passed);

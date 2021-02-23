@@ -586,6 +586,8 @@ public class Behavior implements OperationCompleteCallback {
 
 			result.setHttpTransport(_httpTransport);
 			result.registerOperationCompleteCallback(this);
+			result.setBehaviorName(getBehaviorSpec().getName());
+			result.setMainBehavior(_parentBehavior == null);
 			
 			logger.debug("nextRequest User = " + _user.getId() + " behavior ID = " + _behaviorId
 					+ " generated operation " + result.getOperationName() + " with behaviorId "

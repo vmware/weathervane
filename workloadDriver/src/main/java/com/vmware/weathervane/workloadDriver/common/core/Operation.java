@@ -216,7 +216,11 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 	private List<SimpleUri> _postUrls = new ArrayList<SimpleUri>();
 
 	// Used to collect execution metrics
-	protected long _totalSteps    = 0; 
+	protected long _totalSteps    = 0;
+
+	private String behaviorName;
+
+	private boolean mainBehavior; 
 	
 	abstract public String provideOperationName();
 
@@ -1084,7 +1088,23 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 	public long getCycleTime() {
 		return _cycleTime;
 	}
-	
+
+	public void setBehaviorName(String name) {
+		this.behaviorName = name;		
+	}
+
+	public String getBehaviorName() {
+		return this.behaviorName;		
+	}	
+
+	public void setMainBehavior(boolean isMainBehavior) {
+		this.mainBehavior = isMainBehavior;
+	}
+
+	public boolean isMainBehavior() {
+		return this.mainBehavior;
+	}
+
 	public int getOperationIndex() { return this._operationIndex; }
 	public void setOperationIndex(int _operationIndex) {
 		this._operationIndex = _operationIndex;
@@ -1510,6 +1530,4 @@ public abstract class Operation implements Runnable, HttpRequestCompleteCallback
 	public int getRequestsOutstanding() {
 		return _requestsOutstanding.get();
 	}
-
-	
 }

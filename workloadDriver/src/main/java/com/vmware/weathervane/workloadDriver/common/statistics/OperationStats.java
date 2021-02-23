@@ -7,6 +7,8 @@ package com.vmware.weathervane.workloadDriver.common.statistics;
 import com.vmware.weathervane.workloadDriver.common.core.Operation;
 
 public class OperationStats {
+	private String behaviorName = null;
+	private boolean mainBehavior = false;
 	private String targetName = null;
 	
 	private int operationIndex = 0;
@@ -21,6 +23,8 @@ public class OperationStats {
 	private long totalSteps;
 			
 	public OperationStats(Operation operation) {
+		this.setBehaviorName(operation.getBehaviorName());
+		this.setMainBehavior(operation.isMainBehavior());
 		this.setTargetName(operation.getTarget().getName());
 		this.operationIndex = operation.getOperationIndex();
 		this.operationName = operation.getOperationName();
@@ -32,6 +36,22 @@ public class OperationStats {
 		this.totalSteps = operation.getTotalSteps();		
 	}
 	
+	public String getBehaviorName() {
+		return behaviorName;
+	}
+
+	public void setBehaviorName(String behaviorName) {
+		this.behaviorName = behaviorName;
+	}
+
+	public boolean isMainBehavior() {
+		return mainBehavior;
+	}
+
+	public void setMainBehavior(boolean mainBehavior) {
+		this.mainBehavior = mainBehavior;
+	}
+
 	public String getTargetName() {
 		return targetName;
 	}

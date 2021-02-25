@@ -82,6 +82,7 @@ public class StatsServiceImpl implements StatsService {
 			 * Store the interval name so that we can print the intervals out in
 			 * the order that they occurred
 			 */
+			logger.debug("postStatsSummary: adding interval name {} to intervalorderQueue", intervalName);
 			Map<String, Queue<String>> statsSpecToIntervalOrder = workloadToStatsSpecToIntervalOrder.get(workloadName);
 			if (statsSpecToIntervalOrder == null) {
 				statsSpecToIntervalOrder = new HashMap<String, Queue<String>>();
@@ -105,6 +106,7 @@ public class StatsServiceImpl implements StatsService {
 			/*
 			 * Aggregate the stats 
 			 */
+			logger.debug("postStatsSummary: aggregating stats");
 			Map<String, Map<String, StatsSummary>> workloadAggregatedStats = aggregatedStatsSummaries.get(workloadName);
 			Map<String, Map<String, Integer>> workloadSamplesReceived = receivedSamplesPerSpecAndInterval.get(workloadName);
 			if (workloadAggregatedStats == null) {
@@ -134,6 +136,7 @@ public class StatsServiceImpl implements StatsService {
 			/* 
 			 * Merge in the new sample
 			 */
+			logger.debug("postStatsSummary: merging sample");
 			intervalAggregatedStats.merge(statsSummary);
 			intervalSamplesReceived += 1;
 			specSamplesReceived.put(intervalName, intervalSamplesReceived);

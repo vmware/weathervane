@@ -126,7 +126,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		this.statsHostName = statsHostName;
 		this.restTemplate = restTemplate;
 		this.curStatusInterval = new RampLoadInterval();
-		notifyExecutor = Executors.newFixedThreadPool(hosts.size());
+		notifyExecutor = Executors.newFixedThreadPool(8);
 	}
 
 	public void start() {

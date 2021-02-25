@@ -89,7 +89,7 @@ public abstract class StatsIntervalSpec implements Runnable {
 		this.hosts = hosts;
 		this.restTemplate = resetTemplate;
 		this.statsExecutor = executorService;	
-		notifyExecutor = Executors.newFixedThreadPool(hosts.size());
+		notifyExecutor = Executors.newFixedThreadPool(8);
 	}
 
 	public void start() {

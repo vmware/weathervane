@@ -35,8 +35,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 package com.vmware.weathervane.workloadDriver.common.core;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,6 +210,21 @@ public class BehaviorSpec
 			matrixString.append("],\n");
 			logger.debug(matrixString.toString());
 		}
+	}
+	
+	@JsonIgnore
+	public Set<String> getSubBehaviorNames() {
+		Set<String> names = new HashSet<>();
+		names.add(getName());
+		Arrays.asList(asyncBehaviors).stream()
+			.filter(name -> !name.equals("none"))
+			.filter(name -> !names.contains(name))
+			.forEach(name -> {
+				names.add(name);
+				BehaviorSpec subBeh = BehaviorSpec.getBehaviorSpec(name);
+				names.addAll(subBeh.getSubBehaviorNames());
+			});
+		return names;		
 	}
 	
 	public Double[][][] getSelectionMix()

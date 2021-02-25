@@ -8,6 +8,8 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +44,8 @@ public class StatsSummary {
 	private Boolean printIntervals = null;
 	private Boolean printCsv = null;
 	
-	private Map<String, OperationStatsSummary> opNameToStatsMap = new HashMap<String, OperationStatsSummary>();
+	private Map<String, Map<String,OperationStatsSummary>> behaviorSpecToOpNameToStatsMap = new HashMap<>();
+	private Set<String> behaviorSpecNames;
 	
 	@JsonIgnore
 	private StatsSummaryRollup statsSummaryRollup = null;
@@ -59,26 +62,37 @@ public class StatsSummary {
 		this.hostName = hostname;
 		this.statsIntervalSpecName = statsIntervalSpecName;
 		
+		behaviorSpecNames = behaviorSpec.getSubBehaviorNames();		
 		/*
-		 * Initialize the opNameToStatsMap so that we always have a summary 
-		 * for stats for every op, even if there have been no instances
+		 * Create a set of operationStats for each behaviorSpec
+		 * we may encounter
 		 */
-		for (Operation op : operations) {
-			logger.debug("StatsSummary constructor: creating OperationStatsSummary for {}",
-					op.getOperationName());
-			String operationName = op.getOperationName();
-			int operationIndex = op.getOperationIndex();
-			long rtLimit = behaviorSpec.getResponseTimeLimit(operationIndex);
-			double rtLimitPctile = behaviorSpec.getResponseTimeLimitPercentile(operationIndex);
-			boolean useRt = behaviorSpec.getUseResponseTime(operationIndex);
-			double rqdMixPct = behaviorSpec.getMixPercentage(operationIndex);
-			double mixTolerance = behaviorSpec.getMixPercentageTolerance(operationIndex);
-			double allowedFailurePercent = behaviorSpec.getAllowedFailurePercent(operationIndex);
-			opNameToStatsMap.put(operationName,
-					new OperationStatsSummary(operationName, operationIndex, rtLimit,
-							rtLimitPctile, useRt, rqdMixPct, mixTolerance, allowedFailurePercent));
+		for (String behaviorSpecName: getBehaviorSpecNames()) {
+			Map<String,OperationStatsSummary> opNameToStatsMap = new HashMap<>();
+			BehaviorSpec bSpec = BehaviorSpec.getBehaviorSpec(behaviorSpecName);
+			/*
+			 * Initialize the opNameToStatsMap so that we always have a summary 
+			 * for stats for every op, even if there have been no instances
+			 */
+			for (Operation op : operations) {
+				logger.debug("StatsSummary constructor: creating OperationStatsSummary for {}",
+						op.getOperationName());
+				String operationName = op.getOperationName();
+				int operationIndex = op.getOperationIndex();
+				long rtLimit = bSpec.getResponseTimeLimit(operationIndex);
+				double rtLimitPctile = bSpec.getResponseTimeLimitPercentile(operationIndex);
+				boolean useRt = bSpec.getUseResponseTime(operationIndex);
+				double rqdMixPct = bSpec.getMixPercentage(operationIndex);
+				double mixTolerance = bSpec.getMixPercentageTolerance(operationIndex);
+				double allowedFailurePercent = bSpec.getAllowedFailurePercent(operationIndex);
+				opNameToStatsMap.put(operationName,
+						new OperationStatsSummary(operationName, operationIndex, rtLimit,
+								rtLimitPctile, useRt, rqdMixPct, mixTolerance, allowedFailurePercent));
 
+			}
+			behaviorSpecToOpNameToStatsMap.put(behaviorSpecName, opNameToStatsMap);
 		}
+		
 	}
 
 	public void addStats(OperationStats operationStats) {
@@ -88,7 +102,10 @@ public class StatsSummary {
 		 * Adding stats invalidates any rollup
 		 */
 		statsSummaryRollup = null;
-				
+			
+		String behaviorSpecName = operationStats.getBehaviorName();
+		Map<String,OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+		
 		String operationName = operationStats.getOperationName();
 		OperationStatsSummary operationStatsSummary = opNameToStatsMap.get(operationName);
 		operationStatsSummary.addStats(operationStats);
@@ -119,21 +136,25 @@ public class StatsSummary {
 		if (this.intervalName == null) {
 			this.intervalName = that.intervalName;
 		}
-		Set<String> allOpNames = new HashSet<String>();
-		allOpNames.addAll(this.opNameToStatsMap.keySet());
-		allOpNames.addAll(that.getOpNameToStatsMap().keySet());
 		
-		
-		for (String opName : allOpNames) {
-			if (!this.opNameToStatsMap.containsKey(opName)) {
-				this.opNameToStatsMap.put(opName, new OperationStatsSummary());
-			}
+		for (String behaviorSpecName: getBehaviorSpecNames()) {
+			Set<String> allOpNames = new HashSet<String>();
+			Map<String, OperationStatsSummary> thisOpStats = this.behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			Map<String, OperationStatsSummary> thatOpStats = that.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
+			allOpNames.addAll(thisOpStats.keySet());
+			allOpNames.addAll(thatOpStats.keySet());
+			
+			for (String opName : allOpNames) {
+				if (!thisOpStats.containsKey(opName)) {
+					thisOpStats.put(opName, new OperationStatsSummary());
+				}
 
-			if (that.getOpNameToStatsMap().containsKey(opName)) {
-					this.opNameToStatsMap.get(opName).merge(that.getOpNameToStatsMap().get(opName));
-			}
+				if (thatOpStats.containsKey(opName)) {
+					thisOpStats.get(opName).merge(thatOpStats.get(opName));
+				}
+			}	
 		}
-		
+				
 		if (this.startActiveUsers == -1) {
 			this.startActiveUsers = that.startActiveUsers;
 		}
@@ -168,13 +189,16 @@ public class StatsSummary {
 	public void reset() {
 		startActiveUsers = -1;
 		endActiveUsers = -1;
-		for (OperationStatsSummary summary : opNameToStatsMap.values()) {
-			summary.reset();
+		for (String behaviorSpecName: getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> thisOpStats = this.behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (OperationStatsSummary summary : thisOpStats.values()) {
+				summary.reset();
+			}
 		}
 	}
 	
-	public Map<String, OperationStatsSummary> getOpNameToStatsMap() {
-		return opNameToStatsMap;
+	public Map<String, Map<String, OperationStatsSummary>> getBehaviorSpecToOpNameToStatsMap() {
+		return behaviorSpecToOpNameToStatsMap;
 	}
 
 	public String getWorkloadName() {
@@ -199,10 +223,6 @@ public class StatsSummary {
 
 	public void setStatsIntervalSpecName(String statsIntervalSpecName) {
 		this.statsIntervalSpecName = statsIntervalSpecName;
-	}
-
-	public void setOpNameToStatsMap(Map<String, OperationStatsSummary> opNameToStatsMap) {
-		this.opNameToStatsMap = opNameToStatsMap;
 	}
 
 	public Long getIntervalStartTime() {
@@ -325,22 +345,23 @@ public class StatsSummary {
 		
 
 		/*
-		 * Compute the stats aggregated over all of the operations
+		 * Include the per-operation stats
 		 */
 		StringBuilder allOpString = new StringBuilder();
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
-			if (computedOpStatsSummary == null) {
-				continue;
-			}
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : behaviorSpecToOpNameToStatsMap.keySet()) {
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(behaviorSpecName, opName);
+				if (computedOpStatsSummary == null) {
+					continue;
+				}
 
-			allOpString.append(opName + ":" + opStatsSummary.getTotalNumOps() + "/" + 
-					opStatsSummary.getTotalNumFailedRT() + "(" + 
-					opStatsSummary.getResponseTimeLimit() 
-					+ "/" + doubleFormat3.format(computedOpStatsSummary.getAvgRt())
-					+ "/" + doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt())
-					+ "), ");
+				allOpString.append(opName + ":" + opStatsSummary.getTotalNumOps() + "/"
+						+ opStatsSummary.getTotalNumFailedRT() + "(" + opStatsSummary.getResponseTimeLimit() + "/"
+						+ doubleFormat3.format(computedOpStatsSummary.getAvgRt()) + "/"
+						+ doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt()) + "), ");
+			}
 		}
 
 		String throughput = doubleFormat2.format(statsSummaryRollup.getThroughput());
@@ -366,17 +387,19 @@ public class StatsSummary {
 		retVal.append("Interval Start, Interval End, Duration (s), Interval, Workload, Target, StatsInterval, Host, Start Users, End Users, TP (ops/s), Effective TP (ops/s),  Avg RT (sec)," +
 						"Ops Total, Ops Failed, Ops Fail RT");
 
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			retVal.append(", " + opName + " TP");
-			retVal.append(", " + opName + " Effective TP");
-			retVal.append(", " + opName + " Total Ops");
-			retVal.append(", " + opName + " Ops Failed");
-			retVal.append(", " + opName + " Ops Failed RT");
-			retVal.append(", " + opName + " Percent Passing");
-			retVal.append(", " + opName + " Average RT");
-			retVal.append(", " + opName + " Average Failing RT");
-			retVal.append(", " + opName + " Average CycleTime");
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				retVal.append(", " + behaviorSpecName + "-" + opName + " TP");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Effective TP");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Total Ops");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Ops Failed");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Ops Failed RT");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Percent Passing");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Average RT");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Average Failing RT");
+				retVal.append(", " + behaviorSpecName + "-" + opName + " Average CycleTime");
+			}
 		}
 
 		return retVal.toString();
@@ -414,33 +437,28 @@ public class StatsSummary {
 		doubleFormat2.setRoundingMode(RoundingMode.HALF_UP);
 		doubleFormat3.setRoundingMode(RoundingMode.HALF_UP);
 		StringBuilder allOpString = new StringBuilder();
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
-			if (computedOpStatsSummary == null) {
-				continue;
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(behaviorSpecName, opName);
+				if (computedOpStatsSummary == null) {
+					continue;
+				}
+
+				String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
+				String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
+				String passingPct = doubleFormat2.format(computedOpStatsSummary.getPassingPct());
+				String avgRT = doubleFormat3.format(computedOpStatsSummary.getAvgRt());
+				String avgFailedRT = doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt());
+				String avgCycleTime = doubleFormat2.format(computedOpStatsSummary.getAvgCycleTime());
+
+				allOpString.append(", " + throughput + ", " + throughputPassing + ", " + opStatsSummary.getTotalNumOps()
+						+ ", " + opStatsSummary.getTotalNumFailed() + ", " + opStatsSummary.getTotalNumFailedRT() + ", "
+						+ passingPct + ", " + avgRT + ", " + avgFailedRT + ", " + avgCycleTime);
+
 			}
-			
-			String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
-			String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
-			String passingPct = doubleFormat2.format(computedOpStatsSummary.getPassingPct());
-			String avgRT = doubleFormat3.format(computedOpStatsSummary.getAvgRt());
-			String avgFailedRT = doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt());
-			String avgCycleTime = doubleFormat2.format(computedOpStatsSummary.getAvgCycleTime());
-
-			allOpString.append(", " + throughput
-					+ ", " + throughputPassing
-					+ ", " + opStatsSummary.getTotalNumOps()
-					+ ", " + opStatsSummary.getTotalNumFailed()
-					+ ", " + opStatsSummary.getTotalNumFailedRT()
-					+ ", " + passingPct
-					+ ", " + avgRT
-					+ ", " + avgFailedRT
-					+ ", " + avgCycleTime
-					);
-
 		}
-
 		String throughput = doubleFormat2.format(statsSummaryRollup.getThroughput());
 		String throughputPassing = doubleFormat2.format(statsSummaryRollup.getEffectiveThroughput());
 		String avgRT = doubleFormat3.format(statsSummaryRollup.getAvgRT());
@@ -467,17 +485,19 @@ public class StatsSummary {
 						"TP (ops/s), Effective TP (ops/s),  Avg RT (sec)," +
 						"Ops Total, Ops Failed, Ops Fail RT");
 
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			retVal.append(", " + opName + " TP");
-			retVal.append(", " + opName + " Effective TP");
-			retVal.append(", " + opName + " Total Ops");
-			retVal.append(", " + opName + " Ops Failed");
-			retVal.append(", " + opName + " Ops Failed RT");
-			retVal.append(", " + opName + " Percent Passing");
-			retVal.append(", " + opName + " Average RT");
-			retVal.append(", " + opName + " Average Failing RT");
-			retVal.append(", " + opName + " Average CycleTime");
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				retVal.append(", " + opName + " TP");
+				retVal.append(", " + opName + " Effective TP");
+				retVal.append(", " + opName + " Total Ops");
+				retVal.append(", " + opName + " Ops Failed");
+				retVal.append(", " + opName + " Ops Failed RT");
+				retVal.append(", " + opName + " Percent Passing");
+				retVal.append(", " + opName + " Average RT");
+				retVal.append(", " + opName + " Average Failing RT");
+				retVal.append(", " + opName + " Average CycleTime");
+			}
 		}
 
 		return retVal.toString();
@@ -520,31 +540,27 @@ public class StatsSummary {
 		 * Compute the stats aggregated over all of the operations
 		 */
 		StringBuilder allOpString = new StringBuilder();
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
-			if (computedOpStatsSummary == null) {
-				continue;
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(behaviorSpecName, opName);
+				if (computedOpStatsSummary == null) {
+					continue;
+				}
+
+				String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
+				String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
+				String passingPct = doubleFormat2.format(computedOpStatsSummary.getPassingPct());
+				String avgRT = doubleFormat3.format(computedOpStatsSummary.getAvgRt());
+				String avgFailedRT = doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt());
+				String avgCycleTime = doubleFormat2.format(computedOpStatsSummary.getAvgCycleTime());
+
+				allOpString.append(", " + throughput + ", " + throughputPassing + ", " + opStatsSummary.getTotalNumOps()
+						+ ", " + opStatsSummary.getTotalNumFailed() + ", " + opStatsSummary.getTotalNumFailedRT() + ", "
+						+ passingPct + ", " + avgRT + ", " + avgFailedRT + ", " + avgCycleTime);
+
 			}
-			
-			String throughput = doubleFormat2.format(computedOpStatsSummary.getThroughput());
-			String throughputPassing = doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput());
-			String passingPct = doubleFormat2.format(computedOpStatsSummary.getPassingPct());
-			String avgRT = doubleFormat3.format(computedOpStatsSummary.getAvgRt());
-			String avgFailedRT = doubleFormat3.format(computedOpStatsSummary.getAvgFailedRt());
-			String avgCycleTime = doubleFormat2.format(computedOpStatsSummary.getAvgCycleTime());
-
-			allOpString.append(", " + throughput
-					+ ", " + throughputPassing
-					+ ", " + opStatsSummary.getTotalNumOps()
-					+ ", " + opStatsSummary.getTotalNumFailed()
-					+ ", " + opStatsSummary.getTotalNumFailedRT()
-					+ ", " + passingPct
-					+ ", " + avgRT
-					+ ", " + avgFailedRT
-					+ ", " + avgCycleTime
-					);
-
 		}
 
 		String throughput = doubleFormat2.format(statsSummaryRollup.getThroughput());
@@ -615,41 +631,48 @@ public class StatsSummary {
 		retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"
 				, "Time (Sec)", "Time (Sec)", "Time (Sec)", "Throughput", "Percentage", "Percent", "Ops", "Failures", "RT Failures"));
 		
-		for (String opName : opNameToStatsMap.keySet()) {
-			if (!opNameToStatsMap.containsKey(opName)) {
-				continue;
+
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			retVal.append("Detailed stats for behaviorSpec " + behaviorSpecName + "{}\n");
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				if (!opNameToStatsMap.containsKey(opName)) {
+					continue;
+				}
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(behaviorSpecName, opName);
+				if ((computedOpStatsSummary != null) && (opStatsSummary.getTotalNumOps() > 0)) {
+					retVal.append(String.format(opLineOutputFormat, opName, computedOpStatsSummary.isPassed(),
+							computedOpStatsSummary.isPassedRt(), computedOpStatsSummary.isPassedMixPct(),
+							doubleFormat2.format(computedOpStatsSummary.getThroughput()),
+							doubleFormat3.format(computedOpStatsSummary.getAvgRt()),
+							doubleFormat2.format(opStatsSummary.getMinResponseTime() / 1000.0),
+							doubleFormat2.format(opStatsSummary.getMaxResponseTime() / 1000.0),
+							doubleFormat3.format(computedOpStatsSummary.getAvgCycleTime()),
+							doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput()),
+							doubleFormat2.format(computedOpStatsSummary.getMixPct() * 100),
+							doubleFormat2.format(computedOpStatsSummary.getPassingPct() * 100),
+							opStatsSummary.getTotalNumOps(), opStatsSummary.getTotalNumFailed(),
+							opStatsSummary.getTotalNumFailedRT()));
+				}
+
 			}
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(opName);
-			if ((computedOpStatsSummary != null) && (opStatsSummary.getTotalNumOps()  > 0)) {
-				retVal.append(String.format(opLineOutputFormat, opName, computedOpStatsSummary.isPassed(), computedOpStatsSummary.isPassedRt(),
-						computedOpStatsSummary.isPassedMixPct(), doubleFormat2.format(computedOpStatsSummary.getThroughput()),
-						doubleFormat3.format(computedOpStatsSummary.getAvgRt()), doubleFormat2.format(opStatsSummary.getMinResponseTime() / 1000.0),
-						doubleFormat2.format(opStatsSummary.getMaxResponseTime() / 1000.0), 
-						doubleFormat3.format(computedOpStatsSummary.getAvgCycleTime()),
-						doubleFormat2.format(computedOpStatsSummary.getEffectiveThroughput()),
-						doubleFormat2.format(computedOpStatsSummary.getMixPct() * 100),
-						doubleFormat2.format(computedOpStatsSummary.getPassingPct() * 100),
-						opStatsSummary.getTotalNumOps(), opStatsSummary.getTotalNumFailed(), opStatsSummary.getTotalNumFailedRT()
-						));
+
+			/*
+			 * Add the operation failure info
+			 */
+			retVal.append("Operation Failure-Description:Count\n");
+			for (Map.Entry<String, OperationStatsSummary> opEntry : opNameToStatsMap.entrySet()) {
+				Map<String, Long> failureStringCounts = opEntry.getValue().getFailureStringCounts();
+				if ((failureStringCounts != null) && (!failureStringCounts.isEmpty())) {
+					retVal.append(opEntry.getKey() + " failures:\n");
+					retVal.append(failureStringCounts.entrySet().stream()
+							.map(e -> "\t" + e.getKey() + ": " + e.getValue() + "\n")
+							.reduce("", String::concat));
+				}
 			}
-			
 		}
-		
-		/*
-		 * Add the operation failure info
-		 */
-		retVal.append("Operation Failure-Description:Count\n");
-		for (Map.Entry<String, OperationStatsSummary> opEntry : opNameToStatsMap.entrySet()) {
-			Map<String, Long> failureStringCounts = opEntry.getValue().getFailureStringCounts();
-			if ((failureStringCounts != null) && (!failureStringCounts.isEmpty())) {
-				retVal.append(opEntry.getKey() + " failures:\n");
-				retVal.append(failureStringCounts.entrySet().stream()
-						.map(e -> "\t" + e.getKey() + ": " + e.getValue() + "\n")
-						.reduce("", String::concat));
-			}
-		}
-		
+				
 		return retVal.toString();
 	}
 	
@@ -661,6 +684,10 @@ public class StatsSummary {
 		}
 
 		return statsSummaryRollup;
+	}
+
+	public Set<String> getBehaviorSpecNames() {
+		return behaviorSpecNames;
 	}
 
 	@Override
@@ -675,10 +702,12 @@ public class StatsSummary {
 		retVal.append(", printSummary = " + printSummary);
 		retVal.append(", printIntervals = " + printIntervals);
 		retVal.append(", printCsv = " + printCsv);
-		for (OperationStatsSummary opSummary : opNameToStatsMap.values()) {
-			retVal.append("; " + opSummary.toString());
+		for (String behaviorSpecName : getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+			for (OperationStatsSummary opSummary : opNameToStatsMap.values()) {
+				retVal.append("; " + opSummary.toString());
+			}
 		}
-		
 		return retVal.toString();
 	}	
 

@@ -4,7 +4,9 @@ SPDX-License-Identifier: BSD-2-Clause
 */
 package com.vmware.weathervane.workloadDriver.common.statistics;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -36,8 +38,9 @@ public class StatsSummaryRollup {
 	private boolean intervalPassedFailure = true;
 	private long startActiveUsers = -1;
 	private long endActiveUsers = -1;
+	private Map<String, PerBehaviorStatsRollup> perBehaviorStats;
 
-	private Map<String, ComputedOpStatsSummary> computedOpStatsSummaries = new HashMap<String, ComputedOpStatsSummary>();
+	private Map<String, Map<String, ComputedOpStatsSummary>> behaviorSpecToComputedOpStatsSummaries = new HashMap<>();
 	private static final Logger logger = LoggerFactory.getLogger(StatsSummaryRollup.class);
 
 	public void doRollup(StatsSummary statsSummary) {			
@@ -54,18 +57,31 @@ public class StatsSummaryRollup {
 		 * First calculate the overall metrics.  We need these to calculate some of the 
 		 * per-op metrics
 		 */
-		Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getOpNameToStatsMap();
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			totalNumOps += opStatsSummary.getTotalNumOps();
-			totalNumRTOps += opStatsSummary.getTotalNumRTOps();
-			totalNumFailedRT += opStatsSummary.getTotalNumFailedRT();
-			totalNumFailed += opStatsSummary.getTotalNumFailed();
-			totalCycleTime += opStatsSummary.getTotalCycleTime();
-			setTotalSteps(getTotalSteps() + opStatsSummary.getTotalSteps());
-			totalRT += opStatsSummary.getTotalResponseTime();
+		perBehaviorStats = new HashMap<>();
+		for (String behaviorSpecName: statsSummary.getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
+			PerBehaviorStatsRollup behaviorStats = new PerBehaviorStatsRollup();
+			perBehaviorStats.put(behaviorSpecName, behaviorStats);
+			for (String opName : opNameToStatsMap.keySet()) {
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				totalNumOps += opStatsSummary.getTotalNumOps();
+				behaviorStats.incrTotalNumOps(opStatsSummary.getTotalNumOps());
+				totalNumRTOps += opStatsSummary.getTotalNumRTOps();
+				behaviorStats.incrTotalNumRTOps(opStatsSummary.getTotalNumRTOps());
+				totalNumFailedRT += opStatsSummary.getTotalNumFailedRT();
+				behaviorStats.incrTotalNumFailedRT(opStatsSummary.getTotalNumFailedRT());
+				totalNumFailed += opStatsSummary.getTotalNumFailed();
+				behaviorStats.incrTotalNumFailed(opStatsSummary.getTotalNumFailed());
+				totalCycleTime += opStatsSummary.getTotalCycleTime();
+				behaviorStats.incrTotalCycleTime(opStatsSummary.getTotalCycleTime());
+				setTotalSteps(getTotalSteps() + opStatsSummary.getTotalSteps());
+				behaviorStats.incrTotalSteps(opStatsSummary.getTotalSteps());
+				totalRT += opStatsSummary.getTotalResponseTime();
+				behaviorStats.incrTotalRT(opStatsSummary.getTotalResponseTime());
+			}
+			behaviorStats.calcDerivedStats(getIntervalDurationSec());
+			behaviorSpecToComputedOpStatsSummaries.put(behaviorSpecName, new HashMap<String, ComputedOpStatsSummary>());
 		}
-		
 	
 		long totalNumSucessfulOps = totalNumOps - totalNumFailed - totalNumFailedRT;
 
@@ -87,66 +103,75 @@ public class StatsSummaryRollup {
 		/*
 		 * Now compute the per-operation stats
 		 */
-		for (String opName : opNameToStatsMap.keySet()) {
-			OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
-			ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
-			getComputedOpStatsSummaries().put(opName, computedOpStatsSummary);
-			if (opStatsSummary.getRequiredMixPct() > 0) {
-				computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps() 
-						- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
-				computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
-				computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
-				computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
-				computedOpStatsSummary.setPassedFailurePct(opStatsSummary.passedFailurePercent());
-				boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
-				if (!passedMixPct) {
-					logger.info("doRollup: workload " + statsSummary.getWorkloadName() 
-					+ ", target " + statsSummary.getTargetName() 
-					+ ", host " + statsSummary.getHostName() 
-					+ ", statsIntervalSpec " + statsSummary.getStatsIntervalSpecName()
-							+ ", " + opName + " failed mix pct for this period");
-				}
-				computedOpStatsSummary.setPassedMixPct(passedMixPct);
+		for (String behaviorSpecName : statsSummary.getBehaviorSpecNames()) {
+			Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getBehaviorSpecToOpNameToStatsMap()
+					.get(behaviorSpecName);
+			Map<String, ComputedOpStatsSummary> opNameToComputedStatsMap = behaviorSpecToComputedOpStatsSummaries.get(behaviorSpecName);
+			for (String opName : opNameToStatsMap.keySet()) {
+				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
+				ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
+				opNameToComputedStatsMap.put(opName, computedOpStatsSummary);
+				if (opStatsSummary.getRequiredMixPct() > 0) {
+					computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps()
+							- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
+					computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
+					computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
+					computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
+					computedOpStatsSummary.setPassedFailurePct(opStatsSummary.passedFailurePercent());
+					boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
+					if (!passedMixPct) {
+						logger.info("doRollup: workload " + statsSummary.getWorkloadName() + ", target "
+								+ statsSummary.getTargetName() + ", host " + statsSummary.getHostName()
+								+ ", statsIntervalSpec " + statsSummary.getStatsIntervalSpecName() + ", " + opName
+								+ " failed mix pct for this period");
+					}
+					computedOpStatsSummary.setPassedMixPct(passedMixPct);
 
-				boolean opPassed = computedOpStatsSummary.isPassedRt() 
-						&& computedOpStatsSummary.isPassedMixPct() 
-						&& computedOpStatsSummary.isPassedFailurePct();
-				computedOpStatsSummary.setPassed(opPassed);
-				setIntervalPassed(isIntervalPassed() && opPassed);
-				setIntervalPassedRT(isIntervalPassedRT() && computedOpStatsSummary.isPassedRt());
-				setIntervalPassedMix(isIntervalPassedMix() && computedOpStatsSummary.isPassedMixPct());
-				setIntervalPassedFailure(isIntervalPassedFailure() && computedOpStatsSummary.isPassedFailurePct());
-				computedOpStatsSummary.setThroughput(opStatsSummary.getTotalNumOps() / (1.0 * getIntervalDurationSec()));
-				computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * totalNumOps));
-				computedOpStatsSummary.setEffectiveThroughput(
-						(opStatsSummary.getTotalNumOps() - opStatsSummary.getTotalNumFailedRT()) / (1.0 * getIntervalDurationSec()));
-				long totalNumSucessfulRTOps = opStatsSummary.getTotalNumRTOps() - opStatsSummary.getTotalNumFailedRT();
+					boolean opPassed = computedOpStatsSummary.isPassedRt() && computedOpStatsSummary.isPassedMixPct()
+							&& computedOpStatsSummary.isPassedFailurePct();
+					computedOpStatsSummary.setPassed(opPassed);
+					setIntervalPassed(isIntervalPassed() && opPassed);
+					setIntervalPassedRT(isIntervalPassedRT() && computedOpStatsSummary.isPassedRt());
+					setIntervalPassedMix(isIntervalPassedMix() && computedOpStatsSummary.isPassedMixPct());
+					setIntervalPassedFailure(isIntervalPassedFailure() && computedOpStatsSummary.isPassedFailurePct());
+					computedOpStatsSummary
+							.setThroughput(opStatsSummary.getTotalNumOps() / (1.0 * getIntervalDurationSec()));
+					computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * totalNumOps));
+					computedOpStatsSummary.setEffectiveThroughput(
+							(opStatsSummary.getTotalNumOps() - opStatsSummary.getTotalNumFailedRT())
+									/ (1.0 * getIntervalDurationSec()));
+					long totalNumSucessfulRTOps = opStatsSummary.getTotalNumRTOps()
+							- opStatsSummary.getTotalNumFailedRT();
 
-				if (opStatsSummary.getTotalNumRTOps() > 0) {
-					computedOpStatsSummary.setPassingPct(totalNumSucessfulRTOps / (1.0 * opStatsSummary.getTotalNumRTOps()));
-				}
-
-				if (opStatsSummary.isUseResponseTime()) {
 					if (opStatsSummary.getTotalNumRTOps() > 0) {
-						computedOpStatsSummary.setAvgRt((opStatsSummary.getTotalResponseTime() / 1000.0) / (1.0 * opStatsSummary.getTotalNumRTOps()));
-					}
-					if (opStatsSummary.getTotalNumFailedRT() > 0) {
 						computedOpStatsSummary
-								.setAvgFailedRt((opStatsSummary.getTotalFailedResponseTime() / 1000.0) / (1.0 * opStatsSummary.getTotalNumFailedRT()));
+								.setPassingPct(totalNumSucessfulRTOps / (1.0 * opStatsSummary.getTotalNumRTOps()));
 					}
-					if ((opStatsSummary.getTotalNumRTOps() - opStatsSummary.getTotalNumFailedRT()) > 0) {
-						computedOpStatsSummary
-								.setAvgPassedRt((opStatsSummary.getTotalPassedResponseTime() / 1000.0) / 
-										(1.0 * (opStatsSummary.getTotalNumRTOps() - opStatsSummary.getTotalNumFailedRT())));
-					}
-				}
 
-				if (opStatsSummary.getTotalNumOps() > 0) {
-					computedOpStatsSummary.setAvgCycleTime((opStatsSummary.getTotalCycleTime() / 1000.0) / (1.0 * opStatsSummary.getTotalNumOps()));
+					if (opStatsSummary.isUseResponseTime()) {
+						if (opStatsSummary.getTotalNumRTOps() > 0) {
+							computedOpStatsSummary.setAvgRt((opStatsSummary.getTotalResponseTime() / 1000.0)
+									/ (1.0 * opStatsSummary.getTotalNumRTOps()));
+						}
+						if (opStatsSummary.getTotalNumFailedRT() > 0) {
+							computedOpStatsSummary.setAvgFailedRt((opStatsSummary.getTotalFailedResponseTime() / 1000.0)
+									/ (1.0 * opStatsSummary.getTotalNumFailedRT()));
+						}
+						if ((opStatsSummary.getTotalNumRTOps() - opStatsSummary.getTotalNumFailedRT()) > 0) {
+							computedOpStatsSummary.setAvgPassedRt((opStatsSummary.getTotalPassedResponseTime() / 1000.0)
+									/ (1.0 * (opStatsSummary.getTotalNumRTOps()
+											- opStatsSummary.getTotalNumFailedRT())));
+						}
+					}
+
+					if (opStatsSummary.getTotalNumOps() > 0) {
+						computedOpStatsSummary.setAvgCycleTime((opStatsSummary.getTotalCycleTime() / 1000.0)
+								/ (1.0 * opStatsSummary.getTotalNumOps()));
+					}
+
+					logger.info("For behaviorSpec " + behaviorSpecName + " operation " + opName + " opStatsSummary = " + opStatsSummary
+							+ ", computedOpStatsSummary = " + computedOpStatsSummary);
 				}
-				
-				logger.info("For operation " + opName + " opStatsSummary = " + opStatsSummary
-						+ ", computedOpStatsSummary = " + computedOpStatsSummary);
 			}
 		}
 	}
@@ -255,8 +280,8 @@ public class StatsSummaryRollup {
 		this.intervalPassed = intervalPassed;
 	}
 
-	public ComputedOpStatsSummary getComputedOpStatsSummary(String opName) {
-		return getComputedOpStatsSummaries().get(opName);
+	public ComputedOpStatsSummary getComputedOpStatsSummary(String behaviorName, String opName) {
+		return behaviorSpecToComputedOpStatsSummaries.get(behaviorName).get(opName);
 	}
 
 	public double getIntervalDurationSec() {
@@ -315,14 +340,6 @@ public class StatsSummaryRollup {
 		this.endActiveUsers = endActiveUsers;
 	}
 
-	public Map<String, ComputedOpStatsSummary> getComputedOpStatsSummaries() {
-		return computedOpStatsSummaries;
-	}
-
-	public void setComputedOpStatsSummaries(Map<String, ComputedOpStatsSummary> computedOpStatsSummaries) {
-		this.computedOpStatsSummaries = computedOpStatsSummaries;
-	}
-
 	public boolean isIntervalPassedFailure() {
 		return intervalPassedFailure;
 	}
@@ -352,10 +369,15 @@ public class StatsSummaryRollup {
 		retVal.append(", intervalPassedFailure = " + intervalPassedFailure);
 		retVal.append(", intervalPassedMix = " + intervalPassedMix + ": ");
 		
-		for (String opName: getComputedOpStatsSummaries().keySet()) {
-			ComputedOpStatsSummary opSummary = getComputedOpStatsSummaries().get(opName);
-			retVal.append("ComputedSummary for " + opName + ": " + opSummary + "; ");
-		}			
+		for (String behaviorName : behaviorSpecToComputedOpStatsSummaries.keySet()) {
+			Map<String, ComputedOpStatsSummary> opStatsSummaries = 
+					behaviorSpecToComputedOpStatsSummaries.get(behaviorName);
+			retVal.append("Op Summary for behavior " + behaviorName + ": ");
+			for (String opName : opStatsSummaries.keySet()) {
+				ComputedOpStatsSummary opSummary = opStatsSummaries.get(opName);
+				retVal.append("ComputedSummary for " + opName + ": " + opSummary + "; ");
+			}
+		}
 		
 		return retVal.toString();
 	}

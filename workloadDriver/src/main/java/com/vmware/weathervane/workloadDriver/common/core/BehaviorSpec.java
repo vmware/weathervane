@@ -35,7 +35,6 @@ SPDX-License-Identifier: BSD-2-Clause
 
 package com.vmware.weathervane.workloadDriver.common.core;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -66,7 +65,13 @@ public class BehaviorSpec
 		return _behaviorSpecs.get(name);
 	}
 
+	public static Set<String> getBehaviorSpecNames() {
+		return _behaviorSpecs.keySet();
+	}
+	
 	private String name;
+	
+	private Set<String> subBehaviorNames;
 
 	/**
 	 * transitionDecisionClasses holds the class name of the transitionChooser for each operation
@@ -111,8 +116,29 @@ public class BehaviorSpec
 		this.createSelectionMatrix();
 	}
 
-	public BehaviorSpec( )
-	{
+	public BehaviorSpec() {
+	}
+
+	public void initialize() {
+		if (subBehaviorNames == null) {
+			subBehaviorNames = collectSubBehaviorNames(name, null);
+		}
+	}
+	
+	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {
+		Set<String> names;
+		if (existingNames != null) {
+			names = existingNames;
+		} else {
+			names = new HashSet<>();
+		}
+		String[] asyncbehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
+		for (String subName: asyncbehaviorNames) {
+			if (!subName.equals("none") && !names.add(subName)) {
+				collectSubBehaviorNames(subName, names);
+			}
+		}
+		return names;
 	}
 
 	public boolean isSelectionMixAvailable()
@@ -211,22 +237,7 @@ public class BehaviorSpec
 			logger.debug(matrixString.toString());
 		}
 	}
-	
-	@JsonIgnore
-	public Set<String> getSubBehaviorNames() {
-		Set<String> names = new HashSet<>();
-		names.add(getName());
-		Arrays.asList(asyncBehaviors).stream()
-			.filter(name -> !name.equals("none"))
-			.filter(name -> !names.contains(name))
-			.forEach(name -> {
-				names.add(name);
-				BehaviorSpec subBeh = BehaviorSpec.getBehaviorSpec(name);
-				names.addAll(subBeh.getSubBehaviorNames());
-			});
-		return names;		
-	}
-	
+		
 	public Double[][][] getSelectionMix()
 	{
 		return this.selectionMatrices;
@@ -404,6 +415,14 @@ public class BehaviorSpec
 		this.responseTimeLimitsPercentile = responseTimeLimitsPercentile;
 	}
 	
+	public Set<String> getSubBehaviorNames() {
+		return subBehaviorNames;
+	}
+
+	public void setSubBehaviorNames(Set<String> subBehaviorNames) {
+		this.subBehaviorNames = subBehaviorNames;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder out = new StringBuilder("BehaviorSpec: ");

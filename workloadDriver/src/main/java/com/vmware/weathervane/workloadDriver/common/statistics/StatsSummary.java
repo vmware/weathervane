@@ -65,7 +65,7 @@ public class StatsSummary {
 		 * Create a set of operationStats for each behaviorSpec
 		 * we may encounter
 		 */
-		for (String behaviorSpecName: getBehaviorSpecNames()) {
+		for (String behaviorSpecName: behaviorSpecNames) {
 			Map<String,OperationStatsSummary> opNameToStatsMap = new HashMap<>();
 			BehaviorSpec bSpec = BehaviorSpec.getBehaviorSpec(behaviorSpecName);
 			/*

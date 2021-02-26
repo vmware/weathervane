@@ -93,13 +93,6 @@ public class Run {
 			lcHosts.add(host.toLowerCase());
 		}
 		hosts = lcHosts;
-	
-		/*
-		 * Initialize all of the BehaviorSpecs
-		 */
-		for (String behaviorSpecName: BehaviorSpec.getBehaviorSpecNames()) {
-			BehaviorSpec.getBehaviorSpec(behaviorSpecName).initialize();
-		}
 		
 		/*
 		 * Let the stats service know about the run so that it can

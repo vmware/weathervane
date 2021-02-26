@@ -119,30 +119,7 @@ public class BehaviorSpec
 
 	public BehaviorSpec() {
 	}
-
-	public void initialize() {
-		if (subBehaviorNames == null) {
-			subBehaviorNames = collectSubBehaviorNames(name, null);			
-		}
-		logger.debug("initialize: subBehaviorNames = {}", Arrays.toString(subBehaviorNames.toArray()));
-	}
 	
-	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {
-		Set<String> names;
-		if (existingNames != null) {
-			names = existingNames;
-		} else {
-			names = new HashSet<>();
-		}
-		String[] asyncbehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
-		for (String subName: asyncbehaviorNames) {
-			if (!subName.equals("none") && !names.add(subName)) {
-				collectSubBehaviorNames(subName, names);
-			}
-		}
-		return names;
-	}
-
 	public boolean isSelectionMixAvailable()
 	{ return this.selectionMatrices != null; }
 	
@@ -418,9 +395,29 @@ public class BehaviorSpec
 	}
 	
 	public Set<String> getSubBehaviorNames() {
+		if (subBehaviorNames == null) {
+			subBehaviorNames = collectSubBehaviorNames(name, null);
+		}
 		return subBehaviorNames;
 	}
 
+	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {
+		Set<String> names;
+		if (existingNames != null) {
+			names = existingNames;
+		} else {
+			names = new HashSet<>();
+		}
+		String[] asyncbehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
+		for (String subName: asyncbehaviorNames) {
+			if (!subName.equals("none") && names.add(subName)) {
+				collectSubBehaviorNames(subName, names);
+			}
+		}
+		return names;
+	}
+
+	
 	public void setSubBehaviorNames(Set<String> subBehaviorNames) {
 		this.subBehaviorNames = subBehaviorNames;
 	}

@@ -106,6 +106,7 @@ public class StatsSummary {
 		statsSummaryRollup = null;
 			
 		String behaviorSpecName = operationStats.getBehaviorName();
+		logger.debug("addStats: {}, behaviorName = {}",  operationStats, behaviorSpecName);
 		Map<String,OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
 		if (opNameToStatsMap == null) {
 			logger.warn("addStats: No opNameToStatsMap found for behaviorSpec {}", behaviorSpecName);

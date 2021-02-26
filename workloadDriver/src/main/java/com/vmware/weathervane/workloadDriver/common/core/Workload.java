@@ -238,6 +238,13 @@ public abstract class Workload implements UserFactory {
 		}
 
 		/*
+		 * Initialize all of the BehaviorSpecs
+		 */
+		for (String behaviorSpecName: BehaviorSpec.getBehaviorSpecNames()) {
+			BehaviorSpec.getBehaviorSpec(behaviorSpecName).initialize();
+		}
+
+		/*
 		 * Initialize all of the targets in the workload
 		 */
 		List<String> targetNames = new ArrayList<String>();

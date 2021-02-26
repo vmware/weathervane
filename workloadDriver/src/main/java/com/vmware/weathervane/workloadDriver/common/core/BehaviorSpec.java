@@ -35,6 +35,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 package com.vmware.weathervane.workloadDriver.common.core;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -121,8 +122,9 @@ public class BehaviorSpec
 
 	public void initialize() {
 		if (subBehaviorNames == null) {
-			subBehaviorNames = collectSubBehaviorNames(name, null);
+			subBehaviorNames = collectSubBehaviorNames(name, null);			
 		}
+		logger.debug("initialize: subBehaviorNames = {}", Arrays.toString(subBehaviorNames.toArray()));
 	}
 	
 	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {

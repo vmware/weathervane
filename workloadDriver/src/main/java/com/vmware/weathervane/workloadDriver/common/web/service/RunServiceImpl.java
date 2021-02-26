@@ -215,6 +215,12 @@ public class RunServiceImpl implements RunService {
 
 	@Override
 	public Boolean addBehaviorSpec(BehaviorSpec theSpec) {
+		logger.debug("addBehaviorSpec");
+		BehaviorSpec.addBehaviorSpec(theSpec.getName(), theSpec);
+
+		/*
+		 * Send the behaviorSpecs on to the nodes
+		 */
 		boolean allSuceeeded = true;
 		HttpHeaders requestHeaders = new HttpHeaders();
 		HttpEntity<BehaviorSpec> specEntity = new HttpEntity<BehaviorSpec>(theSpec, requestHeaders);
@@ -225,7 +231,7 @@ public class RunServiceImpl implements RunService {
 					BasicResponse.class);
 
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload to " + url);
+				logger.error("Error posting behaviorSpec to " + url);
 				allSuceeeded = false;
 			}
 		}

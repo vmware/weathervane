@@ -151,6 +151,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 				logger.warn("statsIntervalComplete: caught null operationStats.");
 				continue;
 			}
+			curIntervalStatsSummary.addStats(operationStats);
 		}
 
 		/*

@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,7 +53,7 @@ public class StatsSummary {
 	
 	public StatsSummary(String workloadName, List<Operation> operations, BehaviorSpec behaviorSpec,
 							String targetName, String hostname, String statsIntervalSpecName) {
-		logger.debug("StatsSummary constructor: workload {}, target {}, hostname {}, statsIntervalSpecName", 
+		logger.debug("StatsSummary constructor: workload {}, target {}, hostname {}, statsIntervalSpecName {}", 
 				workloadName, targetName, hostname, statsIntervalSpecName);
 		this.workloadName = workloadName;
 		this.operations = operations;
@@ -60,7 +61,10 @@ public class StatsSummary {
 		this.hostName = hostname;
 		this.statsIntervalSpecName = statsIntervalSpecName;
 		
-		behaviorSpecNames = behaviorSpec.getSubBehaviorNames();		
+		behaviorSpecNames = behaviorSpec.getSubBehaviorNames();	
+		logger.debug("StatsSummary constructor: behaviorSpecNames = {}", Arrays.toString(behaviorSpecNames.toArray()));
+
+
 		/*
 		 * Create a set of operationStats for each behaviorSpec
 		 * we may encounter
@@ -103,6 +107,10 @@ public class StatsSummary {
 			
 		String behaviorSpecName = operationStats.getBehaviorName();
 		Map<String,OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+		if (opNameToStatsMap == null) {
+			logger.warn("addStats: No opNameToStatsMap found for behaviorSpec {}", behaviorSpecName);
+			return;
+		}
 		
 		String operationName = operationStats.getOperationName();
 		OperationStatsSummary operationStatsSummary = opNameToStatsMap.get(operationName);

@@ -72,6 +72,7 @@ public class BehaviorSpec
 	
 	private String name;
 	
+	@JsonIgnore
 	private Set<String> subBehaviorNames;
 
 	/**

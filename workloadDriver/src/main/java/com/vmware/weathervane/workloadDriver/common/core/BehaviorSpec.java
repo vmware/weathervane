@@ -373,6 +373,7 @@ public class BehaviorSpec
 		} else {
 			names = new HashSet<>();
 		}
+		names.add(subBehaviorName);
 		String[] asyncbehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
 		for (String subName: asyncbehaviorNames) {
 			if (!subName.equals("none") && names.add(subName)) {

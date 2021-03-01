@@ -365,21 +365,18 @@ public class BehaviorSpec
 	}
 
 	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {
+		Set<String> names;
 		if (existingNames != null) {
 			logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = {}", 
 					subBehaviorName, Arrays.toString(subBehaviorNames.toArray()));
-		} else {
-			logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = null",  subBehaviorName);			
-		}
-		Set<String> names;
-		if (existingNames != null) {
 			names = existingNames;
 		} else {
+			logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = null",  subBehaviorName);			
 			names = new HashSet<>();
 		}
 		names.add(subBehaviorName);
-		String[] asyncbehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
-		for (String subName: asyncbehaviorNames) {
+		String[] asyncBehaviorNames = BehaviorSpec.getBehaviorSpec(subBehaviorName).getAsyncBehaviors();
+		for (String subName: asyncBehaviorNames) {
 			if (!subName.equals("none") && names.add(subName)) {
 				collectSubBehaviorNames(subName, names);
 			}

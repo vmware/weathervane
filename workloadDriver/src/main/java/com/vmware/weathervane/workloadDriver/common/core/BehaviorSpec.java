@@ -368,7 +368,7 @@ public class BehaviorSpec
 		Set<String> names;
 		if (existingNames != null) {
 			logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = {}", 
-					subBehaviorName, Arrays.toString(subBehaviorNames.toArray()));
+					subBehaviorName, Arrays.toString(existingNames.toArray()));
 			names = existingNames;
 		} else {
 			logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = null",  subBehaviorName);			

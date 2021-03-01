@@ -144,24 +144,44 @@ public class StatsSummary {
 			this.intervalName = that.intervalName;
 		}
 		
-		for (String behaviorSpecName: getBehaviorSpecNames()) {
-			Set<String> allOpNames = new HashSet<String>();
-			Map<String, OperationStatsSummary> thisOpStats = this.behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
-			Map<String, OperationStatsSummary> thatOpStats = that.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
-			allOpNames.addAll(thisOpStats.keySet());
-			allOpNames.addAll(thatOpStats.keySet());
-			
-			for (String opName : allOpNames) {
-				if (!thisOpStats.containsKey(opName)) {
-					thisOpStats.put(opName, new OperationStatsSummary());
-				}
-
-				if (thatOpStats.containsKey(opName)) {
-					thisOpStats.get(opName).merge(thatOpStats.get(opName));
-				}
-			}	
+		if (this.getBehaviorSpecNames() == null) {
+			this.behaviorSpecNames = that.getBehaviorSpecNames();
 		}
-				
+		
+		if (this.behaviorSpecNames != null) {
+			for (String behaviorSpecName : getBehaviorSpecNames()) {
+				Set<String> allOpNames = new HashSet<String>();
+				if (this.behaviorSpecToOpNameToStatsMap == null) {
+					this.behaviorSpecToOpNameToStatsMap = that.getBehaviorSpecToOpNameToStatsMap();
+				} else if (that.getBehaviorSpecToOpNameToStatsMap() != null) {
+					Map<String, OperationStatsSummary> thatOpStats = that.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
+					if (thatOpStats != null) {
+						allOpNames.addAll(thatOpStats.keySet());
+					} else {
+						continue;
+					}
+
+					Map<String, OperationStatsSummary> thisOpStats = this.behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
+					if (thisOpStats != null) {
+						allOpNames.addAll(thisOpStats.keySet());						
+					} else {
+						thisOpStats = new HashMap<String, OperationStatsSummary>();
+						this.behaviorSpecToOpNameToStatsMap.put(behaviorSpecName, thisOpStats);
+					}
+					
+					for (String opName : allOpNames) {
+						if (!thisOpStats.containsKey(opName)) {
+							thisOpStats.put(opName, new OperationStatsSummary());
+						}
+
+						if (thatOpStats.containsKey(opName)) {
+							thisOpStats.get(opName).merge(thatOpStats.get(opName));
+						}
+					}					
+				}
+			}
+		}
+		
 		if (this.startActiveUsers == -1) {
 			this.startActiveUsers = that.startActiveUsers;
 		}

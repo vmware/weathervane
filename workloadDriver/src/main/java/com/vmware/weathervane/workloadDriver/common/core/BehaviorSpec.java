@@ -148,27 +148,7 @@ public class BehaviorSpec
 					this.transitionMatrices[i][j][k] /= rowSum;
 				}
 			}
-		}
-		
-		if (logger.isDebugEnabled()) {
-			StringBuilder matrixString = new StringBuilder();
-			logger.debug("Normalized transition matrix for " + this.name + ":");
-			matrixString.append("[\n");
-			for( int i = 0; i < this.transitionMatrices.length; i++ ) {
-				matrixString.append("  [\n");
-				for (int j = 0; j < this.transitionMatrices[i].length; j++) {
-					matrixString.append("    [ ");
-					for( int k = 0; k < this.transitionMatrices[i][j].length; k++ )
-					{
-						matrixString.append(this.transitionMatrices[i][j][k] + ", ");
-					}
-					matrixString.append(" ],\n");;
-				}
-				matrixString.append("  ],\n");
-			}			
-			matrixString.append("],\n");
-			logger.debug(matrixString.toString());
-		}
+		}		
 	}
 	
 	public void createSelectionMatrix()
@@ -195,26 +175,6 @@ public class BehaviorSpec
 				}
 			
 			}
-		}
-		
-		if (logger.isDebugEnabled()) {
-			StringBuilder matrixString = new StringBuilder();
-			logger.debug("selection matrix for " + this.name + ":");
-			matrixString.append("[\n");
-			for( int i = 0; i < this.selectionMatrices.length; i++ ) {
-				matrixString.append("  [\n");
-				for (int j = 0; j < this.selectionMatrices[i].length; j++) {
-					matrixString.append("    [ ");;
-					for( int k = 0; k < this.selectionMatrices[i][j].length; k++ )
-					{
-						matrixString.append(this.selectionMatrices[i][j][k] + ", ");
-					}
-					matrixString.append(" ],\n");;
-				}
-				matrixString.append("  ],\n");
-			}			
-			matrixString.append("],\n");
-			logger.debug(matrixString.toString());
 		}
 	}
 		
@@ -396,13 +356,17 @@ public class BehaviorSpec
 	}
 	
 	public Set<String> getSubBehaviorNames() {
+		logger.debug("names for behavior {}", name);
 		if (subBehaviorNames == null) {
 			subBehaviorNames = collectSubBehaviorNames(name, null);
 		}
+		logger.debug("getSubBehaviorNames: returning {}", Arrays.toString(subBehaviorNames.toArray()));
 		return subBehaviorNames;
 	}
 
 	private Set<String> collectSubBehaviorNames(String subBehaviorName, Set<String> existingNames) {
+		logger.debug("collectSubBehaviorNames: subBehaviorName = {}, existingNames = {}", 
+				subBehaviorName, Arrays.toString(subBehaviorNames.toArray()));
 		Set<String> names;
 		if (existingNames != null) {
 			names = existingNames;
@@ -415,6 +379,7 @@ public class BehaviorSpec
 				collectSubBehaviorNames(subName, names);
 			}
 		}
+		logger.debug("collectSubBehaviorNames: returning {}", Arrays.toString(names.toArray()));
 		return names;
 	}
 

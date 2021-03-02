@@ -196,10 +196,12 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 				responseEntity = restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
 				logger.debug("statsIntervalComplete: Completed HTTP Post to {}", url);
 			} catch (Throwable t) {
-					logger.warn("statsIntervalComplete: Got throwable when posting to url {}: {}", 
+					logger.info("statsIntervalComplete: Got throwable when posting to url {}: {}", 
 							url, t.getMessage());
 					if (tries == 0) {
 						// Give up and rethrow the exception
+						logger.warn("statsIntervalComplete: Got throwable when posting to url {}: {}", 
+								url, t.getMessage());
 						throw t;
 					}
 			}

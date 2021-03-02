@@ -119,7 +119,7 @@ public class StatsSummary {
 	}
 
 	public StatsSummary merge(StatsSummary that) {
-		logger.debug("merge: merging " + that + " into " + this);
+		logger.debug("merge: merging ");
 		/* 
 		 * merging stats invalidates any rollup
 		 */
@@ -729,10 +729,15 @@ public class StatsSummary {
 		retVal.append(", printSummary = " + printSummary);
 		retVal.append(", printIntervals = " + printIntervals);
 		retVal.append(", printCsv = " + printCsv);
-		for (String behaviorSpecName : getBehaviorSpecNames()) {
-			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
-			for (OperationStatsSummary opSummary : opNameToStatsMap.values()) {
-				retVal.append("; " + opSummary.toString());
+		if ((behaviorSpecNames != null) && (behaviorSpecToOpNameToStatsMap != null)) {
+			for (String behaviorSpecName : getBehaviorSpecNames()) {
+				Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap
+						.get(behaviorSpecName);
+				if (opNameToStatsMap != null) {
+					for (OperationStatsSummary opSummary : opNameToStatsMap.values()) {
+						retVal.append("; " + opSummary.toString());
+					}
+				}
 			}
 		}
 		return retVal.toString();

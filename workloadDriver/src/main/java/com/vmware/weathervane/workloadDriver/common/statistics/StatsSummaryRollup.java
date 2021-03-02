@@ -4,9 +4,7 @@ SPDX-License-Identifier: BSD-2-Clause
 */
 package com.vmware.weathervane.workloadDriver.common.statistics;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -61,7 +59,6 @@ public class StatsSummaryRollup {
 		for (String behaviorSpecName: statsSummary.getBehaviorSpecNames()) {
 			Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
 			PerBehaviorStatsRollup behaviorStats = new PerBehaviorStatsRollup();
-			perBehaviorStats.put(behaviorSpecName, behaviorStats);
 			for (String opName : opNameToStatsMap.keySet()) {
 				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 				totalNumOps += opStatsSummary.getTotalNumOps();
@@ -79,6 +76,7 @@ public class StatsSummaryRollup {
 				totalRT += opStatsSummary.getTotalResponseTime();
 				behaviorStats.incrTotalRT(opStatsSummary.getTotalResponseTime());
 			}
+			perBehaviorStats.put(behaviorSpecName, behaviorStats);
 			behaviorStats.calcDerivedStats(getIntervalDurationSec());
 			behaviorSpecToComputedOpStatsSummaries.put(behaviorSpecName, new HashMap<String, ComputedOpStatsSummary>());
 		}
@@ -104,21 +102,21 @@ public class StatsSummaryRollup {
 		 * Now compute the per-operation stats
 		 */
 		for (String behaviorSpecName : statsSummary.getBehaviorSpecNames()) {
-			Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getBehaviorSpecToOpNameToStatsMap()
-					.get(behaviorSpecName);
+			Map<String, OperationStatsSummary> opNameToStatsMap = statsSummary.getBehaviorSpecToOpNameToStatsMap().get(behaviorSpecName);
 			Map<String, ComputedOpStatsSummary> opNameToComputedStatsMap = behaviorSpecToComputedOpStatsSummaries.get(behaviorSpecName);
+			PerBehaviorStatsRollup behaviorStatsRollup = perBehaviorStats.get(behaviorSpecName);
 			for (String opName : opNameToStatsMap.keySet()) {
 				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 				ComputedOpStatsSummary computedOpStatsSummary = new ComputedOpStatsSummary();
 				opNameToComputedStatsMap.put(opName, computedOpStatsSummary);
 				if (opStatsSummary.getRequiredMixPct() > 0) {
-					computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps()
+					computedOpStatsSummary.setSuccesses(opStatsSummary.getTotalNumOps() 
 							- opStatsSummary.getTotalNumFailed() - opStatsSummary.getTotalNumFailedRT());
 					computedOpStatsSummary.setFailures(opStatsSummary.getTotalNumFailed());
 					computedOpStatsSummary.setRtFailures(opStatsSummary.getTotalNumFailedRT());
 					computedOpStatsSummary.setPassedRt(opStatsSummary.passedRt());
 					computedOpStatsSummary.setPassedFailurePct(opStatsSummary.passedFailurePercent());
-					boolean passedMixPct = opStatsSummary.passedMixPct(totalNumOps);
+					boolean passedMixPct = opStatsSummary.passedMixPct(behaviorStatsRollup.getTotalNumOps());
 					if (!passedMixPct) {
 						logger.info("doRollup: workload " + statsSummary.getWorkloadName() + ", target "
 								+ statsSummary.getTargetName() + ", host " + statsSummary.getHostName()
@@ -136,7 +134,7 @@ public class StatsSummaryRollup {
 					setIntervalPassedFailure(isIntervalPassedFailure() && computedOpStatsSummary.isPassedFailurePct());
 					computedOpStatsSummary
 							.setThroughput(opStatsSummary.getTotalNumOps() / (1.0 * getIntervalDurationSec()));
-					computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * totalNumOps));
+					computedOpStatsSummary.setMixPct(opStatsSummary.getTotalNumOps() / (1.0 * behaviorStatsRollup.getTotalNumOps()));
 					computedOpStatsSummary.setEffectiveThroughput(
 							(opStatsSummary.getTotalNumOps() - opStatsSummary.getTotalNumFailedRT())
 									/ (1.0 * getIntervalDurationSec()));

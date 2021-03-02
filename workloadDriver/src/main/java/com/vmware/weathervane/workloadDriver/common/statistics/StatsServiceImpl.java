@@ -248,7 +248,6 @@ public class StatsServiceImpl implements StatsService {
 					}
 					summaryWriter.write(intervalAggregatedStats.getStatsSummary() + "\n");
 					summaryWriter.flush();
-
 				}
 
 			}

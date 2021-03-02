@@ -90,16 +90,13 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 	}
 	
 	@Override
-	public void submitOperationStats(OperationStats operationStats) {
-		logger.debug("submitOperationStats: " + operationStats);
-		
+	public void submitOperationStats(OperationStats operationStats) {		
 		/*
 		 * Add the operationStats to the list of current stats for this period.
 		 * The read lock prevents the list from being replaced while this sample
 		 * is added.  The list is replaced when a statsInterval completes.
 		 */
 		curStatsRWLock.readLock().lock();
-		logger.debug("submitOperationStats locked readLock: " + operationStats);
 		try {
 			if (operationStats != null) {
 				curStatsList.add(operationStats);
@@ -108,7 +105,6 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 			}
 		} finally {
 			curStatsRWLock.readLock().unlock();
-			logger.debug("submitOperationStats unlocked readLock: " + operationStats);
 		}
 	}
 

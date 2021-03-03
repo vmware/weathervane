@@ -652,15 +652,14 @@ public class StatsSummary {
 		retVal.append("\tOverall passing percentage: " + doubleFormat2.format(statsSummaryRollup.getPctPassing() * 100.0) + "%\n");
 		retVal.append("\tInterval Duration (seconds): " + doubleFormat2.format(statsSummaryRollup.getIntervalDurationSec()) + "\n");
 		retVal.append("\tInterval Start Time: " + dateFormatter.format(new Date(this.getIntervalStartTime())) + "\n");
-		retVal.append("\tInterval End Time: " + dateFormatter.format(new Date(this.getIntervalEndTime())) + "\n");
-		retVal.append(String.format(opLineOutputFormat, "Operation", "Passed?", "Passed", "Passed", "Throughput", "Avg Response-",
-				"Min Response-", "Max Response-", "Avg Cycle-", "Effective", "Mix", "Pass RT", "Total", "Total", "Total"));
-		retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"
-				, "Time (Sec)", "Time (Sec)", "Time (Sec)", "Throughput", "Percentage", "Percent", "Ops", "Failures", "RT Failures"));
-		
+		retVal.append("\tInterval End Time: " + dateFormatter.format(new Date(this.getIntervalEndTime())) + "\n");		
 
 		for (String behaviorSpecName : getBehaviorSpecNames()) {
 			retVal.append("Detailed stats for behaviorSpec " + behaviorSpecName + "\n");
+			retVal.append(String.format(opLineOutputFormat, "Operation", "Passed?", "Passed", "Passed", "Throughput", "Avg Response-",
+					"Min Response-", "Max Response-", "Avg Cycle-", "Effective", "Mix", "Pass RT", "Total", "Total", "Total"));
+			retVal.append(String.format(opLineOutputFormat, "Name", "", "RT?", "Mix Pct?", "(Ops/Sec)", "Time (Sec)"
+					, "Time (Sec)", "Time (Sec)", "Time (Sec)", "Throughput", "Percentage", "Percent", "Ops", "Failures", "RT Failures"));
 			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
 			for (String opName : opNameToStatsMap.keySet()) {
 				if (!opNameToStatsMap.containsKey(opName)) {

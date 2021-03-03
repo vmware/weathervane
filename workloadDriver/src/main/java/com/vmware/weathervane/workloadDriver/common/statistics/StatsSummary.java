@@ -377,7 +377,7 @@ public class StatsSummary {
 		StringBuilder allOpString = new StringBuilder();
 		for (String behaviorSpecName : getBehaviorSpecNames()) {
 			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
-			for (String opName : behaviorSpecToOpNameToStatsMap.keySet()) {
+			for (String opName : opNameToStatsMap.keySet()) {
 				OperationStatsSummary opStatsSummary = opNameToStatsMap.get(opName);
 				ComputedOpStatsSummary computedOpStatsSummary = statsSummaryRollup.getComputedOpStatsSummary(behaviorSpecName, opName);
 				if (computedOpStatsSummary == null) {

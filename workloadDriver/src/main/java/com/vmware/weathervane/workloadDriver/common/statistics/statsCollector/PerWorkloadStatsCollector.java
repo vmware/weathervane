@@ -101,7 +101,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 			if (operationStats != null) {
 				curStatsList.add(operationStats);
 			} else {
-				logger.warn("submitOperationStats for workload {}, received null operationStats", workloadName);
+				logger.info("submitOperationStats for workload {}, received null operationStats", workloadName);
 			}
 		} finally {
 			curStatsRWLock.readLock().unlock();
@@ -204,12 +204,22 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 								url, t.getMessage());
 						throw t;
 					}
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						logger.info("statsIntervalComplete: Sleep interrupted when waiting after attempt");
+					}
 			}
 			
 			if (responseEntity != null) {
 				BasicResponse response = responseEntity.getBody();
 				if (responseEntity.getStatusCode() != HttpStatus.OK) {
-					logger.warn("Error sending stats message to " + url);
+					logger.info("Error sending stats message to " + url);
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						logger.info("statsIntervalComplete: Sleep interrupted when waiting after attempt");
+					}
 				} else {
 					succeeded = true;
 				}

@@ -60,6 +60,9 @@ public class GetNextBidTransitionChooser extends DefaultTransitionChooser implem
 				selectedTransitionMatrix = 0;
 			} else if (biddingState.equals("SOLD") || biddingState.equals("INFO")
 					|| biddingState.equals("ITEMNOTACTIVE")) {
+				if (biddingState.equals("SOLD")) {
+					logger.warn("chooseTransition: current item is in SOLD state");
+				}
 				selectedTransitionMatrix = 1;
 			}
 		}

@@ -144,7 +144,7 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 				new StatsSummary(workloadName, operations, behaviorSpec, "all", localHostname, "");
 		for (OperationStats operationStats : curPeriodOpStats) {
 			if (operationStats == null) {
-				logger.warn("statsIntervalComplete: caught null operationStats.");
+				logger.info("statsIntervalComplete: caught null operationStats.");
 				continue;
 			}
 			curIntervalStatsSummary.addStats(operationStats);

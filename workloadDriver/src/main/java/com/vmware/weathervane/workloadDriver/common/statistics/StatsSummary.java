@@ -660,7 +660,7 @@ public class StatsSummary {
 		
 
 		for (String behaviorSpecName : getBehaviorSpecNames()) {
-			retVal.append("Detailed stats for behaviorSpec " + behaviorSpecName + "{}\n");
+			retVal.append("Detailed stats for behaviorSpec " + behaviorSpecName + "\n");
 			Map<String, OperationStatsSummary> opNameToStatsMap = behaviorSpecToOpNameToStatsMap.get(behaviorSpecName);
 			for (String opName : opNameToStatsMap.keySet()) {
 				if (!opNameToStatsMap.containsKey(opName)) {

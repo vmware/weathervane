@@ -439,7 +439,7 @@
   "msgServerImpl" : "rabbitmq",
 
   "numDbServers" : 1, 
-  "dbServerCpus" : "5200m",
+  "dbServerCpus" : "520m",
   "dbServerMem" : "10Gi",
   "dbServerImpl" : "postgresql",
   "postgresqlVolumeSize" : "20Gi",

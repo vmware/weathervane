@@ -503,6 +503,15 @@ sub kubernetesDeleteAllForCluster {
 
 					my @remaining = split /\s+/, $outString;
 					my $numRemaining = $#remaining + 1;
+					# Ignore any system items in the namespace (starting with kube)				
+					foreach my $objectName (@remaining) {
+					    if ($objectName =~ /kube/) {
+						$numRemaining--;
+						$logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining object $objectName matched");
+					    } else {
+						$logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining object $objectName didn't match");
+					    }
+					}
 					$logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining items : $numRemaining");
 					if ($numRemaining > 0) {
 						$loopExit = 0;

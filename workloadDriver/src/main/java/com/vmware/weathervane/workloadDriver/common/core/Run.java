@@ -111,7 +111,7 @@ public class Run {
 		
 		HttpEntity<InitializeRunStatsMessage> statsEntity = new HttpEntity<InitializeRunStatsMessage>(initializeRunStatsMessage, requestHeaders);
 		String url = "http://" + runStatsHost + "/stats/initialize/run/" + name;
-		logger.debug("Sending initialize run message to stats controller.  url = " + url + ", maessage: " + initializeRunStatsMessage);
+		logger.debug("Sending initialize run message to stats controller.  url = " + url + ", message: " + initializeRunStatsMessage);
 		ResponseEntity<BasicResponse> responseEntity 
 				= restTemplate.exchange(url, HttpMethod.POST, statsEntity, BasicResponse.class);
 

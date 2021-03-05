@@ -47,6 +47,15 @@ sub startDataManagerContainer {
 	my $jvmopts = $self->getParamValue('dbLoaderJvmOpts');
 	my $loaderThreads = $self->getParamValue('dbLoaderThreads');
 	my $prepThreads = $self->getParamValue('dbPrepThreads');
+	
+	my $numNosqlServers = $self->appInstance->getTotalNumOfServiceType('nosqlServer');
+	my $cassandraContactpoints = "";
+	for (my $i = 0; $i < $numNosqlServers; $i++) {
+		$cassandraContactpoints .= "cassandra-${i}.cassandra";
+		if ($i < ($numNosqlServers - 1)) {
+			$cassandraContactpoints .= ",";
+		}
+	}
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
@@ -69,6 +78,9 @@ sub startDataManagerContainer {
 		}
 		elsif ( $inline =~ /JVMOPTS:/ ) {
 			print FILEOUT "  JVMOPTS: \"$jvmopts\"\n";
+		}
+		elsif ( $inline =~ /CASSANDRA_CONTACTPOINTS:/ ) {
+			print FILEOUT "  CASSANDRA_CONTACTPOINTS: \"$cassandraContactpoints\"\n";
 		}
 		elsif ( $inline =~ /LOADERTHREADS:/ ) {
 			print FILEOUT "  LOADERTHREADS: \"$loaderThreads\"\n";

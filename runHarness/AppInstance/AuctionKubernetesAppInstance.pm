@@ -297,7 +297,15 @@ override 'getServiceConfigParameters' => sub {
 
 		$jvmOpts .= " -DRABBITMQ_HOST=rabbitmq -DRABBITMQ_PORT=5672 ";
 
-		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=cassandra-0.cassandra -DCASSANDRA_PORT=9042 ";
+		my $numNosqlServers = $self->getTotalNumOfServiceType('nosqlServer');
+		my $cassandraContactpoints = "";
+		for (my $i = 0; $i < $numNosqlServers; $i++) {
+			$cassandraContactpoints .= "cassandra-${i}.cassandra";
+			if ($i < ($numNosqlServers - 1)) {
+				$cassandraContactpoints .= ",";
+			}
+		}
+		$jvmOpts .= " -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints -DCASSANDRA_PORT=9042 ";
 
 		$jvmOpts .= " -DDBHOSTNAME=postgresql -DDBPORT=5432 ";
 

@@ -28,12 +28,14 @@ node('wvtest-AuctionDriver') {
                 // Build executables and images, push to Harbor
 				sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
             }
+			archiveArtifacts 'buildDockerImages.log'
  }
         stage('test') {
             sh label: '', script: 'python3 testing/e2e/runE2eTests.py'
         }
         return
     } catch (err) {
+		archiveArtifacts 'buildDockerImages.log'
         notify("Error: ${err}")
         currentBuild.result = 'FAILURE'
     }

@@ -20,12 +20,7 @@ chomp($hostname);
 if ($ENV{'CASSANDRA_USE_IP'}) {
 	my $hostnameIp = `hostname -i`;
 	chomp($hostnameIp);
-	if ($hostname =~ /cassandra\-0/) {
 		$seeds = $hostnameIp . "," . $seeds;
-	} else {
-		$seeds = $hostnameIp; #set seeds to the same ip as the listen_address
-		#this only works for a single Cassandra node, and will need updating for multiple nodes
-	}
 	$hostname = $hostnameIp;
 }
 

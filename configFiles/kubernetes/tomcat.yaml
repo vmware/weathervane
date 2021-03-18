@@ -110,6 +110,13 @@ spec:
         envFrom:
         - configMapRef:
             name: tomcat-config
+        resources:
+          requests:
+            cpu: 100m
+            memory: 500Mi
+          limits:
+            cpu: 100m
+            memory: 500Mi
 ---
 apiVersion: v1
 kind: Service

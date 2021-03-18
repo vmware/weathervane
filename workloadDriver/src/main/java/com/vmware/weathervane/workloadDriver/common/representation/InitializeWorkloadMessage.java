@@ -14,6 +14,7 @@ public class InitializeWorkloadMessage {
 	private BehaviorSpec behaviorSpec;
 	private String statsHostName;
 	private String runName;
+	private Boolean perTargetStats;
 	
 	public String getHostname() {
 		return hostname;
@@ -50,6 +51,12 @@ public class InitializeWorkloadMessage {
 	}
 	public void setRunName(String runName) {
 		this.runName = runName;
+	}
+	public Boolean isPerTargetStats() {
+		return perTargetStats;
+	}
+	public void setPerTargetStats(Boolean perTargetStats) {
+		this.perTargetStats = perTargetStats;
 	}
 	
 }

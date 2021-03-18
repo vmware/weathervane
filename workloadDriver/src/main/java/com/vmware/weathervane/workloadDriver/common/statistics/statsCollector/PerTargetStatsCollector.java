@@ -2,11 +2,15 @@
 Copyright 2017-2019 VMware, Inc.
 SPDX-License-Identifier: BSD-2-Clause
 */
-package com.vmware.weathervane.workloadDriver.common.statistics;
+package com.vmware.weathervane.workloadDriver.common.statistics.statsCollector;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +27,12 @@ import com.vmware.weathervane.workloadDriver.common.core.Operation;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath.LoadPath;
 import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
+import com.vmware.weathervane.workloadDriver.common.statistics.OperationStats;
+import com.vmware.weathervane.workloadDriver.common.statistics.StatsSummary;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
-public class StatsCollector  {
-	private static final Logger logger = LoggerFactory.getLogger(StatsCollector.class);
+public class PerTargetStatsCollector implements StatsCollector {
+	private static final Logger logger = LoggerFactory.getLogger(PerTargetStatsCollector.class);
 
 	private static final RestTemplate restTemplate = new RestTemplate();
 
@@ -52,7 +58,9 @@ public class StatsCollector  {
 
 	private LoadPath loadPath;
 	
-	public StatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
+	private ExecutorService executorService = null;
+	
+	public PerTargetStatsCollector(List<StatsIntervalSpec> statsIntervalSpecs, LoadPath loadPath, List<Operation> operations, String runName, String workloadName, String masterHostName, 
 								String localHostname, BehaviorSpec behaviorSpec) {
 		this.runName = runName;
 		this.workloadName = workloadName;
@@ -63,6 +71,8 @@ public class StatsCollector  {
 		this.statsIntervalSpecs = statsIntervalSpecs;
 		this.loadPath = loadPath;
 		
+		executorService = Executors.newCachedThreadPool();
+
 		/*
 		 * A collector gets a message for each interval it uses.  The
 		 * message triggers the roll-up of stats for that interval
@@ -74,7 +84,7 @@ public class StatsCollector  {
 		
 	}
 	
-	
+	@Override
 	public void submitOperationStats(OperationStats operationStats) {
 		logger.debug("submitOperationStats: " + operationStats);
 		String targetName = operationStats.getTargetName();
@@ -98,6 +108,7 @@ public class StatsCollector  {
 	 * For the intervalSpec that actually ended, send the rollup to the stats service
 	 * on the master node and reset the stats.
 	 */
+	@Override
 	public synchronized void statsIntervalComplete(StatsIntervalCompleteMessage completeMessage) {
 		logger.debug("statsIntervalComplete: " + completeMessage);
 
@@ -173,10 +184,35 @@ public class StatsCollector  {
 		requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 		String completedSpecName = completeMessage.getCompletedSpecName();
 		logger.info("Preparing to send target summaries for spec " + completedSpecName);
+		List<Future<?>> sfList = new ArrayList<>();
 		Map<String, StatsSummary> specTargetToCurrentStatsMap = specNameToTargetToIntervalStatsMap.get(completedSpecName);
 		for (String targetName : specTargetToCurrentStatsMap.keySet()) {
+			sfList.add(executorService.submit(
+					new SendTargetSummaryRunner(specTargetToCurrentStatsMap.get(targetName), 
+							requestHeaders, completedSpecName, targetName, completeMessage)));
+		}
+	}
+	
+	private class SendTargetSummaryRunner implements Runnable {
+		private StatsSummary targetStatsSummary;
+		private HttpHeaders requestHeaders;
+		private String completedSpecName;
+		private String targetName;
+		private StatsIntervalCompleteMessage completeMessage;
 
-			StatsSummary targetStatsSummary = specTargetToCurrentStatsMap.get(targetName);
+		public SendTargetSummaryRunner(StatsSummary targetStatsSummary,
+				HttpHeaders requestHeaders, String completedSpecName, String targetName,
+				StatsIntervalCompleteMessage completeMessage) {
+			this.targetStatsSummary = targetStatsSummary;
+			this.requestHeaders = requestHeaders;
+			this.completedSpecName = completedSpecName;
+			this.targetName = targetName;
+			this.completeMessage = completeMessage;
+		}
+
+
+		@Override
+		public void run() {
 			targetStatsSummary.setIntervalStartTime(completeMessage.getCurIntervalStartTime());
 			targetStatsSummary.setIntervalEndTime(completeMessage.getLastIntervalEndTime());
 			targetStatsSummary.setIntervalName(completeMessage.getCurIntervalName());
@@ -184,8 +220,7 @@ public class StatsCollector  {
 			targetStatsSummary.setStartActiveUsers(completeMessage.getIntervalStartUsers());
 
 			logger.info("statsIntervalComplete: Sending target summary for spec " + completedSpecName
-					+ " and target " + targetName + ", summary = " + targetStatsSummary);
-
+						+ " and target " + targetName + ", summary = " + targetStatsSummary);
 			/*
 			 * Send the stats summary
 			 */
@@ -204,13 +239,16 @@ public class StatsCollector  {
 
 			logger.info("statsIntervalComplete: sent target summary for spec " + completedSpecName
 					+ " and target " + targetName + ", summary = " + targetStatsSummary + ". Resetting stats");
-
-			targetStatsSummary.reset();
+			targetStatsSummary.reset();								
 		}
-
 		
 	}
-
+	
+	@Override
+	public void setTargetNames(List<String> targetNames) {
+		this.targetNames = targetNames;
+	}
+	
 	public String getWorkloadName() {
 		return workloadName;
 	}
@@ -229,11 +267,6 @@ public class StatsCollector  {
 
 	public List<String> getTargetNames() {
 		return targetNames;
-	}
-	
-	public void setTargetNames(List<String> targetNames) {
-		this.targetNames = targetNames;
-	}
-	
+	}	
 
 }

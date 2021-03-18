@@ -16,8 +16,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 public abstract class LoadInterval {
 	private Long duration = null;
 
-	private String name;
-	
+	private String name = "unset";
+		
 	public void initialize() {
 		
 	}

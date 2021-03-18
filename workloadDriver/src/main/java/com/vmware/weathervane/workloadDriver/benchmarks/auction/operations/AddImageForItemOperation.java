@@ -27,7 +27,7 @@ import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.http.FileUploadInfo;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class AddImageForItemOperation extends AuctionOperation implements NeedsLoginResponse, NeedsAddedItemId {
 

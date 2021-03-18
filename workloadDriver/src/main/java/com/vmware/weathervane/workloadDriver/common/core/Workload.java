@@ -6,6 +6,7 @@ package com.vmware.weathervane.workloadDriver.common.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
@@ -33,7 +34,9 @@ import com.vmware.weathervane.workloadDriver.common.representation.BasicResponse
 import com.vmware.weathervane.workloadDriver.common.representation.InitializeWorkloadMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StatsIntervalCompleteMessage;
 import com.vmware.weathervane.workloadDriver.common.representation.StopWorkloadMessage;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.PerTargetStatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.PerWorkloadStatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 import com.vmware.weathervane.workloadDriver.common.statistics.statsIntervalSpec.StatsIntervalSpec;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
@@ -59,6 +62,9 @@ public abstract class Workload implements UserFactory {
 	private LoadPath loadPath;
 
 	private List<StatsIntervalSpec> statsIntervalSpecs;
+	
+	@JsonIgnore
+	private boolean perTargetStats = false;
 
 	@JsonIgnore
 	private List<String> hosts;
@@ -106,7 +112,8 @@ public abstract class Workload implements UserFactory {
 	 * Used to initialize the master workload in the RunService
 	 */
 	public void initialize(String runName, Run run, List<String> hosts, String runStatsHost, String workloadStatsHost,
-			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService) {
+			LoadPathController loadPathController, RestTemplate restTemplate, ScheduledExecutorService executorService,
+			boolean perTargetStats) {
 		logger.debug("Initialize workload: " + this.toString());
 
 		if (getLoadPath() == null) {
@@ -128,39 +135,29 @@ public abstract class Workload implements UserFactory {
 		this.LoadPathController = loadPathController;
 		this.restTemplate = restTemplate;
 		this.executorService = executorService;
+		this.perTargetStats = perTargetStats;
 		
 		/*
 		 * Send initialize workload message to all of the driver nodes
 		 */
 		int nodeNum = 0;
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
-			msg.setHostname(hostname);
-			msg.setNodeNumber(nodeNum);
-			msg.setNumNodes(hosts.size());
-			msg.setStatsHostName(workloadStatsHost);
-			msg.setRunName(runName);
-			/*
-			 * Send the initialize workload message to the host
-			 */
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
-					requestHeaders);
-			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
-			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-					BasicResponse.class);
-
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload initialization to " + url);
-			}
-
+			sfList.add(executorService.submit(new SendInitMsgRunner(nodeNum, hostname, hosts.size())));
 			nodeNum++;
 		}
-		
+		/*
+		 * Now wait for all of the nodes to be notified of the change
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("initialize getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		/* 
 		 * StatsIntervalSpecs run locally
 		 */
@@ -177,6 +174,47 @@ public abstract class Workload implements UserFactory {
 		state = WorkloadState.INITIALIZED;
 	}
 
+	private class SendInitMsgRunner implements Runnable {
+		private int nodeNum;
+		private String hostname;
+		private int numNodes;
+
+		public SendInitMsgRunner(int nodeNum, String hostname, int numNodes) {
+			super();
+			this.nodeNum = nodeNum;
+			this.hostname = hostname;
+			this.numNodes = numNodes;
+		}
+
+		@Override
+		public void run() {
+			InitializeWorkloadMessage msg = new InitializeWorkloadMessage();
+			msg.setHostname(hostname);
+			msg.setNodeNumber(nodeNum);
+			msg.setNumNodes(numNodes);
+			msg.setStatsHostName(workloadStatsHost);
+			msg.setRunName(runName);
+			msg.setPerTargetStats(perTargetStats);
+			/*
+			 * Send the initialize workload message to the host
+			 */
+			HttpHeaders requestHeaders = new HttpHeaders();
+			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<InitializeWorkloadMessage> msgEntity = new HttpEntity<InitializeWorkloadMessage>(msg,
+					requestHeaders);
+			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/initialize";
+			logger.debug("initialize workload  " + name + ", sending initialize workload message to host " + hostname);
+			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+					BasicResponse.class);
+
+			BasicResponse response = responseEntity.getBody();
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error posting workload initialization to " + url);
+			}			
+		}
+	}
+	
 	/*
 	 * Used to initialize the workload in each DriverService
 	 */
@@ -187,11 +225,17 @@ public abstract class Workload implements UserFactory {
 		this.numNodes = initializeWorkloadMessage.getNumNodes();
 		this.nodeNumber = initializeWorkloadMessage.getNodeNumber();
 		this.runName = initializeWorkloadMessage.getRunName();
+		this.perTargetStats = initializeWorkloadMessage.isPerTargetStats();
 
 		operations = this.getOperations();
 
-		statsCollector = new StatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
-				hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		if (perTargetStats) {
+			statsCollector = new PerTargetStatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
+					hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		} else {
+			statsCollector = new PerWorkloadStatsCollector(getStatsIntervalSpecs(), loadPath, operations, runName, name, workloadStatsHost,
+					hostname, BehaviorSpec.getBehaviorSpec(behaviorSpecName));
+		}
 
 		/*
 		 * Initialize all of the targets in the workload
@@ -239,30 +283,47 @@ public abstract class Workload implements UserFactory {
 		/*
 		 * Send stop messages to workloads on all nodes
 		 */
+		List<Future<?>> sfList = new ArrayList<>();
 		for (String hostname : hosts) {
-			StopWorkloadMessage msg = new StopWorkloadMessage();
-			msg.setRunName(runName);
-			/*
-			 * Send the initialize workload message to the host
-			 */
-			HttpHeaders requestHeaders = new HttpHeaders();
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+			sfList.add(executorService.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					StopWorkloadMessage msg = new StopWorkloadMessage();
+					msg.setRunName(runName);
+					/*
+					 * Send the initialize workload message to the host
+					 */
+					HttpHeaders requestHeaders = new HttpHeaders();
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-			HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
-					requestHeaders);
-			String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
-			logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
-					+ " at url " + url);
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
-					BasicResponse.class);
+					HttpEntity<StopWorkloadMessage> msgEntity = new HttpEntity<StopWorkloadMessage>(msg,
+							requestHeaders);
+					String url = "http://" + hostname + "/driver/run/" + runName + "/workload/" + getName() + "/stop";
+					logger.debug("stop workload  " + name + ", sending stop workload message to host " + hostname 
+							+ " at url " + url);
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
+							BasicResponse.class);
 
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload stop to " + url);
-			}
-
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting workload stop to " + url);
+					}
+				}
+			}));
 		}
-		
+		/*
+		 * Now wait for all of the nodes to be notified of the change
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("stop getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		state = WorkloadState.STOPPING;
 
 	}
@@ -322,6 +383,7 @@ public abstract class Workload implements UserFactory {
 			
 			target.setUserLoad(targetNumUsers);
 		}
+		
 	}
 	
 
@@ -347,6 +409,14 @@ public abstract class Workload implements UserFactory {
 		status.setLoadPathName(loadPath.getName());
 		
 		return status;
+	}
+
+	public void setActiveUsers(long users) {
+		logger.debug("setActiveUsers: users set to " + users);
+		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
+			spec.setActiveUsers(users);
+		}		
+		logger.debug("setActiveUsers: finished");
 	}
 
 	public String getName() {
@@ -379,14 +449,6 @@ public abstract class Workload implements UserFactory {
 
 	public void setUseThinkTime(Boolean useThinkTime) {
 		this.useThinkTime = useThinkTime;
-	}
-
-	public StatsCollector getStatsCollector() {
-		return statsCollector;
-	}
-
-	public void setStatsCollector(StatsCollector statsCollector) {
-		this.statsCollector = statsCollector;
 	}
 
 	@JsonIgnore
@@ -443,6 +505,14 @@ public abstract class Workload implements UserFactory {
 		this.workloadStatsHost = workloadStatsHost;
 	}
 
+	public boolean isPerTargetStats() {
+		return perTargetStats;
+	}
+
+	public void setPerTargetStats(boolean perTargetStats) {
+		this.perTargetStats = perTargetStats;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder theStringBuilder = new StringBuilder();
@@ -473,14 +543,6 @@ public abstract class Workload implements UserFactory {
 
 		
 		return theStringBuilder.toString();
-	}
-
-	public void setActiveUsers(long users) {
-		logger.debug("setActiveUsers: users set to " + users);
-		for (StatsIntervalSpec spec : getStatsIntervalSpecs()) {	
-			spec.setActiveUsers(users);
-		}		
-		logger.debug("setActiveUsers: finished");
 	}
 
 }

@@ -25,7 +25,7 @@ import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.http.HttpTransport;
 import com.vmware.weathervane.workloadDriver.common.random.NegativeExponential;
 import com.vmware.weathervane.workloadDriver.common.random.TruncatedNormal;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 /**
  * @author Hal

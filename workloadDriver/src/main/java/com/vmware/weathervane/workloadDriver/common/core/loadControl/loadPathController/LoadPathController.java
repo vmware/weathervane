@@ -5,8 +5,8 @@ SPDX-License-Identifier: BSD-2-Clause
 package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
@@ -24,7 +24,11 @@ public interface LoadPathController {
 	 * @param intervalName The name of the interval to which this result belongs
 	 * @param passed True if the interval passed, false otherwise
 	 */
-	void postIntervalResult(String loadPathName, String intervalName, boolean passed);
+	void postIntervalResult(String loadPathName, Long intervalNum, boolean passed);
 	
 	void registerIntervalResultCallback(String name, LoadPathIntervalResultWatcher watcher);
+
+	void initialize(int numLoadPaths);
+
+	void removeIntervalResultCallback(String name);
 }

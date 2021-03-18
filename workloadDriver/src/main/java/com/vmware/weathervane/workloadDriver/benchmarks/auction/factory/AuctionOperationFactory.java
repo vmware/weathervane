@@ -38,7 +38,7 @@ import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.target.HttpTarget;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.factory.OperationFactory;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class AuctionOperationFactory implements OperationFactory {
 	private static final Logger logger = LoggerFactory.getLogger(AuctionOperationFactory.class);

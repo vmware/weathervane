@@ -260,6 +260,7 @@ public class IntervalLoadPath extends LoadPath {
 			status.setMaxPassIntervalName(maxPassIntervalName);
 			status.setPassed(passed);
 			status.setLoadPathName(this.getName());
+			loadPathController.removeIntervalResultCallback(getName());
 			workload.loadPathComplete(status);
 			nextInterval = uniformIntervals.get(curIntervalIndex);
 		} else {

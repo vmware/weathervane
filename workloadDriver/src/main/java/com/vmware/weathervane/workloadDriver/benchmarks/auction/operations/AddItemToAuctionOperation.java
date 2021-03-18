@@ -6,12 +6,9 @@ package com.vmware.weathervane.workloadDriver.benchmarks.auction.operations;
 
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionOperation;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
-import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
-import com.vmware.weathervane.workloadDriver.common.core.target.Target;
 import com.vmware.weathervane.workloadDriver.common.core.User;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
-
-import io.netty.buffer.ByteBuf;
+import com.vmware.weathervane.workloadDriver.common.core.target.Target;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class AddItemToAuctionOperation extends AuctionOperation  {
 

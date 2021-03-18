@@ -466,12 +466,7 @@ sub stopServicesInClusters {
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$logger->debug("stopServicesInClusters");
 
-	my $clustersRef = $self->clustersRef;
-	foreach my $cluster (@$clustersRef) {
-		my $clusterName = $cluster->name;
-		$logger->debug("stopServicesInClusters for $clusterName");
-		$cluster->kubernetesDeleteAllForCluster();
-	}
+	callMethodOnObjectsParallel( 'kubernetesDeleteAllForCluster', $self->clustersRef );
 }
 
 sub stopDataManager {

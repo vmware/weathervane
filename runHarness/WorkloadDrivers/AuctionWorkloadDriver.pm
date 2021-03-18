@@ -397,6 +397,7 @@ sub createRunConfigHash {
 	$runRef->{"runStatsHost"}          = $self->getRunStatsHost();
 	$runRef->{"workloadStatsHost"}     = $self->getWorkloadStatsHost();
 	$runRef->{"statsOutputDirName"} = "/tmp";
+	$runRef->{"perTargetStats"}     = $self->getParamValue('perTargetStats');
 
 	$runRef->{"workloads"} = [];
 	
@@ -445,7 +446,7 @@ sub createRunConfigHash {
 		$loadPath->{"isStatsInterval"} = JSON::true;
 		$loadPath->{"printSummary"}    = JSON::true;
 		$loadPath->{"printIntervals"}  = JSON::false;
-		$loadPath->{"printCsv"}        = JSON::true;
+		$loadPath->{"printCsv"}        = $self->getParamValue('printStatsCsv');
 
 		if ( $loadPathType eq "fixed" ) {
 			$logger->debug(
@@ -518,7 +519,7 @@ sub createRunConfigHash {
 		$statsIntervalSpec->{'type'} = "periodic"; 
 		$statsIntervalSpec->{"printSummary"} = JSON::false;
 		$statsIntervalSpec->{"printIntervals"} = JSON::true;
-		$statsIntervalSpec->{"printCsv"}       = JSON::true;
+		$statsIntervalSpec->{"printCsv"}       = $self->getParamValue('printStatsCsv');
 		$statsIntervalSpec->{"period"} = $self->getParamValue('statsInterval');
 		push @$statsIntervalSpecs, $statsIntervalSpec;
 		$workload->{"statsIntervalSpecs"} = $statsIntervalSpecs;

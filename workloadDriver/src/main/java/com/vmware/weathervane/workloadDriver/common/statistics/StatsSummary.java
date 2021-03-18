@@ -320,7 +320,7 @@ public class StatsSummary {
 		if (statsSummaryRollup == null) {
 			statsSummaryRollup = new StatsSummaryRollup();
 			statsSummaryRollup.doRollup(this);
-			logger.info("getStatsIntervalLine rollup:" + statsSummaryRollup);
+			logger.debug("getStatsIntervalLine rollup:" + statsSummaryRollup);
 		}
 		
 

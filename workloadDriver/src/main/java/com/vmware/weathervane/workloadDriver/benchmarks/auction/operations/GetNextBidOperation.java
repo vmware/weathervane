@@ -32,9 +32,9 @@ import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.exceptions.OperationFailedException;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
 
 public class GetNextBidOperation extends AuctionOperation implements NeedsLoginResponse, NeedsCurrentAuction, NeedsCurrentItem,
 		NeedsCurrentBid, ContainsCurrentBid, NeedsUserProfile {

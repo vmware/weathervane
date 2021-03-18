@@ -8,7 +8,7 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionOp
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class GetAuctionsForAuctioneerOperation extends AuctionOperation  {
 

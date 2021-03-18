@@ -9,6 +9,7 @@ use MooseX::ClassAttribute;
 use DataManagers::DataManager;
 use Parameters qw(getParamValue);
 use WeathervaneTypes;
+use Utils qw(runCmd);
 use List::Util qw[min max];
 use POSIX;
 use Try::Tiny;
@@ -138,21 +139,40 @@ sub stopDataManagerContainer {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $cluster = $self->host;
 	
+	# before deleting the deployment, capture info about state of the datamanager 
+	# pod and dump it to the log
+	my $namespace = $self->appInstance->namespace;
+	my $kubernetesConfigFile = $cluster->getParamValue('kubeconfigFile');
+	my $context = $cluster->getParamValue('kubeconfigContext');
+	my $contextString = "";
+	if ($context) {
+		$contextString = "--context=$context";	
+	}
+	my $cmd = "kubectl describe pod --namespace=$namespace --selector=impl=auctiondatamanager --kubeconfig=$kubernetesConfigFile $contextString";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("stopDataManagerContainer kubernetes describe pod failed: $cmdFailed");
+	}
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	print $applog "Command: $cmd\n";
+	print $applog "Output: $outString\n";
+	
 	$cluster->kubernetesDelete("configMap", "auctiondatamanager-config", $self->appInstance->namespace);
 	$cluster->kubernetesDelete("deployment", "auctiondatamanager", $self->appInstance->namespace);
-
+	
 	# Don't return until the data manager pod has terminated.  
 	# Give it five minutes total, which is excessive 
 	my $retries = 30;;
 	my $sleepDuration = 10; 
-    my $podExists = 1;
-    do {
-	  $podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );
-	  if ($podExists) {
-	    $retries--;    	
-	  	sleep $sleepDuration;
-	  }
-    } while ($podExists && ($retries > 0));
+	my $podExists = 1;
+	do {
+		$podExists = $self->host->kubernetesDoPodsExist("impl=auctiondatamanager", $self->appInstance->namespace );
+		if ($podExists) {
+			$retries--;    	
+			sleep $sleepDuration;
+		}
+	} while ($podExists && ($retries > 0));
 	# Even if the pod hasn't terminated yet, we let the run proceed because in most
 	# cases this won't cause a problem 
 }
@@ -329,10 +349,11 @@ sub loadData {
 	}
 
 	# Get the list of pods
-	my $cmd;
-	my $outString;	
-	$cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace --kubeconfig=$kubernetesConfigFile $contextString 2>&1";
-	$outString = `$cmd`;
+	my $cmd = "kubectl get pod -o=jsonpath='{.items[*].metadata.name}' --selector=impl=auctiondatamanager --namespace=$namespace --kubeconfig=$kubernetesConfigFile $contextString 2>&1";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	if ($cmdFailed) {
+		$logger->error("loadData get pod failed: $cmdFailed");
+	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
 	print $applog "Command: $cmd\n";
@@ -357,10 +378,17 @@ sub loadData {
 		$logger->debug("Got line: $line");
 		print $applog "Got line: $line\n";
    	}
-   	close $pipe;	
 	close $applog;
-	
-	close $applog;
+	my $pipeSucceeded = close $pipe;
+	if (!$pipeSucceeded) {
+		my $errorMessage = "";
+		if ($!) {
+			$errorMessage = ": $!";
+		}
+		
+		$console_logger->error("Data loading process for workload $workloadNum, appInstance $appInstanceNum failed$errorMessage");
+		return 0;
+	}	
 
 	# Now make sure that the data is really loaded properly
 	my $isDataLoaded = 0;

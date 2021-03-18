@@ -7,7 +7,6 @@ package com.vmware.weathervane.workloadDriver.benchmarks.auction.operations;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.omg.CosNaming._BindingIteratorImplBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +24,10 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.strategies.Rando
 import com.vmware.weathervane.workloadDriver.common.chooser.Chooser;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
-import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
+import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class LoginOperation extends AuctionOperation implements  NeedsPersonNames, NeedsPassword,
 		ChoosesBidStrategy, ContainsLoginResponse {

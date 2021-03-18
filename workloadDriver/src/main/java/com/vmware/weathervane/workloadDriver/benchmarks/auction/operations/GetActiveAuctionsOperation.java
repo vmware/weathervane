@@ -25,16 +25,14 @@ import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionSt
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsAttendedAuctions;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsLoginResponse;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsPageSize;
-import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.NeedsUsersPerAuction;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.PageSizeProvider;
-import com.vmware.weathervane.workloadDriver.benchmarks.auction.common.AuctionStateManagerStructs.UsersPerAuctionProvider;
 import com.vmware.weathervane.workloadDriver.benchmarks.auction.representation.AuctionRepresentation;
 import com.vmware.weathervane.workloadDriver.common.core.Behavior;
 import com.vmware.weathervane.workloadDriver.common.core.SimpleUri;
-import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.StateManagerStructs.DataListener;
+import com.vmware.weathervane.workloadDriver.common.core.User;
 import com.vmware.weathervane.workloadDriver.common.core.target.Target;
-import com.vmware.weathervane.workloadDriver.common.statistics.StatsCollector;
+import com.vmware.weathervane.workloadDriver.common.statistics.statsCollector.StatsCollector;
 
 public class GetActiveAuctionsOperation extends AuctionOperation implements
 		NeedsLoginResponse, NeedsPageSize, NeedsActiveAuctions, ContainsActiveAuctions, 

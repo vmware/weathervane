@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -57,6 +59,8 @@ public class Run {
 	
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
+	private boolean perTargetStats = false;
+			
 	@JsonIgnore
 	private List<String> hosts;
 
@@ -79,7 +83,7 @@ public class Run {
 			System.exit(1);
 		}
 		
-		executorService = Executors.newScheduledThreadPool(4 * workloads.size());
+		executorService = Executors.newScheduledThreadPool(3 * workloads.size());
 		
 		/*
 		 * Convert all of the host names to lower case
@@ -100,6 +104,7 @@ public class Run {
 		InitializeRunStatsMessage initializeRunStatsMessage = new InitializeRunStatsMessage();
 		initializeRunStatsMessage.setHosts(hosts);
 		initializeRunStatsMessage.setStatsOutputDirName(getStatsOutputDirName());
+		initializeRunStatsMessage.setIsPerTargetStats(perTargetStats);
 		Map<String, Integer> workloadNameToNumTargetsMap = new HashMap<String, Integer>();
 		for (Workload workload : workloads) {
 			workloadNameToNumTargetsMap.put(workload.getName(), workload.getNumTargets());
@@ -116,6 +121,12 @@ public class Run {
 		if (responseEntity.getStatusCode() != HttpStatus.OK) {
 			logger.error("Error posting workload initialization to " + url);
 		}
+		
+		/*
+		 * Let the loadPathController know how many workloads there
+		 * are so that it can size resources.
+		 */
+		loadPathController.initialize(workloads.size());
 
 		/*
 		 * Initialize the workloads
@@ -123,7 +134,7 @@ public class Run {
 		for (Workload workload : workloads) {
 			logger.debug("initialize name = " + name + ", initializing workload " + workload.getName());
 			workload.initialize(name, this, hosts, runStatsHost, workloadStatsHost,
-					loadPathController, restTemplate, executorService);
+					loadPathController, restTemplate, executorService, perTargetStats);
 		}
 		
 		state = RunState.INITIALIZED;
@@ -172,6 +183,45 @@ public class Run {
 	public void shutdown() {
 		logger.debug("shutdown for run " + name);
 
+		/*
+		 * Send exit messages to the other driver nodes
+		 */
+		List<Future<?>> sfList = new ArrayList<>();
+		for (String hostname : hosts) {
+			if (hostname.equals(workloadStatsHost)) {
+				continue;
+			}
+			
+			sfList.add(executorService.submit(new Runnable() {
+				
+				@Override
+				public void run() {
+					HttpHeaders requestHeaders = new HttpHeaders();
+					HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
+					requestHeaders.setContentType(MediaType.APPLICATION_JSON);
+					String url = "http://" + hostname + "/driver/exit/" + name;
+					ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
+							BasicResponse.class);
+
+					BasicResponse response = responseEntity.getBody();
+					if (responseEntity.getStatusCode() != HttpStatus.OK) {
+						logger.error("Error posting workload to " + url);
+					}
+				}
+			}));
+		}
+		/*
+		 * Now wait for all of the nodes to be notified of the exit
+		 */
+		sfList.stream().forEach(sf -> {
+			try {
+				logger.debug("shutdown getting a result of a notification");
+				sf.get(); 
+			} catch (Exception e) {
+				logger.warn("When notifying node got exception: " + e.getMessage());
+			};
+		});
+
 		executorService.shutdown();
 		try {
 			executorService.awaitTermination(10, TimeUnit.SECONDS);
@@ -185,26 +235,6 @@ public class Run {
 		}
 		logger.debug("stopped Operation executor");
 
-		/*
-		 * Send exit messages to the other driver nodes
-		 */
-		for (String hostname : hosts) {
-			if (hostname.equals(workloadStatsHost)) {
-				continue;
-			}
-			HttpHeaders requestHeaders = new HttpHeaders();
-			HttpEntity<String> stringEntity = new HttpEntity<String>(name, requestHeaders);
-			requestHeaders.setContentType(MediaType.APPLICATION_JSON);
-			String url = "http://" + hostname + "/driver/exit/" + name;
-			ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, stringEntity,
-					BasicResponse.class);
-
-			BasicResponse response = responseEntity.getBody();
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error posting workload to " + url);
-			}
-		}
-		
 		/*
 		 * Shutdown the driver after returning so that the web interface can
 		 * send a response
@@ -276,7 +306,6 @@ public class Run {
 		this.workloads = workloads;
 	}
 
-
 	public List<String> getHosts() {
 		return hosts;
 	}
@@ -323,6 +352,14 @@ public class Run {
 
 	public void setLoadPathController(LoadPathController loadPathController) {
 		this.loadPathController = loadPathController;
+	}
+
+	public boolean isPerTargetStats() {
+		return perTargetStats;
+	}
+
+	public void setPerTargetStats(boolean perTargetStats) {
+		this.perTargetStats = perTargetStats;
 	}
 
 	@Override

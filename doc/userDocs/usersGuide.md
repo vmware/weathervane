@@ -1156,14 +1156,14 @@ that the `small` configuration size, included in the initial release of Weatherv
 2.0, is still available, but has been deprecated in favor of the `small2` configuration.
 
 The primary distinction among the `small2`, `small2-applimit2`, and `small2-applimit1` configurations 
-is the size of the cpu requests and limits for the application server pod.  In all of the configurations, the 
+is the size of the cpu requests and limits for the application server pod(s).  In all of the configurations, the 
 application server is the first pod to become CPU bound, and so the limit specified for this pod affects the
 performance capability of the configuration.  In the `small2` configuration, the 
 application server pod has cpu requests and limits of 1500mcores, or 1.5 CPU cores.   In the `small2-applimit2`, the 
-application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. In the `small2-applimit21`, there are 
+application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. In the `small2-applimit1`, there are 
 two application server pods, and each has cpu requests and limits of 1000mcores, or 1 CPU core.  Because the 
-`small2-applimit2`, and `small2-applimit1` configurations request a whole number of CPU cores, and fall in 
-the Kubernetes guaranteed QoS class, these configurations are appropriate for tests involving the Kubernetesd CPU Manager.
+`small2-applimit2`, and `small2-applimit1` configurations request a whole number of CPU cores and fall in 
+the Kubernetes guaranteed QoS class, these configurations are appropriate for tests involving the Kubernetes CPU Manager.
 
 You can select a configuration size using the parameter `configurationSize`.
 

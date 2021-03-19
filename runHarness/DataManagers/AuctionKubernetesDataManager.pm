@@ -260,8 +260,9 @@ sub prepareData {
 	}
 	else {
 		if ( !$self->isDataLoaded( $users, $logPath ) ) {
+			my $maxUsers = $self->getParamValue('maxUsers');
 			$console_logger->info(
-				    "Data is not loaded for $users users for appInstance "
+				    "Data is not loaded for $maxUsers maxUsers for appInstance "
 				  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
 			# Load the data

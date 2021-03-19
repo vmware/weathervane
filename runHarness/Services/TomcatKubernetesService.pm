@@ -113,9 +113,8 @@ sub configure {
 					}
 					if ($self->getParamValue('useKubernetesLimits') ||
 						($self->getParamValue('useKubernetesRequests') && $self->getParamValue('useAppServerLimits'))) {
-						my $limitsExpansion = 1 + (0.01 *  $self->getParamValue('limitsExpansionPct'));
-						my $cpuLimit = $self->expandK8sCpu($self->getParamValue('appServerCpus'), $limitsExpansion);
-						my $memLimit = $self->expandK8sMem($self->getParamValue('appServerMem'), $limitsExpansion);
+						my $cpuLimit = $self->getParamValue('appServerCpus');
+						my $memLimit = $self->getParamValue('appServerMem');
 						print FILEOUT "$indent  limits:\n";
 						print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
 						print FILEOUT "$indent    memory: " . $memLimit . "\n";						
@@ -146,23 +145,62 @@ sub configure {
 			} while (!($inline =~ /timeoutSeconds/)); 
 			print FILEOUT $inline;			
 		}
+		elsif ( $inline =~ /weathervane\-appserverwarmer/ ) {
+			if (!($self->getParamValue('prewarmAppServers'))) {
+				#  Not using warmer so remove it from yaml
+				do {
+					$inline = <FILEIN>;
+				} while(!($inline =~ /\-\-\-/));
+				print FILEOUT $inline;							
+			} else {
+				do {
+					if ( $inline =~ /(\s+)resources/ )  {
+						my $indent = $1;
+						if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+							print FILEOUT $inline;
+						}
+						if ($self->getParamValue('useKubernetesRequests') || $self->getParamValue('useKubernetesLimits')) {
+							print FILEOUT "$indent  requests:\n";
+							print FILEOUT "$indent    cpu: " . $self->getParamValue('appWarmerCpus') . "\n";
+							print FILEOUT "$indent    memory: " . $self->getParamValue('appWarmerMem') . "\n";
+						}
+						if ($self->getParamValue('useKubernetesLimits') ||
+							($self->getParamValue('useKubernetesRequests') && $self->getParamValue('useAppServerLimits'))) {
+							my $cpuLimit = $self->getParamValue('appWarmerCpus');
+							my $memLimit = $self->getParamValue('appWarmerMem');
+							print FILEOUT "$indent  limits:\n";
+							print FILEOUT "$indent    cpu: " . $cpuLimit . "\n";
+							print FILEOUT "$indent    memory: " . $memLimit . "\n";						
+						}
+
+						do {
+							$inline = <FILEIN>;
+						} while(!($inline =~ /\-\-\-/));
+						print FILEOUT $inline;			
+					}
+					elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
+						print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
+					}
+					elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
+						my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
+						my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
+						print FILEOUT "${1}$dockerNamespace/${3}$version\n";
+					}
+		  		    elsif ( $inline =~ /(\s+)initialDelaySeconds:/ ) {
+				        # Randomize the initialDelaySeconds on the readiness probes
+						my $indent = $1;
+						my $delay = int(rand(60)) + 1;
+						print FILEOUT "${indent}initialDelaySeconds: $delay\n";
+					} else {
+						print FILEOUT $inline;						
+					}
+					$inline = <FILEIN>;
+				} while (!($inline =~ /apiVersion/)); 
+				print FILEOUT $inline;
+			}			
+		}
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numAppServers\n";
-		}
-		elsif (($inline =~ /auctionappserverwarmer/) && !($self->getParamValue('prewarmAppServers'))) {
-			# Not using warmer so remove it from yaml
-			do {
-				$inline = <FILEIN>;
-			} while(!($inline =~ /\-\-\-/));
-			print FILEOUT $inline;			
-		}
-		elsif ( $inline =~ /(\s+)imagePullPolicy/ ) {
-			print FILEOUT "${1}imagePullPolicy: " . $self->appInstance->imagePullPolicy . "\n";
-		}
-		elsif ( $inline =~ /(\s+\-\simage:\s)(.*\/)(.*\:)/ ) {
-			my $version  = $self->host->getParamValue('dockerWeathervaneVersion');
-			my $dockerNamespace = $self->host->getParamValue('dockerNamespace');
-			print FILEOUT "${1}$dockerNamespace/${3}$version\n";
 		}
 		elsif ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
 			my $indent = $1;

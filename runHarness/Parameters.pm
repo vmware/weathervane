@@ -1899,6 +1899,21 @@ $parameters{"appServerMem"} = {
 	"usageText" => "",
 	"showUsage" => 0,
 };
+$parameters{"appWarmerCpus"} = {
+	"type"      => "=s",
+	"default"   => "100m",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"appWarmerMem"} = {
+	"type"      => "=s",
+	"default"   => "500Mi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
 
 $parameters{"auctionBidServerCpus"} = {
 	"type"      => "=s",

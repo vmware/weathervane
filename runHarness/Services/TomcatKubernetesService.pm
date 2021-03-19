@@ -145,7 +145,7 @@ sub configure {
 			} while (!($inline =~ /timeoutSeconds/)); 
 			print FILEOUT $inline;			
 		}
-		elsif ( $inline =~ /weathervane\-appserverwarmer/ ) {
+		elsif ( $inline =~ /weathervane\-auctionappserverwarmer/ ) {
 			if (!($self->getParamValue('prewarmAppServers'))) {
 				#  Not using warmer so remove it from yaml
 				do {

@@ -63,69 +63,6 @@
   "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
 },
 
-"microLowCpu" : {
-  "users" : 200,
-  "maxUsers" : 3000,
-  "initialRampRateStep" : 100,
-  "numDrivers" : 1,
-  "driverJvmOpts" : "-Xmx1G -Xms1G -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
-  "driverCpus" : "450m",
-  "driverMem" : "1300Mi",
-  "driverControllerJvmOpts" : "-Xmx250M -Xms250M -XX:+AlwaysPreTouch",
-  "driverControllerCpus" : "50m",
-  "driverControllerMem" : "400Mi",
-  
-  "numWebServers" : 1,
-  "webServerCpus" : "20m",
-  "webServerMem"  : "600Mi",
-  "webServerImpl" : "nginx",
-  "nginxCacheVolumeSize" : "1250Mi",
-
-  "numAuctionBidServers" : 0,
-  
-  "numAppServers" : 1,
-  "appServerCpus" : "400m",
-  "appServerMem" : "1500Mi",
-  "appServerJvmOpts" : "-Xmx800M -Xms800M -XX:+UseParallelGC -XX:NewRatio=2 -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch ",
-  "appServerThreads" : 25,
-  "appServerJdbcConnections" : 26,
-  "numAuctioneerThreads" : 1,  
-  "appServerImpl" : "tomcat",
-  "appWarmerCpus" : "50m",
-  "appWarmerMem" : "500Mi",
-  "appServerWarmerThreadsPerServer" : 1,
-  "appServerWarmerIterations" : 500,
-  "numClientUpdateThreads" : 2,
-
-  "numCoordinationServers" : 1, 
-  "coordinationServerCpus" : "1m",
-  "coordinationServerMem" : "100Mi",
-  "coordinationServerImpl" : "zookeeper",
-  
-  "numMsgServers" : 1, 
-  "msgServerCpus" : "30m",
-  "msgServerMem" : "1000Mi",
-  "msgServerImpl" : "rabbitmq",
-
-  "numDbServers" : 1, 
-  "dbServerCpus" : "6m",
-  "dbServerMem" : "1000Mi",
-  "dbServerImpl" : "postgresql",
-  "postgresqlVolumeSize" : "4Gi",
-
-  "numNosqlServers" : 1, 
-  "nosqlServerCpus" : "30m",
-  "nosqlServerMem" : "1500Mi",
-  "nosqlServerImpl" : "cassandra",
-  "cassandraDataVolumeSize" : "10Gi",
-
-  "dbLoaderThreads" : 8,
-  "dbPrepThreads" : 128,
-  "dbLoaderCpus" : "400m",
-  "dbLoaderMem" : "2500Mi",
-  "dbLoaderJvmOpts" : "-Xmx2g -Xms2g -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+AlwaysPreTouch",
-},
-
 "xsmall" : {
   "users" : 1000,
   "maxUsers" : 12000,
@@ -299,6 +236,8 @@
   "appServerJdbcConnections" : 101,
   "numAuctioneerThreads" : 6,
   "appServerImpl" : "tomcat",
+  "appWarmerCpus" : "100m",
+  "appWarmerMem" : "500Mi",
   "appServerWarmerThreadsPerServer" : 1,
   "appServerWarmerIterations" : 500,
 
@@ -366,6 +305,8 @@
   "appServerJdbcConnections" : 51,
   "numAuctioneerThreads" : 3,
   "appServerImpl" : "tomcat",
+  "appWarmerCpus" : "100m",
+  "appWarmerMem" : "500Mi",
   "appServerWarmerThreadsPerServer" : 1,
   "appServerWarmerIterations" : 500,
 

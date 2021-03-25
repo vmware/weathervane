@@ -176,7 +176,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		if (!workload.getState().equals(WorkloadState.COMPLETED)) {
+		if (!workload.getState().equals(WorkloadState.COMPLETED) && (users != numActiveUsers)) {
 			try {
 				changeActiveUsers(users);
 			} catch (Throwable t) {

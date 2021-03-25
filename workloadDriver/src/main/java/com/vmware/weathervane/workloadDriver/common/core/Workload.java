@@ -357,7 +357,9 @@ public abstract class Workload implements UserFactory {
 		if (maxUsers < numUsers) {
 			throw new TooManyUsersException("MaxUsers = " + maxUsers);
 		}
-		getLoadPath().changeActiveUsers(numUsers);
+		if (numUsers != this.getNumActiveUsers()) {
+			getLoadPath().changeActiveUsers(numUsers);
+		}
 	}
 
 

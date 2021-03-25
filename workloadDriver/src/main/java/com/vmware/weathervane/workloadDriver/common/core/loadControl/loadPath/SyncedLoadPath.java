@@ -96,7 +96,7 @@ public abstract class SyncedLoadPath extends LoadPath {
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		if (!workload.getState().equals(WorkloadState.COMPLETED)) {
+		if (!workload.getState().equals(WorkloadState.COMPLETED) && (users != this.getNumActiveUsers())) {
 			try {
 				changeActiveUsers(users);
 			} catch (Throwable t) {

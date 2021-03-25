@@ -4,12 +4,12 @@ SPDX-License-Identifier: BSD-2-Clause
 */
 package com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPath;
 
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.TimeUnit;import org.omg.CORBA.COMM_FAILURE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vmware.weathervane.workloadDriver.common.core.Workload.WorkloadState;
 import com.vmware.weathervane.workloadDriver.common.core.WorkloadStatus;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.UniformLoadInterval;
 
@@ -57,7 +57,6 @@ public abstract class SyncedLoadPath extends LoadPath {
 			this.changeInterval(curIntervalNum, result.isPassed());
 			this.startNextInterval();
 		}
-
 	}
 	
 	@Override
@@ -97,11 +96,13 @@ public abstract class SyncedLoadPath extends LoadPath {
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		try {
-			changeActiveUsers(users);
-		} catch (Throwable t) {
-			logger.warn("changeInterval: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
-							this.getName(), t.getMessage());
+		if (!workload.getState().equals(WorkloadState.COMPLETED)) {
+			try {
+				changeActiveUsers(users);
+			} catch (Throwable t) {
+				logger.warn("changeInterval: LoadPath {} got throwable when notifying hosts of change in active users: {}", 
+						this.getName(), t.getMessage());
+			}
 		}
 	}
 	

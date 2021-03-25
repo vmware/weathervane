@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.vmware.weathervane.workloadDriver.common.core.Workload;
+import com.vmware.weathervane.workloadDriver.common.core.Workload.WorkloadState;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.RampLoadInterval;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadInterval.UniformLoadInterval;
 import com.vmware.weathervane.workloadDriver.common.core.loadControl.loadPathController.LoadPathController;
@@ -152,7 +153,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 	@Override
 	public void run() {
-		logger.info("run for run {}, workload {}, loadPath {}", runName, workloadName, name);
+		logger.debug("run for run {}, workload {}, loadPath {}", runName, workloadName, name);
 		
 		/*
 		 * Check whether the just completed interval was the end of a stats interval
@@ -175,11 +176,13 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		 * Send messages to workloadService on driver nodes indicating new
 		 * number of users to run.
 		 */
-		try {
-			changeActiveUsers(users);
-		} catch (Throwable t) {
-			logger.warn("LoadPath {} got throwable when notifying hosts of change in active users: {}", 
-							this.getName(), t.getMessage());
+		if (!workload.getState().equals(WorkloadState.COMPLETED)) {
+			try {
+				changeActiveUsers(users);
+			} catch (Throwable t) {
+				logger.warn("LoadPath {} got throwable when notifying hosts of change in active users: {}", 
+						this.getName(), t.getMessage());
+			}
 		}
 		
 		long wait = nextInterval.getDuration();
@@ -220,9 +223,9 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 						ResponseEntity<BasicResponse> responseEntity = null;
 						try {
 							tries--;
-							logger.info("changeActiveUsers for loadPath {}: Starting HTTP Post to {}", name, url);
+							logger.debug("changeActiveUsers for loadPath {}: Starting HTTP Post to {}", name, url);
 							responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,	BasicResponse.class);
-							logger.info("changeActiveUsers for loadPath {}: Completed HTTP Post to {}", name, url);
+							logger.debug("changeActiveUsers for loadPath {}: Completed HTTP Post to {}", name, url);
 						} catch (Throwable t) {
 								logger.warn("changeActiveUsers: LoadPath {} got throwable when notifying host {} of change in active users: {}", 
 										hostname, name, t.getMessage());
@@ -264,7 +267,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 
 		String url = "http://" + statsHostName + "/stats/run/" + runName + "/workload/" + workloadName
 				+ "/specName/" + getName() + "/intervalName/" + intervalName +"/rollup";
-		logger.info("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
+		logger.debug("fetchStatsSummaryRollup  getting rollup from " + statsHostName + ", url = " + url);
 		
 		/*
 		 * Need to keep getting rollup for the interval until the stats server
@@ -332,7 +335,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 			UniformLoadInterval nextInterval = getCurStatsInterval();
 			long intervalEndUsers = nextInterval.getUsers();
 			long lastIntervalEndTime = System.currentTimeMillis();
-			logger.info("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
+			logger.debug("StatsIntervalWatcher run intervalStartUsers = " + intervalStartUsers + ", intervalEndUsers = " + intervalEndUsers);
 
 			/*
 			 * Send messages to workloadService on driver nodes that interval has completed.
@@ -361,7 +364,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 								statsIntervalCompleteMessage, requestHeaders);
 						String url = "http://" + hostname + "/driver/run/" + runName + "/workload/"
 								+ workloadName + "/statsIntervalComplete";
-						logger.info("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
+						logger.debug("StatsIntervalWatcher run sending statsIntervalComplete message for run " + runName
 								+ ", workload " + workloadName + ", interval " + nextInterval.getName() + " to host " + hostname + ", url = " + url);
 						ResponseEntity<BasicResponse> responseEntity = restTemplate.exchange(url, HttpMethod.POST, msgEntity,
 								BasicResponse.class);
@@ -370,7 +373,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 						if (responseEntity.getStatusCode() != HttpStatus.OK) {
 							logger.error("Error posting statsIntervalComplete message to " + url);
 						} else {
-							logger.info("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
+							logger.debug("StatsIntervalWatcher run sent statsIntervalComplete message for run " + runName
 									+ ", workload " + workloadName + " to host " + hostname);
 						}
 					}
@@ -387,7 +390,7 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 					logger.warn("When notifying node got exception: " + e.getMessage());
 				};
 			});
-			logger.info("Finished statsIntervalComplete for loadPath {}", name);
+			logger.debug("Finished statsIntervalComplete for loadPath {}", name);
 
 			
 			intervalStartUsers = intervalEndUsers;

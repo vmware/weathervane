@@ -22,7 +22,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaseLoadPathController.class);
 
-	protected Map<String, LoadPathIntervalResultWatcher> watchers = new ConcurrentHashMap<>();
+	protected ConcurrentHashMap<String, LoadPathIntervalResultWatcher> watchers = new ConcurrentHashMap<>();
 	protected List<String> completedWatchers = new ArrayList<>();
 	protected AtomicInteger numWatchers = new AtomicInteger(0);
 	protected Map<Long, Integer> numIntervalResults = new HashMap<>();
@@ -100,11 +100,15 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		 * watchers that completed on the previous interval
 		 */
 		for (String watcherName: completedWatchers) {
+			logger.info("notifyWatchers for interval {}, removing completedWatcher {}", intervalNum, watcherName);
 			watchers.remove(watcherName);
 		}
+		logger.info("notifyWatchers for interval {}, removed completedWatchers.  There are {} remaining watchers", intervalNum, watchers.size());
 		completedWatchers.clear();
 		
 		boolean intervalCombinedResult = intervalCombinedResults.get(intervalNum);
+		logger.info("notifyWatchers for interval {}, intervalCombinedResult = {}", intervalNum, intervalCombinedResult);
+		
 		/*
 		 * Notify the watchers in parallel to avoid waiting for all of the driver nodes 
 		 * to be notified of changes in the number of users.

@@ -49,10 +49,13 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	}
 
 	@Override
-	public synchronized void removeIntervalResultCallback(String name) {
-		logger.debug("removeIntervalResultCallback for loadPath {}", name);
+	public void removeIntervalResultCallback(String name) {
+		logger.info("removeIntervalResultCallback for loadPath {}", name);
 
-		completedWatchers.add(name);
+		synchronized (completedWatchers) {
+			logger.info("removeIntervalResultCallback adding {} to completeWatchers", name);
+			completedWatchers.add(name);			
+		}
 		numWatchers.decrementAndGet();
 		logger.info("removeIntervalResultCallback completed for loadPath {}, numWatchers = {}", 
 				name, numWatchers);

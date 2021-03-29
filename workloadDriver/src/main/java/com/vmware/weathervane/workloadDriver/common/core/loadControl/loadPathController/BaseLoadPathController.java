@@ -49,7 +49,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	}
 
 	@Override
-	public void removeIntervalResultCallback(String name) {
+	public synchronized void removeIntervalResultCallback(String name) {
 		logger.debug("removeIntervalResultCallback for loadPath {}", name);
 
 		completedWatchers.add(name);
@@ -101,7 +101,9 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		 */
 		for (String watcherName: completedWatchers) {
 			logger.info("notifyWatchers for interval {}, removing completedWatcher {}", intervalNum, watcherName);
-			watchers.remove(watcherName);
+			if (watcherName != null) {
+				watchers.remove(watcherName);
+			}
 		}
 		logger.info("notifyWatchers for interval {}, removed completedWatchers.  There are {} remaining watchers", intervalNum, watchers.size());
 		completedWatchers.clear();

@@ -155,8 +155,6 @@ sub stopDataManagerContainer {
 	}
 	$logger->debug("Command: $cmd");
 	$logger->debug("Output: $outString");
-	print $applog "Command: $cmd\n";
-	print $applog "Output: $outString\n";
 	
 	$cluster->kubernetesDelete("configMap", "auctiondatamanager-config", $self->appInstance->namespace);
 	$cluster->kubernetesDelete("deployment", "auctiondatamanager", $self->appInstance->namespace);
@@ -231,7 +229,9 @@ sub prepareData {
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
-	my $logName = "$logPath/PrepareData_W${workloadNum}I${appInstanceNum}.log";
+	my $time = `date +%H:%M`;
+	chomp($time);
+	my $logName = "$logPath/PrepareData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $logHandle;
 	open( $logHandle, ">>$logName" ) or do {
 		$console_logger->error("Error opening $logName:$!");
@@ -266,6 +266,7 @@ sub prepareData {
 				  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
 			# Load the data
+			$appInstance->getDataServiceLogFiles($logPath);
 			$appInstance->stopServices("data", $logPath);
 			$appInstance->clearDataServicesBeforeStart($logPath);
 			$appInstance->startServices("data", $logPath, 0);
@@ -320,7 +321,10 @@ sub loadData {
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $cluster = $self->host;
-	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}.log";
+
+	my $time = `date +%H:%M`;
+	chomp($time);
+	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $namespace = $self->appInstance->namespace;
 	
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
@@ -416,7 +420,10 @@ sub isDataLoaded {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
-	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}.log";
+
+	my $time = `date +%H:%M`;
+	chomp($time);
+	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $applog;
 	open( $applog, ">$logName" )
 	  || die "Error opening /$logName:$!";

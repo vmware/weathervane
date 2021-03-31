@@ -1230,7 +1230,9 @@ sub kubernetesGetLogs {
 		}
 
 		$logger->debug("Command: $cmd");
-		my $logName          = "$destinationPath/${podName}.log";
+		my $time = `date +%H:%M`;
+		chomp($time);
+		my $logName          = "$destinationPath/${podName}-$time.log";
 		my $applog;
 		open( $applog, ">$logName" )
 	  	||	 die "Error opening $logName:$!";

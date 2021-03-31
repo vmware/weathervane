@@ -1360,7 +1360,7 @@ sub getLogFiles {
 }
 
 sub getDataServiceLogFiles {
-	my ( $self, $destinationPath ) = @_;
+	my ( $self, $baseDestinationPath ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	$logger->debug(
 		"getDataServiceLogFiles for workload ", $self->workload->instanceNum,
@@ -1382,6 +1382,7 @@ sub getDataServiceLogFiles {
 					exit(-1);
 				}
 				elsif ( $pid == 0 ) {
+					my $destinationPath = $baseDestinationPath . "/W" .  $self->workload->instanceNum . "I" . $self->instanceNum;
 					if ( !( -e $destinationPath ) ) {
 						`mkdir -p $destinationPath`;
 					}

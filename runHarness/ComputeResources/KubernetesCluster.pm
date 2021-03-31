@@ -1238,10 +1238,7 @@ sub kubernetesGetLogs {
 			$logger->error("kubernetesGetLogs logs failed: $cmdFailed");
 		}
 
-		$logger->debug("Command: $cmd");
-		my $time = `date +%H:%M`;
-		chomp($time);
-		my $logName          = "$destinationPath/${podName}-$time.log";
+		my $logName          = "$destinationPath/${podName}.log";
 		my $applog;
 		open( $applog, ">$logName" )
 	  	||	 die "Error opening $logName:$!";

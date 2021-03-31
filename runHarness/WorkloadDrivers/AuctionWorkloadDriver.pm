@@ -1488,11 +1488,11 @@ sub stopRun {
 	my $statsCompleteMsg = {};
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $self->json->encode($statsCompleteMsg);
-	$url      = $self->getControllerURL() . "/stats/complete/$runName";
+	my $url      = $self->getControllerURL() . "/stats/complete/$runName";
 	my $retryCount = 0;
 	my $success = 0;
 	do {
-		$res = $self->doHttpPost($url, $statsCompleteContent);
+		my $res = $self->doHttpPost($url, $statsCompleteContent);
 		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {

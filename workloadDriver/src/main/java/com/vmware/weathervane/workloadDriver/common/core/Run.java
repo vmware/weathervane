@@ -162,7 +162,7 @@ public class Run {
 		completedWorkloadStati.add(status);
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
-			state = RunState.COMPLETED;
+			this.stop();
 		}
 	}
 

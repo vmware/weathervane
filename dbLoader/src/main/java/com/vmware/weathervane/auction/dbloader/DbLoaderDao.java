@@ -143,12 +143,9 @@ public class DbLoaderDao {
 	private static long currentWorkRemainingCurIntervalStart = 0;
 	private static long futureWorkRemainingCurIntervalStart = 0;
 	/*
-	 * Start by printing completion updates every 5 minutes after initial 2
-	 * minutes. The first two minutes are ignored when making a time estimate.We
-	 * change this to be 10% of the estimated remaining time every time we print
-	 * an update.
+	 * Start by printing completion updates every 4 minutes.
 	 */
-	private static long updateIntervalMillis = 300000;
+	private static long updateIntervalMillis = 240000;
 
 	private enum Epochs {
 		USER, HISTORY, CURRENT, FUTURE
@@ -379,14 +376,14 @@ public class DbLoaderDao {
 
 			/*
 			 * Adjust the time between updates to be 10% of the estimated
-			 * remaining time as long as the amount of remaining time is > 5
-			 * minutes. The interval is never more than 10 minutes or less than
+			 * remaining time as long as the amount of remaining time is > 4
+			 * minutes. The interval is never more than 4 minutes or less than
 			 * 2 minutes.
 			 */
-			if (duration > 300000) {
+			if (duration > 240000) {
 				updateIntervalMillis = (long) Math.floor(duration * 0.10);
-				if (updateIntervalMillis > 300000) {
-					updateIntervalMillis = 300000;
+				if (updateIntervalMillis > 240000) {
+					updateIntervalMillis = 240000;
 				} else if (updateIntervalMillis < 120000) {
 					updateIntervalMillis = 120000;
 				}

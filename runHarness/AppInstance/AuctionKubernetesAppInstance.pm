@@ -153,7 +153,7 @@ override 'getEdgeAddrsRef' => sub {
 	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs($type);
 	  my $targetWeb = $self->getParamValue("nodeportTargetWeb");
 	  if ($targetWeb) {
-	  	$ipAddrsRef = $cluster->kubernetesGetNodeIPsForPodSelector($self->namespace, "impl=nginx");	  		  	
+	  	$ipAddrsRef = $cluster->kubernetesGetNodeIPsForPodSelector($self->namespace, "type=webServer");	  		  	
 	  } else {
 	  	$ipAddrsRef = $cluster->kubernetesGetNodeIPs($type);	  	
 	  }

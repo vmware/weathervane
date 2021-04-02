@@ -196,11 +196,11 @@ sub prepareDataServices {
 	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
 	
 	if (!$allIsStarted) {
+		$appInstance->getDataServiceLogFiles($logPath . "/prepareDataServicesFailure");
 		if ($self->getParamValue("reloadOnFailure")) {
 			# Delete the PVCs for this namespace and try again
 			$console_logger->info(
 				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
-			$appInstance->getDataServiceLogFiles($logPath);
 			$appInstance->stopServices("data", $logPath);
 			my $cluster = $self->host;
 			my $namespace = $self->appInstance->namespace;
@@ -267,7 +267,7 @@ sub prepareData {
 				  . "$appInstanceNum of workload $workloadNum. Loading data." );
 
 			# Load the data
-			$appInstance->getDataServiceLogFiles($logPath);
+			$appInstance->getDataServiceLogFiles($logPath . "/preLoadLogs");
 			$appInstance->stopServices("data", $logPath);
 			$appInstance->clearDataServicesBeforeStart($logPath);
 			$appInstance->startServices("data", $logPath, 0);

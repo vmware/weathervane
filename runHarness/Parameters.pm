@@ -537,6 +537,13 @@ $parameters{"appIngressMethod"} = {
     "usageText" => "Specifies the method to be used to enable ingress to the Weathervane Auction application.  Valid values are: loadbalancer, nodeport, nodeport-internal, and clusterip.",
     "showUsage" => 1,
 };
+$parameters{"abortFailingWorkload"} = {
+    "type"      => "!",
+    "default"   => JSON::false,
+    "parent"    => "workload",
+    "usageText" => "If set to true, this parameter will cause a workload to stop as soon as any application instance fails.",
+    "showUsage" => 0,
+};
 
 $parameters{"dataManager"} = {
 	"type"      => "hash",

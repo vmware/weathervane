@@ -60,7 +60,9 @@ public class Run {
 	private Set<String> runningWorkloadNames = new HashSet<String>();
 		
 	private boolean perTargetStats = false;
-			
+
+	private boolean abortOnFail = false;
+
 	@JsonIgnore
 	private List<String> hosts;
 
@@ -165,6 +167,10 @@ public class Run {
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
 			this.stop();
+		}
+		if (!status.isPassed() && abortOnFail) {
+			logger.debug("Workload {} failed.  Aborting run", status.getName());
+			this.stop();			
 		}
 	}
 
@@ -363,6 +369,14 @@ public class Run {
 
 	public void setPerTargetStats(boolean perTargetStats) {
 		this.perTargetStats = perTargetStats;
+	}
+
+	public boolean isAbortOnFail() {
+		return abortOnFail;
+	}
+
+	public void setAbortOnFail(boolean abortOnFail) {
+		this.abortOnFail = abortOnFail;
 	}
 
 	@Override

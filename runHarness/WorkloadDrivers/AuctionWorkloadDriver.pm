@@ -398,6 +398,7 @@ sub createRunConfigHash {
 	$runRef->{"workloadStatsHost"}     = $self->getWorkloadStatsHost();
 	$runRef->{"statsOutputDirName"} = "/tmp";
 	$runRef->{"perTargetStats"}     = $self->getParamValue('perTargetStats');
+	$runRef->{"abortOnFail"}     = $self->getParamValue('abortFailingWorkload');
 
 	$runRef->{"workloads"} = [];
 	

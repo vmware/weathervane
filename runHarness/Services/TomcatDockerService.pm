@@ -302,7 +302,7 @@ sub setExternalPortNumbers {
 }
 
 sub configure {
-	my ( $self, $logPath, $users, $suffix ) = @_;
+	my ( $self, $users, $suffix ) = @_;
 
 }
 

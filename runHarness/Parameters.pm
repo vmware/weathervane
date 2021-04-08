@@ -1641,6 +1641,14 @@ $parameters{"ssl"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"nodeportTargetWeb"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "If true, the driver will only send traffic for an instance to nodes with web pods.",
+	"showUsage" => 0,
+};
+
 $parameters{"randomizeImages"} = {
 	"type"      => "!",
 	"default"   => JSON::true,

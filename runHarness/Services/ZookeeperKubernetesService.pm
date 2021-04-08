@@ -26,10 +26,9 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users ) = @_;
+	my ( $self, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::ZookeeperKubernetesService");
 	$logger->debug("Configure Zookeeper kubernetes");
-	print $dblog "Configure Zookeeper Kubernetes\n";
 
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');

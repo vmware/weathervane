@@ -503,7 +503,13 @@ sub kubernetesDeleteAllForCluster {
 
 					my @remaining = split /\s+/, $outString;
 					my $numRemaining = $#remaining + 1;
-					$logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining items : $numRemaining");
+                    # Ignore any system items in the namespace (starting with kube)
+                    foreach my $objectName (@remaining) {
+                      if ($objectName =~ /kube/) {
+                        $numRemaining--;
+                      }
+                    }
+                    $logger->debug("kubernetesDeleteAllForCluster namespace $namespace remaining items : $numRemaining");
 					if ($numRemaining > 0) {
 						$loopExit = 0;
 						last;
@@ -542,6 +548,9 @@ sub _kubernetesDeleteAllForClusterHelper {
 
 		my @names = split /\s+/, $outString;
 		foreach my $name (@names) {
+            if ($name =~ /kube/) {
+				next;
+            }
 			$cmd = "kubectl delete $type $name $appendCmdStr";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
@@ -1229,7 +1238,6 @@ sub kubernetesGetLogs {
 			$logger->error("kubernetesGetLogs logs failed: $cmdFailed");
 		}
 
-		$logger->debug("Command: $cmd");
 		my $logName          = "$destinationPath/${podName}.log";
 		my $applog;
 		open( $applog, ">$logName" )

@@ -33,56 +33,28 @@ override 'initialize' => sub {
 override 'stop' => sub {
 	my ($self, $serviceType, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::KubernetesService");
-	my $console_logger   = get_logger("Console");
 
 	my $impl = $self->getImpl();
-	
-	
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $logName     = "$logPath/Stop${impl}Kubernetes-$time.log";
-	my $appInstance = $self->appInstance;
-	
 	$logger->debug("$impl kubernetes Stop");
-	
-	my $log;
-	open( $log, ">$logName" )
-	  || die "Error opening /$logName:$!";
-	print $log $self->meta->name . " In KubernetesService::stop for $impl\n";
-		
+			
 	my $cluster = $self->host;
-	
 	$cluster->kubernetesDeleteAllWithLabel("type=$serviceType", $self->namespace);
-	close $log;
 };
 
 # Configure and Start all of the services 
 override 'start' => sub {
 	my ($self, $serviceType, $users, $logPath)            = @_;
 	my $logger = get_logger("Weathervane::Services::KubernetesService");
-	my $console_logger   = get_logger("Console");
-	my $time = `date +%H:%M`;
-	chomp($time);
-	my $impl = $self->getImpl();
-	my $logName     = "$logPath/Start${impl}Kubernetes-$time.log";
-	my $appInstance = $self->appInstance;
-	
+
+	my $impl = $self->getImpl();	
 	$logger->debug("$impl kubernetes Start");
 	
-	my $log;
-	open( $log, ">$logName" )
-	  || die "Error opening /$logName:$!";
-	print $log $self->meta->name . " In KubernetesService::start for $impl\n";
-			
 	# Create the yaml file for the service
-	$self->configure($log, $serviceType, $users);
+	$self->configure($serviceType, $users);
 			
 	my $cluster = $self->host;
 	my $namespace = $self->namespace;
 	$cluster->kubernetesApply("/tmp/${impl}-${namespace}.yaml", $namespace);
-	
-	close $log;
-
 };
 
 override 'isRunning' => sub {

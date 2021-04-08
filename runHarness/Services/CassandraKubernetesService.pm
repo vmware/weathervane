@@ -61,10 +61,9 @@ sub clearDataAfterStart {
 }
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users ) = @_;
+	my ( $self, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
 	$logger->debug("Configure Cassandra kubernetes");
-	print $dblog "Configure Cassandra Kubernetes\n";
 
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');

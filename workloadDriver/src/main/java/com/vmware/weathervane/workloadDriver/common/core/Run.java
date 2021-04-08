@@ -158,11 +158,13 @@ public class Run {
 	 * have completed then the run is complete. 
 	 */
 	public void workloadComplete(WorkloadStatus status) {
-		runningWorkloadNames.remove(status.getName());
-		completedWorkloadStati.add(status);
+		synchronized (completedWorkloadStati) {
+			runningWorkloadNames.remove(status.getName());
+			completedWorkloadStati.add(status);			
+		}
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
-			state = RunState.COMPLETED;
+			this.stop();
 		}
 	}
 
@@ -273,19 +275,20 @@ public class Run {
 		RunStateResponse response = new RunStateResponse();
 		response.setState(getState());
 
-		// Add status for completed workloads
 		List<WorkloadStatus> workloadStati = new ArrayList<WorkloadStatus>();
-		for (WorkloadStatus status : completedWorkloadStati) {
-			workloadStati.add(status);
-		}
-		
-		// Add status for running workloads
-		for (Workload aWorkload: workloads) {
-			if (runningWorkloadNames.contains(aWorkload.getName())) {
-				workloadStati.add(aWorkload.getWorkloadStatus());
+		synchronized (completedWorkloadStati) {
+			// Add status for completed workloads
+			for (WorkloadStatus status : completedWorkloadStati) {
+				workloadStati.add(status);
 			}
-		}
-		
+			
+			// Add status for running workloads
+			for (Workload aWorkload: workloads) {
+				if (runningWorkloadNames.contains(aWorkload.getName())) {
+					workloadStati.add(aWorkload.getWorkloadStatus());
+				}
+			}	
+		}		
 		response.setWorkloadStati(workloadStati);
 
 		return(response);

@@ -1359,6 +1359,48 @@ sub getLogFiles {
 	}
 }
 
+sub getDataServiceLogFiles {
+	my ( $self, $baseDestinationPath ) = @_;
+	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
+	$logger->debug(
+		"getDataServiceLogFiles for workload ", $self->workload->instanceNum,
+		", appInstance ",            $self->instanceNum
+	);
+
+	my $pid;
+	my @pids;	
+	#  collection on services
+	my $impl         = $self->getParamValue('workloadImpl');
+	my $serviceTypes = $WeathervaneTypes::workloadToServiceTypes{$impl}->{'data'};
+	foreach my $serviceType (@$serviceTypes) {
+		my $servicesRef = $self->getAllServicesByType($serviceType);
+		foreach my $service (@$servicesRef) {
+			if ( $service->isReachable() ) {
+				$pid = fork();
+				if ( !defined $pid ) {
+					$logger->error("Couldn't fork a process: $!");
+					exit(-1);
+				}
+				elsif ( $pid == 0 ) {
+					my $destinationPath = $baseDestinationPath . "/W" .  $self->workload->instanceNum . "I" . $self->instanceNum;
+					if ( !( -e $destinationPath ) ) {
+						`mkdir -p $destinationPath`;
+					}
+					$service->getLogFiles($destinationPath);
+					exit;
+				}
+				else {
+					push @pids, $pid;
+				}
+			}
+		}
+	}
+
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+	}
+}
+
 sub getDeployedConfiguration {
 	my ( $self, $destinationPath) = @_;
 	

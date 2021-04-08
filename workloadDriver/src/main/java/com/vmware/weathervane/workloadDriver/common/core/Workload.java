@@ -357,7 +357,9 @@ public abstract class Workload implements UserFactory {
 		if (maxUsers < numUsers) {
 			throw new TooManyUsersException("MaxUsers = " + maxUsers);
 		}
-		getLoadPath().changeActiveUsers(numUsers);
+		if (numUsers != this.getNumActiveUsers()) {
+			getLoadPath().changeActiveUsers(numUsers);
+		}
 	}
 
 
@@ -395,6 +397,7 @@ public abstract class Workload implements UserFactory {
 	
 
 	public void loadPathComplete(WorkloadStatus status) {
+		setState(WorkloadState.COMPLETED);
 		status.setName(name);
 		status.setState(getState());
 		run.workloadComplete(status);

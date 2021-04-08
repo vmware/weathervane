@@ -9,9 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +22,9 @@ public abstract class BaseLoadPathController implements LoadPathController {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaseLoadPathController.class);
 
-	protected Map<String, LoadPathIntervalResultWatcher> watchers = new HashMap<>();
-	protected int numWatchers = 0;
+	protected ConcurrentHashMap<String, LoadPathIntervalResultWatcher> watchers = new ConcurrentHashMap<>();
+	protected List<String> completedWatchers = new ArrayList<>();
+	protected AtomicInteger numWatchers = new AtomicInteger(0);
 	protected Map<Long, Integer> numIntervalResults = new HashMap<>();
 
 	boolean useCombinedResults = true;
@@ -40,24 +43,27 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		logger.debug("registerIntervalResultCallback for loadPath {}", name);
 
 		watchers.put(name, watcher);
-		numWatchers++;
-		logger.debug("registerIntervalResultCallback for loadPath {}, numWatchers = {}", 
+		numWatchers.incrementAndGet();
+		logger.info("registerIntervalResultCallback completed for loadPath {}, numWatchers = {}", 
 				name, numWatchers);
 	}
 
 	@Override
 	public void removeIntervalResultCallback(String name) {
-		logger.debug("removeIntervalResultCallback for loadPath {}", name);
+		logger.info("removeIntervalResultCallback for loadPath {}", name);
 
-		watchers.remove(name);
-		numWatchers--;
-		logger.debug("registerIntervalResultCallback for loadPath {}, numWatchers = {}", 
+		synchronized (completedWatchers) {
+			logger.info("removeIntervalResultCallback adding {} to completeWatchers", name);
+			completedWatchers.add(name);			
+		}
+		numWatchers.decrementAndGet();
+		logger.info("removeIntervalResultCallback completed for loadPath {}, numWatchers = {}", 
 				name, numWatchers);
 	}
 
 	@Override
 	public synchronized void postIntervalResult(String loadPathName, Long intervalNum, boolean passed) {
-		logger.info("postIntervalResult for loadPath {}, interval {}, passed {}",
+		logger.debug("postIntervalResult for loadPath {}, interval {}, passed {}",
 				loadPathName, intervalNum, passed);
 
 		loadPathIndividualResults.put(loadPathName, passed);
@@ -69,7 +75,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		} else {
 			curNumResults = numIntervalResults.get(intervalNum) + 1;
 			boolean isLastInInterval = false;
-			if (curNumResults == numWatchers) {
+			if (curNumResults == numWatchers.get()) {
 				isLastInInterval = true;
 			}
 			intervalCombinedResults.put(intervalNum, 
@@ -77,9 +83,9 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		}
 		numIntervalResults.put(intervalNum, curNumResults);
 
-		logger.debug("postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
-				loadPathName, intervalNum, passed, curNumResults, numWatchers, intervalCombinedResults.get(intervalNum));
-		if (curNumResults == numWatchers) {
+		logger.info("postIntervalResult for loadPath {}, interval {}, passed {}, curNumResults {}, numWatchers {}, result: {}",
+				loadPathName, intervalNum, passed, curNumResults, numWatchers.get(), intervalCombinedResults.get(intervalNum));
+		if (curNumResults == numWatchers.get()) {
 			logger.debug("postIntervalResult notifying watchers for interval {} with result {}", 
 					intervalNum, intervalCombinedResults.get(intervalNum));
 			notifyWatchers(intervalNum);
@@ -91,7 +97,23 @@ public abstract class BaseLoadPathController implements LoadPathController {
 	
 	protected void notifyWatchers(long intervalNum) {
 		logger.info("notifyWatchers for interval {}", intervalNum);
+		
+		/*
+		 * Before processing the list of watchers, remove the 
+		 * watchers that completed on the previous interval
+		 */
+		for (String watcherName: completedWatchers) {
+			logger.info("notifyWatchers for interval {}, removing completedWatcher {}", intervalNum, watcherName);
+			if (watcherName != null) {
+				watchers.remove(watcherName);
+			}
+		}
+		logger.info("notifyWatchers for interval {}, removed completedWatchers.  There are {} remaining watchers", intervalNum, watchers.size());
+		completedWatchers.clear();
+		
 		boolean intervalCombinedResult = intervalCombinedResults.get(intervalNum);
+		logger.info("notifyWatchers for interval {}, intervalCombinedResult = {}", intervalNum, intervalCombinedResult);
+		
 		/*
 		 * Notify the watchers in parallel to avoid waiting for all of the driver nodes 
 		 * to be notified of changes in the number of users.
@@ -100,7 +122,7 @@ public abstract class BaseLoadPathController implements LoadPathController {
 		List<Future<?>> sfList = new ArrayList<>();
 		for (Entry<String, LoadPathIntervalResultWatcher> entry : watchers.entrySet()) {
 			String loadPathName = entry.getKey();
-			logger.debug("notifyWatchers for loadPath {}, interval {}, scheduling a notification", 
+			logger.info("notifyWatchers for loadPath {}, interval {}, scheduling a notification", 
 					loadPathName, intervalNum);
 			sfList.add(executorService.submit(new Runnable() {
 				

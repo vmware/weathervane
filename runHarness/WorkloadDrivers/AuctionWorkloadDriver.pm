@@ -1484,28 +1484,15 @@ sub stopRun {
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
 
-	# Now send the stop message
-	my $url      = $self->getControllerURL() . "/run/$runName/stop";
-	my $runContent = "{}";
-
-	my $res = $self->doHttpPost($url, $runContent);
-	if ( !$res->{"is_success"} ) {
-		$console_logger->warn(
-			"Could not send stop message to workload driver node on $hostname. Exiting"
-		);
-		return 0;
-	}
-				
-
-	# Now send the stats/complete message the primary driver which is also the statsService host
+	# Send the stats/complete message the primary driver which is also the statsService host
 	my $statsCompleteMsg = {};
 	$statsCompleteMsg->{'timestamp'} = time;
 	my $statsCompleteContent = $self->json->encode($statsCompleteMsg);
-	$url      = $self->getControllerURL() . "/stats/complete/$runName";
+	my $url      = $self->getControllerURL() . "/stats/complete/$runName";
 	my $retryCount = 0;
 	my $success = 0;
 	do {
-		$res = $self->doHttpPost($url, $statsCompleteContent);
+		my $res = $self->doHttpPost($url, $statsCompleteContent);
 		if ( $res->{"is_success"} ) {
 			$success = 1;
 		} else {

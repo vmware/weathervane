@@ -151,6 +151,12 @@ override 'getEdgeAddrsRef' => sub {
 	  	$type = "InternalIP";
 	  }
 	  my $ipAddrsRef = $cluster->kubernetesGetNodeIPs($type);
+	  my $targetWeb = $self->getParamValue("nodeportTargetWeb");
+	  if ($targetWeb) {
+	  	$ipAddrsRef = $cluster->kubernetesGetNodeIPsForPodSelector("type=webServer", $self->namespace);	  		  	
+	  } else {
+	  	$ipAddrsRef = $cluster->kubernetesGetNodeIPs($type);	  	
+	  }
 	  if ($#{$ipAddrsRef} < 0) {
 	  	 $logger->error("There are no IP addresses for the Kubernetes nodes");
 		 exit 1;

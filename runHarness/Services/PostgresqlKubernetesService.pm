@@ -54,10 +54,9 @@ sub clearDataAfterStart {
 }
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users ) = @_;
+	my ( $self, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::PostgresqlKubernetesService");
 	$logger->debug("Configure Postgresql kubernetes");
-	print $dblog "Configure Postgresql Kubernetes\n";
 
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');

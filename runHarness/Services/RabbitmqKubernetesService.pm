@@ -36,10 +36,9 @@ override 'initialize' => sub {
 };
 
 sub configure {
-	my ( $self, $dblog, $serviceType, $users ) = @_;
+	my ( $self, $serviceType, $users ) = @_;
 	my $logger = get_logger("Weathervane::Services::RabbitmqKubernetesService");
 	$logger->debug("Configure Rabbitmq kubernetes");
-	print $dblog "Configure Rabbitmq Kubernetes\n";
 
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');

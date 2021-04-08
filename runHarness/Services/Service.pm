@@ -229,7 +229,7 @@ sub start {
 
 	foreach my $service (@$servicesRef) {
 		$logger->debug( "Configure " . $service->name . "\n" );
-		$service->configure( $logPath, $users, $suffix );
+		$service->configure( $users, $suffix );
 	}
 
 	foreach my $service (@$servicesRef) {

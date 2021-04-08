@@ -1641,6 +1641,14 @@ $parameters{"ssl"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"nodeportTargetWeb"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "appInstance",
+	"usageText" => "If true, the driver will only send traffic for an instance to nodes with web pods.",
+	"showUsage" => 0,
+};
+
 $parameters{"randomizeImages"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
@@ -1895,6 +1903,21 @@ $parameters{"appServerCpus"} = {
 $parameters{"appServerMem"} = {
 	"type"      => "=s",
 	"default"   => "7Gi",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+$parameters{"appWarmerCpus"} = {
+	"type"      => "=s",
+	"default"   => "100m",
+	"parent"    => "appInstance",
+	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"appWarmerMem"} = {
+	"type"      => "=s",
+	"default"   => "500Mi",
 	"parent"    => "appInstance",
 	"usageText" => "",
 	"showUsage" => 0,

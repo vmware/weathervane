@@ -307,6 +307,10 @@ public class DBPrep {
 		int numDeleted = itemDao.deleteByPreloaded(false);
 		logger.info("Deleted " + numDeleted + " non-preloaded items\n");
 		
+		logger.debug("Deleting all non-preloaded highbids");
+		numDeleted = highBidDao.deleteByPreloaded(false);
+		logger.info("Deleted " + numDeleted + " non-preloaded highbids\n");
+
 		/*
 		 * Reset the users
 		 */

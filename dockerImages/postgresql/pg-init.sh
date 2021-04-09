@@ -68,7 +68,6 @@ done
 
 # Recreate indices
 echo "Drop and recreate indices"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_pkeys.sql
 sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -f /dbScripts/auction_postgresql_indices.sql
 
 # Force a vacuum and checkpoint

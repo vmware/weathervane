@@ -303,13 +303,13 @@ public class DBPrep {
 		/*
 		 * Delete items that were added during the last run
 		 */
-		logger.info("Deleting non-preloaded items\n");
+		logger.info("Deleting non-preloaded items");
 		int numDeleted = itemDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded items\n");
+		logger.info("Deleted " + numDeleted + " non-preloaded items");
 		
 		logger.debug("Deleting all non-preloaded highbids");
 		numDeleted = highBidDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded highbids\n");
+		logger.info("Deleted " + numDeleted + " non-preloaded highbids");
 
 		/*
 		 * Reset the users

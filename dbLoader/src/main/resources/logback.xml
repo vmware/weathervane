@@ -12,8 +12,8 @@ SPDX-License-Identifier: BSD-2-Clause
     </encoder>
   </appender>
 
-  <logger name="com.vmware" level="WARN"/>
-  <logger name="com.vmware.weathervane.auction.dbloader" level="WARN"/>
+  <logger name="com.vmware" level="DEBUG"/>
+  <logger name="com.vmware.weathervane.auction.dbloader" level="DEBUG"/>
   <logger name="org.hibernate" level="WARN"/>
 
   <!-- Strictly speaking, the level attribute is not necessary since -->

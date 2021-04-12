@@ -260,7 +260,7 @@ public class DBPrep {
 		 */
 		List<Auction> preusedAuctions = auctionDao.findByCurrentAndActivated(true, true);
 		logger.info("Found " + preusedAuctions.size()
-				+ " auctions that were activated in a previous run\n");
+				+ " auctions that were activated in a previous run");
 		int auctionsPerThread = (int) Math.ceil(preusedAuctions.size() / (1.0 * numThreads));
 		int numRemainingAuctions = preusedAuctions.size();
 		int startIndex = 0;
@@ -303,14 +303,14 @@ public class DBPrep {
 		/*
 		 * Delete items that were added during the last run
 		 */
-		logger.info("Deleting non-preloaded items");
-		int numDeleted = itemDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded items");
-		
-		logger.debug("Deleting all non-preloaded highbids");
-		numDeleted = highBidDao.deleteByPreloaded(false);
+		logger.debug("Deleting non-preloaded highbids");
+		int numDeleted = highBidDao.deleteByPreloaded(false);
 		logger.info("Deleted " + numDeleted + " non-preloaded highbids");
 
+		logger.info("Deleting non-preloaded items");
+		numDeleted = itemDao.deleteByPreloaded(false);
+		logger.info("Deleted " + numDeleted + " non-preloaded items");
+		
 		/*
 		 * Reset the users
 		 */

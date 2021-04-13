@@ -74,6 +74,8 @@ public class DBPrep {
 				"Only check whether the database is loaded with the proper number of users and then exit.");
 		Option p = new Option("p", "pretouch", false,
 				"Pretouch the data in the image and event stores.");
+		Option l = new Option("l", "afterLoad", false,
+				"Pretouch the data in the image and event stores.");
 		Option a = new Option("a", "auctions", true,
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);
@@ -84,6 +86,7 @@ public class DBPrep {
 		cliOptions.addOption(a);
 		cliOptions.addOption(c);
 		cliOptions.addOption(p);
+		cliOptions.addOption(l);
 		cliOptions.addOption(t);
 
 		CommandLine cliCmd = null;
@@ -105,6 +108,11 @@ public class DBPrep {
 		int numAuctions = Integer.valueOf(auctionsString);
 		long numThreads = Long.valueOf(numThreadsString);
 
+		boolean afterLoad = false;
+		if (cliCmd.hasOption("l")) {
+			afterLoad = true;
+		}
+		
 		// Determine the imageStore type from the spring.profiles.active
 		// property
 		String springProfilesActive = System.getProperty("spring.profiles.active");
@@ -139,8 +147,9 @@ public class DBPrep {
 		bidRepository = (BidRepository) context.getBean("bidRepository");
 		attendanceRecordRepository = (AttendanceRecordRepository) context.getBean("attendanceRecordRepository");
 
+		
 		/*
-		 * Make sure that database is loaded at correctly
+		 * Make sure that database is loaded correctly
 		 */
 		logger.debug("Checking whether database has benchmark info");
 		List<DbBenchmarkInfo> dbBenchmarkInfoList = dbBenchmarkInfoDao.getAll();
@@ -173,7 +182,7 @@ public class DBPrep {
 		}
 
 		/*
-		 * Make sure that NoSQL store is loaded at correctly
+		 * Make sure that NoSQL store is loaded correctly
 		 */
 		logger.debug("Checking whether NoSQL Data-Store has benchmark info");
 		List<NosqlBenchmarkInfo> nosqlBenchmarkInfoList = (List<NosqlBenchmarkInfo>) nosqlBenchmarkInfoRepository.findAll();
@@ -206,7 +215,7 @@ public class DBPrep {
 		}
 
 		/*
-		 * Make sure that the image store is loaded at correctly
+		 * Make sure that the image store is loaded correctly
 		 */
 		ImageStoreBenchmarkInfo imageStoreBenchmarkInfo = null;
 		try {
@@ -248,75 +257,75 @@ public class DBPrep {
 			System.exit(0);
 		}
 
-		/*
-		 * Clear out the images that were added on the last run.
-		 */
-		logger.debug("Clearing non-preloaded images");
-		imageStore.clearNonpreloadedImages();
+		if (!afterLoad) {
+			/*
+			 * Clear out the images that were added on the last run.
+			 */
+			logger.debug("Clearing non-preloaded images");
+			imageStore.clearNonpreloadedImages();
 
-		/*
-		 * Reset the data on all auctions that could be current in a run and
-		 * that were used in a previous run
-		 */
-		List<Auction> preusedAuctions = auctionDao.findByCurrentAndActivated(true, true);
-		logger.info("Found " + preusedAuctions.size()
-				+ " auctions that were activated in a previous run");
-		int auctionsPerThread = (int) Math.ceil(preusedAuctions.size() / (1.0 * numThreads));
-		int numRemainingAuctions = preusedAuctions.size();
-		int startIndex = 0;
-		for (int j = 0; j < numThreads; j++) {
-			if (numRemainingAuctions == 0)
-				break;
-			int numAuctionsToReset = auctionsPerThread;
-			if (numAuctionsToReset > numRemainingAuctions) {
-				numAuctionsToReset = numRemainingAuctions;
+			/*
+			 * Reset the data on all auctions that could be current in a run and that were
+			 * used in a previous run
+			 */
+			List<Auction> preusedAuctions = auctionDao.findByCurrentAndActivated(true, true);
+			logger.info("Found " + preusedAuctions.size() + " auctions that were activated in a previous run");
+			int auctionsPerThread = (int) Math.ceil(preusedAuctions.size() / (1.0 * numThreads));
+			int numRemainingAuctions = preusedAuctions.size();
+			int startIndex = 0;
+			for (int j = 0; j < numThreads; j++) {
+				if (numRemainingAuctions == 0)
+					break;
+				int numAuctionsToReset = auctionsPerThread;
+				if (numAuctionsToReset > numRemainingAuctions) {
+					numAuctionsToReset = numRemainingAuctions;
+				}
+				int endIndex = startIndex + numAuctionsToReset;
+
+				DBPrepService dbPrepService = new DBPrepService();
+				dbPrepService.setAuctionsToPrep(preusedAuctions);
+				dbPrepService.setAuctionDao(auctionDao);
+				dbPrepService.setHighBidDao(highBidDao);
+				dbPrepService.setPrepStartIndex(startIndex);
+				dbPrepService.setPrepEndIndex(endIndex);
+				dbPrepService.setResetAuctions(true);
+				dbPrepService.setPretouch(false);
+				Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
+				dbPrepThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+					public void uncaughtException(Thread th, Throwable ex) {
+						logger.warn("Uncaught exception in dbPrepService: " + ex);
+						System.exit(1);
+					}
+				});
+				threadList.add(dbPrepThread);
+				dbPrepThread.start();
+				startIndex += numAuctionsToReset;
+				numRemainingAuctions -= numAuctionsToReset;
 			}
-			int endIndex = startIndex + numAuctionsToReset;
+			// Wait for all threads to complete
+			for (Thread thread : threadList) {
+				thread.join();
+			}
+			threadList.clear();
 
-			DBPrepService dbPrepService = new DBPrepService();
-			dbPrepService.setAuctionsToPrep(preusedAuctions);
-			dbPrepService.setAuctionDao(auctionDao);
-			dbPrepService.setHighBidDao(highBidDao);
-			dbPrepService.setPrepStartIndex(startIndex);
-			dbPrepService.setPrepEndIndex(endIndex);
-			dbPrepService.setResetAuctions(true);
-			dbPrepService.setPretouch(false);
-			Thread dbPrepThread = new Thread(dbPrepService, "dbPrepService" + j);
-			dbPrepThread.setUncaughtExceptionHandler(
-					new Thread.UncaughtExceptionHandler() {
-						public void uncaughtException(Thread th, Throwable ex) {
-							logger.warn("Uncaught exception in dbPrepService: " + ex);
-							System.exit(1);
-						}
-					});
-			threadList.add(dbPrepThread);
-			dbPrepThread.start();
-			startIndex += numAuctionsToReset;
-			numRemainingAuctions -= numAuctionsToReset;
-		}
-		// Wait for all threads to complete
-		for (Thread thread : threadList) {
-			thread.join();
-		}
-		threadList.clear();
-		
-		/*
-		 * Delete items that were added during the last run
-		 */
-		logger.debug("Deleting non-preloaded highbids");
-		int numDeleted = highBidDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded highbids");
+			/*
+			 * Delete items that were added during the last run
+			 */
+			logger.debug("Deleting non-preloaded highbids");
+			int numDeleted = highBidDao.deleteByPreloaded(false);
+			logger.info("Deleted " + numDeleted + " non-preloaded highbids");
 
-		logger.info("Deleting non-preloaded items");
-		numDeleted = itemDao.deleteByPreloaded(false);
-		logger.info("Deleted " + numDeleted + " non-preloaded items");
-		
-		/*
-		 * Reset the users
-		 */
-		userDao.clearAllAuthTokens();
-		userDao.resetAllCreditLimits();
-		userDao.clearAllLoggedIn();
+			logger.info("Deleting non-preloaded items");
+			numDeleted = itemDao.deleteByPreloaded(false);
+			logger.info("Deleted " + numDeleted + " non-preloaded items");
+
+			/*
+			 * Reset the users
+			 */
+			userDao.clearAllAuthTokens();
+			userDao.resetAllCreditLimits();
+			userDao.clearAllLoggedIn();
+		}
 		
 		/*
 		 * If numAuctions is greater than 0, then we are preparing for a new run
@@ -328,11 +337,11 @@ public class DBPrep {
 			logger.info("Finding auctions with current flag set\n");
 			List<Auction> auctionsToActivate = auctionDao.findByCurrent(true, numAuctions);
 
-			auctionsPerThread = (int) Math.ceil(auctionsToActivate.size() / (1.0 * numThreads));
+			int auctionsPerThread = (int) Math.ceil(auctionsToActivate.size() / (1.0 * numThreads));
 			logger.info("Found " + auctionsToActivate.size() + " auctions to activate in this run. auctionsPerThread = "
 					+ auctionsPerThread + "\n");
-			numRemainingAuctions = auctionsToActivate.size();
-			startIndex = 0;
+			int numRemainingAuctions = auctionsToActivate.size();
+			int startIndex = 0;
 			for (int j = 0; j < numThreads; j++) {
 				int numAuctionsToReset = auctionsPerThread;
 				if (numAuctionsToReset > numRemainingAuctions) {

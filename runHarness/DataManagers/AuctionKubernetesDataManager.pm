@@ -250,12 +250,13 @@ sub prepareData {
 		return 0;		
 	}
 	
-		
+	my $loadedData = 0;	
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
 		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
+		$loadedData = 1;
 		if ( !$retVal ) { return 0; }
 	}
 	else {
@@ -273,6 +274,7 @@ sub prepareData {
 			$appInstance->clearDataServicesAfterStart($logPath);
 
 			$retVal = $self->loadData( $users, $logPath );
+			$loadedData = 1;
 			if ( !$retVal ) { return 0; }
 		}
 		else {
@@ -286,7 +288,16 @@ sub prepareData {
 	print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);
+	my ($cmdFailed, $outString);
+	if ($loadedData) {
+		print $logHandle "Exec-ing perl /prepareDataAfterLoad.pl in container $name\n";
+		$logger->debug("Exec-ing perl /prepareDataAfterLoad.pl  in container $name");
+		($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareDataAfterLoad.pl", $self->appInstance->namespace);
+	} else {
+		print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
+		$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
+		($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);		
+	}
 	print $logHandle "Output: cmdFailed = $cmdFailed, outString = $outString\n";
 	$logger->debug("Output: cmdFailed = $cmdFailed, outString = $outString");
 	if ($cmdFailed) {

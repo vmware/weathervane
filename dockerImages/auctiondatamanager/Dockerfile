@@ -9,6 +9,7 @@ COPY dbLoaderLibs /dbLoaderLibs
 COPY isDataLoaded.pl /isDataLoaded.pl
 COPY loadData.pl /loadData.pl
 COPY prepareData.pl /prepareData.pl
+COPY prepareData.pl /prepareDataAfterLoad.pl
 COPY images /images
 COPY items.json /items.json
 ARG http_proxy

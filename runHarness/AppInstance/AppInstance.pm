@@ -1538,7 +1538,7 @@ sub prepareData {
 		", logDir ",            $setupLogDir
 	);
 
-	my $allIsStarted = $self->dataManager->prepareData( $users, $setupLogDir );
+	my $allIsStarted = $self->dataManager->prepareData( $users, $setupLogDir, 0 );
 	if (!$allIsStarted && $forked) {
 		exit;
 	}

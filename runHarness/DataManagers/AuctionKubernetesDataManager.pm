@@ -203,8 +203,7 @@ sub prepareDataServices {
 				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
 			$appInstance->stopServices("data", $logPath);
 			my $cluster = $self->host;
-			my $namespace = $self->appInstance->namespace;
-			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $namespace );
+			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
 			$allIsStarted = $appInstance->startServices("data", $logPath, 0);
 		} else {
 			$console_logger->info(
@@ -220,7 +219,7 @@ sub prepareDataServices {
 
 
 sub prepareData {
-	my ( $self, $users, $logPath ) = @_;
+	my ( $self, $users, $logPath, $ignoreReloadOnFailure ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
@@ -284,16 +283,31 @@ sub prepareData {
 
 	$console_logger->info( "Preparing auctions and warming data-services for appInstance "
 				  . "$appInstanceNum of workload $workloadNum." );
-	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
+	print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);
 	print $logHandle "Output: cmdFailed = $cmdFailed, outString = $outString\n";
 	$logger->debug("Output: cmdFailed = $cmdFailed, outString = $outString");
 	if ($cmdFailed) {
-		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$appInstance->getDataServiceLogFiles($logPath . "/prepareDataFailure");
 		$self->stopDataManagerContainer($logHandle);
-		return 0;
+		if ($self->getParamValue("reloadOnFailure") && !$ignoreReloadOnFailure) {
+			# Delete the PVCs for this namespace and try again (but only once)
+			$console_logger->info(
+				"Couldn't prepare data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
+			$appInstance->stopServices("data", $logPath);
+			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
+			$appInstance->startServices("data", $logPath, 0);
+			return $self->prepareData( $users, $logPath, 1);
+		} else {
+			$console_logger->error( 
+				"Data preparation process failed.\n" .  
+				"Check 0/setuplogs/PrepareData-W${workloadNum}I${appInstanceNum}.log for more information.\n" .
+				"If this problem recurs, you can enable auto-remediation by setting \"reloadOnFailure\": true, in your configuration file.\n"
+				);
+			return 0;
+		}	
 	} 
 	
 	# Wait for the databases to finish any compaction

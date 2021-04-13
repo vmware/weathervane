@@ -229,7 +229,7 @@ sub prepareData {
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName = "$logPath/PrepareData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $logHandle;
@@ -348,7 +348,7 @@ sub loadData {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $cluster = $self->host;
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $namespace = $self->appInstance->namespace;
@@ -447,7 +447,7 @@ sub isDataLoaded {
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $applog;

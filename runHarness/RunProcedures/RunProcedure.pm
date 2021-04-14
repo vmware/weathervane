@@ -534,10 +534,11 @@ sub startStatsCollection {
 	my $startStatsScript = $self->getParamValue('startStatsScript');
 	my $seqnum = $self->seqnum;
 	if ($startStatsScript) {
-		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength $seqnum\`\n");
+		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength start_stats_collection.sh\`\n");
 		my $pid = fork();
 		if ( $pid == 0 ) {
-			my $cmdOut = `$startStatsScript $steadyStateLength`;
+			my $cmdOut = `$startStatsScript $steadyStateLength $seqnum`;
+			$logger->debug("startStatsScript output: $cmdOut");
 			exit;
 		}
 	}
@@ -597,7 +598,8 @@ sub stopStatsCollection {
 		$console_logger->info("Starting external script for stopStats: \`$stopStatsScript $seqnum\`\n");
 		my $pid = fork();
 		if ( $pid == 0 ) {
-			my $cmdOut = `$stopStatsScript`;
+			my $cmdOut = `$stopStatsScript $seqnum`;
+			$logger->debug("stopStatsScript output: $cmdOut");
 			exit;
 		}
 	}

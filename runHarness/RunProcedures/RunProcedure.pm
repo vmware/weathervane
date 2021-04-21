@@ -534,7 +534,7 @@ sub startStatsCollection {
 	my $startStatsScript = $self->getParamValue('startStatsScript');
 	my $seqnum = $self->seqnum;
 	if ($startStatsScript) {
-		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength start_stats_collection.sh\`\n");
+		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength $seqnum\`\n");
 		my $pid = fork();
 		if ( $pid == 0 ) {
 			my $cmdOut = `$startStatsScript $steadyStateLength $seqnum`;

@@ -75,7 +75,7 @@ public class DBPrep {
 		Option p = new Option("p", "pretouch", false,
 				"Pretouch the data in the image and event stores.");
 		Option l = new Option("l", "afterLoad", false,
-				"Pretouch the data in the image and event stores.");
+				"If set, dbPrep skips steps that are not needed after a fresh data load.");
 		Option a = new Option("a", "auctions", true,
 				"Number of auctions to be active in current run.");
 		a.setRequired(true);

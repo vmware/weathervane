@@ -532,11 +532,13 @@ sub startStatsCollection {
 	$logger->debug( "startStatsCollection.  logLevel = " . $logLevel );
 
 	my $startStatsScript = $self->getParamValue('startStatsScript');
+	my $seqnum = $self->seqnum;
 	if ($startStatsScript) {
-		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength\`\n");
+		$console_logger->info("Starting external script for startStats: \`$startStatsScript $steadyStateLength $seqnum\`\n");
 		my $pid = fork();
 		if ( $pid == 0 ) {
-			my $cmdOut = `$startStatsScript $steadyStateLength`;
+			my $cmdOut = `$startStatsScript $steadyStateLength $seqnum`;
+			$logger->debug("startStatsScript output: $cmdOut");
 			exit;
 		}
 	}
@@ -591,11 +593,13 @@ sub stopStatsCollection {
 	$logger->debug( "stopStatsCollection.  logLevel = " . $logLevel );
 
 	my $stopStatsScript = $self->getParamValue('stopStatsScript');
+	my $seqnum = $self->seqnum;
 	if ($stopStatsScript) {
-		$console_logger->info("Starting external script for stopStats: \`$stopStatsScript\`\n");
+		$console_logger->info("Starting external script for stopStats: \`$stopStatsScript $seqnum\`\n");
 		my $pid = fork();
 		if ( $pid == 0 ) {
-			my $cmdOut = `$stopStatsScript`;
+			my $cmdOut = `$stopStatsScript $seqnum`;
+			$logger->debug("stopStatsScript output: $cmdOut");
 			exit;
 		}
 	}

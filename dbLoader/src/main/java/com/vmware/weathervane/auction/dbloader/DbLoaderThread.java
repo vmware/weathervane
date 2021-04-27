@@ -36,7 +36,6 @@ public class DbLoaderThread implements Runnable {
 	
 	private static int currentChunkSize = 1;
 	private static int historyChunkSize = 1;
-	private static int highBidsPerItem = 100;
 
 	public DbLoaderThread() {
 	}
@@ -55,26 +54,10 @@ public class DbLoaderThread implements Runnable {
 			if (numAuctionsToCreate > totalAuctions) {
 				numAuctionsToCreate = totalAuctions;
 			}
-			List<Auction> auctions = null;
 			try {
-				auctions = dbLoaderDao.loadAuctionsChunk(numAuctionsToCreate, dbLoadSpec, itemDescr, allItemImages);
+				dbLoaderDao.loadAuctionsChunk(numAuctionsToCreate, dbLoadSpec, itemDescr, allItemImages);
 			} catch (Throwable t) {
 				logger.warn("Caught exception when loading current auctions chunk: " + t.getMessage());
-				t.printStackTrace();
-			}
-			try {
-				/*
-				 * Now add highBids for each item in each auction
-				 */
-				for (Auction auction: auctions) {
-					for (Item item: auction.getItems()) {
-						for (int i = 1; i <= highBidsPerItem; i++) {
-							dbLoaderDao.addHighBid(item, dbLoadSpec.getTotalUsers());
-						}
-					}
-				}
-			} catch (Throwable t) {
-				logger.warn("Caught exception when adding highbids: " + t.getMessage());
 				t.printStackTrace();
 			}
 

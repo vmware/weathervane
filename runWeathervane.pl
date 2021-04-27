@@ -22,6 +22,8 @@ my $skipPvTest = '';
 my $fixedConfigsFile = "";
 my $scriptPeriodSec = 60;
 my $help = '';
+my $startStatsScript = '';
+my $stopStatsScript = '';
 
 # Turn on auto flushing of output
 BEGIN { $| = 1 }
@@ -39,6 +41,8 @@ GetOptions(	'accept!' => \$accept,
 			'tmpDir=s' => \$tmpDir,
 			'script=s' => \$backgroundScript,
 			'fixedConfigsFile=s' => \$fixedConfigsFile,
+			'startStatsScript=s' => \$startStatsScript,
+			'stopStatsScript=s' => \$stopStatsScript,
 			'scriptPeriod=i' => \$scriptPeriodSec,
 			'mapSsh!' => \$mapSsh,
 			'skipPvTest!' => \$skipPvTest,
@@ -500,6 +504,50 @@ if ($fixedConfigsFile) {
 	}
 }
 
+my $startStatsScriptMountString = "";
+if ($startStatsScript) {
+	# If the $startStatsScript does not reference a file with an absolute path, 
+	# then make it an absolute path relative to the local dir
+	if (!($startStatsScript =~ /\//)) {
+		$startStatsScript = "$pwd/$startStatsScript";	
+	}
+	if (!(-e $startStatsScript)) {
+		die "The script $startStatsScript does not exist.\n";
+	}
+	if (!(-f $startStatsScript)) {
+		print "The script $startStatsScript must be a file.\n";
+		exit 1;									
+	}
+	if (!(-x $startStatsScript)) {
+		print "The script $startStatsScript must be a executable.\n";
+		exit 1;									
+	}
+	$startStatsScriptMountString = "-v $startStatsScript:$startStatsScript";
+	$wvCommandLineArgs .= " --startStatsScript $startStatsScript"
+}
+
+my $stopStatsScriptMountString = "";
+if ($stopStatsScript) {
+	# If the $stopStatsScript does not reference a file with an absolute path, 
+	# then make it an absolute path relative to the local dir
+	if (!($stopStatsScript =~ /\//)) {
+		$stopStatsScript = "$pwd/$stopStatsScript";	
+	}
+	if (!(-e $stopStatsScript)) {
+		die "The script $stopStatsScript does not exist.\n";
+	}
+	if (!(-f $stopStatsScript)) {
+		print "The script $stopStatsScript must be a file.\n";
+		exit 1;									
+	}
+	if (!(-x $stopStatsScript)) {
+		print "The script $stopStatsScript must be a executable.\n";
+		exit 1;									
+	}
+	$stopStatsScriptMountString = "-v $stopStatsScript:$stopStatsScript";
+	$wvCommandLineArgs .= " --stopStatsScript $stopStatsScript"
+}
+
 my $tz = `date +%Z`;
 chomp($tz);
 my $tzEnvString = "-e TZ=$tz";
@@ -522,6 +570,7 @@ print "Starting Weathervane Run-Harness.  Pulling container image may take a few
 my $cmdString = "docker run --name weathervane --net host $tzEnvString -d -w /root/weathervane " 
 		. "$configMountString $resultsMountString $k8sConfigMountString $fixedConfigsMountString " 
 		. "$outputMountString $tmpMountString $sshMountString " 
+		. "$startStatsScriptMountString $stopStatsScriptMountString "
 		. "$dockerNamespace/weathervane-runharness:$version $wvCommandLineArgs";
 my $dockerId = `$cmdString`;
 

@@ -342,13 +342,8 @@ public class AuctionDaoJpa extends GenericDaoJpa<Auction, Long> implements Aucti
 					+ ". Delete the bids for item " + anItem.getId());
 			bidRepository.deleteByItemId(anItem.getId());
 
-			logger.info("resetToFuture. auctionId = " + auction.getId()
-			+ ". Delete the highbids for item " + anItem.getId());
-			HighBid highBid = anItem.getHighbid();
-			if (highBid != null) {
-				anItem.setHighbid(null);
-				highBidDao.delete(highBid);
-			}
+			logger.info("resetToFuture. auctionId = " + auction.getId() + ". Clear highbid for item " + anItem.getId());
+			anItem.setHighbid(null);
 		}
 	}
 

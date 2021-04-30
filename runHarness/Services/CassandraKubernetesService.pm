@@ -180,10 +180,8 @@ sub configure {
         	        	print FILEOUT "${indent}      operator: Exists\n";
 					} 
 					if ($self->getParamValue('serviceTypeNodeLabels')) {
-    	        	    print FILEOUT "${indent}    - key: wvtype\n";
-        	        	print FILEOUT "${indent}      operator: In\n";
-        	        	print FILEOUT "${indent}      values:\n";
-        	        	print FILEOUT "${indent}      - $serviceType\n";
+    	        	    print FILEOUT "${indent}    - key: wv${serviceType}\n";
+        	        	print FILEOUT "${indent}      operator: Exists\n";
 					} 
 				} else {
 					print FILEOUT $inline;					

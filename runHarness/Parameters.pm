@@ -1149,14 +1149,6 @@ $parameters{"serviceTypeAffinity"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"serviceTypeAffinityWeight"} = {
-	"type"      => "=i",
-	"default"   => 50,
-	"parent"    => "runManager",
-	"usageText" => "The weight to apply to the podAffinity rule if serviceTypeAffinity is true",
-	"showUsage" => 1,
-};
-
 $parameters{"perTargetStats"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

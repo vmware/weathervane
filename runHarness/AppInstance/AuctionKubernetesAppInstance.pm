@@ -351,7 +351,6 @@ override 'getServiceConfigParameters' => sub {
 		}	
 	}
 	if ($self->getParamValue("serviceTypeAffinity")) {
-		my $weight = $self->getParamValue("serviceTypeAffinityWeight");
 		$rulesText .= 
 "        podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

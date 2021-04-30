@@ -352,42 +352,38 @@ override 'getServiceConfigParameters' => sub {
 		$rulesText .= 
 "        podAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - weight: $weight
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: type
-                  operator: In
-                  values:
-                  - $serviceType
-              topologyKey: kubernetes.io/hostname
-              namespaces:\n";
+          - labelSelector:
+              matchExpressions:
+              - key: type
+                operator: In
+                values:
+                - $serviceType
+            topologyKey: kubernetes.io/hostname
+            namespaces:\n";
 		my $namespacesListRef = $self->workload->getNamespaces();
 		for my $namespaceName (@$namespacesListRef) {
-			$rulesText .= "              - $namespaceName\n"
+			$rulesText .= "            - $namespaceName\n"
 		}
 		$rulesText .= 
 "        podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - weight: $weight
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: type
-                  operator: In
-                  values:\n";
+          - labelSelector:
+              matchExpressions:
+              - key: type
+                operator: In
+                values:\n";
 		my $serviceTypes = $WeathervaneTypes::serviceTypes{'auction'};
 		for my $otherServiceType (@$serviceTypes) {
 			if ($serviceType ne $otherServiceType) {
-				$rulesText .= "                  - $otherServiceType\n"
+				$rulesText .= "                - $otherServiceType\n"
 			}
 		}	
         $rulesText .= 
-"              topologyKey: kubernetes.io/hostname
-              namespaces:\n";
+"            topologyKey: kubernetes.io/hostname
+            namespaces:\n";
 		$namespacesListRef = $self->workload->getNamespaces();
 		for my $namespaceName (@$namespacesListRef) {
-			$rulesText .= "              - $namespaceName\n"
+			$rulesText .= "            - $namespaceName\n"
 		}	
 		
 	}

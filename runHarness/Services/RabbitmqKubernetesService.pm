@@ -56,6 +56,9 @@ sub configure {
 		$totalMemoryUnit = "kB";
 	}
 
+	my $serviceParamsHashRef =
+	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
+
 	my $numReplicas = $self->appInstance->getTotalNumOfServiceType($self->getParamValue('serviceType'));
 
 	open( FILEIN,  "$configDir/kubernetes/rabbitmq.yaml" ) or die "$configDir/kubernetes/rabbitmq.yaml: $!\n";
@@ -107,19 +110,35 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";
 		}
-		elsif ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
-			my $indent = $1;
+		elsif ( $inline =~ /^(\s+)affinity\:/ )  {
 			print FILEOUT $inline;
+			# Add any pod affinity rules controlled by parameters
+			print FILEOUT $serviceParamsHashRef->{"affinityRuleText"};
 			do {
 				$inline = <FILEIN>;
-				print FILEOUT $inline;			
-			} while(!($inline =~ /matchExpressions/));
-			if ($self->getParamValue('instanceNodeLabels')) {
-				my $workloadNum    = $self->appInstance->workload->instanceNum;
-				my $appInstanceNum = $self->appInstance->instanceNum;
-           	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
-           	    print FILEOUT "${indent}      operator: Exists\n";
-			}
+				if ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
+					my $indent = $1;
+					print FILEOUT $inline;
+					do {
+						$inline = <FILEIN>;
+						print FILEOUT $inline;			
+					} while(!($inline =~ /matchExpressions/));
+					if ($self->getParamValue('instanceNodeLabels')) {
+						my $workloadNum    = $self->appInstance->workload->instanceNum;
+						my $appInstanceNum = $self->appInstance->instanceNum;
+    	        	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+        	        	print FILEOUT "${indent}      operator: Exists\n";
+					} 
+					if ($self->getParamValue('serviceTypeNodeLabels')) {
+    	        	    print FILEOUT "${indent}    - key: wvtype\n";
+        	        	print FILEOUT "${indent}      operator: In\n";
+        	        	print FILEOUT "${indent}      values:\n";
+        	        	print FILEOUT "${indent}      - $serviceType\n";
+					} 
+				} else {
+					print FILEOUT $inline;					
+				}
+			} while(!($inline =~ /containers/));
 		}
 		else {
 			print FILEOUT $inline;

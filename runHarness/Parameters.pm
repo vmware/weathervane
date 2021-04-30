@@ -1092,6 +1092,14 @@ $parameters{"instanceNodeLabels"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"serviceTypeNodeLabels"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a service of a given type will only run on Kubernetes nodes with the appropriate label, e.g. wvtype=webServer",
+	"showUsage" => 1,
+};
+
 $parameters{"podInstanceAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
@@ -1100,11 +1108,11 @@ $parameters{"podInstanceAffinity"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"dataTierAffinity"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
+$parameters{"podInstanceAffinityWeight"} = {
+	"type"      => "=i",
+	"default"   => 50,
 	"parent"    => "runManager",
-	"usageText" => "If true, a podAffinity rule will be used to create affinity among data and backend pods of the same application instance ",
+	"usageText" => "The weight to apply to the podAffinity rule if podInstanceAffinity is true",
 	"showUsage" => 1,
 };
 
@@ -1116,12 +1124,28 @@ $parameters{"serviceTypeAntiAffinity"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"serviceTypeAntiAffinityWeight"} = {
+	"type"      => "=i",
+	"default"   => 100,
+	"parent"    => "runManager",
+	"usageText" => "The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true",
+	"showUsage" => 1,
+};
+
 $parameters{"serviceTypeAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
 	"parent"    => "runManager",
 	"usageText" => "If true, a podAntiAffinity rule will be used to create affinity among pods of the same type across all application instances,\n" .
 	" and anti-affinity among pods of different types across all instances",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAffinityWeight"} = {
+	"type"      => "=i",
+	"default"   => 50,
+	"parent"    => "runManager",
+	"usageText" => "The weight to apply to the podAffinity rule if serviceTypeAffinity is true",
 	"showUsage" => 1,
 };
 

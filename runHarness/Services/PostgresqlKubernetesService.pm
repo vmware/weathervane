@@ -61,6 +61,9 @@ sub configure {
 	my $namespace = $self->namespace;	
 	my $configDir        = $self->getParamValue('configDir');
 
+	my $serviceParamsHashRef =
+	  $self->appInstance->getServiceConfigParameters( $self, $self->getParamValue('serviceType') );
+
 	my $memString = $self->getParamValue('dbServerMem');
 	$logger->debug("dbServerMem is set to $memString, using this to tune postgres.");
 	$memString =~ /(\d+)\s*(\w+)/;
@@ -147,19 +150,35 @@ sub configure {
 		elsif ( $inline =~ /replicas:/ ) {
 			print FILEOUT "  replicas: $numReplicas\n";
 		}
-		elsif ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
-			my $indent = $1;
+		elsif ( $inline =~ /^(\s+)affinity\:/ )  {
 			print FILEOUT $inline;
+			# Add any pod affinity rules controlled by parameters
+			print FILEOUT $serviceParamsHashRef->{"affinityRuleText"};
 			do {
 				$inline = <FILEIN>;
-				print FILEOUT $inline;			
-			} while(!($inline =~ /matchExpressions/));
-			if ($self->getParamValue('instanceNodeLabels')) {
-				my $workloadNum    = $self->appInstance->workload->instanceNum;
-				my $appInstanceNum = $self->appInstance->instanceNum;
-           	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
-           	    print FILEOUT "${indent}      operator: Exists\n";
-			}
+				if ( $inline =~ /^(\s+)requiredDuringScheduling/ ) {
+					my $indent = $1;
+					print FILEOUT $inline;
+					do {
+						$inline = <FILEIN>;
+						print FILEOUT $inline;			
+					} while(!($inline =~ /matchExpressions/));
+					if ($self->getParamValue('instanceNodeLabels')) {
+						my $workloadNum    = $self->appInstance->workload->instanceNum;
+						my $appInstanceNum = $self->appInstance->instanceNum;
+    	        	    print FILEOUT "${indent}    - key: wvauctionw${workloadNum}i${appInstanceNum}\n";
+        	        	print FILEOUT "${indent}      operator: Exists\n";
+					} 
+					if ($self->getParamValue('serviceTypeNodeLabels')) {
+    	        	    print FILEOUT "${indent}    - key: wvtype\n";
+        	        	print FILEOUT "${indent}      operator: In\n";
+        	        	print FILEOUT "${indent}      values:\n";
+        	        	print FILEOUT "${indent}      - $serviceType\n";
+					} 
+				} else {
+					print FILEOUT $inline;					
+				}
+			} while(!($inline =~ /containers/));
 		}
 		elsif ( $inline =~ /(\s+)volumeClaimTemplates:/ ) {
 			print FILEOUT $inline;

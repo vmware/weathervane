@@ -1124,6 +1124,14 @@ $parameters{"serviceTypeAntiAffinity"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"serviceTypeAntiAffinityNotInstance"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true and serviceTypeAntiAffinity is true, the anti-affinity rule will not apply to the namespace of the instance",
+	"showUsage" => 0,
+};
+
 $parameters{"serviceTypeAntiAffinityWeight"} = {
 	"type"      => "=i",
 	"default"   => 100,

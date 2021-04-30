@@ -344,7 +344,10 @@ override 'getServiceConfigParameters' => sub {
               namespaces:\n";
 		my $namespacesListRef = $self->workload->getNamespaces();
 		for my $namespaceName (@$namespacesListRef) {
-			$rulesText .= "              - $namespaceName\n"
+			if (!$self->getParamValue("serviceTypeAntiAffinityNotInstance") || 
+				($namespaceName ne $self->namespace)) {
+				$rulesText .= "              - $namespaceName\n"
+			}
 		}	
 	}
 	if ($self->getParamValue("serviceTypeAffinity")) {

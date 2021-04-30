@@ -283,6 +283,17 @@ override 'checkConfig' => sub {
 		}
 	}
 	
+	if ($self->getParamValue("serviceTypeAffinity") && 
+		($self->getParamValue("podInstanceAffinity") || $self->getParamValue("serviceTypeAntiAffinity") || $self->getParamValue("dataTierAffinity"))) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The serviceTypeAffinity parameter cannot be true when podInstanceAffinity, dataTierAffinity, or serviceTypeAntiAffinity is also true.");
+				return 0;
+	}	
+	
+	if ($self->getParamValue("dataTierAffinity") && $self->getParamValue("podInstanceAffinity")) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The dataTierAffinity and podInstanceAffinity parameters cannot both be true.");
+				return 0;
+	}	
+
 	return 1;
 };
 

@@ -19,11 +19,6 @@ use WeathervaneTypes;
 
 extends 'AuctionAppInstance';
 
-has 'namespace' => (
-	is  => 'rw',
-	isa => 'Str',
-);
-
 has 'imagePullPolicy' => (
 	is      => 'rw',
 	isa     => 'Str',
@@ -313,6 +308,51 @@ override 'getServiceConfigParameters' => sub {
 
 		$serviceParameters{"jvmOpts"} = $jvmOpts;
 	}
+	
+	# Generate the pod affinity/anti-affinity rules.
+	my $rulesText = "";
+	if ($self->getParamValue("podInstanceAffinity")) {
+		$rulesText .= 
+"        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - auction
+              topologyKey: kubernetes.io/hostname\n";		
+	}
+	if ($self->getParamValue("dataTierAffinity")) {
+		if ($serviceType ne "webServer") {
+			$rulesText .= 
+"        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: type
+                  operator: In
+                  values:
+                  - $serviceType
+              topologyKey: kubernetes.io/hostname
+              namespaces:\n";
+			my $namespacesListRef = $self->workload->getNamespaces();
+			for my $namespaceName (@$namespacesListRef) {
+				$rulesText .= "              - $namespaceName\n"
+			}
+		}
+	}
+	if ($self->getParamValue("serviceTypeAntiAffinity")) {
+		
+	}
+	if ($self->getParamValue("serviceTypeAffinity")) {
+		
+	}
+	$serviceParameters{"affinityRuleText"} = $rulesText;
 
 	return \%serviceParameters;
 };

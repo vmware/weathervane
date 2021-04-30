@@ -1092,6 +1092,39 @@ $parameters{"instanceNodeLabels"} = {
 	"showUsage" => 1,
 };
 
+$parameters{"podInstanceAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAffinity rule will be used to create affinity among pods of the same application instance ",
+	"showUsage" => 1,
+};
+
+$parameters{"dataTierAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAffinity rule will be used to create affinity among data and backend pods of the same application instance ",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAntiAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAntiAffinity rule will be used to create affinity among pods of the same type across all application instances,\n" .
+	" and anti-affinity among pods of different types across all instances",
+	"showUsage" => 1,
+};
+
 $parameters{"perTargetStats"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

@@ -113,6 +113,12 @@ has 'host' => (
 	is  => 'rw',
 );
 
+has 'namespace' => (
+	is  => 'rw',
+	isa => 'Str',
+	default => "",
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();

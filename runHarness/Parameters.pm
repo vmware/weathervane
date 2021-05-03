@@ -1118,7 +1118,7 @@ $parameters{"podInstanceAffinityWeight"} = {
 
 $parameters{"serviceTypeAntiAffinity"} = {
 	"type"      => "!",
-	"default"   => JSON::false,
+	"default"   => JSON::true,
 	"parent"    => "runManager",
 	"usageText" => "If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances",
 	"showUsage" => 1,

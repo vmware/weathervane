@@ -1124,14 +1124,6 @@ $parameters{"serviceTypeAntiAffinity"} = {
 	"showUsage" => 1,
 };
 
-$parameters{"serviceTypeAntiAffinityNotInstance"} = {
-	"type"      => "!",
-	"default"   => JSON::false,
-	"parent"    => "runManager",
-	"usageText" => "If true and serviceTypeAntiAffinity is true, the anti-affinity rule will not apply to the namespace of the instance",
-	"showUsage" => 0,
-};
-
 $parameters{"serviceTypeAntiAffinityWeight"} = {
 	"type"      => "=i",
 	"default"   => 100,
@@ -1144,7 +1136,7 @@ $parameters{"serviceTypeAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
 	"parent"    => "runManager",
-	"usageText" => "If true, a podAntiAffinity rule will be used to create affinity among pods of the same type across all application instances,\n" .
+	"usageText" => "If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type across all application instances,\n" .
 	" and anti-affinity among pods of different types across all instances",
 	"showUsage" => 1,
 };

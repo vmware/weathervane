@@ -203,8 +203,7 @@ sub prepareDataServices {
 				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
 			$appInstance->stopServices("data", $logPath);
 			my $cluster = $self->host;
-			my $namespace = $self->appInstance->namespace;
-			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $namespace );
+			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
 			$allIsStarted = $appInstance->startServices("data", $logPath, 0);
 		} else {
 			$console_logger->info(
@@ -220,7 +219,7 @@ sub prepareDataServices {
 
 
 sub prepareData {
-	my ( $self, $users, $logPath ) = @_;
+	my ( $self, $users, $logPath, $ignoreReloadOnFailure ) = @_;
 	my $console_logger = get_logger("Console");
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
@@ -230,7 +229,7 @@ sub prepareData {
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName = "$logPath/PrepareData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $logHandle;
@@ -251,12 +250,13 @@ sub prepareData {
 		return 0;		
 	}
 	
-		
+	my $loadedData = 0;	
 	if ($reloadDb) {
 		$appInstance->clearDataServicesAfterStart($logPath);
 
 		# Have been asked to reload the data
 		$retVal = $self->loadData( $users, $logPath );
+		$loadedData = 1;
 		if ( !$retVal ) { return 0; }
 	}
 	else {
@@ -274,6 +274,7 @@ sub prepareData {
 			$appInstance->clearDataServicesAfterStart($logPath);
 
 			$retVal = $self->loadData( $users, $logPath );
+			$loadedData = 1;
 			if ( !$retVal ) { return 0; }
 		}
 		else {
@@ -284,16 +285,40 @@ sub prepareData {
 
 	$console_logger->info( "Preparing auctions and warming data-services for appInstance "
 				  . "$appInstanceNum of workload $workloadNum." );
-	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
+	print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
-	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);
+	my ($cmdFailed, $outString);
+	if ($loadedData) {
+		print $logHandle "Exec-ing perl /prepareDataAfterLoad.pl in container $name\n";
+		$logger->debug("Exec-ing perl /prepareDataAfterLoad.pl  in container $name");
+		($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareDataAfterLoad.pl", $self->appInstance->namespace);
+	} else {
+		print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
+		$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
+		($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /prepareData.pl", $self->appInstance->namespace);		
+	}
 	print $logHandle "Output: cmdFailed = $cmdFailed, outString = $outString\n";
 	$logger->debug("Output: cmdFailed = $cmdFailed, outString = $outString");
 	if ($cmdFailed) {
-		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+		$appInstance->getDataServiceLogFiles($logPath . "/prepareDataFailure");
 		$self->stopDataManagerContainer($logHandle);
-		return 0;
+		if ($self->getParamValue("reloadOnFailure") && !$ignoreReloadOnFailure) {
+			# Delete the PVCs for this namespace and try again (but only once)
+			$console_logger->info(
+				"Couldn't prepare data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
+			$appInstance->stopServices("data", $logPath);
+			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
+			$appInstance->startServices("data", $logPath, 0);
+			return $self->prepareData( $users, $logPath, 1);
+		} else {
+			$console_logger->error( 
+				"Data preparation process failed.\n" .  
+				"Check 0/setuplogs/PrepareData-W${workloadNum}I${appInstanceNum}.log for more information.\n" .
+				"If this problem recurs, you can enable auto-remediation by setting \"reloadOnFailure\": true, in your configuration file.\n"
+				);
+			return 0;
+		}	
 	} 
 	
 	# Wait for the databases to finish any compaction
@@ -323,7 +348,7 @@ sub loadData {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 	my $cluster = $self->host;
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $namespace = $self->appInstance->namespace;
@@ -422,7 +447,7 @@ sub isDataLoaded {
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 
-	my $time = `date +%H:%M`;
+	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName = "$logPath/isDataLoaded-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $applog;

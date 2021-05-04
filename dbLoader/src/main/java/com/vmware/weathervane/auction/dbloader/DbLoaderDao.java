@@ -634,28 +634,12 @@ public class DbLoaderDao {
 			logger.debug(threadName + ":loadAuctionsChunk.  added attendanceRecords for auction " + i);
 
 			/*
-			 * Now update the items with the full description. Also create the
-			 * HighBid entries for each item
+			 * Now update the items with the full description. 
 			 */
-			long itemStartTimeMillis = FixedOffsetCalendarFactory.getCalendar().getTimeInMillis();
 			for (Item anItem : anAuction.getItems()) {
 				updateItemForAuction(anAuction, anItem, itemDescr, ItemState.INAUCTION, dbLoadSpec);
-
-				long itemEndTimeMillis = itemStartTimeMillis + historyMinPerItem * 60 * 1000 - 1;
-				HighBid highBid = new HighBid();
-				highBid.setBiddingStartTime(new Date(itemStartTimeMillis));
-				highBid.setBiddingEndTime(new Date(itemEndTimeMillis));
-				highBid.setAuction(anAuction);
-				highBid.setBidCount(0);
-				highBid.setItem(anItem);
-				highBid.setAmount(anItem.getStartingBidAmount() + 1);
-				highBid.setState(HighBidState.OPEN);
-				highBid.setPreloaded(false);
-
-				anItem.setHighbid(highBid);
-				itemStartTimeMillis += historyMinPerItem * 60 * 1000;
 			}
-			logger.debug(threadName + ":loadAuctionsChunk.  added highBid and updated items for auction " + i);
+			logger.debug(threadName + ":loadAuctionsChunk.  updated items for auction " + i);
 
 			logger.debug("loadAuctionsChunk calling addImagesForItems.  numImages = " + numImages);
 			addImagesForItems(anAuction, dbLoadSpec, imageSizes, numImages, allItemImages,

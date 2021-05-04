@@ -1420,19 +1420,20 @@ sub startRun {
 		my $wkldName = $workloadStatus->{'name'};
 		my $loadPathName = $workloadStatus->{'loadPathName'};
 		my $maxPassIntervalName = $workloadStatus->{'maxPassIntervalName'};
+		if ($maxPassIntervalName) { 
+			$url = $self->getControllerURL() . "/stats/run/$runName/workload/$wkldName/specName/$loadPathName/intervalName/$maxPassIntervalName";
+			$res = $self->doHttpGet($url);
 
-		$url = $self->getControllerURL() . "/stats/run/$runName/workload/$wkldName/specName/$loadPathName/intervalName/$maxPassIntervalName";
-		$res = $self->doHttpGet($url);
+			if ( $res->{"is_success"} ) {
+				my $endStats = $self->json->decode($res->{"content"});
+				my $summaryText = $endStats->{'summaryText'};
 
-		if ( $res->{"is_success"} ) {
-			my $endStats = $self->json->decode($res->{"content"});
-			my $summaryText = $endStats->{'summaryText'};
-
-			if ($summaryText) {
-				open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
-					or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
-				print FILE $summaryText;
-				close FILE;
+				if ($summaryText) {
+					open( FILE, ">$logDir/EndRunReport-$wkldName.json" )
+						or die "Couldn't open $logDir/EndRunReport-$wkldName.json: $!";
+					print FILE $summaryText;
+					close FILE;
+				}
 			}
 		}
 	}

@@ -224,6 +224,17 @@ sub setExternalPortNumbers {
 	}
 }
 
+# Returns a list of the namespaces for all application instances in the workload
+sub getNamespaces {
+	my ( $self ) = @_;
+	my @namespaces;
+	my $appInstanceRef = $self->appInstancesRef;
+	foreach my $appInstance (@$appInstanceRef) {
+		push @namespaces, $appInstance->namespace;
+	}
+	return \@namespaces;
+}
+
 sub isUp {
 	my ( $self, $logDir ) = @_;
 

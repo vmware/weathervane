@@ -10,6 +10,7 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use AppInstance::AuctionAppInstance;
 use ComputeResources::Cluster;
+use WeathervaneTypes;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -18,11 +19,6 @@ use namespace::autoclean;
 use WeathervaneTypes;
 
 extends 'AuctionAppInstance';
-
-has 'namespace' => (
-	is  => 'rw',
-	isa => 'Str',
-);
 
 has 'imagePullPolicy' => (
 	is      => 'rw',
@@ -313,6 +309,84 @@ override 'getServiceConfigParameters' => sub {
 
 		$serviceParameters{"jvmOpts"} = $jvmOpts;
 	}
+	
+	# Generate the pod affinity/anti-affinity rules.
+	my $rulesText = "";
+	if ($self->getParamValue("podInstanceAffinity")) {
+		my $weight = $self->getParamValue("podInstanceAffinityWeight");
+		$rulesText .= 
+"        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: $weight
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - auction
+              topologyKey: kubernetes.io/hostname\n";		
+	}
+	if ($self->getParamValue("serviceTypeAntiAffinity")) {
+		my $weight = $self->getParamValue("serviceTypeAntiAffinityWeight");
+		$rulesText .= 
+"        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: $weight
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: type
+                  operator: In
+                  values:
+                  - $serviceType
+              topologyKey: kubernetes.io/hostname
+              namespaces:\n";
+		my $namespacesListRef = $self->workload->getNamespaces();
+		for my $namespaceName (@$namespacesListRef) {
+			$rulesText .= "              - $namespaceName\n"
+		}	
+	}
+	if ($self->getParamValue("serviceTypeAffinity")) {
+		$rulesText .= 
+"        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: type
+                operator: In
+                values:
+                - $serviceType
+            topologyKey: kubernetes.io/hostname
+            namespaces:\n";
+		my $namespacesListRef = $self->workload->getNamespaces();
+		for my $namespaceName (@$namespacesListRef) {
+			$rulesText .= "            - $namespaceName\n"
+		}
+		$rulesText .= 
+"        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: type
+                operator: In
+                values:\n";
+		my $serviceTypes = $WeathervaneTypes::serviceTypes{'auction'};
+		for my $otherServiceType (@$serviceTypes) {
+			if ($serviceType ne $otherServiceType) {
+				$rulesText .= "                - $otherServiceType\n"
+			}
+		}	
+        $rulesText .= 
+"            topologyKey: kubernetes.io/hostname
+            namespaces:\n";
+		$namespacesListRef = $self->workload->getNamespaces();
+		for my $namespaceName (@$namespacesListRef) {
+			$rulesText .= "            - $namespaceName\n"
+		}	
+		
+	}
+	$serviceParameters{"affinityRuleText"} = $rulesText;
 
 	return \%serviceParameters;
 };

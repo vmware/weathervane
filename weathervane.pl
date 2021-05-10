@@ -566,18 +566,18 @@ if ( $logger->is_debug() ) {
 	$logger->debug( "The paramsHashRef after command-line and configfile is :\n" . $tmp );
 }
 
-# Start by building the runManager.  It holds the entire structure needed for the run(s)
-my $runManagerParamHashRef =
-  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $paramsHashRef, "runManagerInstance" );
+# Start by building the runstrategy.  It holds the entire structure needed for the run(s)
+my $runStrategyParamHashRef =
+  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $paramsHashRef, "runStrategyInstance" );
 if ( $logger->is_debug() ) {
-	my $tmp = $json->encode($runManagerParamHashRef);
-	$logger->debug( "The runManager instance paramHashRef is:\n" . $tmp );
+	my $tmp = $json->encode($runStrategyParamHashRef);
+	$logger->debug( "The runStrategy instance paramHashRef is:\n" . $tmp );
 }
-my $runManager = RunStrategyFactory->getRunStrategy($runManagerParamHashRef);
+my $runStrategy = RunStrategyFactory->getRunStrategy($runStrategyParamHashRef);
 
 # Build the runProcedure
 my $runProcedureParamHashRef =
-  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runManagerParamHashRef, "runProcInstance" );
+  Parameters::getSingletonInstanceParamHashRef( $paramsHashRef, $runStrategyParamHashRef, "runProcInstance" );
 
 if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($runProcedureParamHashRef);
@@ -586,8 +586,8 @@ if ( $logger->is_debug() ) {
 my $runProcedure = RunProcedureFactory->getRunProcedure($runProcedureParamHashRef);
 $runProcedure->origParamHashRef($paramsHashRef);
 
-# Set the run Procedure in the runmanager
-$runManager->setRunProcedure($runProcedure);
+# Set the run Procedure in the runStrategy
+$runStrategy->setRunProcedure($runProcedure);
 
 # Create the dockerHosts
 my %nameToComputeResourceHash;
@@ -1063,11 +1063,11 @@ $vi->initializeVmInfo();
 
 # start the run(s)
 $console_logger->info( "Running Weathervane with "
-	  . $runManager->name
+	  . $runStrategy->name
 	  . " using "
-	  . $runManager->runProcedure->name
+	  . $runStrategy->runProcedure->name
 	  . " RunProcedure.\n" );
-$runManager->start();
+$runStrategy->start();
 
 # Zip the debug log
 $weathervane_logger->remove_appender("rootDebugFile");

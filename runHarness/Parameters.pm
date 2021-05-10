@@ -491,7 +491,7 @@ $parameters{"name"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"runManager"} = {
+$parameters{"runStrat"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "",
@@ -502,7 +502,7 @@ $parameters{"runManager"} = {
 $parameters{"runProc"} = {
 	"type"      => "hash",
 	"default"   => {},
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -756,11 +756,11 @@ $parameters{"dataManagerInstance"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"runManagerInstance"} = {
+$parameters{"runStratInstance"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "",
-	"isa"       => "runManager",
+	"isa"       => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -768,7 +768,7 @@ $parameters{"runManagerInstance"} = {
 $parameters{"runProcInstance"} = {
 	"type"      => "hash",
 	"default"   => {},
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"isa"       => "runProc",
 	"usageText" => "",
 	"showUsage" => 0,
@@ -957,7 +957,7 @@ $parameters{"maxUsers"} = {
 $parameters{"description"} = {
 	"type"      => "=s",
 	"default"   => "",
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "This parameter is used to include a description of the run in the csv summary file",
 	"showUsage" => 1,
 };
@@ -1067,11 +1067,11 @@ $parameters{"repeatUserLoadPath"} = {
 	"showUsage" => 0,
 };
 
-# Parameter for selecting the runManager
+# Parameter for selecting the runStrat
 $parameters{"runStrategy"} = {
 	"type"      => "=s",
 	"default"   => "findMaxSingleRun",
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1087,7 +1087,7 @@ $parameters{"configurationSize"} = {
 $parameters{"instanceNodeLabels"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "If true, the appInstances will only run on Kubernetes nodes with the appropriate label, e.g. wvauctionw1i1=",
 	"showUsage" => 1,
 };
@@ -1095,7 +1095,7 @@ $parameters{"instanceNodeLabels"} = {
 $parameters{"serviceTypeNodeLabels"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "If true, a service of a given type will only run on Kubernetes nodes with the appropriate label, e.g. wvtype=webServer",
 	"showUsage" => 1,
 };
@@ -1103,7 +1103,7 @@ $parameters{"serviceTypeNodeLabels"} = {
 $parameters{"podInstanceAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "If true, a podAffinity rule will be used to create affinity among pods of the same application instance ",
 	"showUsage" => 1,
 };
@@ -1111,7 +1111,7 @@ $parameters{"podInstanceAffinity"} = {
 $parameters{"podInstanceAffinityWeight"} = {
 	"type"      => "=i",
 	"default"   => 50,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "The weight to apply to the podAffinity rule if podInstanceAffinity is true",
 	"showUsage" => 1,
 };
@@ -1119,7 +1119,7 @@ $parameters{"podInstanceAffinityWeight"} = {
 $parameters{"serviceTypeAntiAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances",
 	"showUsage" => 1,
 };
@@ -1127,7 +1127,7 @@ $parameters{"serviceTypeAntiAffinity"} = {
 $parameters{"serviceTypeAntiAffinityWeight"} = {
 	"type"      => "=i",
 	"default"   => 100,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true",
 	"showUsage" => 1,
 };
@@ -1135,7 +1135,7 @@ $parameters{"serviceTypeAntiAffinityWeight"} = {
 $parameters{"serviceTypeAffinity"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type across all application instances,\n" .
 	" and anti-affinity among pods of different types across all instances",
 	"showUsage" => 1,
@@ -1153,7 +1153,7 @@ $parameters{"perTargetStats"} = {
 $parameters{"runProcedure"} = {
 	"type"      => "=s",
 	"default"   => "full",
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1179,7 +1179,7 @@ $parameters{"logLevel"} = {
 $parameters{"isUpRetries"} = {
 	"type"      => "=i",
 	"default"   => 3,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1187,7 +1187,7 @@ $parameters{"isUpRetries"} = {
 $parameters{"stop"} = {
 	"type"      => "!",
 	"default"   => JSON::false,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "The stop parameter instructs the run script to attempt to cleanly stop an active run",
 	"showUsage" => 1,
 };
@@ -1427,7 +1427,7 @@ $parameters{"auctionBidServerPerformanceMonitor"} = {
 $parameters{"stopOnFailure"} = {
 	"type"      => "!",
 	"default"   => JSON::true,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -1776,7 +1776,7 @@ $parameters{"virtualInfrastructureType"} = {
 $parameters{"initialRateStep"} = {
 	"type"      => "=i",
 	"default"   => 500,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1784,7 +1784,7 @@ $parameters{"initialRateStep"} = {
 $parameters{"repeatsAtMax"} = {
 	"type"      => "=i",
 	"default"   => 0,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 1,
 };
@@ -1888,7 +1888,7 @@ $parameters{"driverMaxTotalConnectionsMultiplier"} = {
 $parameters{"maxLogLines"} = {
 	"type"      => "=i",
 	"default"   => 4000,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2665,7 +2665,7 @@ $parameters{"workloadProfileDir"} = {
 $parameters{"gcviewerDir"} = {
 	"type"    => "=s",
 	"default" => "",
-	"parent"  => "runManager",
+	"parent"  => "runStrat",
 	"usageText" =>
 "This is the path to the gcViewer executable relative to the current working directory.\n\tGcViewer is used to analyze the Java Garbage-Collection logs.",
 	"showUsage" => 0,
@@ -2673,7 +2673,7 @@ $parameters{"gcviewerDir"} = {
 $parameters{"resultsFileDir"} = {
 	"type"    => "=s",
 	"default" => "",
-	"parent"  => "runManager",
+	"parent"  => "runStrat",
 	"usageText" =>
 "This is the directory in which Weathervane stores the csv summary file relative to the current working directory.",
 	"showUsage" => 0,
@@ -2681,7 +2681,7 @@ $parameters{"resultsFileDir"} = {
 $parameters{"resultsFileName"} = {
 	"type"    => "=s",
 	"default" => "weathervaneResults.csv",
-	"parent"  => "runManager",
+	"parent"  => "runStrat",
 	"usageText" =>
 "This is the name of the file in which Weathervane stores a summary of the run results in csv format.",
 	"showUsage" => 1,
@@ -2689,7 +2689,7 @@ $parameters{"resultsFileName"} = {
 $parameters{"configDir"} = {
 	"type"    => "=s",
 	"default" => "configFiles",
-	"parent"  => "runManager",
+	"parent"  => "runStrat",
 	"usageText" =>
 "This is the directory under which Weathervane stores configuration files for the various services relative to the current working directory.",
 	"showUsage" => 0,
@@ -2746,7 +2746,7 @@ $parameters{"images"} = {
 $parameters{"minimumUsers"} = {
 	"type"      => "=i",
 	"default"   => 60,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2754,7 +2754,7 @@ $parameters{"minimumUsers"} = {
 $parameters{"statsInterval"} = {
 	"type"      => "=i",
 	"default"   => 30,
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "",
 	"showUsage" => 0,
 };
@@ -2786,7 +2786,7 @@ $parameters{"fullHelp"} = {
 $parameters{"debugLevel"} = {
 	"type"      => "=s",
 	"default"   => "INFO",
-	"parent"    => "runManager",
+	"parent"    => "runStrat",
 	"usageText" => "Set the level for logging messages.",
 	"showUsage" => 0,
 };

@@ -1,6 +1,6 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-package RunManager;
+package RunStrategy;
 
 use Moose;
 use MooseX::Storage;
@@ -75,12 +75,12 @@ sub setRunProcedure {
 }
 
 sub start {
-	die "Can only stop a concrete sub-class of RunManager";
+	die "Can only stop a concrete sub-class of RunStrategy";
 }
 
 sub printCsv {
 	my ( $self, $csvHashRef, $printHeader ) = @_;
-	my $debug_logger = get_logger("Weathervane::RunManager::RunManager");
+	my $debug_logger = get_logger("Weathervane::RunStrategy::RunStrategy");
 	## print the csv headers to the results file
 	open( CSVFILE, ">>" . $self->getParamValue('resultsFileDir') . "/" . $self->getParamValue('resultsFileName') )
 	  or die "Couldn't open file >>" . $self->getParamValue('resultsFileDir') . "/" . $self->getParamValue('resultsFileName') . " :$!\n";
@@ -103,7 +103,7 @@ sub printCsv {
 sub toString {
 	my ($self) = @_;
 
-	return "RunManager " . $self->name();
+	return "RunStrategy " . $self->name();
 }
 
 __PACKAGE__->meta->make_immutable;

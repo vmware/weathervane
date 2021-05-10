@@ -1,10 +1,10 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-package IntervalRunManager;
+package FindMaxSingleRunWithScalingRunStrategy;
 
 use Moose;
 use MooseX::Storage;
-use RunManagers::RunManager;
+use RunStrategies::RunStrategy;
 use WeathervaneTypes;
 use RunResults::RunResult;
 use Parameters qw(getParamValue);
@@ -17,9 +17,9 @@ use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'RunManager';
+extends 'RunStrategy';
 
-has '+name' => ( default => 'Interval Run Strategy', );
+has '+name' => ( default => 'Find Max/Single-Run With Scaling Run Strategy', );
 
 has '+description' => ( default => '', );
 
@@ -36,7 +36,7 @@ override 'setRunProcedure' => sub {
 
 	my @runProcedures = @WeathervaneTypes::runProcedures;
 	if ( !( $runProcedureType ~~ @runProcedures ) ) {
-		die "SingleFixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
+		die "SingleFixedRunStrategy::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
 	}
 
 
@@ -46,9 +46,8 @@ override 'setRunProcedure' => sub {
 override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
-	my $debug_logger = get_logger("Weathervane::RunManager::SingleFixedRunManager");
-
-	$self->runProcedure->setLoadPathType("interval");
+	my $debug_logger = get_logger("Weathervane::RunStrategy::SingleFixedRunStrategy");
+	$self->runProcedure->setLoadPathType("findmax");
 
 	$console_logger->info($self->name . " starting run.");
 
@@ -56,7 +55,7 @@ override 'start' => sub {
 
 	my $runProcedureType = $self->runProcedure->getRunProcedureImpl();
 	if ( $runProcedureType eq 'prepareOnly' ) {
-		$console_logger->info("Application configured and running. ");
+		$console_logger->info("Application configured and running.");
 	}
 	elsif ( $runProcedureType eq 'stop' ) {
 		$console_logger->info("Run stopped");

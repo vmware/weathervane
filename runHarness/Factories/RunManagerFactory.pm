@@ -1,60 +1,60 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-package RunManagerFactory;
+package RunStrategyFactory;
 
 use Moose;
 use MooseX::Storage;
-use RunManagers::FixedRunManager;
-use RunManagers::IntervalRunManager;
-use RunManagers::FindMaxSingleRunRunManager;
-use RunManagers::FindMaxMultiRunRunManager;
-use RunManagers::FindMaxSingleRunWithScalingRunManager;
-use RunManagers::FindMaxMultiAIRunManager;
+use RunStrategies::FixedRunStrategy;
+use RunStrategies::IntervalRunStrategy;
+use RunStrategies::FindMaxSingleRunRunStrategy;
+use RunStrategies::FindMaxMultiRunRunStrategy;
+use RunStrategies::FindMaxSingleRunWithScalingRunStrategy;
+use RunStrategies::FindMaxMultiAIRunStrategy;
 use Parameters qw(getParamValue);
 
 use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-sub getRunManager {
+sub getRunStrategy {
 	my ( $self, $paramsHashRef ) = @_;
 
-	my $runManager;
+	my $RunStrategy;
 	my $runStrategy = $paramsHashRef->{'runStrategy'};
 	if (($runStrategy eq 'fixed' ) || ($runStrategy eq 'single' )) {
-		$runManager =
-		  FixedRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  FixedRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'interval' ) {
-		$runManager =
-		  IntervalRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  IntervalRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif (($runStrategy eq 'findMaxSingleRun') 
 		|| ($runStrategy eq 'findMax' )
 		|| ($runStrategy eq 'findMaxSingleRunSync')) {
-		$runManager =
-		  FindMaxSingleRunRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  FindMaxSingleRunRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxSingleRunWithScaling' ) {
-		$runManager =
-		  FindMaxSingleRunWithScalingRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  FindMaxSingleRunWithScalingRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxMultiAI' ) {
-		$runManager =
-		  FindMaxMultiAIRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  FindMaxMultiAIRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	elsif ( $runStrategy eq 'findMaxMultiRun' ) {
-		$runManager =
-		  FindMaxMultiRunRunManager->new( 'paramHashRef' => $paramsHashRef );
+		$RunStrategy =
+		  FindMaxMultiRunRunStrategy->new( 'paramHashRef' => $paramsHashRef );
 	}
 	else {
 		die
-"No matching run manager for run strategy $runStrategy available to RunManagerFactory";
+"No matching run manager for run strategy $runStrategy available to RunStrategyFactory";
 	}
 
-	$runManager->initialize();
+	$RunStrategy->initialize();
 
-	return $runManager;
+	return $RunStrategy;
 }
 
 __PACKAGE__->meta->make_immutable;

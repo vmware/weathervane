@@ -1,10 +1,10 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-package FindMaxMultiRunRunManager;
+package FindMaxMultiAIRunStrategy;
 
 use Moose;
 use MooseX::Storage;
-use RunManagers::RunManager;
+use RunStrategies::RunStrategy;
 use RunResults::RunResult;
 use WeathervaneTypes;
 use POSIX;
@@ -18,9 +18,9 @@ use namespace::autoclean;
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
-extends 'RunManager';
+extends 'RunStrategy';
 
-has '+name' => ( default => 'Find-Max RunManager', );
+has '+name' => ( default => 'Find-Max RunStrategy', );
 
 has '+description' => ( default => '', );
 
@@ -33,7 +33,7 @@ override 'initialize' => sub {
 
 	my @runProcedures = @WeathervaneTypes::runProcedures;
 	if ( !( $runProcedureType ~~ @runProcedures ) ) {
-		die "FindMaxFixedRunManager::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
+		die "FindMaxFixedRunStrategy::initialize: $runProcedureType is not a valid run procedure.  Must be one of @runProcedures";
 	}
 
 	if ( $runProcedureType eq 'prepareOnly' ) {
@@ -46,9 +46,9 @@ override 'initialize' => sub {
 override 'start' => sub {
 	my ($self) = @_;
 	my $console_logger     = get_logger("Console");
-	my $logger       = get_logger("Weathervane::RunManagers::FindMaxFixedRunManager");
+	my $logger       = get_logger("Weathervane::RunStrategies::FindMaxFixedRunStrategy");
 
-	$self->runProcedure->setLoadPathType("fixed");
+	$self->runProcedure->setLoadPathType("findmax");
 
 	# Do the run/maximum-finding $repeatsAtMax+1 times.
 	# For maximum finding, on repeats the runs will start at the previous maximum.
@@ -89,7 +89,6 @@ override 'start' => sub {
 			Log::Log4perl->eradicate_appender("tmpdirConsoleFile");
 			
 		}
-		$self->runProcedure->printFindMaxResult();
 	}
 
 };

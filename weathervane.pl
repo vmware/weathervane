@@ -27,7 +27,7 @@ use lib dirname (__FILE__) . '/runHarness';
 use Factories::ServiceFactory;
 use Factories::HostFactory;
 use Factories::VIFactory;
-use Factories::RunManagerFactory;
+use Factories::RunStrategyFactory;
 use Factories::DataManagerFactory;
 use Factories::WorkloadDriverFactory;
 use Factories::WorkloadFactory;
@@ -573,7 +573,7 @@ if ( $logger->is_debug() ) {
 	my $tmp = $json->encode($runManagerParamHashRef);
 	$logger->debug( "The runManager instance paramHashRef is:\n" . $tmp );
 }
-my $runManager = RunManagerFactory->getRunManager($runManagerParamHashRef);
+my $runManager = RunStrategyFactory->getRunStrategy($runManagerParamHashRef);
 
 # Build the runProcedure
 my $runProcedureParamHashRef =

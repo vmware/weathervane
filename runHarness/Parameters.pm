@@ -756,7 +756,7 @@ $parameters{"dataManagerInstance"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"runStratInstance"} = {
+$parameters{"runStrategyInstance"} = {
 	"type"      => "hash",
 	"default"   => {},
 	"parent"    => "",

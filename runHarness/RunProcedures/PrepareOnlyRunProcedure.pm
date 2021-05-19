@@ -115,7 +115,11 @@ sub run {
 	$debug_logger->debug("stop services");
 	$self->stopDataManager($setupLogDir);
 	$self->stopServicesInClusters();
-	my @tiers = qw(frontend backend data infrastructure);
+	my @tiers = qw(frontend);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
+	@tiers = qw(backend);
+	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
+	@tiers = qw(data infrastructure);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
 	
 	$debug_logger->debug("cleanup logs and stats files on hosts, virtual infrastructures, and workload drivers");

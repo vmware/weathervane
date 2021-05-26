@@ -1451,6 +1451,19 @@ in your configuration file. Note that there can be reasons other than data corru
 that might prevent the data services from starting.  Setting `reloadOnFailure` to true 
 in these cases may result in unnecessary and possible lengthy reloads. 
 
+#### Cassandra timeouts while loading data
+
+If many Application Instances are loading data concurrently, there is a possibility to 
+overload the underlying storage.  This may result in Cassandra timeouts that show up in 
+the console window or container logs with messages such as:
+* > Cassandra timeout during write query at consistency LOCAL_ONE
+
+Weathervane can limit the max concurrency of loading data by specyfing the `prepareConcurrency` config option.  
+This example limits loading data to `4` Application Instances at a time:
+
+`"prepareConcurrency" : 4,`
+
+
 ## Advanced Topics<a name="advanced"></a>
 
 ### Overview

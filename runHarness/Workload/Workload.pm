@@ -11,7 +11,7 @@ use Log::Log4perl qw(get_logger);
 use Instance;
 use Utils qw(callMethodOnObjectsParallel callMethodsOnObjectParallel callBooleanMethodOnObjectsParallel1
   callBooleanMethodOnObjectsParallel3 callBooleanMethodOnObjectsParallel2 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2
-  callBooleanMethodOnObjects2 callBooleanMethodOnObjectsParallel2BatchDelay callBooleanMethodOnObjectsParallel3BatchDelay);
+  callBooleanMethodOnObjects2 callBooleanMethodOnObjectsParallel2BatchDelay callBooleanMethodOnObjectsParallel3BatchDelay callBooleanMethodOnObjectsParallel2MaxConcurrency);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -80,7 +80,13 @@ sub cleanData {
 
 sub prepareData {
 	my ( $self, $setupLogDir, $forked ) = @_;
-	my $allIsStarted = callBooleanMethodOnObjectsParallel2BatchDelay( 'prepareData', $self->appInstancesRef, $setupLogDir, 1, 10, 30 );
+	my $prepareConcurrency = $self->getParamValue('prepareConcurrency');
+	my $allIsStarted;
+	if ($prepareConcurrency > 0) {
+		$allIsStarted = callBooleanMethodOnObjectsParallel2MaxConcurrency( 'prepareData', $self->appInstancesRef, $setupLogDir, 1, $prepareConcurrency, 30 );
+	} else {
+		$allIsStarted = callBooleanMethodOnObjectsParallel2BatchDelay( 'prepareData', $self->appInstancesRef, $setupLogDir, 1, 10, 30 );
+	}
 	if (!$allIsStarted && $forked) {
 		exit;
 	}

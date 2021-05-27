@@ -1900,6 +1900,14 @@ $parameters{"maxLogLines"} = {
 	"showUsage" => 0,
 };
 
+$parameters{"prepareConcurrency"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "workload",
+	"usageText" => "If greater than 0, will limit the number of concurrent prepares.",
+	"showUsage" => 0,
+};
+
 $parameters{"webServerCpus"} = {
 	"type"      => "=s",
 	"default"   => "2",

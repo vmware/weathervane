@@ -4,6 +4,7 @@ package Utils;
 
 use Log::Log4perl qw(get_logger :levels);
 use strict;
+use POSIX 'WNOHANG';
 
 BEGIN {
 	use Exporter;
@@ -15,7 +16,7 @@ BEGIN {
 	  callBooleanMethodOnObjectsParallel callBooleanMethodOnObjectsParallel1 callBooleanMethodOnObjectsParallel2 
 	  callBooleanMethodOnObjectsParallel3 callBooleanMethodOnObjectsParallel3BatchDelay
 	  callMethodOnObjectsParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel3
-	  callMethodOnObjectsParamListParallel1 runCmd callBooleanMethodOnObjectsParallel2BatchDelay);
+	  callMethodOnObjectsParamListParallel1 runCmd callBooleanMethodOnObjectsParallel2BatchDelay callBooleanMethodOnObjectsParallel2MaxConcurrency);
 }
 
 sub createDebugLogger {
@@ -292,6 +293,64 @@ sub callBooleanMethodOnObjectsParallel2BatchDelay {
 		}
 	}
 	return $retval;
+}
+
+sub callBooleanMethodOnObjectsParallel2MaxConcurrency {
+        my ( $method, $objectsRef, $param1, $param2, $concurrentSize, $sleepSec ) = @_;
+        my $console_logger = get_logger("Console");
+        my $logger         = get_logger("Weathervane::Util");
+        my @pids;
+        my $pid;
+        my $objectNum = 0;
+
+        my $retval = 1;
+        foreach my $object (@$objectsRef) {
+                $objectNum++;
+                $pid = fork();
+                if ( !defined $pid ) {
+                        $console_logger->error("Couldn't fork a process: $!");
+                        exit(-1);
+                }
+                elsif ( $pid == 0 ) {
+                        exit( $object->$method( $param1, $param2 ) );
+                }
+                else {
+                        push @pids, $pid;
+                }
+                while ($objectNum == $concurrentSize) {
+                        my @new_pids;
+                        $logger->debug("Checking if a service has finished, $objectNum left.\n");
+                        foreach $pid (@pids) {
+                                my $result = waitpid $pid, WNOHANG;
+                                if ($result) {
+                                        if ( !$? ) {
+                                                $retval = 0;
+                                        }
+                                        $objectNum--;
+                                        $logger->debug("Pid $pid finished, $objectNum left.\n");
+                                } else {
+                                        $logger->debug("Pid $pid still running.\n");
+                                        push @new_pids, $pid;
+                                }
+                        }
+                        @pids = @new_pids;
+                        if ($objectNum == $concurrentSize) {
+                                $logger->debug("Sleeping for $sleepSec seconds waiting for a service to finish, $objectNum left.\n");
+                                sleep $sleepSec;
+                        }
+                }
+        }
+        $logger->debug("Waiting for remaining services to finish.\n");
+        foreach $pid (@pids) {
+                waitpid $pid, 0;
+                if ( !$? ) {
+                        $retval = 0;
+                }
+                $objectNum--;
+                $logger->debug("Pid $pid finished, $objectNum left.\n");
+        }
+        $logger->debug("Last service finished.\n");
+        return $retval;
 }
 
 sub callBooleanMethodOnObjectsParallel3 {

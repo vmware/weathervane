@@ -1551,6 +1551,21 @@ As a result, when using node labels it is recommended that you label all of your
 worker nodes with either `wvrole=driver` or `wvrole=sut`.  This will give you the 
 best control over pod placement.
 
+### Inter-pod affinity and anti-affinity<a name="pod-affinity"></a>
+
+With the Weathervane 2.1 release, configuration parameters were provided to manage the addition of pod affinity and anti-affinity rules with weights to the Weathervane pod manifests. 
+This provides more control to which nodes the pods are eligible to be scheduled on.
+
+| Parameter:                      | Description: |
+| ------------------------------- | ------------ |
+| `serviceTypeAntiAffinity`       | If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances. (Default: true) |
+| `serviceTypeAffinity`           | If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type and anti-affinity among pods of different types.  These will apply across all applications instances. (Default: false) |
+| `podInstanceAffinity`           | If true, a podAffinity rule will be used to create affinity among pods of the same application instance. (Default: false) |
+| `podInstanceAffinityWeight`     | The weight to apply to the podAffinity rule if podInstanceAffinity is true. (Default: 50) |
+| `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |
+
+Weathervane defaults to use serviceTypeAntiAffinity, as this leads to a more even load across all nodes and more predictable results.
+
 ### Namespace Customization <a name="advanced-namespaces"></a>
 
 #### Customizing the Generation of Namespace Names

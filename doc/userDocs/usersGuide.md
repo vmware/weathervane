@@ -1553,7 +1553,7 @@ best control over pod placement.
 ### Inter-pod affinity and anti-affinity<a name="pod-affinity"></a>
 
 With the Weathervane 2.1 release, configuration parameters were provided to manage the addition of pod affinity and anti-affinity rules with weights to the Weathervane pod manifests. 
-This provides more control to which nodes the pods are eligible to be scheduled on.
+This provides more control for which nodes the pods are eligible to be scheduled on.
 
 | Parameter:                      | Description: |
 | ------------------------------- | ------------ |
@@ -1562,6 +1562,8 @@ This provides more control to which nodes the pods are eligible to be scheduled 
 | `podInstanceAffinity`           | If true, a podAffinity rule will be used to create affinity among pods of the same application instance. (Default: false) |
 | `podInstanceAffinityWeight`     | The weight to apply to the podAffinity rule if podInstanceAffinity is true. (Default: 50) |
 | `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |
+
+Note there are natural restrictions on the combination of these parameters on a given run. The serviceTypeAffinity rule can not be true when serviceTypeAntiAffinity or podInstanceAffinity are true.
 
 Weathervane defaults to use serviceTypeAntiAffinity, as this leads to a more even load across all nodes and more predictable results.
 

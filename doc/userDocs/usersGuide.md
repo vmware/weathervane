@@ -90,7 +90,7 @@ The changes in Weathervane 2.1 may be significant enough to slightly alter
 the performance results vs Weathervane 2.0 baselines.  It is advised not to directly 
 compare results for the two verions of the benchmark.
 These changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
-inter-node commuication, improvements to data loading, and a number of other smaller updates and fixes.
+inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
 
 ## Quickstart Guide<a name="quickstart-guide"></a>
 
@@ -1164,7 +1164,7 @@ may also be more representative of production applications to be deployed on the
 that the `small` configuration size, included in the initial release of Weathervane 
 2.0, has been removed in favor of the `small2` configuration.
 
-The primary distinction among the `small2` and `small2-applimit2` configurations 
+The primary distinction between the `small2` and `small2-applimit2` configurations 
 is the size of the cpu requests and limits for the application server pod(s).  In all of the configurations, the 
 application server is the first pod to become CPU bound, and so the limit specified for this pod affects the
 performance capability of the configuration.  In the `small2` configuration, the 
@@ -1558,7 +1558,7 @@ This provides more control for which nodes the pods are eligible to be scheduled
 | Parameter:                      | Description: |
 | ------------------------------- | ------------ |
 | `serviceTypeAntiAffinity`       | If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances. (Default: true) |
-| `serviceTypeAffinity`           | If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type and anti-affinity among pods of different types.  These will apply across all applications instances. (Default: false) |
+| `serviceTypeAffinity`           | If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type and anti-affinity among pods of different types.  These will apply across all application instances. (Default: false) |
 | `podInstanceAffinity`           | If true, a podAffinity rule will be used to create affinity among pods of the same application instance. (Default: false) |
 | `podInstanceAffinityWeight`     | The weight to apply to the podAffinity rule if podInstanceAffinity is true. (Default: 50) |
 | `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |

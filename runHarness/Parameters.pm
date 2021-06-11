@@ -1144,7 +1144,7 @@ $parameters{"serviceTypeAffinity"} = {
 	"default"   => JSON::false,
 	"parent"    => "runManager",
 	"usageText" => "If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same types,\n" .
-	" and anti-affinity among pods of different types. These will apply across all applications instances",
+	" and anti-affinity among pods of different types. These will apply across all application instances",
 	"showUsage" => 1,
 };
 

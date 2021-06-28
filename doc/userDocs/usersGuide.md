@@ -87,6 +87,7 @@ and throughput.
 ### Weathervane 2.1 vs 2.0
 
 Users should not directly compare Weathervane 2.1 results to Weathervane 2.0 results due to some changes that alter performance.
+
 Weathervane 2.1 changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
 inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
 
@@ -1551,7 +1552,7 @@ best control over pod placement.
 ### Inter-pod affinity and anti-affinity<a name="pod-affinity"></a>
 
 With the Weathervane 2.1 release, configuration parameters were provided to manage the addition of pod affinity and anti-affinity rules with weights to the Weathervane pod manifests. 
-This changes how the Weathervane pods are scheduled across Kubernetes nodes.
+This changes how the Weathervane pods are scheduled across Kubernetes nodes. These parameters will not need to be changed in typical use.
 
 | Parameter:                      | Description: |
 | ------------------------------- | ------------ |

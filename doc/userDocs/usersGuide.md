@@ -85,6 +85,7 @@ and throughput.
 
 
 ### Weathervane 2.1 vs 2.0
+
 Users should not directly compare Weathervane 2.1 results to Weathervane 2.0 results due to some changes that alter performance.
 Weathervane 2.1 changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
 inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
@@ -1564,7 +1565,7 @@ Note there are natural restrictions on the combination of these parameters on a 
 
 Weathervane defaults to use serviceTypeAntiAffinity, as this leads to a more even load across all nodes and more predictable results.
 
-Changing these parameters will result in noncomparable performance results.
+Changing these parameters will result in noncomparable performance results.  
 Changing these parameters could result in a different fit of pods to nodes,
 which could impact the number of nodes needed to run the same number of Weathervane application instances.
 

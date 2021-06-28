@@ -85,11 +85,8 @@ and throughput.
 
 
 ### Weathervane 2.1 vs 2.0
-
-The changes in Weathervane 2.1 may be significant enough to slightly alter 
-the performance results vs Weathervane 2.0 baselines.  It is advised not to directly 
-compare results for the two verions of the benchmark.
-These changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
+Users should not directly compare Weathervane 2.1 results to Weathervane 2.0 results due to some changes that alter performance.
+Weathervane 2.1 changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
 inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
 
 ## Quickstart Guide<a name="quickstart-guide"></a>
@@ -1553,19 +1550,23 @@ best control over pod placement.
 ### Inter-pod affinity and anti-affinity<a name="pod-affinity"></a>
 
 With the Weathervane 2.1 release, configuration parameters were provided to manage the addition of pod affinity and anti-affinity rules with weights to the Weathervane pod manifests. 
-This provides more control for which nodes the pods are eligible to be scheduled on.
+This changes how the Weathervane pods are scheduled across Kubernetes nodes.
 
 | Parameter:                      | Description: |
 | ------------------------------- | ------------ |
 | `serviceTypeAntiAffinity`       | If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances. (Default: true) |
+| `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |
 | `serviceTypeAffinity`           | If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type and anti-affinity among pods of different types.  These will apply across all application instances. (Default: false) |
 | `podInstanceAffinity`           | If true, a podAffinity rule will be used to create affinity among pods of the same application instance. (Default: false) |
 | `podInstanceAffinityWeight`     | The weight to apply to the podAffinity rule if podInstanceAffinity is true. (Default: 50) |
-| `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |
 
 Note there are natural restrictions on the combination of these parameters on a given run. The serviceTypeAffinity rule can not be true when serviceTypeAntiAffinity or podInstanceAffinity are true.
 
 Weathervane defaults to use serviceTypeAntiAffinity, as this leads to a more even load across all nodes and more predictable results.
+
+Changing these parameters will result in noncomparable performance results.
+Changing these parameters could result in a different fit of pods to nodes,
+which could impact the number of nodes needed to run the same number of Weathervane application instances.
 
 ### Namespace Customization <a name="advanced-namespaces"></a>
 

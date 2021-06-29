@@ -2,7 +2,7 @@
 
 ## Overview
 
-Weathervane 2.0 is an application-level performance benchmark which lets you
+Weathervane 2.1 is an application-level performance benchmark which lets you
 investigate the performance characteristics of on-premise and cloud-based
 Kubernetes clusters.
 
@@ -28,8 +28,8 @@ includes both stateless and stateful services. You can select from multiple
 pre-tuned and tested configurations of this application.  The configurations
 represent a range of deployment sizes. This allows you to select a configuration
 based on the size of the cluster under test, or based on the expected usage of
-the cluster.  Weathervane 2.0.0 includes two configuration sizes, and larger
-configurations will be included in future releases.
+the cluster.  Weathervane 2.1 includes multiple configuration sizes, and additional
+configurations may be included in future releases.
 
 ## Warning
 
@@ -38,6 +38,13 @@ Weathervane.  Weathervane can place a significant load on system resources that
 can impact the performance of unrelated workloads.  As a result Weathervane is
 not intended to be used in active production environments.
 
+## Weathervane 2.1 vs 2.0
+
+Users should not directly compare Weathervane 2.1 results to Weathervane 2.0 results due to some changes that alter performance.
+
+Weathervane 2.1 changes include the use of pod affinity, enhanced workload driver
+inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
+
 ## Previous Versions
 
 Weathervane 1.x is still available on the 
@@ -45,7 +52,7 @@ Weathervane 1.x is still available on the
 
 ## Getting Started
 
-You can get started with Weathervane 2.0 by following the instructions in the 
+You can get started with Weathervane 2.1 by following the instructions in the 
 [Quick Start Guide](doc/userDocs/usersGuide.md#quickstart-guide).
 
 ## Documentation

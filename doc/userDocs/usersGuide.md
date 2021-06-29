@@ -1,5 +1,5 @@
 ![Weathervane](../images/VMW-Weathervane-Logo-SML.png)
-# Weathervane 2.0 User's Guide
+# Weathervane 2.1 User's Guide
 Contents:
 - [Introduction](#intro)
 - [QuickStart Guide](#quickstart-guide)
@@ -20,7 +20,7 @@ Contents:
 
 ### Overview
 
-Weathervane 2.0 is an application-level performance benchmark which lets you
+Weathervane 2.1 is an application-level performance benchmark which lets you
 investigate the performance characteristics of on-premise and cloud-based
 Kubernetes clusters.
 
@@ -44,7 +44,7 @@ includes both stateless and stateful services. You can select from multiple
 pre-tuned and tested configurations of this application.  The configurations
 represent a range of deployment sizes. This allows you to select a configuration
 based on the size of the cluster under test, or based on the expected usage of
-the cluster.  Weathervane 2.0 includes three configuration sizes, and larger
+the cluster.  Weathervane 2.1 includes multiple configuration sizes, and larger
 configurations will be included in future releases. More details about the
 application are included in the [appendix](#architecture).
 
@@ -83,9 +83,17 @@ fixed amount of throughput in terms of both operations-per-second and
 HTTP-requests/sec.  As a result, there is a direct correlation between WvUsers
 and throughput.
 
+
+### Weathervane 2.1 vs 2.0
+
+Users should not directly compare Weathervane 2.1 results to Weathervane 2.0 results due to some changes that alter performance.
+
+Weathervane 2.1 changes include the use of [pod-affinity](#pod-affinity), enhanced workload driver
+inter-node communication, improvements to data loading, and a number of other smaller updates and fixes.
+
 ## Quickstart Guide<a name="quickstart-guide"></a>
 
-This section is intended to get users up and running using Weathervane 2.0 with a minimal set of instructions.
+This section is intended to get users up and running using Weathervane 2.1 with a minimal set of instructions.
 More detailed [instructions](#setup) are included in later sections.
 
 ### Prerequisites<a name="quickstart-prereq"></a>
@@ -216,9 +224,9 @@ For a summary of prerequisites, refer to the [prerequisites](#quickstart-prereq)
 
 #### Overview
 
-The Weathervane 2.0 application and driver components require at least one Kubernetes cluster to run on.
+The Weathervane 2.1 application and driver components require at least one Kubernetes cluster to run on.
 
-For most uses of Weathervane 2.0, the workload driver pods should run on different compute resources than the application pods.
+For most uses of Weathervane 2.1, the workload driver pods should run on different compute resources than the application pods.
 Depending on your available resources and the goals of your tests, this may be done in two ways:
 1. By partitioning the worker nodes of a single cluster into driver and system-under-test 
    (SUT) nodes using [nodeLabels](#nodeLabels).
@@ -329,7 +337,7 @@ Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
 - An xsmall configuration with 12,000 users takes about 30 minutes.
 - A small2 configuration with 16,000 users takes about 50 minutes.
-- A small2-applimit2 or small2-applimit1 configuration with 25,000 users takes about 80 minutes.
+- A small2-applimit2 configuration with 25,000 users takes about 80 minutes.
 
 ##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
 Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  
@@ -456,7 +464,7 @@ of users loaded for the selected configuration size.
 * For the `micro` configuration, maxUsers is `3000` users. 
 * For the `xsmall` configuration, this is `12000` users.
 * For the `small2` configuration, this is `16000` users.
-* For the `small2-applimit2` or `small2-applimit1` configuration, this is `25000` users.
+* For the `small2-applimit2` configuration, this is `25000` users.
 
 To change the number of users, edit the configuration file as follows:
 
@@ -554,8 +562,8 @@ Then run Weathervane as before with the new configuration file.
 This task shows how to increase the load on the SUT by using a larger 
 configuration size for your application instances.
 
-Weathervane currently supports five configuration sizes for the Auction 
-application: `micro`, `xsmall`, `small2`, `small2-applimit2`, and `small2-applimit1`. 
+Weathervane currently supports multiple configuration sizes for the Auction 
+application: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
 Additional sizes will be added in future releases. Each size corresponds to a fixed 
 configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  Larger configurations will support a large user load, and may come closer to 
@@ -574,7 +582,7 @@ reloaded for any previously used instances.
 
 To use a different configuration size, edit the configuration file as follows:
 
-1. Change the value for the `configurationSize` to `micro`, `xsmall`, `small2`, `small2-applimit2`, or `small2-applimit1`.
+1. Change the value for the `configurationSize` to `micro`, `xsmall`, `small2`, or `small2-applimit2`.
 1. Optionally, change the description parameter to properly describe the run.
 1. Optionally, save the configuration file by a different name to reflect the contents.
 
@@ -1145,25 +1153,24 @@ information about the `interval` runStrategy is giving in the section discussing
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
-Weathervane supports five configuration sizes: `micro`, `xsmall`, `small2`, `small2-applimit2`, 
-and `small2-applimit1`. Each size corresponds 
+Weathervane supports multiple configuration sizes: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
+Each size corresponds 
 to a fixed configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  The `xsmall` configuration size supports a larger user load than the `micro` configuration 
 size, and `small2` supports a larger load than `xsmall`.  Using a larger configuration 
 may allow you to come closer to maxing out the capabilities of your cluster.  A different configuration size 
 may also be more representative of production applications to be deployed on the cluster under test.  Note 
 that the `small` configuration size, included in the initial release of Weathervane 
-2.0, is still available, but has been deprecated in favor of the `small2` configuration.
+2.0, has been removed in favor of the `small2` configuration.
 
-The primary distinction among the `small2`, `small2-applimit2`, and `small2-applimit1` configurations 
+The primary distinction between the `small2` and `small2-applimit2` configurations 
 is the size of the cpu requests and limits for the application server pod(s).  In all of the configurations, the 
 application server is the first pod to become CPU bound, and so the limit specified for this pod affects the
 performance capability of the configuration.  In the `small2` configuration, the 
-application server pod has cpu requests and limits of 1500mcores, or 1.5 CPU cores.   In the `small2-applimit2`, the 
-application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. In the `small2-applimit1`, there are 
-two application server pods, and each has cpu requests and limits of 1000mcores, or 1 CPU core.  Because the 
-`small2-applimit2`, and `small2-applimit1` configurations request a whole number of CPU cores and fall in 
-the Kubernetes guaranteed QoS class, these configurations are appropriate for tests involving the Kubernetes CPU Manager.
+application server pod has cpu requests and limits of 1500mcores, or 1.5 CPU cores.  With `small2-applimit2`, the 
+application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores.   Because the 
+`small2-applimit2` configuration requests a whole number of CPU cores it is assigned to 
+the Kubernetes guaranteed QoS class.  This configuration is appropriate for tests involving the Kubernetes CPU Manager.
 
 You can select a configuration size using the parameter `configurationSize`.
 
@@ -1191,18 +1198,12 @@ A small2 application instance can support roughly up to 10,000 users.
 
 A small2-applimit2 application instance can support roughly up to 16,000 users.
 
-| Configuration Parameter: small2-applimit1 Configuration Size |
-|-------------------------------|
-| `"configurationSize": "small2-applimit1",` |
-
-A small2-applimit1 application instance can support roughly up to 15,000 users.
-
 **Table: User Defaults for different Configuration Sizes**
 
-| Configuration Size          | micro | xsmall | small2 |  small2-applimit2 |  small2-applimit1 |
-| --------------------------- | ----- | ----- | ------ | ------ | ------ |
-| Default users for fixed run | 200   | 1000  | 2000 | 2000 | 2000 |
-| Default maximum users supported | 3000   | 12,000  | 16,000 | 25,000 | 25,000 |
+| Configuration Size          | micro | xsmall | small2 |  small2-applimit2 |
+| --------------------------- | ----- | ----- | ------ | ------ | 
+| Default users for fixed run | 200   | 1000  | 2000 | 2000 | 
+| Default maximum users supported | 3000   | 12,000  | 16,000 | 25,000 | 
 
 Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  
 These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources 
@@ -1211,74 +1212,71 @@ instances you will be able to deploy on your clusters.
 
 **Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
 
-| Configuration<BR>Size |       | micro             |                 |       | xsmall            |                 |       | small2            |                 |
-|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
-|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| Total Driver          | 0\.50 | 1\.66             | 0\.00           | 2\.55 | 9\.38             | 0\.00           | 3\.10 | 15\.92            | 0\.00           |
-| Total App             | 0\.84 | 6\.07             | 32\.00          | 2\.69 | 13\.01            | 59\.20          | 4\.90 | 32\.34            | 80\.00           |
-| Total                 | 1\.34 | 7\.73             | 32\.00          | 5\.24 | 23\.39            | 59\.20          | 8\.00 | 48\.26            | 80\.00           |
+| Configuration<BR>Size |      | micro           |               |      | xsmall          |               |      | small2          |               |
+|-----------------------|------|-----------------|---------------|------|-----------------|---------------|------|-----------------|---------------|
+|                       | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) |
+| Total Driver          | 0.50 | 1.66            | 0.00          | 2.55 | 9.38            | 0.00          | 3.10 | 15.92           | 0.00          |
+| Total App             | 0.79 | 5.57            | 32.00         | 2.59 | 12.51           | 59.00         | 4.80 | 31.84           | 80.00         |
+| Total                 | 1.29 | 7.23            | 32.00         | 5.14 | 21.88           | 59.00         | 7.90 | 47.75           | 80.00         |
 
-
-| Configuration<BR>Size |       | small2-applimit1  |                 |       | small2-applimit2  |                 |
-|-----------------------|-------|-------------------|-----------------|-------|-------------------|-----------------|
-|                       | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU   | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| Total Driver          | 3\.10 | 15\.92            | 0\.00           | 3\.10 | 15\.92            | 0\.00           |
-| Total App             | 5\.40 | 32\.34            | 80\.00          | 5\.40 | 32\.34            | 80\.00          |
-| Total                 | 8\.00 | 48\.26            | 80\.00          | 8\.00 | 48\.26            | 80\.00          |
-
+| Configuration<BR>Size |       | small2-applimit2 |               |
+|-----------------------|-------|------------------|---------------|
+|                       | CPU   | Memory<BR>(GiB)  | Disk<BR>(GiB) |
+| Total Driver          | 3.10  | 15.92            | 0.00          |
+| Total App             | 6.96  | 31.84            | 87.00         |
+| Total                 | 10.06 | 47.75            | 87.00         |
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |          | micro             |                 |          | xsmall             |                 |          | small2             |                 |
-|---------------------------------------|----------|-------------------|-----------------|----------|-------------------|-----------------|----------|-------------------|-----------------|
-| Number of<BR>Application<BR>Instances | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU      | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| 1                                     |  0\.84   |  6\.07            |  32\.00         |  2\.69   |  13\.01           |  59\.20         |  4\.90   |  32\.34           |  80\.00         |
-| 2                                     |  1\.68   |  12\.14           |  64\.00         |  5\.38   |  26\.02           |  118\.40        |  9\.80   |  64\.68           |  160\.00        |
-| 3                                     |  2\.52   |  18\.21           |  96\.00         |  8\.07   |  39\.03           |  177\.60        |  14\.70  |  97\.02           |  240\.00        |
-| 4                                     |  3\.36   |  24\.28           |  128\.00        |  10\.76  |  52\.04           |  236\.80        |  19\.60  |  129\.36          |  320\.00        |
-| 5                                     |  4\.20   |  30\.35           |  160\.00        |  13\.45  |  65\.05           |  296\.00        |  24\.50  |  161\.60          |  400\.00        |
-| 6                                     |  5\.04   |  36\.42           |  192\.00        |  16\.14  |  78\.06           |  354\.20        |  29\.40  |  194\.04          |  480\.00        |
-| 7                                     |  5\.88   |  42\.49           |  224\.00        |  18\.83  |  91\.07           |  413\.40        |  34\.30  |  226\.38          |  560\.00        |
-| 8                                     |  6\.72   |  48\.56           |  256\.00        |  21\.52  |  104\.08          |  472\.60        |  39\.20  |  258\.72          |  640\.00        |
-| 9                                     |  7\.56   |  54\.63           |  288\.00        |  24\.21  |  117\.09          |  531\.80        |  44\.10  |  291\.06          |  720\.00        |
-| 10                                    |  8\.40   |  60\.70           |  320\.00        |  26\.90  |  130\.10          |  591\.00        |  49\.00  |  323\.40          |  800\.00        |
-| 11                                    |  9\.24   |  66\.77           |  352\.00        |  29\.59  |  143\.11          |  649\.20        |  53\.90  |  355\.74          |  880\.00        |
-| 12                                    |  10\.08  |  72\.82           |  384\.00        |  32\.28  |  156\.12          |  708\.40        |  58\.80  |  388\.08          |  960\.00        |
-| 13                                    |  10\.92  |  78\.91           |  416\.00        |  34\.97  |  169\.13          |  767\.60        |  63\.70  |  420\.42          |  1,040\.00      |
-| 14                                    |  11\.76  |  84\.98           |  448\.00        |  37\.66  |  182\.14          |  826\.80        |  68\.60  |  452\.76          |  1,120\.00      |
-| 15                                    |  12\.60  |  91\.05           |  480\.00        |  40\.35  |  195\.15          |  886\.00        |  73\.50  |  485\.10          |  1,200\.00      |
-| 16                                    |  13\.44  |  97\.12           |  512\.00        |  43\.04  |  208\.16          |  944\.20        |  78\.40  |  517\.44          |  1,280\.00      |
-| 17                                    |  14\.28  |  103\.19          |  544\.00        |  45\.73  |  221\.17          |  1,003\.40      |  83\.30  |  549\.78          |  1,360\.00      |
-| 18                                    |  15\.12  |  109\.26          |  576\.00        |  48\.42  |  234\.18          |  1,062\.60      |  88\.20  |  582\.12          |  1,440\.00      |
-| 19                                    |  15\.96  |  115\.33          |  608\.00        |  51\.11  |  247\.19          |  1,121\.80      |  93\.10  |  614\.46          |  1,520\.00      |
-| 20                                    |  16\.80  |  121\.40          |  640\.00        |  53\.80  |  260\.20          |  1,181\.00      |  98\.00  |  646\.80          |  1,600\.00      |
+| Configuration<BR>Size                 |         | micro           |               |         | xsmall          |               |         | small2          |               |
+|---------------------------------------|---------|-----------------|---------------|---------|-----------------|---------------|---------|-----------------|---------------|
+| Number of<BR>Application<BR>Instances | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) |
+| 1                                     |  0.79   |  5.57           |  32.00        |  2.59   |  12.51          |  59.00        |  4.80   |  31.84          |  80.00        |
+| 2                                     |  1.58   |  11.13          |  64.00        |  5.18   |  25.02          |  118.00       |  9.60   |  63.67          |  160.00       |
+| 3                                     |  2.37   |  16.70          |  96.00        |  7.77   |  37.53          |  177.00       |  14.40  |  95.51          |  240.00       |
+| 4                                     |  3.16   |  22.27          |  128.00       |  10.36  |  50.04          |  236.00       |  19.20  |  127.34         |  320.00       |
+| 5                                     |  3.96   |  27.83          |  160.00       |  12.95  |  62.55          |  295.00       |  24.00  |  159.18         |  400.00       |
+| 6                                     |  4.75   |  33.40          |  192.00       |  15.54  |  75.06          |  354.00       |  28.80  |  191.02         |  480.00       |
+| 7                                     |  5.54   |  38.96          |  224.00       |  18.13  |  87.57          |  413.00       |  33.60  |  222.85         |  560.00       |
+| 8                                     |  6.33   |  44.53          |  256.00       |  20.72  |  100.08         |  472.00       |  38.40  |  254.69         |  640.00       |
+| 9                                     |  7.12   |  50.10          |  288.00       |  23.31  |  112.59         |  531.00       |  43.20  |  286.52         |  720.00       |
+| 10                                    |  7.91   |  55.66          |  320.00       |  25.90  |  125.10         |  590.00       |  48.00  |  318.36         |  800.00       |
+| 11                                    |  8.70   |  61.23          |  352.00       |  28.49  |  137.61         |  649.00       |  52.80  |  350.20         |  880.00       |
+| 12                                    |  9.49   |  66.80          |  384.00       |  31.08  |  150.12         |  708.00       |  57.60  |  382.03         |  960.00       |
+| 13                                    |  10.28  |  72.36          |  416.00       |  33.67  |  162.63         |  767.00       |  62.40  |  413.87         |  1,040.00     |
+| 14                                    |  11.07  |  77.93          |  448.00       |  36.26  |  175.14         |  826.00       |  67.20  |  445.70         |  1,120.00     |
+| 15                                    |  11.87  |  83.50          |  480.00       |  38.85  |  187.65         |  885.00       |  72.00  |  477.54         |  1,200.00     |
+| 16                                    |  12.66  |  89.06          |  512.00       |  41.44  |  200.16         |  944.00       |  76.80  |  509.38         |  1,280.00     |
+| 17                                    |  13.45  |  94.63          |  544.00       |  44.03  |  212.67         |  1,003.00     |  81.60  |  541.21         |  1,360.00     |
+| 18                                    |  14.24  |  100.20         |  576.00       |  46.62  |  225.18         |  1,062.00     |  86.40  |  573.05         |  1,440.00     |
+| 19                                    |  15.03  |  105.76         |  608.00       |  49.21  |  237.69         |  1,121.00     |  91.20  |  604.88         |  1,520.00     |
+| 20                                    |  15.82  |  111.33         |  640.00       |  51.80  |  250.20         |  1,180.00     |  96.00  |  636.72         |  1,600.00     |
 
 **Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |        | micro             |                 |        | xsmall             |                 |        | small2             |                 |
-|---------------------------------------|--------|-------------------|-----------------|--------|-------------------|-----------------|--------|-------------------|-----------------|
-| Number of<BR>Application<BR>Instances | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) | CPU    | Memory<BR>\(GiB\) | Disk<BR>\(GiB\) |
-| 1                                     | 0\.50  | 1\.66             | 0\.00           | 2\.55  | 9\.38             | 0\.00           | 3\.10  | 15\.92            | 0\.00           |
-| 2                                     | 1\.00  | 3\.32             | 0\.00           | 5\.10  | 18\.75            | 0\.00           | 6\.20  | 31\.84            | 0\.00           |
-| 3                                     | 1\.50  | 4\.98             | 0\.00           | 7\.65  | 28\.13            | 0\.00           | 9\.30  | 47\.75            | 0\.00           |
-| 4                                     | 2\.00  | 6\.64             | 0\.00           | 10\.20 | 37\.50            | 0\.00           | 12\.40 | 63\.67            | 0\.00           |
-| 5                                     | 2\.50  | 8\.30             | 0\.00           | 12\.75 | 46\.88            | 0\.00           | 15\.50 | 79\.59            | 0\.00           |
-| 6                                     | 3\.00  | 9\.96             | 0\.00           | 15\.30 | 56\.25            | 0\.00           | 18\.60 | 95\.51            | 0\.00           |
-| 7                                     | 3\.50  | 11\.62            | 0\.00           | 17\.85 | 65\.63            | 0\.00           | 21\.70 | 111\.43           | 0\.00           |
-| 8                                     | 4\.00  | 13\.28            | 0\.00           | 20\.40 | 75\.00            | 0\.00           | 24\.80 | 127\.34           | 0\.00           |
-| 9                                     | 4\.50  | 14\.94            | 0\.00           | 22\.95 | 84\.38            | 0\.00           | 27\.90 | 143\.26           | 0\.00           |
-| 10                                    | 5\.00  | 16\.60            | 0\.00           | 25\.50 | 93\.75            | 0\.00           | 31\.00 | 159\.18           | 0\.00           |
-| 11                                    | 5\.50  | 18\.26            | 0\.00           | 28\.05 | 103\.13           | 0\.00           | 34\.10 | 175\.10           | 0\.00           |
-| 12                                    | 6\.00  | 19\.92            | 0\.00           | 30\.60 | 112\.50           | 0\.00           | 37\.20 | 191\.02           | 0\.00           |
-| 13                                    | 6\.50  | 21\.58            | 0\.00           | 33\.15 | 121\.88           | 0\.00           | 40\.30 | 206\.93           | 0\.00           |
-| 14                                    | 7\.00  | 23\.24            | 0\.00           | 35\.70 | 131\.25           | 0\.00           | 43\.40 | 222\.85           | 0\.00           |
-| 15                                    | 7\.50  | 24\.90            | 0\.00           | 38\.25 | 140\.63           | 0\.00           | 46\.50 | 238\.77           | 0\.00           |
-| 16                                    | 8\.00  | 26\.56            | 0\.00           | 40\.80 | 150\.00           | 0\.00           | 49\.60 | 254\.69           | 0\.00           |
-| 17                                    | 8\.50  | 28\.22            | 0\.00           | 43\.35 | 159\.38           | 0\.00           | 52\.70 | 270\.61           | 0\.00           |
-| 18                                    | 9\.00  | 29\.88            | 0\.00           | 45\.90 | 168\.75           | 0\.00           | 55\.80 | 286\.52           | 0\.00           |
-| 19                                    | 9\.50  | 31\.54            | 0\.00           | 48\.45 | 178\.13           | 0\.00           | 58\.90 | 302\.44           | 0\.00           |
-| 20                                    | 10\.00 | 33\.20            | 0\.00           | 51\.00 | 187\.50           | 0\.00           | 62\.00 | 318\.36           | 0\.00           |
-
+| Configuration<BR>Size                 |       | micro           |               |       | xsmall          |               |       | small2          |               |
+|---------------------------------------|-------|-----------------|---------------|-------|-----------------|---------------|-------|-----------------|---------------|
+| Number of<BR>Application<BR>Instances | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) |
+| 1                                     | 0.50  | 1.66            | 0.00          | 2.55  | 9.38            | 0.00          | 3.10  | 15.92           | 0.00          |
+| 2                                     | 1.00  | 3.32            | 0.00          | 5.10  | 18.75           | 0.00          | 6.20  | 31.84           | 0.00          |
+| 3                                     | 1.50  | 4.98            | 0.00          | 7.65  | 28.13           | 0.00          | 9.30  | 47.75           | 0.00          |
+| 4                                     | 2.00  | 6.64            | 0.00          | 10.20 | 37.50           | 0.00          | 12.40 | 63.67           | 0.00          |
+| 5                                     | 2.50  | 8.30            | 0.00          | 12.75 | 46.88           | 0.00          | 15.50 | 79.59           | 0.00          |
+| 6                                     | 3.00  | 9.96            | 0.00          | 15.30 | 56.25           | 0.00          | 18.60 | 95.51           | 0.00          |
+| 7                                     | 3.50  | 11.62           | 0.00          | 17.85 | 65.63           | 0.00          | 21.70 | 111.43          | 0.00          |
+| 8                                     | 4.00  | 13.28           | 0.00          | 20.40 | 75.00           | 0.00          | 24.80 | 127.34          | 0.00          |
+| 9                                     | 4.50  | 14.94           | 0.00          | 22.95 | 84.38           | 0.00          | 27.90 | 143.26          | 0.00          |
+| 10                                    | 5.00  | 16.60           | 0.00          | 25.50 | 93.75           | 0.00          | 31.00 | 159.18          | 0.00          |
+| 11                                    | 5.50  | 18.26           | 0.00          | 28.05 | 103.13          | 0.00          | 34.10 | 175.10          | 0.00          |
+| 12                                    | 6.00  | 19.92           | 0.00          | 30.60 | 112.50          | 0.00          | 37.20 | 191.02          | 0.00          |
+| 13                                    | 6.50  | 21.58           | 0.00          | 33.15 | 121.88          | 0.00          | 40.30 | 206.93          | 0.00          |
+| 14                                    | 7.00  | 23.24           | 0.00          | 35.70 | 131.25          | 0.00          | 43.40 | 222.85          | 0.00          |
+| 15                                    | 7.50  | 24.90           | 0.00          | 38.25 | 140.63          | 0.00          | 46.50 | 238.77          | 0.00          |
+| 16                                    | 8.00  | 26.56           | 0.00          | 40.80 | 150.00          | 0.00          | 49.60 | 254.69          | 0.00          |
+| 17                                    | 8.50  | 28.22           | 0.00          | 43.35 | 159.38          | 0.00          | 52.70 | 270.61          | 0.00          |
+| 18                                    | 9.00  | 29.88           | 0.00          | 45.90 | 168.75          | 0.00          | 55.80 | 286.52          | 0.00          |
+| 19                                    | 9.50  | 31.54           | 0.00          | 48.45 | 178.13          | 0.00          | 58.90 | 302.44          | 0.00          |
+| 20                                    | 10.00 | 33.20           | 0.00          | 51.00 | 187.50          | 0.00          | 62.00 | 318.36          | 0.00          |
 
 *These figures do not include resources being used by the Kubernetes system pods.*
 
@@ -1550,6 +1548,27 @@ scheduler decides that is the best placement.
 As a result, when using node labels it is recommended that you label all of your 
 worker nodes with either `wvrole=driver` or `wvrole=sut`.  This will give you the 
 best control over pod placement.
+
+### Inter-pod affinity and anti-affinity<a name="pod-affinity"></a>
+
+With the Weathervane 2.1 release, configuration parameters were provided to manage the addition of pod affinity and anti-affinity rules with weights to the Weathervane pod manifests. 
+This changes how the Weathervane pods are scheduled across Kubernetes nodes. These parameters will not need to be changed in typical use.
+
+| Parameter:                      | Description: |
+| ------------------------------- | ------------ |
+| `serviceTypeAntiAffinity`       | If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances. (Default: true) |
+| `serviceTypeAntiAffinityWeight` | The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true. (Default: 100) |
+| `serviceTypeAffinity`           | If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same type and anti-affinity among pods of different types.  These will apply across all application instances. (Default: false) |
+| `podInstanceAffinity`           | If true, a podAffinity rule will be used to create affinity among pods of the same application instance. (Default: false) |
+| `podInstanceAffinityWeight`     | The weight to apply to the podAffinity rule if podInstanceAffinity is true. (Default: 50) |
+
+Note there are natural restrictions on the combination of these parameters on a given run. The serviceTypeAffinity rule can not be true when serviceTypeAntiAffinity or podInstanceAffinity are true.
+
+Weathervane defaults to use serviceTypeAntiAffinity, as this leads to a more even load across all nodes and more predictable results.
+
+Changing these parameters will result in noncomparable performance results.  
+Changing these parameters could result in a different fit of pods to nodes,
+which could impact the number of nodes needed to run the same number of Weathervane application instances.
 
 ### Namespace Customization <a name="advanced-namespaces"></a>
 

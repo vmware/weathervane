@@ -113,6 +113,12 @@ has 'host' => (
 	is  => 'rw',
 );
 
+has 'namespace' => (
+	is  => 'rw',
+	isa => 'Str',
+	default => "",
+);
+
 override 'initialize' => sub {
 	my ($self) = @_;
 	super();
@@ -1538,7 +1544,7 @@ sub prepareData {
 		", logDir ",            $setupLogDir
 	);
 
-	my $allIsStarted = $self->dataManager->prepareData( $users, $setupLogDir );
+	my $allIsStarted = $self->dataManager->prepareData( $users, $setupLogDir, 0 );
 	if (!$allIsStarted && $forked) {
 		exit;
 	}

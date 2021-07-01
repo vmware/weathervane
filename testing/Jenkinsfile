@@ -9,7 +9,7 @@ node('wvtest-AuctionDriver') {
         // Remove unneeded docker images which take up lots of space on the AuctionDriver. These accumulate after each build.
         // docker rmi typically returns a code of 1 because it's unable to delete some images.
         // Specifying '|| true' ignores the error code
-        sh label: '', script: 'docker rmi $(docker images -q) || true'
+        sh label: '', script: 'docker rmi -f $(docker images -q) || true'
         // may also need to zip, delete, or archive large/unnecessary run results files
 		// Remove any stopped containers which might have been left over from testing
         sh label: '', script: 'docker container prune -f'

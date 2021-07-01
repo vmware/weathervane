@@ -537,6 +537,13 @@ $parameters{"appIngressMethod"} = {
     "usageText" => "Specifies the method to be used to enable ingress to the Weathervane Auction application.  Valid values are: loadbalancer, nodeport, nodeport-internal, and clusterip.",
     "showUsage" => 1,
 };
+$parameters{"abortFailingWorkload"} = {
+    "type"      => "!",
+    "default"   => JSON::false,
+    "parent"    => "workload",
+    "usageText" => "If set to true, this parameter will cause a workload to stop as soon as any application instance fails.",
+    "showUsage" => 0,
+};
 
 $parameters{"dataManager"} = {
 	"type"      => "hash",
@@ -1089,6 +1096,55 @@ $parameters{"instanceNodeLabels"} = {
 	"default"   => JSON::false,
 	"parent"    => "runManager",
 	"usageText" => "If true, the appInstances will only run on Kubernetes nodes with the appropriate label, e.g. wvauctionw1i1=",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeNodeLabels"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a service of a given type will only run on Kubernetes nodes with the appropriate label, e.g. wvtype=webServer",
+	"showUsage" => 1,
+};
+
+$parameters{"podInstanceAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAffinity rule will be used to create affinity among pods of the same application instance ",
+	"showUsage" => 1,
+};
+
+$parameters{"podInstanceAffinityWeight"} = {
+	"type"      => "=i",
+	"default"   => 50,
+	"parent"    => "runManager",
+	"usageText" => "The weight to apply to the podAffinity rule if podInstanceAffinity is true",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAntiAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::true,
+	"parent"    => "runManager",
+	"usageText" => "If true, a podAntiAffinity rule will be used to create anti-affinity among pods of the same type across all application instances",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAntiAffinityWeight"} = {
+	"type"      => "=i",
+	"default"   => 100,
+	"parent"    => "runManager",
+	"usageText" => "The weight to apply to the podAntiAffinity rule if serviceTypeAntiAffinity is true",
+	"showUsage" => 1,
+};
+
+$parameters{"serviceTypeAffinity"} = {
+	"type"      => "!",
+	"default"   => JSON::false,
+	"parent"    => "runManager",
+	"usageText" => "If true, podAffinity and podAntiAffinity rules will be used to create affinity among pods of the same types,\n" .
+	" and anti-affinity among pods of different types. These will apply across all application instances",
 	"showUsage" => 1,
 };
 
@@ -1841,6 +1897,14 @@ $parameters{"maxLogLines"} = {
 	"default"   => 4000,
 	"parent"    => "runManager",
 	"usageText" => "",
+	"showUsage" => 0,
+};
+
+$parameters{"prepareConcurrency"} = {
+	"type"      => "=i",
+	"default"   => 0,
+	"parent"    => "workload",
+	"usageText" => "If greater than 0, will limit the number of concurrent prepares.",
 	"showUsage" => 0,
 };
 

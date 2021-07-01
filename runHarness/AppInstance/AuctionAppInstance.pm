@@ -283,6 +283,22 @@ override 'checkConfig' => sub {
 		}
 	}
 	
+	if ($self->getParamValue("serviceTypeAffinity") && 
+		($self->getParamValue("podInstanceAffinity") || $self->getParamValue("serviceTypeAntiAffinity"))) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The serviceTypeAffinity parameter cannot be true when podInstanceAffinity or serviceTypeAntiAffinity is also true.");
+				return 0;
+	}	
+
+	if (($self->getParamValue("podInstanceAffinityWeight") < 1) || ($self->getParamValue("podInstanceAffinityWeight") > 100)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The podInstanceAffinityWeight parameter must be between 1 and 100.");
+				return 0;
+	}	
+
+	if (($self->getParamValue("serviceTypeAntiAffinityWeight") < 1) || ($self->getParamValue("serviceTypeAntiAffinityWeight") > 100)) {
+				$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The serviceTypeAntiAffinityWeight parameter must be between 1 and 100.");
+				return 0;
+	}	
+	
 	return 1;
 };
 

@@ -199,7 +199,11 @@ override 'run' => sub {
 			$console_logger->info("Sanity Checks Failed");
 		}
 
-		my @tiers = qw(frontend backend data infrastructure);
+		my @tiers = qw(frontend);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
+		@tiers = qw(backend);
+		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
+		@tiers = qw(data infrastructure);
 		callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $cleanupLogDir );
 
 		# clean up old logs and stats

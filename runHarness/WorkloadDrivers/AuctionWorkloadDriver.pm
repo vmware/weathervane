@@ -1319,7 +1319,7 @@ sub startRun {
 								}
 								my $metricsStr;
 								if ($usingIntervalLoadPathType) {
-									$metricsStr = ", $successStr, Start Users: $startUsersStr, End Users: $endUsersStr, avgRT:$rtStr, percentFailRT: $pctFailRTStr\%";
+									$metricsStr = ", Start Users: $startUsersStr, End Users: $endUsersStr, avgRT:$rtStr, percentFailRT: $pctFailRTStr\%, $successStr";
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}

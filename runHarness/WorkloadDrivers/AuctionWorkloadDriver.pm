@@ -1319,7 +1319,7 @@ sub startRun {
 								}
 								my $metricsStr;
 								if ($usingIntervalLoadPathType) {
-									$metricsStr = ", Start Users: $startUsersStr, End Users: $endUsersStr, avgRT:$rtStr, percentFailRT: $pctFailRTStr\%";
+									$metricsStr = ", Start Users: $startUsersStr, End Users: $endUsersStr, avgRT:$rtStr, percentFailRT: $pctFailRTStr\%, $successStr";
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
@@ -2365,6 +2365,8 @@ sub parseStats {
 			$logger->debug("parseStats: workload " . $appInstanceName 
 					. ", appInstanceNum = " . $appInstanceNum 
 					. " does not have a maxPassInterval");
+			$self->passRT->{$appInstanceNum} = 0;
+			$self->passFailure->{$appInstanceNum} = 0;
 			next;
 		}
 		

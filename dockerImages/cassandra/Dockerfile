@@ -18,7 +18,7 @@ ARG http_proxy
 RUN yum install -y java-1.8.0-openjdk && \
 	yum install -y java-1.8.0-openjdk-devel && \
 	yum install -y python && \
-	yum install -y cassandra && \
+	yum install -y https://archive.apache.org/dist/cassandra/redhat/311x/cassandra-3.11.10-1.noarch.rpm && \
 	yum -y clean all && \
 	mkdir -p /data && \
 	rm /etc/security/limits.d/cassandra.conf && \

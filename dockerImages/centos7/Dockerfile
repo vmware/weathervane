@@ -11,7 +11,7 @@ RUN \
   chmod +x /updateResolveConf.pl && \
   yum -y install wget && \
   yum -y install epel-release && \
-  yum -y install python2-httpie && \
+  yum -y install httpie && \
   yum -y install sudo && \
   yum -y install iproute && \
   yum -y install perl && \

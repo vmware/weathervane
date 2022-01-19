@@ -29,11 +29,11 @@ sub usage {
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This is only used with --private.\n";
-		print "     --https_proxy :  This is the url of the https proxy to use when accessing the internet.\n";
-		print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
+    print "     --https_proxy :  This is the url of the https proxy to use when accessing the internet.\n";
+    print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
     print "                      If required by your proxy, the url should include the port, username, and password.\n";
-		print "     --http_proxy :   This is the url of the http proxy to use when accessing the internet.\n";
-		print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
+    print "     --http_proxy :   This is the url of the http proxy to use when accessing the internet.\n";
+    print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
     print "                      If required by your proxy, the url should include the port, username, and password.\n";
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }

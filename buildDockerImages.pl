@@ -29,8 +29,11 @@ sub usage {
     print "                      This must be provided if --private is used.\n";
     print "     --port :         This is the port number for the private registry.\n";
     print "                      This is only used with --private.\n";
-    print "     --proxy :        This is the url of the http(s) proxy to use when accessing the internet.\n";
-    print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
+		print "     --https_proxy :  This is the url of the https proxy to use when accessing the internet.\n";
+		print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
+    print "                      If required by your proxy, the url should include the port, username, and password.\n";
+		print "     --http_proxy :   This is the url of the http proxy to use when accessing the internet.\n";
+		print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
     print "                      If required by your proxy, the url should include the port, username, and password.\n";
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
@@ -41,7 +44,8 @@ my $port = 0;
 my $username = "";
 my $password = "";
 my $private = '';
-my $proxy = '';
+my $http_proxy = '';
+my $https_proxy = '';
 
 my $optionsSuccess = GetOptions('help' => \$help,
 			'host=s' => \$host,
@@ -49,7 +53,8 @@ my $optionsSuccess = GetOptions('help' => \$help,
 			'username=s' => \$username,
 			'password=s' => \$password,
 			'private!' => \$private,
-			'proxy=s' => \$proxy
+			'http_proxy=s' => \$http_proxy,
+			'https_proxy=s' => \$https_proxy
 			);
 if (!$optionsSuccess) {
   die "Error for command line options.\n";
@@ -98,7 +103,7 @@ sub cleanupDockerfile {
 
 sub buildImage {
 	my ($imageName, $buildArgsListRef, $fileout, $namespace, $version, $logFile) = @_;
-	if ($imageName ne "centos7") {		
+	if ($imageName ne "centos7") {
 		rewriteDockerfile("./dockerImages/$imageName", $namespace, $version);
 	}
 
@@ -112,7 +117,7 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker build failed with exitValue $exitValue, check $logFile.\n";
-		if ($imageName ne "centos7") {		
+		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
@@ -123,17 +128,17 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker push failed with exitValue $exitValue, check $logFile.\n";
-		if ($imageName ne "centos7") {		
+		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
 
-	if ($imageName ne "centos7") {		
+	if ($imageName ne "centos7") {
 		cleanupDockerfile("./dockerImages/$imageName");
 	}
-	
+
 }
 
 sub setupForBuild {
@@ -185,7 +190,7 @@ sub setupForBuild {
 	runAndLog($fileout, "cp -r ./runHarness ./dockerImages/runharness/runHarness");
 	runAndLog($fileout, "cp ./weathervane.pl ./dockerImages/runharness/weathervane.pl");
 	runAndLog($fileout, "cp -r ./configFiles ./dockerImages/runharness/configFiles");
-	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");	
+	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 }
 
 sub cleanupAfterBuild {
@@ -238,7 +243,7 @@ open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n
 my $version = `cat version.txt`;
 chomp($version);
 
-# Build the executables if any of the images to be built 
+# Build the executables if any of the images to be built
 # require the executables
 foreach my $imageName (@imageNames) {
 	my @needExecutableImageNames = qw(auctiondatamanager auctionworkloaddriver auctionappserverwarmer nginx tomcat auctionbidservice);
@@ -251,8 +256,8 @@ foreach my $imageName (@imageNames) {
 		my $cwd = getcwd();
 		`mkdir -p $cwd/.gradle`;
 		my $cmdString = "docker run --name weathervane-builder --rm "
-        		      . "-v $cwd/.gradle:/root/.gradle " 
-              		  . "-v $cwd:/root/weathervane -w /root/weathervane " 
+        		      . "-v $cwd/.gradle:/root/.gradle "
+              		  . "-v $cwd:/root/weathervane -w /root/weathervane "
                       . "--entrypoint /root/weathervane/gradlew openjdk:8 release";
 		runAndLog($fileout, $cmdString);
 		my $exitValue=$? >> 8;
@@ -300,17 +305,21 @@ if (!$private || $username) {
 		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
-} 
+}
 
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
 	print $fileout "Building and pushing weathervane-$imageName image.\n";
 	my @buildArgs;
-	if ($proxy) {
-		 push @buildArgs, "http_proxy=$proxy"; 
+
+	if($http_proxy){
+		push @buildArgs, "http_proxy=$http_proxy";
 	}
-	
+	if($https_proxy){
+		push @buildArgs, "https_proxy=$https_proxy";
+	}
+
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version, $logFile);
 }
 

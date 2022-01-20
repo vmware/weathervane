@@ -65,6 +65,15 @@ if ($help) {
 	exit;
 }
 
+sub checkPrerequisites {
+	my ($fileout) = @_;
+	my @requiredPackages = qw(java docker); # Excluding perl requirement, can't run this script without it
+	print "Checking for required packages.\n";
+	foreach my $package (@requiredPackages) {
+		runAndLog($fileout, "$package --version");
+	}
+}
+
 sub runAndLog {
 	my ( $fileout, $cmd ) = @_;
 	print $fileout "COMMAND> $cmd\n";
@@ -237,6 +246,9 @@ open( $fileout, ">$logFile" ) or die "Can't open file $logFile for writing: $!\n
 
 my $version = `cat version.txt`;
 chomp($version);
+
+# Check for prerequisites here
+checkPrerequisites($fileout);
 
 # Build the executables if any of the images to be built 
 # require the executables

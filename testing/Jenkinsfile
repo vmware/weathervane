@@ -18,6 +18,17 @@ node('wvtest-AuctionDriver') {
             // Checkout command for Jenkins UI
             //checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/vmware/weathervane']]])
         }
+        stage('test-proxy-builds') {
+			     withCredentials([usernamePassword(credentialsId: 'robot-credentials', passwordVariable: 'ROBOT_PASSWORD', usernameVariable: 'ROBOT_USERNAME')]) {
+			
+				       withCredentials([string(credentialsId: 'http-proxy', variable: 'HTTP_PROXY')]) {
+					          // Build executables and images, push to Harbor
+					          sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --http_proxy $HTTP_PROXY --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
+                    sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --https_proxy $HTTP_PROXY --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
+                    sh label: '', script: 'printf \'$ROBOT_PASSWORD\' | ./buildDockerImages.pl --http_proxy $HTTP_PROXY --https_proxy $HTTP_PROXY --private --host \'harbor-repo.vmware.com/weathervaneci\' --username $ROBOT_USERNAME'
+				       }
+			     }
+		    }
         stage('build') {
             
             // Pull openjdk:8 image from Harbor Proxy Cache; will default to DockerHub otherwise and probably fail

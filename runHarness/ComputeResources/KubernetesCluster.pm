@@ -1438,8 +1438,28 @@ sub kubernetesCollectEventLogs {
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
 	my $console_logger = get_logger("Console");
 	$logger->debug("kubernetesCollectEventLogs, destinationPath $destinationPath");
-
 	
+	$cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
+	
+	my $destinationDir = "$destinationPath/statistics/kubernetes";
+	my ($cmdFailed, $outString) = runCmd($cmd);
+	
+	if($cmdFailed){
+		$logger->error("kubernetesCollectEventLogs failed: $cmdFailed");
+		return;
+	}
+	
+	$logger->debug("Command: $cmd");
+	$logger->debug("Output: $outString");
+	
+	open( FILE, ">$destinationDir/kubectl_event_logs.txt" )
+		 or die "Couldn't open $destinationDir/kubectl_event_logs.txt: $!";
+		 
+	print FILE $outString;
+	$logger->info("kubernetesCollectEventLogs exit");
+	close(FILE);
+	
+	exit;
 }
 
 override 'startStatsCollection' => sub {

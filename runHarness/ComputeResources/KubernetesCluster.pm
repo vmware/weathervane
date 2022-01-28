@@ -1433,6 +1433,15 @@ sub kubernetesStopTops {
 	}
 }
 
+sub kubernetesCollectEventLogs {
+	my ( $self, $destinationPath ) = @_;
+	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
+	my $console_logger = get_logger("Console");
+	$logger->debug("kubernetesCollectEventLogs, destinationPath $destinationPath");
+
+	
+}
+
 override 'startStatsCollection' => sub {
 	my ( $self, $intervalLengthSec, $numIntervals, $tmpDir ) = @_;
 	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");

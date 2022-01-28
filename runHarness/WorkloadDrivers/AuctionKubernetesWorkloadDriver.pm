@@ -402,6 +402,7 @@ override 'getLogFiles' => sub {
 	my ( $self, $destinationPath ) = @_;
 	my $namespace = $self->namespace;
 	$self->host->kubernetesGetLogs("type=node", "wklddriver", $namespace, $destinationPath );
+  $self->host->kubernetesCollectEventLogs($destinaionPath);
 };
 
 override 'stopDrivers' => sub {

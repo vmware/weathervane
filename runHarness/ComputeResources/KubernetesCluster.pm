@@ -155,8 +155,8 @@ override 'getConfigFiles' => sub {
 			  $logger->error("kubernetesGetAll failed: $cmdFailed");
 		}
 		$logger->debug("Command: $cmd");
-		open( FILEOUT, ">$destinationDir/" . "$name-EventLogs.txt" )
-			 or die "Couldn't open $destinationDir/" . "$name-EventLogs.txt: $!";
+		open( FILEOUT, ">$destinationPath/" . "$name-EventLogs.txt" )
+			 or die "Couldn't open $destinationPath/" . "$name-EventLogs.txt: $!";
 			 
 		@outString = split /\n/, $outString;
 	  for my $line (@outString) {

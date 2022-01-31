@@ -148,6 +148,21 @@ override 'getConfigFiles' => sub {
         print FILEOUT "$line\n";
     }
     close FILEOUT;
+				
+		$cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
+		my ($cmdFailed, $outString) = runCmd($cmd);
+		if ($cmdFailed){
+			  $logger->error("kubernetesGetAll failed: $cmdFailed");
+		}
+		$logger->debug("Command: $cmd");
+		open( FILEOUT, ">$destinationDir/" . "$name-EventLogs.txt" )
+			 or die "Couldn't open $destinationDir/" . "$name-EventLogs.txt: $!";
+			 
+		@outString = split /\n/, $outString;
+	  for my $line (@outString) {
+	      print FILEOUT "$line\n";
+    }
+		close(FILEOUT);
 };
 
 sub kubernetesGetNamespace {
@@ -1431,35 +1446,6 @@ sub kubernetesStopTops {
 		waitpid $pidNode, 0;
 		$logger->debug("kubernetesStopTops TopNode pid $pidNode stopped");
 	}
-}
-
-sub kubernetesCollectEventLogs {
-	my ( $self, $destinationPath ) = @_;
-	my $logger         = get_logger("Weathervane::Clusters::KubernetesCluster");
-	my $console_logger = get_logger("Console");
-	$logger->debug("kubernetesCollectEventLogs, destinationPath $destinationPath");
-	
-	$cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
-	
-	my $destinationDir = "$destinationPath/statistics/kubernetes";
-	my ($cmdFailed, $outString) = runCmd($cmd);
-	
-	if($cmdFailed){
-		$logger->error("kubernetesCollectEventLogs failed: $cmdFailed");
-		return;
-	}
-	
-	$logger->debug("Command: $cmd");
-	$logger->debug("Output: $outString");
-	
-	open( FILE, ">$destinationDir/kubectl_event_logs.txt" )
-		 or die "Couldn't open $destinationDir/kubectl_event_logs.txt: $!";
-		 
-	print FILE $outString;
-	$logger->info("kubernetesCollectEventLogs exit");
-	close(FILE);
-	
-	exit;
 }
 
 override 'startStatsCollection' => sub {

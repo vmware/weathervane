@@ -149,20 +149,18 @@ override 'getConfigFiles' => sub {
     }
     close FILEOUT;
 				
-		$cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
-		($cmdFailed, $outString) = runCmd($cmd);
-		if ($cmdFailed){
-			  $logger->error("kubernetesGetAll failed: $cmdFailed");
-		}
-		$logger->debug("Command: $cmd");
-		open( FILEOUT, ">$destinationPath/" . "$name-EventLogs.txt" )
-			 or die "Couldn't open $destinationPath/" . "$name-EventLogs.txt: $!";
-			 
-		@outString = split /\n/, $outString;
-	  for my $line (@outString) {
-	      print FILEOUT "$line\n";
+    $cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed){
+        $logger->error("kubernetesGetAll failed: $cmdFailed");
     }
-		close(FILEOUT);
+    $logger->debug("Command: $cmd");
+    open( FILEOUT, ">$destinationPath/" . "$name-EventLogs.txt" ) or die "Couldn't open $destinationPath/" . "$name-EventLogs.txt: $!\n";			 
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close(FILEOUT);
 };
 
 sub kubernetesGetNamespace {

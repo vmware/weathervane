@@ -149,7 +149,7 @@ override 'getConfigFiles' => sub {
     }
     close FILEOUT;
 				
-    $cmd = "kubectl get events --sort-by=.metadata.creationTimestamp";
+    $cmd = "kubectl get events --all-namespaces --sort-by=.metadata.creationTimestamp --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed){
         $logger->error("kubernetesGetAll failed: $cmdFailed");

@@ -143,10 +143,6 @@ sub buildImage {
 
 sub setupForBuild {
 	my ($fileout) = @_;
-
-	#cleaning extraneous files from previous runs
-	runAndLog($fileout, "docker rmi -f \$(docker images -q)");
-	runAndLog($fileout, "docker container prune -f");
 	#nginx
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "mkdir ./dockerImages/nginx/html");
@@ -198,6 +194,10 @@ sub setupForBuild {
 
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
+	#cleaning extraneous files from previous runs
+	runAndLog($fileout, "docker rmi -f \$(docker images -q)");
+	runAndLog($fileout, "docker container prune -f");
+	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 	runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");

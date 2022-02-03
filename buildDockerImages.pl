@@ -144,6 +144,9 @@ sub buildImage {
 sub setupForBuild {
 	my ($fileout) = @_;
 
+	#cleaning extraneous files from previous runs
+	runAndLog($fileout, "docker rmi -f \$(docker images -q)");
+	runAndLog($fileout, "docker container prune -f");
 	#nginx
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "mkdir ./dockerImages/nginx/html");

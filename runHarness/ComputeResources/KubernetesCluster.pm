@@ -82,7 +82,7 @@ override 'getConfigFiles' => sub {
     $cmd = "kubectl get pod --all-namespaces --selector=app=auction -o wide --sort-by='{.spec.nodeName}' --kubeconfig=$kubeconfigFile $contextString";
     my ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
-        $logger->error("kubernetesGetAll failed: $cmdFailed");
+        $logger->error("getconfigFiles get pod failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
     #$logger->debug("Output: $outString");
@@ -96,7 +96,7 @@ override 'getConfigFiles' => sub {
     $cmd = "kubectl describe pod --all-namespaces --selector=app=auction --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd, 0);
     if ($cmdFailed) {
-        $logger->error("kubernetesGetAll failed: $cmdFailed");
+        $logger->error("getconfigFiles describe pod failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
     #$logger->debug("Output: $outString");
@@ -110,7 +110,7 @@ override 'getConfigFiles' => sub {
     $cmd = "kubectl get all --all-namespaces -o wide --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
-        $logger->error("kubernetesGetAll failed: $cmdFailed");
+        $logger->error("getconfigFiles get all failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
     #$logger->debug("Output: $outString");
@@ -124,7 +124,7 @@ override 'getConfigFiles' => sub {
     $cmd = "kubectl get pvc --all-namespaces --selector=app=auction -o wide --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd);
     if ($cmdFailed) {
-        $logger->error("kubernetesGetAll failed: $cmdFailed");
+        $logger->error("getconfigFiles get pvc failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
     #$logger->debug("Output: $outString");
@@ -138,7 +138,7 @@ override 'getConfigFiles' => sub {
     $cmd = "kubectl describe node --kubeconfig=$kubeconfigFile $contextString";
     ($cmdFailed, $outString) = runCmd($cmd, 0);
     if ($cmdFailed) {
-        $logger->error("kubernetesGetAll failed: $cmdFailed");
+        $logger->error("getconfigFiles describe node failed: $cmdFailed");
     }
     $logger->debug("Command: $cmd");
     #$logger->debug("Output: $outString");
@@ -148,6 +148,19 @@ override 'getConfigFiles' => sub {
         print FILEOUT "$line\n";
     }
     close FILEOUT;
+				
+    $cmd = "kubectl get events --all-namespaces --sort-by=.metadata.creationTimestamp --kubeconfig=$kubeconfigFile $contextString";
+    ($cmdFailed, $outString) = runCmd($cmd);
+    if ($cmdFailed){
+        $logger->error("getconfigFiles get events failed: $cmdFailed");
+    }
+    $logger->debug("Command: $cmd");
+    open( FILEOUT, ">$destinationPath/" . "$name-EventLogs.txt" ) or die "Couldn't open $destinationPath/" . "$name-EventLogs.txt: $!\n";			 
+    @outString = split /\n/, $outString;
+    for my $line (@outString) {
+        print FILEOUT "$line\n";
+    }
+    close(FILEOUT);
 };
 
 sub kubernetesGetNamespace {

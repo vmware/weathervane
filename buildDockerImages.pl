@@ -196,7 +196,7 @@ sub setupForBuild {
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
 	#cleaning extraneous files from previous runs
-	runAndLog($fileout, "docker rmi -f \$(docker images -q)");
+	runAndLog($fileout, "docker images -a | grep \"weathervane*\" | awk '{print $3}' | xargs docker rmi"); # removing images
 	runAndLog($fileout, "docker container prune -f");
 	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");

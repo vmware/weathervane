@@ -196,8 +196,8 @@ sub setupForBuild {
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
 	#cleaning extraneous files from previous runs
-	runAndLog($fileout, "docker images -a | grep \"weathervane*\|openjdk*\|centos*\" | awk '{print \$3}' | xargs docker rmi"); # removing images
-	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print \$1}')"); # Removing containers
+	runAndLog($fileout, "docker images -a | grep \"weathervane*\|openjdk*\|centos*\" | awk '{print $3}' | xargs docker rmi"); # removing images
+	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print $1}')"); # Removing containers
 	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");

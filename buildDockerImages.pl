@@ -65,6 +65,8 @@ if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
 
+my @imageIDs = ();
+
 if ($help) {
 	usage();
 	exit;
@@ -120,10 +122,14 @@ sub buildImage {
 		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
-		cleanupAfterBuild($fileout);
+		cleanupAfterBuild($fileout, @imageIDs);
 		exit(-1);
 	}
-
+	#Getting recently created ImageID and storing in array.
+	chomp(my $cmd = `docker images | awk '{print \$3}' | awk 'NR==2'`);
+	runAndLog($fileout, "docker images | awk '{print \$3}' | awk 'NR==2'");
+	push @imageIDs, $cmd;
+	
 	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
 	$exitValue=$? >> 8;
 	if ($exitValue) {
@@ -131,7 +137,7 @@ sub buildImage {
 		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
-		cleanupAfterBuild($fileout);
+		cleanupAfterBuild($fileout, @imageIDs);
 		exit(-1);
 	}
 
@@ -194,7 +200,7 @@ sub setupForBuild {
 }
 
 sub cleanupAfterBuild {
-	my ($fileout) = @_;
+	my ($fileout, @imageIDs) = @_;
 	#cleaning extraneous files from previous runs
 	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi"); # removing images
 	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print \$1}')"); # Removing containers
@@ -306,11 +312,11 @@ if (!$private || $username) {
 	print $fileout "result: $response\n";
 	if ($response =~ /unauthorized/) {
 		print "Could not login to $hostString with the supplied username and password.\n";
-		cleanupAfterBuild($fileout);
+		cleanupAfterBuild($fileout, @imageIDs);
 		exit(-1);
 	}
 }
-my @imageIDs = ();
+
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
@@ -325,16 +331,11 @@ foreach my $imageName (@imageNames) {
 	}
 
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version, $logFile);
-	
-	#Getting recently created ImageID and storing in array.
-	chomp(my $cmd = `docker images | awk '{print \$3}' | awk 'NR==2'`);
-	runAndLog($fileout, "docker images | awk '{print \$3}' | awk 'NR==2'");
-	push @imageIDs, $cmd;
 }
 
 # Clean up
 print $fileout "Cleaning up.\n";
-cleanupAfterBuild($fileout);
+cleanupAfterBuild($fileout, @imageIDs);
 
 print "Done.\n";
 print $fileout "Done.\n";

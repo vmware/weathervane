@@ -310,7 +310,7 @@ if (!$private || $username) {
 		exit(-1);
 	}
 }
-
+my @imageIDs = ();
 foreach my $imageName (@imageNames) {
 	$imageName = lc $imageName;
 	print "Building and pushing weathervane-$imageName image.\n";
@@ -325,6 +325,11 @@ foreach my $imageName (@imageNames) {
 	}
 
 	buildImage($imageName, \@buildArgs, $fileout, $namespace, $version, $logFile);
+	
+	#Getting recently created ImageID and storing in array.
+	chomp(my $cmd = `docker images | awk '{print \$3}' | awk 'NR==2'`);
+	runAndLog($fileout, "docker images | awk '{print $3}' | awk 'NR==2'");
+	push @imageIDs, $cmd;
 }
 
 # Clean up

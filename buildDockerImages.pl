@@ -199,11 +199,22 @@ sub setupForBuild {
 	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 }
 
+sub removeImagesAndContainers {
+	my ($fileout, @imageIDs) = @_;
+	
+	foreach my $imageID (@imageIDs){
+		runAndLog($fileout, "docker rm \$(docker ps -a | grep \"${imageID}\" | awk '{print \$1}')"); # Removing containers
+		runAndLog($fileout, "docker images -a | grep \"${imageID}\" | awk '{print \$3}' | xargs docker rmi"); # removing image
+	}
+	#Catching any left-over images/containers
+	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi"); # removing images
+	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print \$1}')"); # Removing containers
+}
+
 sub cleanupAfterBuild {
 	my ($fileout, @imageIDs) = @_;
 	#cleaning extraneous files from previous runs
-	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi"); # removing images
-	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print \$1}')"); # Removing containers
+	removeImagesAndContainers($fileout, @imageIDs);
 	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");

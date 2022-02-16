@@ -65,7 +65,6 @@ if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
 
-my @imageIDs = ();
 
 if ($help) {
 	usage();
@@ -122,13 +121,9 @@ sub buildImage {
 		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
-		cleanupAfterBuild($fileout, @imageIDs);
+		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
-	#Getting recently created ImageID and storing in array.
-	chomp(my $cmd = `docker images | awk '{print \$3}' | awk 'NR==2'`);
-	runAndLog($fileout, "docker images | awk '{print \$3}' | awk 'NR==2'");
-	push @imageIDs, $cmd;
 	
 	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
 	$exitValue=$? >> 8;
@@ -137,7 +132,7 @@ sub buildImage {
 		if ($imageName ne "centos7") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
-		cleanupAfterBuild($fileout, @imageIDs);
+		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
 
@@ -200,21 +195,16 @@ sub setupForBuild {
 }
 
 sub removeImagesAndContainers {
-	my ($fileout, @imageIDs) = @_;
+	my ($fileout) = @_;
 	
-	foreach my $imageID (@imageIDs){
-		runAndLog($fileout, "docker rm \$(docker ps -a | grep \"${imageID}\" | awk '{print \$1}')"); # Removing containers
-		runAndLog($fileout, "docker images -a | grep \"${imageID}\" | awk '{print \$3}' | xargs docker rmi"); # removing image
-	}
-	#Catching any left-over images/containers
-	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi"); # removing images
-	runAndLog($fileout, "docker rm \$(docker ps -a | grep \"weathervane*\" | awk '{print \$1}')"); # Removing containers
+	#Catching any left-over images
+	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi");
 }
 
 sub cleanupAfterBuild {
-	my ($fileout, @imageIDs) = @_;
+	my ($fileout) = @_;
 	#cleaning extraneous files from previous runs
-	removeImagesAndContainers($fileout, @imageIDs);
+	removeImagesAndContainers($fileout);
 	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
@@ -323,7 +313,7 @@ if (!$private || $username) {
 	print $fileout "result: $response\n";
 	if ($response =~ /unauthorized/) {
 		print "Could not login to $hostString with the supplied username and password.\n";
-		cleanupAfterBuild($fileout, @imageIDs);
+		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
 }
@@ -346,7 +336,7 @@ foreach my $imageName (@imageNames) {
 
 # Clean up
 print $fileout "Cleaning up.\n";
-cleanupAfterBuild($fileout, @imageIDs);
+cleanupAfterBuild($fileout);
 
 print "Done.\n";
 print $fileout "Done.\n";

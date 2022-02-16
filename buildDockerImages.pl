@@ -194,7 +194,7 @@ sub setupForBuild {
 	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 }
 
-sub removeImagesAndContainers {
+sub removeImages {
 	my ($fileout) = @_;
 	
 	#Catching any left-over images
@@ -204,7 +204,7 @@ sub removeImagesAndContainers {
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
 	#cleaning extraneous files from previous runs
-	removeImagesAndContainers($fileout);
+	removeImages($fileout);
 	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");

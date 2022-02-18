@@ -65,6 +65,7 @@ if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
 
+
 if ($help) {
 	usage();
 	exit;
@@ -123,7 +124,7 @@ sub buildImage {
 		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
-
+	
 	runAndLog($fileout, "docker push $namespace/weathervane-$imageName:$version");
 	$exitValue=$? >> 8;
 	if ($exitValue) {
@@ -193,8 +194,18 @@ sub setupForBuild {
 	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 }
 
+sub removeImages {
+	my ($fileout) = @_;
+	
+	#Catching any left-over images
+	runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi");
+}
+
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
+	#cleaning extraneous files from previous runs
+	removeImages($fileout);
+	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 	runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");

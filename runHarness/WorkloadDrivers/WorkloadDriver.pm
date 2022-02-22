@@ -95,10 +95,9 @@ sub setWorkload {
 	$self->workload($workload);
 }
 
-sub workloadCount {
+sub setWorkloadCount {
 	my ($self, $count) = @_;
-	$self->{workloadCount} = $count;
-	return $self->{workloadCount};
+	$self->workloadCount($count);
 }
 
 sub checkConfig {

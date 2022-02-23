@@ -659,7 +659,6 @@ $console_logger->info("Run Configuration has $numWorkloads workload(s).");
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
-	$workloadParamHashRef->{workloadCount} = $numWorkloads;
 	my $outputWorkloadNum = ($numWorkloads == 1 ? undef : $workloadNum);
 	
 	my $configSize = $workloadParamHashRef->{'configurationSize'};
@@ -700,6 +699,11 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
+
+	$workload->setWorkloadCount(100); # DELETE
+	my $TEST = $workload->workloadCount; # DELETE
+	print "TESTing $TEST\n"; # DELETE
+
 	$workload->instanceNum($workloadNum);
 	$workload->initialize();
 	push @workloads, $workload;

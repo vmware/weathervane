@@ -700,7 +700,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
 
-	$workload->setWorkloadCount(100); # DELETE
+	$workload->{workloadCount} = $numWorkloads; # DELETE
 	my $TEST = $workload->workloadCount; # DELETE
 	print "TESTing $TEST\n"; # DELETE
 
@@ -773,7 +773,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", 
 					\%nameToComputeResourceHash, $driverCluster, 
 					$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
+	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host, $numWorkloads);
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
 	$workloadDriver->instanceNum($driverNum);
@@ -801,7 +801,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, 
 												"driver", \%nameToComputeResourceHash, $driverCluster,
 												$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
+		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host, $numWorkloads);
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);

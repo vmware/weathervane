@@ -174,7 +174,8 @@ override 'initialize' => sub {
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
 	$self->name("driverW${workloadNum}I${instanceNum}");
-	
+	my $TEST = $self->{workloadCount}; 							# DELETE
+	print "Testing within AuctionWorkloadDriver init: $TEST";	# DELETE
 	$self->json(JSON->new);
 	$self->json->relaxed(1);
 	$self->json->pretty(1);
@@ -898,7 +899,7 @@ sub initializeRun {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$self->suffix($suffix);
 	my $port = $self->portMap->{'http'};
-	my $workloadNum    = $self->workload->instanceNum;
+	my $workloadNum    = $self->workload->instanceNum; # TODO: Change to undef if workloadcount is 1
 	my $runName = "runW${workloadNum}";
 
 	my $logName = "$logDir/InitializeRun$suffix.log";

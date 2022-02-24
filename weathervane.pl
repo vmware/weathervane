@@ -659,7 +659,7 @@ $console_logger->info("Run Configuration has $numWorkloads workload(s).");
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
-	my $outputWorkloadNum = ($numWorkloads == 1 ? undef : $workloadNum);
+	my $outputWorkloadNum = ($numWorkloads == 1 ? "" : $workloadNum);
 	
 	my $configSize = $workloadParamHashRef->{'configurationSize'};
 	# Check that the configurationSize is one of those allowed for this workload

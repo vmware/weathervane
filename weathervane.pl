@@ -699,11 +699,6 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	my $workload = WorkloadFactory->getWorkload($workloadParamHashRef);
-
-	$workload->{workloadCount} = $numWorkloads; # DELETE
-	my $TEST = $workload->workloadCount; # DELETE
-	print "TESTing $TEST\n"; # DELETE
-
 	$workload->instanceNum($workloadNum);
 	$workload->initialize();
 	push @workloads, $workload;

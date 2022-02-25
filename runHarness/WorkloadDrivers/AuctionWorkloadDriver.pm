@@ -173,6 +173,11 @@ override 'initialize' => sub {
 	super();
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	$self->name("driverW${workloadNum}I${instanceNum}");
 	$self->json(JSON->new);
 	$self->json->relaxed(1);

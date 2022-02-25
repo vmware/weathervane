@@ -174,8 +174,6 @@ override 'initialize' => sub {
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
 	$self->name("driverW${workloadNum}I${instanceNum}");
-	my $TEST = $self->{workloadCount}; 							# DELETE
-	print "Testing within AuctionWorkloadDriver init: $TEST";	# DELETE
 	$self->json(JSON->new);
 	$self->json->relaxed(1);
 	$self->json->pretty(1);
@@ -197,6 +195,11 @@ sub checkConfig {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");
 	my $workloadNum    = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	
 	# Validate the the CPU and Mem sizings are in valid Kubernetes format
 	my @drivers =  @{ $self->secondaries };
@@ -373,6 +376,10 @@ sub createRunConfigHash {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
 	my $workloadNum    = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $warmUp           = $self->getParamValue('warmUp');
@@ -580,6 +587,11 @@ override 'configure' => sub {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
 	my $workloadNum    = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	$logger->debug("configure for workload $workloadNum, suffix = $suffix");
 	$self->suffix($suffix);
 	$self->appInstances($appInstancesRef);
@@ -673,6 +685,10 @@ sub killOld {
 	my $workloadNum    = $self->workload->instanceNum;
 	my $console_logger = get_logger("Console");
 
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $logName = "$setupLogDir/killOld$workloadNum.log";
 	my $logHandle;
 	open( $logHandle, ">$logName" ) or do {
@@ -746,6 +762,10 @@ sub startDrivers {
 	my $workloadNum    = $self->workload->instanceNum;
 	$logger->debug("Starting workload driver containers");
 
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	# Start the driver on all of the secondaries
 	my $secondariesRef = $self->secondaries;
 	foreach my $secondary (@$secondariesRef) {
@@ -771,6 +791,10 @@ sub startAuctionWorkloadDriverContainer {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum    = $driver->workload->instanceNum;
 	my $name        = $driver->name;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 		
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -899,7 +923,12 @@ sub initializeRun {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	$self->suffix($suffix);
 	my $port = $self->portMap->{'http'};
-	my $workloadNum    = $self->workload->instanceNum; # TODO: Change to undef if workloadcount is 1
+	my $workloadNum    = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName = "runW${workloadNum}";
 
 	my $logName = "$logDir/InitializeRun$suffix.log";
@@ -1079,6 +1108,11 @@ sub startRun {
 	  
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $workloadNum             = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
 	my $warmUp              = $self->getParamValue('warmUp');
@@ -1483,6 +1517,11 @@ sub stopRun {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
 	my $workloadNum             = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
@@ -1518,6 +1557,11 @@ sub shutdownDrivers {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 
 	my $workloadNum             = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
@@ -1552,6 +1596,11 @@ sub isUp {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	
 	my $runName     = "runW${workloadNum}";
 
 	my $controllerUrl = $self->getControllerURL();
@@ -1572,6 +1621,11 @@ sub areDriversUp {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName     = "runW${workloadNum}";
 
 	my $controllerUrl = $self->getControllerURL();
@@ -1766,6 +1820,11 @@ sub stopStatsCollection {
 sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $workloadNum = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 # ToDo: Add a script to the docker image to do this:
 #	my $hostname = $self->host->name;
 #	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
@@ -1783,6 +1842,11 @@ sub getStatsFiles {
 	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
 	my $workloadNum      = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $name               = $self->name;
 		
 	if ( !( -e $destinationPath ) ) {
@@ -2065,6 +2129,11 @@ sub getStatsSummary {
 	# Only parseGc if gcviewer is present
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {
 		my $workloadNum = $self->workload->instanceNum;
+
+		#Setting outputted workloadNum to nothing if only one workload exists
+		my $workloadCount = $self->{workloadCount};
+		$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 		open( HOSTCSVFILE,
 ">>$statsLogPath/workload${workloadNum}_workloadDriver_gc_summary.csv"
 		  )
@@ -2161,6 +2230,11 @@ sub getNumActiveUsers {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -2211,6 +2285,11 @@ sub setNumActiveUsers {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -2280,6 +2359,11 @@ sub parseStats {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum             = $self->workload->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	my $runName                 = "runW${workloadNum}";
 	my $hostname = $self->host->name;
 

@@ -30,6 +30,11 @@ override 'initialize' => sub {
 
 	my $workloadNum = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	
 	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 
 	super();
@@ -49,6 +54,10 @@ sub startDataManagerContainer {
 	my $prepThreads = $self->getParamValue('dbPrepThreads');
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionDataManager-$namespace.yaml" )             or die "Can't open file /tmp/auctionDataManager-$namespace.yaml: $!\n";

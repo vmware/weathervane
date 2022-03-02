@@ -184,6 +184,10 @@ sub prepareDataServices {
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
 
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 
@@ -228,6 +232,10 @@ sub prepareData {
 	my $reloadDb       = $self->getParamValue('reloadDb');
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $time = `date +%H.%M`;
 	chomp($time);
@@ -353,6 +361,10 @@ sub loadData {
 	my $logName          = "$logPath/loadData-W${workloadNum}I${appInstanceNum}-$time.log";
 	my $namespace = $self->appInstance->namespace;
 	
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
 
 	my $applog;
@@ -444,6 +456,11 @@ sub isDataLoaded {
 	my $namespace = $self->appInstance->namespace;
 	my $workloadNum    = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
 
 

@@ -32,7 +32,7 @@ override 'initialize' => sub {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 	
 	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
@@ -56,7 +56,7 @@ sub startDataManagerContainer {
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
@@ -194,7 +194,7 @@ sub prepareDataServices {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$console_logger->info(
@@ -243,7 +243,7 @@ sub prepareData {
 	my $retVal         = 0;
 
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $time = `date +%H.%M`;
@@ -371,7 +371,7 @@ sub loadData {
 	my $namespace = $self->appInstance->namespace;
 	
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
@@ -467,7 +467,7 @@ sub isDataLoaded {
 	my $appInstanceNum = $self->appInstance->instanceNum;
 
 	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->appInstance->workload->{workloadCount};
+	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");

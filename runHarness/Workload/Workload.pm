@@ -864,6 +864,10 @@ sub writeUsersTxt {
 	my $appInstancesRef = $self->appInstancesRef;
 
 	my $workloadNum = $self->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->primaryDriver->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;

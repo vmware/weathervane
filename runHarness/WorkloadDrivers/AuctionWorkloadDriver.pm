@@ -1437,7 +1437,7 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	$console_logger->info("workload: $workloadNum: Run is complete");
+	$console_logger->info("workload $workloadNum: Run is complete");
 	kill(9, $pid);
 	
 	my $destinationPath = $logDir . "/statistics/workloadDriver";

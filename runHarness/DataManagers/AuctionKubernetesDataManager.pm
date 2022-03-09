@@ -30,10 +30,6 @@ override 'initialize' => sub {
 
 	my $workloadNum = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
-
-	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->workloadDriver->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 	
 	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 

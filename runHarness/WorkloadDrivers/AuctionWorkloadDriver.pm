@@ -1267,6 +1267,7 @@ sub startRun {
 	my @curIntervalNames;
 	my @lastIntervalNames;
 	my @statsRunning;
+	my $tempOutputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
 
 	sleep 30; #initial sleep before getting state
 	while (!$runCompleted) {
@@ -1350,7 +1351,7 @@ sub startRun {
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
-								$console_logger->info("   [workload $outputWorkloadNum, appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 							}
 						}
 					}
@@ -1397,7 +1398,7 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-            	my $instancesString = "[workload $outputWorkloadNum, appInstance";
+            	my $instancesString = "[$tempOutputWorkloadNum appInstance";
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	if ($#{$instancesListRef} == 0) {
             		$instancesString .= ": " . $instancesListRef->[0];

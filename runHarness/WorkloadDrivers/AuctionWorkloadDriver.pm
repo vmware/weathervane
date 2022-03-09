@@ -174,10 +174,6 @@ override 'initialize' => sub {
 	my $workloadNum = $self->workload->instanceNum;
 	my $instanceNum = $self->instanceNum;
 
-	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	$self->name("driverW${workloadNum}I${instanceNum}");
 	$self->json(JSON->new);
 	$self->json->relaxed(1);
@@ -381,11 +377,6 @@ sub createRunConfigHash {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $console_logger = get_logger("Console");
 	my $workloadNum    = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $rampUp           = $self->getParamValue('rampUp');
 	my $warmUp           = $self->getParamValue('warmUp');
 	my $rampDown         = $self->getParamValue('rampDown');
@@ -428,6 +419,10 @@ sub createRunConfigHash {
 
 	my $numAppInstances = $#{$appInstancesRef} + 1;
 	my $maxPassHint = ceil($self->getParamValue('maxPassHint') / $numAppInstances);
+
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->{workloadCount};
+	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;

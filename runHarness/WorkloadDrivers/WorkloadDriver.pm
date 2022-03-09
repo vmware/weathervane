@@ -95,11 +95,6 @@ sub setWorkload {
 	$self->workload($workload);
 }
 
-sub setWorkloadCount {
-	my ($self, $count) = @_;
-	$self->workloadCount($count);
-}
-
 sub checkConfig {
 	my ($self) = @_;
 	my $console_logger = get_logger("Console");

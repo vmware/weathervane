@@ -590,7 +590,7 @@ override 'configure' => sub {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$logger->debug("configure for workload $workloadNum, suffix = $suffix");
 	$self->suffix($suffix);
@@ -615,7 +615,7 @@ override 'configure' => sub {
 	my $rtPassingPct = $self->getParamValue('responseTimePassingPercentile');
 	if ( ( $rtPassingPct < 0 ) || ( $rtPassingPct > 100 ) ) {
 		$console_logger->error(
-"The responseTimePassingPercentile for workload $workloadNum must be between 0.0 and 100.0"
+"The responseTimePassingPercentile for workload $outputWorkloadNum must be between 0.0 and 100.0"
 		);
 		exit -1;
 	}
@@ -684,10 +684,6 @@ sub killOld {
 	my $logger           = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum    = $self->workload->instanceNum;
 	my $console_logger = get_logger("Console");
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $logName = "$setupLogDir/killOld$workloadNum.log";
 	my $logHandle;
@@ -791,10 +787,6 @@ sub startAuctionWorkloadDriverContainer {
 	my $logger         = get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum    = $driver->workload->instanceNum;
 	my $name        = $driver->name;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 		
 	$driver->host->dockerStopAndRemove( $applog, $name );
 
@@ -925,9 +917,9 @@ sub initializeRun {
 	my $port = $self->portMap->{'http'};
 	my $workloadNum    = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
+	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $runName = "runW${workloadNum}";
 
@@ -956,7 +948,7 @@ sub initializeRun {
 
 	if ( !$isUp ) {
 		$console_logger->warn(
-"The workload controller for workload $workloadNum did not start within 10 minutes. Exiting"
+"The workload controller for workload $outputWorkloadNum did not start within 10 minutes. Exiting"
 		);
 		return 0;
 	} else {
@@ -1005,7 +997,7 @@ sub initializeRun {
 
 	if ( !$isUp ) {
 		$console_logger->warn(
-"The workload driver nodes for workload $workloadNum did not start within 10 minutes. Exiting"
+"The workload driver nodes for workload $outputWorkloadNum did not start within 10 minutes. Exiting"
 		);
 		return 0;
 	} else {
@@ -1109,9 +1101,9 @@ sub startRun {
 	my $driverJvmOpts           = $self->getParamValue('driverJvmOpts');
 	my $workloadNum             = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
+	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $runName                 = "runW${workloadNum}";
 	my $rampUp              = $self->getParamValue('rampUp');
@@ -1254,7 +1246,7 @@ sub startRun {
 
 					if ($usingFixedLoadPathType) {
 						$console_logger->info(
-							"Running Workload $workloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
+							"Running Workload $outputWorkloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
 						);
 						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
 					}
@@ -1358,7 +1350,7 @@ sub startRun {
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
-								$console_logger->info("   [workload $workloadNum, appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								$console_logger->info("   [workload $outputWorkloadNum, appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 							}
 						}
 					}
@@ -1405,7 +1397,7 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-            	my $instancesString = "[workload $workloadNum, appInstance";
+            	my $instancesString = "[workload $outputWorkloadNum, appInstance";
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	if ($#{$instancesListRef} == 0) {
             		$instancesString .= ": " . $instancesListRef->[0];
@@ -1432,7 +1424,7 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	$console_logger->info("workload $workloadNum: Run is complete");
+	$console_logger->info("workload $outputWorkloadNum: Run is complete");
 	kill(9, $pid);
 	
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
@@ -1476,7 +1468,7 @@ sub startRun {
 	close $logHandle;
 
 	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $workloadNum finished");
+	$console_logger->info("Workload $OutputWorkloadNum finished");
 
 	return 1;
 }
@@ -1518,10 +1510,6 @@ sub stopRun {
 
 	my $workloadNum             = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
@@ -1558,10 +1546,6 @@ sub shutdownDrivers {
 
 	my $workloadNum             = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $runName                 = "runW${workloadNum}";
 	my $port = $self->portMap->{'http'};
 	my $hostname = $self->host->name;
@@ -1596,11 +1580,6 @@ sub isUp {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-	
 	my $runName     = "runW${workloadNum}";
 
 	my $controllerUrl = $self->getControllerURL();
@@ -1621,11 +1600,6 @@ sub areDriversUp {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $runName     = "runW${workloadNum}";
 
 	my $controllerUrl = $self->getControllerURL();
@@ -1821,10 +1795,6 @@ sub startStatsCollection {
 	my ( $self, $intervalLengthSec, $numIntervals ) = @_;
 	my $workloadNum = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 # ToDo: Add a script to the docker image to do this:
 #	my $hostname = $self->host->name;
 #	`cp /tmp/gc-W${workloadNum}.log /tmp/gc-W${workloadNum}_rampup.log 2>&1`;
@@ -1842,10 +1812,6 @@ sub getStatsFiles {
 	my $hostname           = $self->host->name;
 	my $destinationPath  = $baseDestinationPath . "/" . $hostname;
 	my $workloadNum      = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $name               = $self->name;
 		
@@ -2130,10 +2096,6 @@ sub getStatsSummary {
 	if ( -f "$gcviewerDir/gcviewer-1.34-SNAPSHOT.jar" ) {
 		my $workloadNum = $self->workload->instanceNum;
 
-		#Setting outputted workloadNum to nothing if only one workload exists
-		my $workloadCount = $self->{workloadCount};
-		$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 		open( HOSTCSVFILE,
 ">>$statsLogPath/workload${workloadNum}_workloadDriver_gc_summary.csv"
 		  )
@@ -2230,11 +2192,6 @@ sub getNumActiveUsers {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -2285,11 +2242,6 @@ sub setNumActiveUsers {
 	my $logger =
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum = $self->workload->instanceNum;
-
-	#Setting outputted workloadNum to nothing if only one workload exists
-	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $runName     = "runW${workloadNum}";
 
 	my %appInstanceToUsersHash;
@@ -2360,9 +2312,9 @@ sub parseStats {
 	  get_logger("Weathervane::WorkloadDrivers::AuctionWorkloadDriver");
 	my $workloadNum             = $self->workload->instanceNum;
 
-	#Setting outputted workloadNum to nothing if only one workload exists
+	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	my $runName                 = "runW${workloadNum}";
 	my $hostname = $self->host->name;
@@ -2402,7 +2354,7 @@ sub parseStats {
 	if ( $res->{"is_success"} ) {
 		$runStatus = $self->json->decode( $res->{"content"} );			
 	} else {
-		$console_logger->warn("Could not retrieve final run state for workload $workloadNum");
+		$console_logger->warn("Could not retrieve final run state for workload $outputWorkloadNum");
 		return 0;
 	}
 
@@ -2441,7 +2393,7 @@ sub parseStats {
 								. "\nIncrease maxUsers and try again.";				
 			}
 		}
-		$console_logger->info("Workload $workloadNum, appInstance $appInstanceName: $resultString");
+		$console_logger->info("Workload $outputWorkloadNum, appInstance $appInstanceName: $resultString");
 		
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 
@@ -2484,7 +2436,7 @@ sub parseStats {
 		if ( $res->{"is_success"} ) {
 			$statsSummaryRollup = $self->json->decode( $res->{"content"} )->{'statsSummaryRollup'};			
 		} else {
-			$console_logger->warn("Could not retrieve max passing interval summary for workload $workloadNum");
+			$console_logger->warn("Could not retrieve max passing interval summary for workload $outputWorkloadNum");
 			return 0;
 		}
 		

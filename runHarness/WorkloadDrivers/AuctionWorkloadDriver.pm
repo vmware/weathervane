@@ -1468,7 +1468,7 @@ sub startRun {
 	close $logHandle;
 
 	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $OutputWorkloadNum finished");
+	$console_logger->info("Workload $outputWorkloadNum finished");
 
 	return 1;
 }

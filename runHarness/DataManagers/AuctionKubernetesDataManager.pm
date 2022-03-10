@@ -51,10 +51,6 @@ sub startDataManagerContainer {
 
 	my $springProfilesActive = $self->appInstance->getSpringProfilesActive();
 
-	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->workloadDriver->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	open( FILEIN,  "$configDir/kubernetes/auctionDataManager.yaml" ) or die "$configDir/kubernetes/auctionDataManager.yaml: $!\n";
 	open( FILEOUT, ">/tmp/auctionDataManager-$namespace.yaml" )             or die "Can't open file /tmp/auctionDataManager-$namespace.yaml: $!\n";
 	
@@ -249,7 +245,7 @@ sub prepareData {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->workloadDriver->{workloadCount};
-	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "workload";
 
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";

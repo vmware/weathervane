@@ -199,7 +199,7 @@ sub checkConfig {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum:" : "";
 
 	
 	# Validate the the CPU and Mem sizings are in valid Kubernetes format
@@ -210,7 +210,7 @@ sub checkConfig {
 		# is legal docker notation, or an integer followed an "m" to indicate a millicpu
 		my $cpus = $driver->getParamValue("driverCpus");
 		if (!(($cpus =~ /^\d*\.?\d+$/) || ($cpus =~ /^\d+m$/))) {
-			$console_logger->error("Workload $workloadNum: $cpus is not a valid value for driverCpus.");
+			$console_logger->error("$outputWorkloadNum $cpus is not a valid value for driverCpus.");
 			$console_logger->error("CPU limit specifications must use Kubernetes notation.  See " . 
 						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
 			return 0;			
@@ -226,7 +226,7 @@ sub checkConfig {
 		#  * Ei, Pi, Ti, Gi, Mi, Ki (powers of 2)
 		my $mem = $driver->getParamValue("driverMem");
 		if (!($mem =~ /^\d+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$/)) {
-			$console_logger->error("Workload $workloadNum: $mem is not a valid value for driverMem.");
+			$console_logger->error("$outputWorkloadNum $mem is not a valid value for driverMem.");
 			$console_logger->error("Memory limit specifications must use Kubernetes notation.  See " . 
 						"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/");
 			return 0;			
@@ -422,7 +422,7 @@ sub createRunConfigHash {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? "workload $workloadNum," : "";
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;
@@ -459,7 +459,7 @@ sub createRunConfigHash {
 
 		if ( $loadPathType eq "fixed" ) {
 			$logger->debug(
-"configure for workload $workloadNum, appInstance $instanceNum has load path type fixed"
+"configure for $outputWorkloadNum appInstance $instanceNum has load path type fixed"
 			);
 			$loadPath->{"type"}        = 'fixed';
 			$loadPath->{"rampUp"}      = $rampUp;
@@ -474,7 +474,7 @@ sub createRunConfigHash {
 		}
 		elsif ( $loadPathType eq "interval" ) {
 			$logger->debug(
-"configure for workload $workloadNum, appInstance $instanceNum has load path type interval"
+"configure for $outputWorkloadNum appInstance $instanceNum has load path type interval"
 			);
 			$loadPath->{"type"}          = "interval";
 			$loadPath->{"runDuration"} = $self->getParamValue('runDuration');
@@ -483,13 +483,13 @@ sub createRunConfigHash {
 			$loadPath->{"loadIntervals"} = [];
 			if ( $appInstance->hasLoadPath() ) {
 				$logger->debug(
-"configure for workload $workloadNum, appInstance has load path"
+"configure for $outputWorkloadNum appInstance has load path"
 				);
 				$self->printLoadPath($appInstance->getLoadPath(), $loadPath->{"loadIntervals"});
 			}
 			else {
 				$logger->error(
-"Workload $workloadNum, appInstance $instanceNum has an interval loadPathType but no userLoadPath."
+"$outputWorkloadNum appInstance $instanceNum has an interval loadPathType but no userLoadPath."
 				);
 				exit -1;
 			}
@@ -497,7 +497,7 @@ sub createRunConfigHash {
 		}
 		elsif (($loadPathType eq "findmax") || ($loadPathType eq "syncedfindmax")) {
 			$logger->debug(
-"configure for workload $workloadNum, appInstance $instanceNum has load path type findmax"
+"configure for $outputWorkloadNum appInstance $instanceNum has load path type findmax"
 			);
 			$loadPath->{"type"}          = $loadPathType;
 			$loadPath->{"maxUsers"} = $appInstance->getParamValue('maxUsers');
@@ -510,7 +510,7 @@ sub createRunConfigHash {
 		}
 		elsif ( $loadPathType eq "ramptomax" ) {
 			$logger->debug(
-"configure for workload $workloadNum, appInstance $instanceNum has load path type ramptomax"
+"configure for $outputWorkloadNum appInstance $instanceNum has load path type ramptomax"
 			);
 			$loadPath->{"startUsers"} = $appInstance->getParamValue('maxUsers') / 10;
 			$loadPath->{"maxUsers"}   = $appInstance->getParamValue('maxUsers');
@@ -590,9 +590,9 @@ override 'configure' => sub {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->{workloadCount};
-	my $outputWorkloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? "workload $workloadNum" : "";
 
-	$logger->debug("configure for workload $workloadNum, suffix = $suffix");
+	$logger->debug("configure for $outputWorkloadNum, suffix = $suffix");
 	$self->suffix($suffix);
 	$self->appInstances($appInstancesRef);
 
@@ -615,7 +615,7 @@ override 'configure' => sub {
 	my $rtPassingPct = $self->getParamValue('responseTimePassingPercentile');
 	if ( ( $rtPassingPct < 0 ) || ( $rtPassingPct > 100 ) ) {
 		$console_logger->error(
-"The responseTimePassingPercentile for workload $outputWorkloadNum must be between 0.0 and 100.0"
+"The responseTimePassingPercentile for $outputWorkloadNum must be between 0.0 and 100.0"
 		);
 		exit -1;
 	}
@@ -2360,7 +2360,7 @@ sub parseStats {
 	}
 
 	$logger->debug("parseStats: Parsing stats");
-	
+	$outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
 	my $workloadStati = $runStatus->{"workloadStati"};
 	foreach my $workloadStatus (@$workloadStati) {
 		# For each appinstance, get the statsRollup for the max passing loadInterval
@@ -2394,7 +2394,7 @@ sub parseStats {
 								. "\nIncrease maxUsers and try again.";				
 			}
 		}
-		$console_logger->info("Workload $outputWorkloadNum, appInstance $appInstanceName: $resultString");
+		$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
 		
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 

@@ -238,10 +238,6 @@ sub prepareData {
 	my $appInstance    = $self->appInstance;
 	my $retVal         = 0;
 
-	#Setting outputted workloadNum to empty string if only one workload exists
-	my $workloadCount = $self->workloadDriver->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
-
 	my $time = `date +%H.%M`;
 	chomp($time);
 	my $logName = "$logPath/PrepareData-W${workloadNum}I${appInstanceNum}-$time.log";
@@ -251,13 +247,17 @@ sub prepareData {
 		return 0;
 	};
 
+	#Setting outputted workloadNum to empty string if only one workload exists
+	my $workloadCount = $self->workloadDriver->{workloadCount};
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
+
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
 
 	if (!$self->startDataManagerContainer($users, $logHandle)) {
 		$console_logger->info(
 				    "Could not start AuctionDataManager pod for appInstance "
-				  . "$appInstanceNum of workload $workloadNum." );
+				  . "$appInstanceNum of $outputWorkloadNum" );
 		# stop the auctiondatamanager container
 		$self->stopDataManagerContainer($logHandle);
 		return 0;		
@@ -277,7 +277,7 @@ sub prepareData {
 			my $maxUsers = $self->getParamValue('maxUsers');
 			$console_logger->info(
 				    "Data is not loaded for $maxUsers maxUsers for appInstance "
-				  . "$appInstanceNum of workload $workloadNum. Loading data." );
+				  . "$appInstanceNum of $outputWorkloadNum Loading data." );
 
 			# Load the data
 			$appInstance->getDataServiceLogFiles($logPath . "/preLoadLogs");
@@ -292,12 +292,12 @@ sub prepareData {
 		}
 		else {
 			$console_logger->info( "Data is already loaded for appInstance "
-				  . "$appInstanceNum of workload $workloadNum." );
+				  . "$appInstanceNum of $outputWorkloadNum" );
 		}
 	}
 
 	$console_logger->info( "Preparing auctions and warming data-services for appInstance "
-				  . "$appInstanceNum of workload $workloadNum." );
+				  . "$appInstanceNum of $outputWorkloadNum" );
 	print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
@@ -319,7 +319,7 @@ sub prepareData {
 		if ($self->getParamValue("reloadOnFailure") && !$ignoreReloadOnFailure) {
 			# Delete the PVCs for this namespace and try again (but only once)
 			$console_logger->info(
-				"Couldn't prepare data services for appInstance $appInstanceNum of workload $workloadNum. Clearing data and retrying.\n" );
+				"Couldn't prepare data services for appInstance $appInstanceNum of $outputWorkloadNum Clearing data and retrying.\n" );
 			$appInstance->stopServices("data", $logPath);
 			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
 			$appInstance->startServices("data", $logPath, 0);
@@ -368,9 +368,9 @@ sub loadData {
 	
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->workloadDriver->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	$workloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
 
-	$logger->debug("loadData for workload $workloadNum, appInstance $appInstanceNum");
+	$logger->debug("loadData for $workloadNum appInstance $appInstanceNum");
 
 	my $applog;
 	open( $applog, ">$logName" )
@@ -385,7 +385,7 @@ sub loadData {
 	}
 
 	$console_logger->info(
-		"Workload $workloadNum, appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
+		"$workloadNum appInstance $appInstanceNum: Loading data for a maximum of $maxUsers users" );
 
 	$logger->debug("Exec-ing perl /loadData.pl");
 	print $applog "Exec-ing perl /loadData.pl\n";
@@ -408,7 +408,7 @@ sub loadData {
 	print $applog "Output: $outString\n";
 	my @lines = split /\s+/, $outString;
 	if ($#lines < 0) {
-		$console_logger->error("Data loading failed for Workload $workloadNum, appInstance $appInstanceNum: There are no pods with label auctiondatamanager in namespace $namespace");
+		$console_logger->error("Data loading failed for $workloadNum appInstance $appInstanceNum: There are no pods with label auctiondatamanager in namespace $namespace");
 		return 0;
 	}
 	
@@ -434,7 +434,7 @@ sub loadData {
 			$errorMessage = ": $!";
 		}
 		
-		$console_logger->error("Data loading process for workload $workloadNum, appInstance $appInstanceNum failed$errorMessage");
+		$console_logger->error("Data loading process for $workloadNum appInstance $appInstanceNum failed$errorMessage");
 		return 0;
 	}	
 
@@ -464,9 +464,9 @@ sub isDataLoaded {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->workloadDriver->{workloadCount};
-	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
 
-	$logger->debug("isDataLoaded for workload $workloadNum, appInstance $appInstanceNum");
+	$logger->debug("isDataLoaded for $outputWorkloadNum appInstance $appInstanceNum");
 
 
 	my $time = `date +%H.%M`;
@@ -480,13 +480,13 @@ sub isDataLoaded {
 	$logger->debug("Exec-ing perl /isDataLoaded.pl");
 	my ($cmdFailed, $outString) = $cluster->kubernetesExecOne("auctiondatamanager", "perl /isDataLoaded.pl", $namespace);
 	if ($cmdFailed) {
-		$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
-		print $applog "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
+		$logger->debug( "Data is not loaded for $outputWorkloadNum appInstance $appInstanceNum. \$cmdFailed = $cmdFailed" );
+		print $applog "Data is not loaded for $outputWorkloadNum appInstance $appInstanceNum. \$cmdFailed = $cmdFailed\n";
 		return 0;
 	}
 	else {
-		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString" );
-		print $applog "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$outString = $outString\n";
+		$logger->debug( "Data is loaded for $outputWorkloadNum appInstance $appInstanceNum. \$outString = $outString" );
+		print $applog "Data is loaded for $outputWorkloadNum appInstance $appInstanceNum. \$outString = $outString\n";
 		return 1;
 	}
 	close $applog;

@@ -190,7 +190,7 @@ sub prepareDataServices {
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$console_logger->info(
-		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum\n" );
 
 	# Start the data services
 	if ($reloadDb) {

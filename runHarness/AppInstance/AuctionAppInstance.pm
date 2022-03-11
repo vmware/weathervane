@@ -117,9 +117,14 @@ override 'checkConfig' => sub {
 	}
 
     my $validAppInstanceSizes = $WeathervaneTypes::appInstanceSizes{"auction"};
-    if (!(grep { $self->getParamValue('configurationSize') eq $_ } @$validAppInstanceSizes)) {
-        $console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
-        return 0;
+	my $deprecatedAppInstanceSizes = $WeathervaneTypes::deprecatedInstanceSizes{"auction"};
+	my $configSize = $self->getParamValue('configurationSize');
+    if (!(grep { $configSize eq $_ } @$validAppInstanceSizes)) {
+		if(!(grep { $configSize eq $_ } @$deprecatedAppInstanceSizes)){
+			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
+        	return 0;
+		}
+		$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.")
     }
 
     my $validAppIngressMethods = $WeathervaneTypes::appIngressMethods{"auction"};

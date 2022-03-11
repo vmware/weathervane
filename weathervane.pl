@@ -663,10 +663,16 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	# Check that the configurationSize is one of those allowed for this workload
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
 	my $validSizesRef = $WeathervaneTypes::appInstanceSizes{$workloadImpl};
+	my $deprecatedSizesRef = $WeathervaneTypes::deprecatedInstanceSizes{$workloadImpl};
 	if (!($configSize ~~  @$validSizesRef)) {
-			$console_logger->error("Error: For workload " . $workloadNum . ", "
+		# Checking whether size is deprecated
+		if($configSize ~~  @$deprecatedSizesRef){
+			$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.")
+		}else {
+			$console_logger->error("Error: For workload " . $workloadNum . ", "	
 				. $configSize . " is not a valid configurationSize.  Valid sizes are: @$validSizesRef");
-			exit(1);		
+			exit(1);
+		}	
 	}
 	# Overwrite the workload's parameters with those specified by the configuration size.
 	if ($configSize ne "custom") {

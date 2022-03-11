@@ -843,12 +843,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		$console_logger->info("Workload $outputWorkloadNum has $numAppInstances application instances.");
 	}
 
+	my $tempOutWorkloadNum = ($numWorkloads == 1 ? "" : "Workload $workloadNum,");
+
 	# Create the appInstances and add them to the workload
 	my @appInstances;
 	my $appInstanceNum = 1;    # Count appInstances so that each gets a unique suffix
 	foreach my $appInstanceParamHashRef (@$appInstanceParamHashRefs) {
 		if (!$allAiSameConfig || ($commonConfigSize eq "custom")) {
-			$console_logger->info("Workload $outputWorkloadNum, Application Instance $appInstanceNum configuration:");
+			$console_logger->info("$tempOutWorkloadNum Application Instance $appInstanceNum configuration:");
 		}
 		
 		my $users = shift @usersList;

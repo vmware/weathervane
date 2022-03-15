@@ -864,6 +864,10 @@ sub writeUsersTxt {
 	my $appInstancesRef = $self->appInstancesRef;
 
 	my $workloadNum = $self->instanceNum;
+
+	#Setting outputted workloadNum to nothing if only one workload exists
+	my $workloadCount = $self->primaryDriver->{workloadCount};
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "";
 	
 	foreach my $appInstance (@$appInstancesRef) {
 		my $instanceNum = $appInstance->instanceNum;
@@ -871,12 +875,12 @@ sub writeUsersTxt {
 		if ($loadPathType eq 'fixed') {
 			my $users = $appInstance->users;
 			if ($users) {
-				my $outString      = "Workload $workloadNum, App Instance $instanceNum: $users Users";
+				my $outString      = "$outputWorkloadNum App Instance $instanceNum: $users Users";
 				$console_logger->info($outString);
 				print $fileOut "$outString\n";
 			}
 		} elsif ($loadPathType eq 'findMax') {
-				my $outString      = "Workload $workloadNum, App Instance $instanceNum: FindMax";
+				my $outString      = "$outputWorkloadNum App Instance $instanceNum: FindMax";
 				$console_logger->info($outString);
 				print $fileOut "$outString\n";			
 		}

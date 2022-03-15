@@ -31,6 +31,12 @@ has 'workload' => (
 	isa => 'Workload',
 );
 
+has 'workloadCount' => (
+	is  => 'rw',
+	isa => 'Num',
+	default => 0,
+);
+
 class_has 'nextPortMultiplierByHostName' => (
 	is      => 'rw',
 	isa     => 'HashRef[Int]',

@@ -15,7 +15,7 @@ use namespace::autoclean;
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 sub getWorkloadDriver {
-	my ( $self, $workloadDriverHashRef, $host ) = @_;
+	my ( $self, $workloadDriverHashRef, $host, $numWorkloads ) = @_;
 	
 	my $hostType = ref $host;
 	my $workloadType = $workloadDriverHashRef->{"workloadImpl"};
@@ -39,7 +39,7 @@ sub getWorkloadDriver {
 	else {
 		die "No matching workloadDriver for workload type $workloadType";
 	}
-
+	$workloadDriver->workloadCount($numWorkloads);
 	return $workloadDriver;
 }
 

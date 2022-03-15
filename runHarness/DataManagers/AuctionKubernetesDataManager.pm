@@ -190,7 +190,7 @@ sub prepareDataServices {
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
 	$console_logger->info(
-		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum\n" );
+		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
 
 	# Start the data services
 	if ($reloadDb) {
@@ -245,7 +245,7 @@ sub prepareData {
 
 	#Setting outputted workloadNum to empty string if only one workload exists
 	my $workloadCount = $self->workloadDriver->{workloadCount};
-	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum," : "workload";
+	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum" : "workload";
 
 	$logger->debug("prepareData users = $users, logPath = $logPath");
 	print $logHandle "prepareData users = $users, logPath = $logPath\n";
@@ -253,7 +253,7 @@ sub prepareData {
 	if (!$self->startDataManagerContainer($users, $logHandle)) {
 		$console_logger->info(
 				    "Could not start AuctionDataManager pod for appInstance "
-				  . "$appInstanceNum of $outputWorkloadNum" );
+				  . "$appInstanceNum of $outputWorkloadNum." );
 		# stop the auctiondatamanager container
 		$self->stopDataManagerContainer($logHandle);
 		return 0;		
@@ -273,7 +273,7 @@ sub prepareData {
 			my $maxUsers = $self->getParamValue('maxUsers');
 			$console_logger->info(
 				    "Data is not loaded for $maxUsers maxUsers for appInstance "
-				  . "$appInstanceNum of $outputWorkloadNum Loading data." );
+				  . "$appInstanceNum of $outputWorkloadNum. Loading data." );
 
 			# Load the data
 			$appInstance->getDataServiceLogFiles($logPath . "/preLoadLogs");
@@ -293,7 +293,7 @@ sub prepareData {
 	}
 
 	$console_logger->info( "Preparing auctions and warming data-services for appInstance "
-				  . "$appInstanceNum of $outputWorkloadNum" );
+				  . "$appInstanceNum of $outputWorkloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
 	my $cluster  = $self->host;	
@@ -315,7 +315,7 @@ sub prepareData {
 		if ($self->getParamValue("reloadOnFailure") && !$ignoreReloadOnFailure) {
 			# Delete the PVCs for this namespace and try again (but only once)
 			$console_logger->info(
-				"Couldn't prepare data services for appInstance $appInstanceNum of $outputWorkloadNum Clearing data and retrying.\n" );
+				"Couldn't prepare data services for appInstance $appInstanceNum of $outputWorkloadNum. Clearing data and retrying.\n" );
 			$appInstance->stopServices("data", $logPath);
 			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
 			$appInstance->startServices("data", $logPath, 0);

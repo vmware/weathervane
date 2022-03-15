@@ -243,7 +243,8 @@ sub prepareData {
 		return 0;
 	};
 
-	#Setting outputted workloadNum to empty string if only one workload exists
+	# The word 'workload' will only appear if there's more than one workload. 
+	# Otherwise it's omitted because the workload is already implied.
 	my $workloadCount = $self->workloadDriver->{workloadCount};
 	my $outputWorkloadNum = $workloadCount > 1 ? "Workload $workloadNum" : "workload";
 

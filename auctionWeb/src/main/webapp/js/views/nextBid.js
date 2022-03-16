@@ -29,7 +29,7 @@ auction.views.NextBid = Backbone.View.extend({
     
     /**
      * Renders the next bid View
-     * @author Harold Rosenberg (hrosenbe@vmware.com)
+     * @author Harold Rosenberg
      * @return void
      */
     render: function() {

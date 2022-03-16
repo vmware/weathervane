@@ -37,7 +37,7 @@ auction.views.BidHistoryTable = Backbone.View
 			/**
 			 * Renders the Bid History table View
 			 * 
-			 * @author Harold Rosenberg (hrosenbe@vmware.com)
+			 * @author Harold Rosenberg
 			 * @return void
 			 */
 			render : function() {
@@ -106,7 +106,7 @@ auction.views.BidHistoryTable = Backbone.View
 			/**
 			 * Adds a single auction model into the view
 			 * 
-			 * @author Hal Rosenberg (hrosenbe@vmware.com)
+			 * @author Hal Rosenberg
 			 * @return void
 			 */
 			addOne : function(tableRow) {

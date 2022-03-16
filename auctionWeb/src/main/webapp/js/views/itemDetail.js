@@ -33,7 +33,7 @@ auction.views.ItemDetail = Backbone.View.extend({
     
     /**
      * Renders the a single row of the Auction table 
-     * @author Harold Rosenberg (hrosenbe@vmware.com)
+     * @author Harold Rosenberg
      * @return void
      */
     render: function() {

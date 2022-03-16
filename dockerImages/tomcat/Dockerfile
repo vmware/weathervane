@@ -1,7 +1,7 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 FROM namespace/weathervane-centos7:version
-MAINTAINER hrosenbe@vmware.com
+MAINTAINER weathervane-dev@vmware.com
 
 COPY apache-tomcat-auction1 /opt/apache-tomcat-auction1
 COPY apache-tomcat-auction1 /root/apache-tomcat-auction1

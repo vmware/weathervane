@@ -653,12 +653,14 @@ if ( $logger->is_debug() ) {
 		$logger->debug($tmp);
 	}
 }
-$console_logger->info("Run Configuration has $numWorkloads workloads.");
+$console_logger->info("Run Configuration has $numWorkloads workload(s).");
 
 # Create the workload instances and all of their sub-parts
 my $workloadNum = 1;
 my @workloads;
 foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
+	my $outputWorkloadNum = ($numWorkloads == 1 ? "" : $workloadNum);
+	
 	my $configSize = $workloadParamHashRef->{'configurationSize'};
 	# Check that the configurationSize is one of those allowed for this workload
 	my $workloadImpl = $workloadParamHashRef->{'workloadImpl'};
@@ -667,18 +669,18 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	if (!($configSize ~~  @$validSizesRef)) {
 		# Checking whether size is deprecated
 		if($configSize ~~  @$deprecatedSizesRef){
-			$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.")
+			$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.");
 		}else {
-			$console_logger->error("Error: For workload " . $workloadNum . ", "	
+			$console_logger->error("Error: For workload " . $outputWorkloadNum . ", "
 				. $configSize . " is not a valid configurationSize.  Valid sizes are: @$validSizesRef");
 			exit(1);
-		}	
+		}
 	}
 	# Overwrite the workload's parameters with those specified by the configuration size.
 	if ($configSize ne "custom") {
 		my @configKeys = keys $fixedConfigs;
 		if (!($configSize ~~ @configKeys)) {
-			$console_logger->error("Error: For workload " . $workloadNum 
+			$console_logger->error("Error: For workload " . $outputWorkloadNum 
 				.  " configurationSize " . $configSize . " does not exist.");
 			exit(1);
 		}
@@ -726,7 +728,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
-		$logger->debug("For workload $workloadNum, have $numAppInstances appInstances");
+		$logger->debug("For workload $outputWorkloadNum, have $numAppInstances appInstances");
 		#$logger->debug("Their Param hash refs are:");
 		#foreach my $paramHashRef (@$appInstanceParamHashRefs) {
 		#	my $tmp = $json->encode($paramHashRef);
@@ -752,7 +754,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	
 	if ( $#$driversParamHashRefs < 0 ) {
 		$console_logger->error(
-"Workload $workloadNum does not have any drivers.  Specify at least one workload driver using either the numDrivers or drivers parameters."
+"Workload $outputWorkloadNum does not have any drivers.  Specify at least one workload driver using either the numDrivers or drivers parameters."
 		);
 		exit(-1);
 	}
@@ -763,7 +765,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	
 	if ( $logger->is_debug() ) {
 		my $tmp = $json->encode($primaryDriverParamHashRef);
-		$logger->debug( "For workload $workloadNum, the primary driver instance paramHashRef is:\n" . $tmp );
+		$logger->debug( "For workload $outputWorkloadNum, the primary driver instance paramHashRef is:\n" . $tmp );
 	}
 
 	# Create the primary workload driver
@@ -772,7 +774,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $host = getComputeResourceForInstance( $primaryDriverParamHashRef, $driverNum, "driver", 
 					\%nameToComputeResourceHash, $driverCluster, 
 					$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host);
+	my $workloadDriver = WorkloadDriverFactory->getWorkloadDriver($primaryDriverParamHashRef, $host, $numWorkloads);
 	$workloadDriver->host($host);
 	$workloadDriver->setWorkload($workload);
 	$workloadDriver->instanceNum($driverNum);
@@ -784,7 +786,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 
 	my $numSecondaries = $#{$driversParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
-		$logger->debug("For workload $workloadNum, have $numSecondaries secondary drivers");
+		$logger->debug("For workload $outputWorkloadNum, have $numSecondaries secondary drivers");
 		#$logger->debug("Their Param hash refs are:");
 		#foreach my $paramHashRef (@$driversParamHashRefs) {
 		#	my $tmp = $json->encode($paramHashRef);
@@ -793,14 +795,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	my $numDrivers = $numSecondaries + 1;
-	$console_logger->info("Workload $workloadNum has $numDrivers workload-driver nodes");
+	$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
 		$host = getComputeResourceForInstance( $secondaryDriverParamHashRef, $driverNum, 
 												"driver", \%nameToComputeResourceHash, $driverCluster,
 												$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
-		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host);
+		my $secondary = WorkloadDriverFactory->getWorkloadDriver($secondaryDriverParamHashRef, $host, $numWorkloads);
 		$secondary->host($host);
 		$secondary->instanceNum($driverNum);
 		$secondary->setWorkload($workload);
@@ -835,7 +837,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 	}
 	if ($allAiSameConfig && ($commonConfigSize ne "custom")) {
-		$console_logger->info("Workload $workloadNum has $numAppInstances $commonConfigSize application instances:");
+		$console_logger->info("Workload $outputWorkloadNum has $numAppInstances $commonConfigSize application instances:");
 		my $appInstanceParamHashRef = $appInstanceParamHashRefs->[0];
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
 		foreach my $serviceType (@$serviceTypesRef) {
@@ -844,15 +846,17 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			$console_logger->info( "\t$numScvInstances " . ucfirst($serviceType) . "s" );
 		}		
 	} else {
-		$console_logger->info("Workload $workloadNum has $numAppInstances application instances.");
+		$console_logger->info("Workload $outputWorkloadNum has $numAppInstances application instances.");
 	}
+
+	my $tempOutWorkloadNum = ($numWorkloads == 1 ? "" : "Workload $workloadNum,");
 
 	# Create the appInstances and add them to the workload
 	my @appInstances;
 	my $appInstanceNum = 1;    # Count appInstances so that each gets a unique suffix
 	foreach my $appInstanceParamHashRef (@$appInstanceParamHashRefs) {
 		if (!$allAiSameConfig || ($commonConfigSize eq "custom")) {
-			$console_logger->info("Workload $workloadNum, Application Instance $appInstanceNum configuration:");
+			$console_logger->info("$tempOutWorkloadNum Application Instance $appInstanceNum configuration:");
 		}
 		
 		my $users = shift @usersList;
@@ -911,7 +915,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			my $numScvInstances = $#{$svcInstanceParamHashRefs} + 1;
 			if ( $logger->is_debug() ) {
 				$logger->debug(
-					"For workload $workloadNum and appInstance $appInstanceNum, have $numScvInstances ${serviceType}s."
+					"For workload $outputWorkloadNum and appInstance $appInstanceNum, have $numScvInstances ${serviceType}s."
 				);
 				#$logger->debug("Their Param hash refs are:");
 				#foreach my $paramHashRef (@$svcInstanceParamHashRefs) {
@@ -948,7 +952,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		# This may affect the configuration of port numbers
 		my $edgeService = $appInstance->getEdgeService();
 		$weathervane_logger->debug(
-			"EdgeService for application $appInstanceNum in workload $workloadNum is $edgeService");
+			"EdgeService for application $appInstanceNum in workload $outputWorkloadNum is $edgeService");
 		$appInstanceParamHashRef->{'edgeService'} = $edgeService;
 
 		# Create and add the dataManager

@@ -336,8 +336,9 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
 - An xsmall configuration with 12,000 users takes about 30 minutes.
-- A small2 configuration with 16,000 users takes about 50 minutes.
-- A small2-applimit2 configuration with 25,000 users takes about 80 minutes.
+- (deprecated) A small2 configuration with 16,000 users takes about 50 minutes.
+- (deprecated) A small2-applimit2 configuration with 25,000 users takes about 80 minutes.
+- The time it takes to run a small3 configuration with 25,000 users is TBD.
 
 ##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
 Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  
@@ -463,8 +464,9 @@ The number of users specified must be less than or equal to the maximum number
 of users loaded for the selected configuration size.  
 * For the `micro` configuration, maxUsers is `3000` users. 
 * For the `xsmall` configuration, this is `12000` users.
-* For the `small2` configuration, this is `16000` users.
-* For the `small2-applimit2` configuration, this is `25000` users.
+* (deprecated) For the `small2` configuration, this is `16000` users.
+* (deprecated) For the `small2-applimit2` configuration, this is `25000` users.
+* For the `small3` configuration, this is `25000` users.
 
 To change the number of users, edit the configuration file as follows:
 
@@ -563,7 +565,7 @@ This task shows how to increase the load on the SUT by using a larger
 configuration size for your application instances.
 
 Weathervane currently supports multiple configuration sizes for the Auction 
-application: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
+application: `micro`, `xsmall`, `(deprecated) small2`,`(deprecated) small2-applimit2`, and `small3`. 
 Additional sizes will be added in future releases. Each size corresponds to a fixed 
 configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  Larger configurations will support a large user load, and may come closer to 

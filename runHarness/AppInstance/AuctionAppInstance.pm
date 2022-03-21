@@ -124,7 +124,6 @@ override 'checkConfig' => sub {
 			$console_logger->error("Workload $workloadNum, AppInstance $appInstanceNum: The AppInstance size for the Auction workload must be one of: @$validAppInstanceSizes");
         	return 0;
 		}
-		$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.")
     }
 
     my $validAppIngressMethods = $WeathervaneTypes::appIngressMethods{"auction"};

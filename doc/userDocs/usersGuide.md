@@ -464,8 +464,10 @@ The number of users specified must be less than or equal to the maximum number
 of users loaded for the selected configuration size.  
 * For the `micro` configuration, maxUsers is `3000` users. 
 * For the `xsmall` configuration, this is `12000` users.
-* (deprecated) For the `small2` configuration, this is `16000` users.
-* (deprecated) For the `small2-applimit2` configuration, this is `25000` users.
+* For the `small2` configuration, this is `16000` users.
+  - This configuration size is deprecated.
+* For the `small2-applimit2` configuration, this is `25000` users.
+  - This configuration size is deprecated.
 * For the `small3` configuration, this is `25000` users.
 
 To change the number of users, edit the configuration file as follows:
@@ -584,9 +586,10 @@ reloaded for any previously used instances.
 
 To use a different configuration size, edit the configuration file as follows:
 
-1. Change the value for the `configurationSize` to `micro`, `xsmall`, `small2`, or `small2-applimit2`.
-1. Optionally, change the description parameter to properly describe the run.
-1. Optionally, save the configuration file by a different name to reflect the contents.
+1. Change the value for the `configurationSize` to `micro`, `xsmall`, `small2`, `small2-applimit2`, or `small`.
+   - Note: the `small2` and `small2-applimit2` configurations are deprecated.
+2. Optionally, change the description parameter to properly describe the run.
+3. Optionally, save the configuration file by a different name to reflect the contents.
 
 Then run Weathervane as before with the new configuration file.
 
@@ -1155,24 +1158,16 @@ information about the `interval` runStrategy is giving in the section discussing
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
-Weathervane supports multiple configuration sizes: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
+Weathervane supports multiple configuration sizes: `micro`, `xsmall`, and `small3`. 
 Each size corresponds 
 to a fixed configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  The `xsmall` configuration size supports a larger user load than the `micro` configuration 
-size, and `small2` supports a larger load than `xsmall`.  Using a larger configuration 
+size, and `small3` supports a larger load than `xsmall`.  Using a larger configuration 
 may allow you to come closer to maxing out the capabilities of your cluster.  A different configuration size 
 may also be more representative of production applications to be deployed on the cluster under test.  Note 
 that the `small` configuration size, included in the initial release of Weathervane 
-2.0, has been removed in favor of the `small2` configuration.
-
-The primary distinction between the `small2` and `small2-applimit2` configurations 
-is the size of the cpu requests and limits for the application server pod(s).  In all of the configurations, the 
-application server is the first pod to become CPU bound, and so the limit specified for this pod affects the
-performance capability of the configuration.  In the `small2` configuration, the 
-application server pod has cpu requests and limits of 1500mcores, or 1.5 CPU cores.  With `small2-applimit2`, the 
-application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores.   Because the 
-`small2-applimit2` configuration requests a whole number of CPU cores it is assigned to 
-the Kubernetes guaranteed QoS class.  This configuration is appropriate for tests involving the Kubernetes CPU Manager.
+2.0, has been removed in favor of the `small2` configuration; also, the `small2` and `small2-applimit2` configuration
+sizes were deprecated in version 2.1.1.
 
 You can select a configuration size using the parameter `configurationSize`.
 
@@ -1192,43 +1187,45 @@ An xsmall application instance can support roughly up to 6,000 users.
 |-------------------------------|
 | `"configurationSize": "small2",` |
 
-A small2 application instance can support roughly up to 10,000 users.
+A **deprecated** small2 application instance can support roughly up to 10,000 users.
 
 | Configuration Parameter: small2-applimit2 Configuration Size |
 |-------------------------------|
 | `"configurationSize": "small2-applimit2",` |
 
-A small2-applimit2 application instance can support roughly up to 16,000 users.
+A **deprecated** small2-applimit2 application instance can support roughly up to 16,000 users.
+ 
+| Configuration Parameter: small3 Configuration Size |
+|-------------------------------|
+| `"configurationSize": "small3",` |
+    
+A small3 application instance can support roughly up to 16,000 users.
+ 
 
 **Table: User Defaults for different Configuration Sizes**
 
-| Configuration Size          | micro | xsmall | small2 |  small2-applimit2 |
-| --------------------------- | ----- | ----- | ------ | ------ | 
-| Default users for fixed run | 200   | 1000  | 2000 | 2000 | 
-| Default maximum users supported | 3000   | 12,000  | 16,000 | 25,000 | 
+| Configuration Size          | micro | xsmall | small3 | (deprecated) small2 | (deprecated) small2-applimit2 |
+| --------------------------- | ----- | ----- | ------ | ------ | ------ | 
+| Default users for fixed run | 200   | 1000  | 2000 | 2000 | 2000 | 
+| Default maximum users supported | 3000   | 12,000  | 25,000 | 16,000 | 25,000 | 
 
 Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  
 These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources 
 required at different numbers of application instances.  You can use these tables to find the maximum number of application 
 instances you will be able to deploy on your clusters.
 
-**Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
+**Table 1: Resource Requirements For Each Configuration Size, One Application Instance.**
 
-| Configuration<BR>Size |      | micro           |               |      | xsmall          |               |      | small2          |               |
+| Configuration<BR>Size |      | micro           |               |      | xsmall          |               |      |    small3      |               |
 |-----------------------|------|-----------------|---------------|------|-----------------|---------------|------|-----------------|---------------|
 |                       | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) |
 | Total Driver          | 0.50 | 1.66            | 0.00          | 2.55 | 9.38            | 0.00          | 3.10 | 15.92           | 0.00          |
-| Total App             | 0.79 | 5.57            | 32.00         | 2.59 | 12.51           | 59.00         | 4.80 | 31.84           | 80.00         |
-| Total                 | 1.29 | 7.23            | 32.00         | 5.14 | 21.88           | 59.00         | 7.90 | 47.75           | 80.00         |
+| Total App             | 0.79 | 5.57            | 32.00         | 2.59 | 12.51           | 59.00         | 6.96 | 31.84           | 87.00         |
+| Total                 | 1.29 | 7.23            | 32.00         | 5.14 | 21.88           | 59.00         | 10.06| 47.75           | 87.00         |
 
-| Configuration<BR>Size |       | small2-applimit2 |               |
-|-----------------------|-------|------------------|---------------|
-|                       | CPU   | Memory<BR>(GiB)  | Disk<BR>(GiB) |
-| Total Driver          | 3.10  | 15.92            | 0.00          |
-| Total App             | 6.96  | 31.84            | 87.00         |
-| Total                 | 10.06 | 47.75            | 87.00         |
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
+  - Note: small2 and small2-applimit2 are deprecated.
 
 | Configuration<BR>Size                 |         | micro           |               |         | xsmall          |               |         | small2          |               |
 |---------------------------------------|---------|-----------------|---------------|---------|-----------------|---------------|---------|-----------------|---------------|
@@ -1254,7 +1251,8 @@ instances you will be able to deploy on your clusters.
 | 19                                    |  15.03  |  105.76         |  608.00       |  49.21  |  237.69         |  1,121.00     |  91.20  |  604.88         |  1,520.00     |
 | 20                                    |  15.82  |  111.33         |  640.00       |  51.80  |  250.20         |  1,180.00     |  96.00  |  636.72         |  1,600.00     |
 
-**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
+**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances** 
+  - Note: small2 and small2-applimit2 are deprecated.
 
 | Configuration<BR>Size                 |       | micro           |               |       | xsmall          |               |       | small2          |               |
 |---------------------------------------|-------|-----------------|---------------|-------|-----------------|---------------|-------|-----------------|---------------|
@@ -2031,6 +2029,7 @@ application for each configuration.  These demands are per WvUser, meaning the t
 demands for a given run can be estimated by multiplying the expected number of WvUsers 
 by the values given in the tables. There will be some run-to-run variation due to randomness 
 in the workload.  Storage demands tend to vary more widely than the network demands.
+- Note: small2 and small2-applimit2 are deprecated.
 
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|

@@ -672,7 +672,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 	# Overwrite the workload's parameters with those specified by the configuration size.
 	if ($configSize ne "custom") {
-		my @configKeys = keys $fixedConfigs;
+		my @configKeys = keys %$fixedConfigs;
 		if (!($configSize ~~ @configKeys)) {
 			$console_logger->error("Error: For workload " . $outputWorkloadNum 
 				.  " configurationSize " . $configSize . " does not exist.");
@@ -861,7 +861,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		# Overwrite the appInstance's parameters with those specified by the configuration size.
 		my $configSize = $appInstanceParamHashRef->{'configurationSize'};
 		if ($configSize ne "custom") {
-			my @configKeys = keys $fixedConfigs;
+			my @configKeys = keys %$fixedConfigs;
 			if (!($configSize ~~ @configKeys)) {
 				$console_logger->error("Error: For appInstance " . $appInstanceNum 
 					.  " configurationSize " . $configSize . " does not exist.");

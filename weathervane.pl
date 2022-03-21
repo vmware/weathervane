@@ -669,7 +669,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	if (!($configSize ~~  @$validSizesRef)) {
 		# Checking whether size is deprecated
 		if($configSize ~~  @$deprecatedSizesRef){
-			$console_logger->info("Warning: Workload $workloadNum is using deprecated configurationSize: $configSize.");
+			$console_logger->info("Warning: Workload $outputWorkloadNum is using deprecated configurationSize: $configSize.");
 		}else {
 			$console_logger->error("Error: For workload " . $outputWorkloadNum . ", "
 				. $configSize . " is not a valid configurationSize.  Valid sizes are: @$validSizesRef");

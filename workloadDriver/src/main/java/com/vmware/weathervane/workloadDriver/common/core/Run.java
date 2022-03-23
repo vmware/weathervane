@@ -166,7 +166,7 @@ public class Run {
 		}
 		if (runningWorkloadNames.isEmpty()) {
 			logger.debug("All workloads have finished.  Run is completed");
-			this.stop();
+			state = RunState.COMPLETED;
 		}
 		if (!status.isPassed() && abortOnFail) {
 			logger.debug("Workload {} failed.  Aborting run", status.getName());

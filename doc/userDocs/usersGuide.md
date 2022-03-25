@@ -336,7 +336,7 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
 - An xsmall configuration with 12,000 users takes about 30 minutes.
-- The small3 configuration with 25,000 users takes about 36 minutes.
+- The small3 configuration with 25,000 users takes about 80 minutes.
 
 ##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
 Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  

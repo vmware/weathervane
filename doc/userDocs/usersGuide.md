@@ -336,7 +336,7 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
 - An xsmall configuration with 12,000 users takes about 30 minutes.
-- The time it takes to run a small3 configuration with 25,000 users is TBD.
+- The small3 configuration with 25,000 users takes about 36 minutes.
 
 ##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
 Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  
@@ -1161,6 +1161,14 @@ may also be more representative of production applications to be deployed on the
 that the `small` configuration size, included in the initial release of Weathervane 
 2.0, has been removed in favor of the `small2` configuration; also, the `small2` and `small2-applimit2` configuration
 sizes were deprecated in version 2.1.1.
+
+In all of the configurations, the application server is the first 
+pod to become CPU bound, and so the limit specified for this pod affects the
+performance capability of the configuration.  In the `xsmall` configuration, the 
+application server pod has cpu requests and limits of 750mcores, or 0.75 CPU cores. With `small3`, the 
+application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. Because the 
+`small3` configuration requests a whole number of CPU cores it is assigned to 
+the Kubernetes guaranteed QoS class. This configuration is appropriate for tests involving the Kubernetes CPU Manager.
 
 You can select a configuration size using the parameter `configurationSize`.
 

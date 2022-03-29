@@ -33,6 +33,7 @@ RUN yum install -y perl-App-cpanminus && \
 	cpanm -n Tie::IxHash && \
 	cpanm -n MooseX::ClassAttribute && \
 	cpanm -n MooseX::Types && \
+	cpanm -n IPC::Shareable && \
 	cpanm -n JSON && \
 	cpanm -n Switch && \
 	cpanm -n Log::Log4perl && \

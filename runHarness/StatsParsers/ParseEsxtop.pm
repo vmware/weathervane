@@ -25,6 +25,7 @@ package ParseEsxtop;
 use strict;
 use Statistics::Descriptive;
 use Tie::IxHash;
+use IPC::Shareable qw( );
 
 BEGIN {
 	use Exporter;
@@ -289,7 +290,7 @@ sub parseEsxtop {
 sub parseEsxtopCmdline {
 
 	my ($inFileName) = @_;
-
+	# TODO - DELETE this comment: ESXTOP is file handler
 	open( ESXTOP, "$inFileName" ) || die("Couldn't open esxtop file $inFileName: $!");
 
 	my $inLine = <ESXTOP>;
@@ -299,10 +300,18 @@ sub parseEsxtopCmdline {
 
 	# get the hostname
 	$hostname = $headers[1];
-	$hostname =~ s/"\\\\([^\\]+)\\.*"/$1/;
+	$hostname =~ s/"\\\\([^\\]+)\\.*"/$1/; # TODO - DELETE this comment: $1 is hostname
+
+	# TODO: Remove this comment block
+	# Create shared memory segment here.
+	# Include all variables relevant to this function.
 
 	my $columnNumber = 0;
 	foreach my $header (@headers) {
+
+		# TODO: Remove this comment block
+		# Try forking here for each header (ie analyzing each header on a diff process)
+		# Look at this: https://metacpan.org/pod/Parallel::ForkManager#start-[-$process_identifier-]
 
 		# Remove the quotes and initial \\
 		$header =~ s/"\\\\(.+)"/$1/;
@@ -447,6 +456,18 @@ sub parseEsxtopCmdline {
 
 		$columnNumber++;
 	}
+
+	# TODO: Remove this comment block
+	# Possibly call wait here and combine results of all children
+	# Look at https://metacpan.org/pod/Parallel::ForkManager#finish-[-$exit_code-[,-$data_structure_reference]-]
+
+	# Might have to look at callbacks for combining data after child exits
+		# https://metacpan.org/pod/Parallel::ForkManager#CALLBACKS
+		# https://metacpan.org/pod/Parallel::ForkManager#run_on_finish-$code-[,-$pid-]
+
+	# TODO: Remove this comment block
+	# Cleanup shared memory here
+	
 
 	# Initialize the arrays for the data columns
 	for ( my $i = 0 ; $i <= $#headers ; $i++ ) {

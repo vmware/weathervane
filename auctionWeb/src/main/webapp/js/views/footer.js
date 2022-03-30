@@ -34,7 +34,7 @@ auction.views.Footer = Backbone.View.extend({
 
     /**
      * Renders the Footer View
-     * @author Winston Koh <wkoh@vmware.com>
+     * @author Winston Koh
      * @return void
      */
     render: function() {

@@ -288,7 +288,7 @@ auction.utils.getHttpHeaders = function(){
 
 /**
  * Hides all of the different UI components except the attendedAuctionDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showAttendedAuctionDisplay = function() {
     'use strict'
@@ -298,7 +298,7 @@ auction.utils.showAttendedAuctionDisplay = function() {
 
 /**
  * Hides all of the different UI components except the attendedAuctionDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showInfoDisplay = function() {
     'use strict'
@@ -310,7 +310,7 @@ auction.utils.showInfoDisplay = function() {
 /**
  * Hides all of the different UI components except the ActiveAuction table 
  * in the ExploreAuctionsDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showActiveAuctionsTable = function() {
     'use strict'
@@ -329,7 +329,7 @@ auction.utils.showActiveAuctionsTable = function() {
 /**
  * Hides all of the different UI components except the AuctionDetail 
  * in the ExploreAuctionsDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showAuctionDetail = function() {
     'use strict'
@@ -347,7 +347,7 @@ auction.utils.showAuctionDetail = function() {
 /**
  * Hides all of the different UI components except the itemDetail 
  * in the ExploreAuctionsDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showItemDetail = function() {
     'use strict'
@@ -365,7 +365,7 @@ auction.utils.showItemDetail = function() {
 /**
  * Hides all of the different UI components except the AllAuctions table 
  * in the ExploreAuctionsDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showAllAuctionsTable = function() {
     'use strict'
@@ -384,7 +384,7 @@ auction.utils.showAllAuctionsTable = function() {
 /**
  * Hides all of the different UI components except the ExploreAuctionsDisplay 
  * in the infoDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showExploreAuctionsDisplay = function() {
     'use strict'
@@ -401,7 +401,7 @@ auction.utils.showExploreAuctionsDisplay = function() {
 /**
  * Hides all of the different UI components except the UserProfile 
  * in the UserInfoDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showUserProfile = function() {
     'use strict'
@@ -420,7 +420,7 @@ auction.utils.showUserProfile = function() {
 /**
  * Hides all of the different UI components except the UpdateProfile 
  * in the UserInfoDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showUpdateProfile = function() {
     'use strict'
@@ -439,7 +439,7 @@ auction.utils.showUpdateProfile = function() {
 /**
  * Hides all of the different UI components except the PurchaseHistory 
  * in the UserInfoDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showPurchaseHistory = function() {
     'use strict'
@@ -458,7 +458,7 @@ auction.utils.showPurchaseHistory = function() {
 /**
  * Hides all of the different UI components except the BidHistory 
  * in the UserInfoDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showBidHistory = function() {
     'use strict'
@@ -477,7 +477,7 @@ auction.utils.showBidHistory = function() {
 /**
  * Hides all of the different UI components except the AttendanceHistory 
  * in the UserInfoDisplay 
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showAttendanceHistory = function() {
     'use strict'
@@ -496,7 +496,7 @@ auction.utils.showAttendanceHistory = function() {
 /**
  * Hides all of the different UI components except the userInfo 
  * in the infoDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showUserInfoDisplay = function() {
     'use strict'
@@ -511,7 +511,7 @@ auction.utils.showUserInfoDisplay = function() {
 /**
  * Hides all of the different UI components except the manageAuctions 
  * in the infoDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showManageAuctionsDisplay = function(data) {
     'use strict'
@@ -532,7 +532,7 @@ auction.utils.showManageAuctionsDisplay = function(data) {
 /**
  * Hides all of the different UI components except the Dashboard 
  * in the infoDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showDashboardDisplay = function() {
     'use strict'
@@ -546,7 +546,7 @@ auction.utils.showDashboardDisplay = function() {
 
 /**
  * Hides all of the different UI components except the loginDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.showLoginDisplay = function() {
     'use strict'
@@ -556,7 +556,7 @@ auction.utils.showLoginDisplay = function() {
 
 /**
  * Hides all of the different UI components inside the exploreAuctionsDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.hideExploreAuctionsDisplayInner = function() {
     'use strict'
@@ -565,7 +565,7 @@ auction.utils.hideExploreAuctionsDisplayInner = function() {
 
 /**
  * Hides all of the different UI components inside the userInfoDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.hideUserInfoDisplayInner = function() {
     'use strict'
@@ -575,7 +575,7 @@ auction.utils.hideUserInfoDisplayInner = function() {
 
 /**
  * Hides all of the different UI components inside the manageAuctionsDisplay
- * @author Hal Rosenberg (hrosenbe@vmware,com)
+ * @author Hal Rosenberg
  */
 auction.utils.hideManageAuctionsDisplayInner = function() {
     'use strict'
@@ -673,7 +673,7 @@ auction.utils.renderPieChart = function (htmlId, data) {
 
 /**
  * Prints a numeric as a currency in proper format
- * @author <samhardy@vmware.com>
+ * @author <samhardy>
  * @param number amount: number to add the currency to
  * @param int decimalDigits: number of decimal digits to retain, default=2
  * @return Object

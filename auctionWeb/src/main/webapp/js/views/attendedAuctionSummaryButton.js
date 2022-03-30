@@ -28,7 +28,7 @@ auction.views.AttendedAuctionSummaryButton = Backbone.View.extend({
  
     /**
      * Renders the current Item View
-     * @author Harold Rosenberg (hrosenbe@vmware.com)
+     * @author Harold Rosenberg
      * @return void
      */
     render: function() {

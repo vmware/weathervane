@@ -1,7 +1,7 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 FROM namespace/weathervane-centos7:version
-MAINTAINER hrosenbe@vmware.com
+MAINTAINER weathervane-dev@vmware.com
 
 COPY kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 COPY weathervane.pl /root/weathervane/weathervane.pl

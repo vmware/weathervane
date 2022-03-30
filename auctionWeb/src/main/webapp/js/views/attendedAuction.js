@@ -29,7 +29,7 @@ auction.views.AttendedAuction = Backbone.View.extend({
         
     /**
      * Renders the Attend Auction View
-     * @author Harold Rosenberg (hrosenbe@vmware.com)
+     * @author Harold Rosenberg
      * @return void
      */
     render: function() {

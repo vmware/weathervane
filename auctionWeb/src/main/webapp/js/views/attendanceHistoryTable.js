@@ -32,7 +32,7 @@ auction.views.AttendanceHistoryTable = Backbone.View
 			/**
 			 * Renders the Attendance History table View
 			 * 
-			 * @author Harold Rosenberg (hrosenbe@vmware.com)
+			 * @author Harold Rosenberg
 			 * @return void
 			 */
 			render : function() {
@@ -100,7 +100,7 @@ auction.views.AttendanceHistoryTable = Backbone.View
 			/**
 			 * Adds a single attendance history model into the view
 			 * 
-			 * @author Hal Rosenberg (hrosenbe@vmware.com)
+			 * @author Hal Rosenberg
 			 * @return void
 			 */
 			addOne : function(tableRow) {

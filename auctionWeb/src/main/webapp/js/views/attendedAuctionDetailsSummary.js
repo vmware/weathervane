@@ -29,7 +29,7 @@ auction.views.AttendedAuctionDetailsSummary = Backbone.View.extend({
     
     /**
      * Renders the attended auction detail View
-     * @author Harold Rosenberg (hrosenbe@vmware.com)
+     * @author Harold Rosenberg
      * @return void
      */
     render: function() {

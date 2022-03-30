@@ -1,7 +1,7 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
 FROM centos:7.6.1810
-MAINTAINER Hal Rosenberg <hrosenbe@vmware.com>
+MAINTAINER Hal Rosenberg <weathervane-dev@vmware.com>
 
 COPY sysctl.conf /etc/sysctl.conf
 COPY updateResolveConf.pl /updateResolveConf.pl

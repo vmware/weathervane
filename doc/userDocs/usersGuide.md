@@ -1188,7 +1188,7 @@ An xsmall application instance can support roughly up to 6,000 users.
 |-------------------------------|
 | `"configurationSize": "small3",` |
     
-A small3 application instance can support roughly up to 16,000 users.
+A small3 application instance can support roughly up to 25,000 users.
  
 
 **Table: User Defaults for different Configuration Sizes**

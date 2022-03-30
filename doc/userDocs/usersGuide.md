@@ -1164,8 +1164,7 @@ sizes were deprecated in version 2.1.1.
 
 In all of the configurations, the application server is the first 
 pod to become CPU bound, and so the limit specified for this pod affects the
-performance capability of the configuration.  In the `xsmall` configuration, the 
-application server pod has cpu requests and limits of 750mcores, or 0.75 CPU cores. With `small3`, the 
+performance capability of the configuration. With `small3`, the 
 application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. Because the 
 `small3` configuration requests a whole number of CPU cores it is assigned to 
 the Kubernetes guaranteed QoS class. This configuration is appropriate for tests involving the Kubernetes CPU Manager.

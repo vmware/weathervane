@@ -10,6 +10,7 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use Instance;
 use WeathervaneTypes;
+use IPC::Shareable qw( );
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -1596,25 +1597,45 @@ sub getStatsSummary {
 		", appInstance ",                $self->instanceNum
 	);
 
+	# Mapping csvRef to shared memory
+	tie $csvRef, 'IPC::Shareable', {key => "csv", create => 1} or die "AppInstance tie failed\n";
+	my @pids;
+	my $pid;
+
 	my $impl         = $self->getParamValue('workloadImpl');
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		my $numServices = $#$servicesRef;
-		if ( $numServices < 1 ) {
+		$pid = fork();
+		if(!defined $pid){
+			$logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}elsif ($pid == 0){ # child
+			# Mapping this process's csvRef to the ref within shared memory
+			tie $csvRef, 'IPC::Shareable', "csv" or die "AppInstance tie failed\n";
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			my $numServices = $#$servicesRef;
+			if ( $numServices < 1 ) {
+				# Only include services for which there is an instance
+				next;
+			}
 
-			# Only include services for which there is an instance
-			next;
-		}
-
-		# Only call getStatsSummary on one service of each type.
-		my $service         = $servicesRef->[0];
-		my $destinationPath = $statsLogPath . "/" . $serviceType;
-		my $tmpCsvRef       = $service->getStatsSummary($destinationPath);
-		foreach my $key ( keys %$tmpCsvRef ) {
-			$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
+			# Only call getStatsSummary on one service of each type.
+			my $service         = $servicesRef->[0];
+			my $destinationPath = $statsLogPath . "/" . $serviceType;
+			my $tmpCsvRef       = $service->getStatsSummary($destinationPath);
+			foreach my $key ( keys %$tmpCsvRef ) {
+				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
+			}
+			exit;
+		}else{
+			push @pids, $pid;
 		}
 	}
+
+	foreach $pid (@pids){
+		waitpid $pid, 0;
+	}
+
 	$logger->debug(
 		"getStatsSummary finished for workload ",
 		$self->workload->instanceNum,

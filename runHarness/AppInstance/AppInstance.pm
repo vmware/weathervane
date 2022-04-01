@@ -1611,9 +1611,8 @@ sub getStatsSummary {
 			$logger->error("Couldn't fork a process: $!");
 			exit(-1);
 		}elsif ($pid == 0){ # child
-			print("Hello from child \n");
 			# Mapping this process's csvRef to the ref within shared memory
-			tie $csvRef, 'IPC::Shareable', $GLUE or die "AppInstance tie failed\n";
+			#tie $csvRef, 'IPC::Shareable', $GLUE or die "AppInstance tie failed\n";
 			my $servicesRef = $self->getAllServicesByType($serviceType);
 			my $numServices = $#$servicesRef;
 			if ( $numServices < 1 ) {

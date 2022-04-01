@@ -1598,7 +1598,8 @@ sub getStatsSummary {
 	);
 
 	# Mapping csvRef to shared memory
-	tie $csvRef, 'IPC::Shareable', {key => "csv", create => 1} or die "AppInstance tie failed\n";
+	my $GLUE = "csv";
+	tie $csvRef, 'IPC::Shareable', {key => $GLUE, create => 1} or die "AppInstance tie failed\n";
 	my @pids;
 	my $pid;
 
@@ -1610,8 +1611,9 @@ sub getStatsSummary {
 			$logger->error("Couldn't fork a process: $!");
 			exit(-1);
 		}elsif ($pid == 0){ # child
+			print("Hello from child \n");
 			# Mapping this process's csvRef to the ref within shared memory
-			tie $csvRef, 'IPC::Shareable', "csv" or die "AppInstance tie failed\n";
+			tie $csvRef, 'IPC::Shareable', $GLUE or die "AppInstance tie failed\n";
 			my $servicesRef = $self->getAllServicesByType($serviceType);
 			my $numServices = $#$servicesRef;
 			if ( $numServices < 1 ) {

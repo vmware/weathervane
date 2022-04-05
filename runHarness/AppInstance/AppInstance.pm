@@ -1627,7 +1627,7 @@ sub getStatsSummary {
 			foreach my $key ( keys %$tmpCsvRef ) {
 				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
 			}
-			exit();
+			exit 1;
 		}else{ # parent
 			push @pids, $pid;
 		}

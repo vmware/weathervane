@@ -1612,7 +1612,7 @@ sub getStatsSummary {
 		if(!defined $pid){ # failure
 			$logger->error("Couldn't fork a process: $!");
             exit(-1);
-		}else if ($pid == 0){ # Child
+		}elsif ($pid == 0){ # Child
 			my $servicesRef = $self->getAllServicesByType($serviceType);
 			my $numServices = $#$servicesRef;
 			if ( $numServices < 1 ) {
@@ -1627,6 +1627,7 @@ sub getStatsSummary {
 			foreach my $key ( keys %$tmpCsvRef ) {
 				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
 			}
+			exit();
 		}else{ # parent
 			push @pids, $pid;
 		}

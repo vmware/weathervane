@@ -1597,24 +1597,44 @@ sub getStatsSummary {
 		", appInstance ",                $self->instanceNum
 	);
 
+	# Mapping csvRef to shared memory
+       tie $csvRef, 'IPC::Shareable', {key => 1234, create => 1} or die "AppInstance tie failed\n";
+       my @pids;
+       my $pid;
+
+
 	my $impl         = $self->getParamValue('workloadImpl');
 	my $serviceTypes = $WeathervaneTypes::serviceTypes{$impl};
 	foreach my $serviceType (@$serviceTypes) {
-		my $servicesRef = $self->getAllServicesByType($serviceType);
-		my $numServices = $#$servicesRef;
-		if ( $numServices < 1 ) {
-			# Only include services for which there is an instance
-			next;
-		}
 
-		# Only call getStatsSummary on one service of each type.
-		my $service         = $servicesRef->[0];
-		my $destinationPath = $statsLogPath . "/" . $serviceType;
-		my $tmpCsvRef       = $service->getStatsSummary($destinationPath);
-		foreach my $key ( keys %$tmpCsvRef ) {
-			$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
+		$pid = fork();
+
+		if(!defined $pid){ # failure
+			$logger->error("Couldn't fork a process: $!");
+            exit(-1);
+		}else if ($pid == 0){ # Child
+			my $servicesRef = $self->getAllServicesByType($serviceType);
+			my $numServices = $#$servicesRef;
+			if ( $numServices < 1 ) {
+				# Only include services for which there is an instance
+				next;
+			}
+
+			# Only call getStatsSummary on one service of each type.
+			my $service         = $servicesRef->[0];
+			my $destinationPath = $statsLogPath . "/" . $serviceType;
+			my $tmpCsvRef       = $service->getStatsSummary($destinationPath);
+			foreach my $key ( keys %$tmpCsvRef ) {
+				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
+			}
+		}else{ # parent
+			push @pids, $pid;
 		}
 	}
+
+	foreach $pid (@pids){
+    	waitpid $pid, 0;
+    }
 
 	$logger->debug(
 		"getStatsSummary finished for workload ",

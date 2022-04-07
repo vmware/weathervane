@@ -1630,6 +1630,7 @@ sub getStatsSummary {
 			exit 1;
 		}else{ # parent
 			push @pids, $pid;
+			sleep 1;
 		}
 	}
 

@@ -336,8 +336,7 @@ Loading the data can be time consuming, and is done at the beginning of a run if
 Here are some time estimates for loading a single application instance:
 - A micro configuration with 3,000 users takes about 15 minutes.
 - An xsmall configuration with 12,000 users takes about 30 minutes.
-- A small2 configuration with 16,000 users takes about 50 minutes.
-- A small2-applimit2 configuration with 25,000 users takes about 80 minutes.
+- The small3 configuration with 25,000 users takes about 80 minutes.
 
 ##### StorageClass Provisioner Prerequisites and Configuration<a name="storageclass-prereq"></a>
 Ensure that all prerequisites and configuration steps are completed for your chosen StorageClass Provisioner.  
@@ -463,8 +462,7 @@ The number of users specified must be less than or equal to the maximum number
 of users loaded for the selected configuration size.  
 * For the `micro` configuration, maxUsers is `3000` users. 
 * For the `xsmall` configuration, this is `12000` users.
-* For the `small2` configuration, this is `16000` users.
-* For the `small2-applimit2` configuration, this is `25000` users.
+* For the `small3` configuration, this is `25000` users.
 
 To change the number of users, edit the configuration file as follows:
 
@@ -563,7 +561,7 @@ This task shows how to increase the load on the SUT by using a larger
 configuration size for your application instances.
 
 Weathervane currently supports multiple configuration sizes for the Auction 
-application: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
+application: `micro`, `xsmall`, `(deprecated) small2`,`(deprecated) small2-applimit2`, and `small3`. 
 Additional sizes will be added in future releases. Each size corresponds to a fixed 
 configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  Larger configurations will support a large user load, and may come closer to 
@@ -582,9 +580,9 @@ reloaded for any previously used instances.
 
 To use a different configuration size, edit the configuration file as follows:
 
-1. Change the value for the `configurationSize` to `micro`, `xsmall`, `small2`, or `small2-applimit2`.
-1. Optionally, change the description parameter to properly describe the run.
-1. Optionally, save the configuration file by a different name to reflect the contents.
+1. Change the value for the `configurationSize` to `micro`, `xsmall`, or `small3`.
+2. Optionally, change the description parameter to properly describe the run.
+3. Optionally, save the configuration file by a different name to reflect the contents.
 
 Then run Weathervane as before with the new configuration file.
 
@@ -1153,24 +1151,23 @@ information about the `interval` runStrategy is giving in the section discussing
 
 #### Configuration Sizes<a name="configuration-sizes"></a>
 
-Weathervane supports multiple configuration sizes: `micro`, `xsmall`, `small2`, and `small2-applimit2`. 
+Weathervane supports multiple configuration sizes: `micro`, `xsmall`, and `small3`. 
 Each size corresponds 
 to a fixed configuration of the Weathervane Auction application and an appropriate number of workload 
 driver nodes.  The `xsmall` configuration size supports a larger user load than the `micro` configuration 
-size, and `small2` supports a larger load than `xsmall`.  Using a larger configuration 
+size, and `small3` supports a larger load than `xsmall`.  Using a larger configuration 
 may allow you to come closer to maxing out the capabilities of your cluster.  A different configuration size 
 may also be more representative of production applications to be deployed on the cluster under test.  Note 
 that the `small` configuration size, included in the initial release of Weathervane 
-2.0, has been removed in favor of the `small2` configuration.
+2.0, has been removed in favor of the `small2` configuration; also, the `small2` and `small2-applimit2` configuration
+sizes were deprecated in version 2.1.1.
 
-The primary distinction between the `small2` and `small2-applimit2` configurations 
-is the size of the cpu requests and limits for the application server pod(s).  In all of the configurations, the 
-application server is the first pod to become CPU bound, and so the limit specified for this pod affects the
-performance capability of the configuration.  In the `small2` configuration, the 
-application server pod has cpu requests and limits of 1500mcores, or 1.5 CPU cores.  With `small2-applimit2`, the 
-application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores.   Because the 
-`small2-applimit2` configuration requests a whole number of CPU cores it is assigned to 
-the Kubernetes guaranteed QoS class.  This configuration is appropriate for tests involving the Kubernetes CPU Manager.
+In all of the configurations, the application server is the first 
+pod to become CPU bound, and so the limit specified for this pod affects the
+performance capability of the configuration. With `small3`, the 
+application server pod has cpu requests and limits of 2000mcores, or 2 CPU cores. Because the 
+`small3` configuration requests a whole number of CPU cores it is assigned to 
+the Kubernetes guaranteed QoS class. This configuration is appropriate for tests involving the Kubernetes CPU Manager.
 
 You can select a configuration size using the parameter `configurationSize`.
 
@@ -1186,75 +1183,72 @@ A micro application instance can support roughly up to 1,000 users.
 
 An xsmall application instance can support roughly up to 6,000 users.
 
-| Configuration Parameter: small2 Configuration Size |
+| Configuration Parameter: small3 Configuration Size |
 |-------------------------------|
-| `"configurationSize": "small2",` |
-
-A small2 application instance can support roughly up to 10,000 users.
-
-| Configuration Parameter: small2-applimit2 Configuration Size |
-|-------------------------------|
-| `"configurationSize": "small2-applimit2",` |
-
-A small2-applimit2 application instance can support roughly up to 16,000 users.
+| `"configurationSize": "small3",` |
+    
+A small3 application instance can support roughly up to 25,000 users.
+ 
 
 **Table: User Defaults for different Configuration Sizes**
 
-| Configuration Size          | micro | xsmall | small2 |  small2-applimit2 |
-| --------------------------- | ----- | ----- | ------ | ------ | 
-| Default users for fixed run | 200   | 1000  | 2000 | 2000 | 
-| Default maximum users supported | 3000   | 12,000  | 16,000 | 25,000 | 
+| Configuration Size          | micro | xsmall | small3 |
+| --------------------------- | ----- | ----- | ------ |
+| Default users for fixed run | 200   | 1000  | 2000 |
+| Default maximum users supported | 3000   | 12,000  | 25,000 |
 
 Table 1 below shows the total CPU and memory resources requested by the application and driver pods for each configuration size.  
 These request levels are per application instance.  Table 2 provides a quick reference for the total application pod resources 
 required at different numbers of application instances.  You can use these tables to find the maximum number of application 
 instances you will be able to deploy on your clusters.
 
-**Table 1: Resource Requirements For Each Configuration Size, One Application Instance**
+**Table 1: Resource Requirements For Each Configuration Size, One Application Instance.**
 
-| Configuration<BR>Size |      | micro           |               |      | xsmall          |               |      | small2          |               |
-|-----------------------|------|-----------------|---------------|------|-----------------|---------------|------|-----------------|---------------|
-|                       | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) |
-| Total Driver          | 0.50 | 1.66            | 0.00          | 2.55 | 9.38            | 0.00          | 3.10 | 15.92           | 0.00          |
-| Total App             | 0.79 | 5.57            | 32.00         | 2.59 | 12.51           | 59.00         | 4.80 | 31.84           | 80.00         |
-| Total                 | 1.29 | 7.23            | 32.00         | 5.14 | 21.88           | 59.00         | 7.90 | 47.75           | 80.00         |
+| Configuration<BR>Size |      | micro           |               |      | xsmall          |               |       | small3          |               |
+|-----------------------|------|-----------------|---------------|------|-----------------|---------------|-------|-----------------|---------------|
+|                       | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU  | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) |
+| Total Driver          | 0.50 | 1.66            | 0.00          | 2.55 | 9.38            | 0.00          | 3.10  | 15.92           | 0.00          |
+| Total App             | 0.79 | 5.57            | 16.00         | 2.59 | 12.51           | 59.00         | 6.91  | 31.84           | 82.00         |
+| Total                 | 1.29 | 7.23            | 16.00         | 5.14 | 21.88           | 59.00         | 10.01 | 47.75           | 82.00         |
 
-| Configuration<BR>Size |       | small2-applimit2 |               |
-|-----------------------|-------|------------------|---------------|
-|                       | CPU   | Memory<BR>(GiB)  | Disk<BR>(GiB) |
-| Total Driver          | 3.10  | 15.92            | 0.00          |
-| Total App             | 6.96  | 31.84            | 87.00         |
-| Total                 | 10.06 | 47.75            | 87.00         |
+
+
+
+
+
+
 
 **Table 2: Application Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |         | micro           |               |         | xsmall          |               |         | small2          |               |
-|---------------------------------------|---------|-----------------|---------------|---------|-----------------|---------------|---------|-----------------|---------------|
-| Number of<BR>Application<BR>Instances | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU     | Memory<BR>(GiB) | Disk<BR>(GiB) |
-| 1                                     |  0.79   |  5.57           |  32.00        |  2.59   |  12.51          |  59.00        |  4.80   |  31.84          |  80.00        |
-| 2                                     |  1.58   |  11.13          |  64.00        |  5.18   |  25.02          |  118.00       |  9.60   |  63.67          |  160.00       |
-| 3                                     |  2.37   |  16.70          |  96.00        |  7.77   |  37.53          |  177.00       |  14.40  |  95.51          |  240.00       |
-| 4                                     |  3.16   |  22.27          |  128.00       |  10.36  |  50.04          |  236.00       |  19.20  |  127.34         |  320.00       |
-| 5                                     |  3.96   |  27.83          |  160.00       |  12.95  |  62.55          |  295.00       |  24.00  |  159.18         |  400.00       |
-| 6                                     |  4.75   |  33.40          |  192.00       |  15.54  |  75.06          |  354.00       |  28.80  |  191.02         |  480.00       |
-| 7                                     |  5.54   |  38.96          |  224.00       |  18.13  |  87.57          |  413.00       |  33.60  |  222.85         |  560.00       |
-| 8                                     |  6.33   |  44.53          |  256.00       |  20.72  |  100.08         |  472.00       |  38.40  |  254.69         |  640.00       |
-| 9                                     |  7.12   |  50.10          |  288.00       |  23.31  |  112.59         |  531.00       |  43.20  |  286.52         |  720.00       |
-| 10                                    |  7.91   |  55.66          |  320.00       |  25.90  |  125.10         |  590.00       |  48.00  |  318.36         |  800.00       |
-| 11                                    |  8.70   |  61.23          |  352.00       |  28.49  |  137.61         |  649.00       |  52.80  |  350.20         |  880.00       |
-| 12                                    |  9.49   |  66.80          |  384.00       |  31.08  |  150.12         |  708.00       |  57.60  |  382.03         |  960.00       |
-| 13                                    |  10.28  |  72.36          |  416.00       |  33.67  |  162.63         |  767.00       |  62.40  |  413.87         |  1,040.00     |
-| 14                                    |  11.07  |  77.93          |  448.00       |  36.26  |  175.14         |  826.00       |  67.20  |  445.70         |  1,120.00     |
-| 15                                    |  11.87  |  83.50          |  480.00       |  38.85  |  187.65         |  885.00       |  72.00  |  477.54         |  1,200.00     |
-| 16                                    |  12.66  |  89.06          |  512.00       |  41.44  |  200.16         |  944.00       |  76.80  |  509.38         |  1,280.00     |
-| 17                                    |  13.45  |  94.63          |  544.00       |  44.03  |  212.67         |  1,003.00     |  81.60  |  541.21         |  1,360.00     |
-| 18                                    |  14.24  |  100.20         |  576.00       |  46.62  |  225.18         |  1,062.00     |  86.40  |  573.05         |  1,440.00     |
-| 19                                    |  15.03  |  105.76         |  608.00       |  49.21  |  237.69         |  1,121.00     |  91.20  |  604.88         |  1,520.00     |
-| 20                                    |  15.82  |  111.33         |  640.00       |  51.80  |  250.20         |  1,180.00     |  96.00  |  636.72         |  1,600.00     |
+| Configuration<BR>Size                 |       | micro           |               |       | xsmall          |               |        | small3          |               |
+|---------------------------------------|-------|-----------------|---------------|-------|-----------------|---------------|--------|-----------------|---------------|
+| Number of<BR>Application<BR>Instances | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU    | Memory<BR>(GiB) | Disk<BR>(GiB) |
+| 1                                     | 0.79  | 5.57            | 16.00         | 2.59  | 12.51           | 59.00         | 6.91   | 31.84           | 82.00         |
+| 2                                     | 1.58  | 11.13           | 32.00         | 5.18  | 25.02           | 118.00        | 13.82  | 63.67           | 164.00        |
+| 3                                     | 2.37  | 16.70           | 48.00         | 7.77  | 37.53           | 177.00        | 20.73  | 95.51           | 246.00        |
+| 4                                     | 3.16  | 22.27           | 64.00         | 10.36 | 50.04           | 236.00        | 27.64  | 127.34          | 328.00        |
+| 5                                     | 3.96  | 27.83           | 80.00         | 12.95 | 62.55           | 295.00        | 34.55  | 159.18          | 410.00        |
+| 6                                     | 4.75  | 33.40           | 96.00         | 15.54 | 75.06           | 354.00        | 41.46  | 191.02          | 492.00        |
+| 7                                     | 5.54  | 38.96           | 112.00        | 18.13 | 87.57           | 413.00        | 48.37  | 222.85          | 574.00        |
+| 8                                     | 6.33  | 44.53           | 128.00        | 20.72 | 100.08          | 472.00        | 55.28  | 254.69          | 656.00        |
+| 9                                     | 7.12  | 50.10           | 144.00        | 23.31 | 112.59          | 531.00        | 62.19  | 286.52          | 738.00        |
+| 10                                    | 7.91  | 55.66           | 160.00        | 25.90 | 125.10          | 590.00        | 69.10  | 318.36          | 820.00        |
+| 11                                    | 8.70  | 61.23           | 176.00        | 28.49 | 137.61          | 649.00        | 76.01  | 350.20          | 902.00        |
+| 12                                    | 9.49  | 66.80           | 192.00        | 31.08 | 150.12          | 708.00        | 82.92  | 382.03          | 984.00        |
+| 13                                    | 10.28 | 72.36           | 208.00        | 33.67 | 162.63          | 767.00        | 89.83  | 413.87          | 1,066.00      |
+| 14                                    | 11.07 | 77.93           | 224.00        | 36.26 | 175.14          | 826.00        | 96.74  | 445.70          | 1,148.00      |
+| 15                                    | 11.87 | 83.50           | 240.00        | 38.85 | 187.65          | 885.00        | 103.65 | 477.54          | 1,230.00      |
+| 16                                    | 12.66 | 89.06           | 256.00        | 41.44 | 200.16          | 944.00        | 110.56 | 509.38          | 1,312.00      |
+| 17                                    | 13.45 | 94.63           | 272.00        | 44.03 | 212.67          | 1,003.00      | 117.47 | 541.21          | 1,394.00      |
+| 18                                    | 14.24 | 100.20          | 288.00        | 46.62 | 225.18          | 1,062.00      | 124.38 | 573.05          | 1,476.00      |
+| 19                                    | 15.03 | 105.76          | 304.00        | 49.21 | 237.69          | 1,121.00      | 131.29 | 604.88          | 1,558.00      |
+| 20                                    | 15.82 | 111.33          | 320.00        | 51.80 | 250.20          | 1,180.00      | 138.20 | 636.72          | 1,640.00      |
 
-**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances**
 
-| Configuration<BR>Size                 |       | micro           |               |       | xsmall          |               |       | small2          |               |
+
+**Table 3: Driver Resource Requirements For Each Configuration Size, Multiple Application Instances** 
+
+| Configuration<BR>Size                 |       | micro           |               |       | xsmall          |               |       | small3          |               |
 |---------------------------------------|-------|-----------------|---------------|-------|-----------------|---------------|-------|-----------------|---------------|
 | Number of<BR>Application<BR>Instances | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) | CPU   | Memory<BR>(GiB) | Disk<BR>(GiB) |
 | 1                                     | 0.50  | 1.66            | 0.00          | 2.55  | 9.38            | 0.00          | 3.10  | 15.92           | 0.00          |
@@ -1277,6 +1271,8 @@ instances you will be able to deploy on your clusters.
 | 18                                    | 9.00  | 29.88           | 0.00          | 45.90 | 168.75          | 0.00          | 55.80 | 286.52          | 0.00          |
 | 19                                    | 9.50  | 31.54           | 0.00          | 48.45 | 178.13          | 0.00          | 58.90 | 302.44          | 0.00          |
 | 20                                    | 10.00 | 33.20           | 0.00          | 51.00 | 187.50          | 0.00          | 62.00 | 318.36          | 0.00          |
+
+
 
 *These figures do not include resources being used by the Kubernetes system pods.*
 
@@ -2033,13 +2029,11 @@ in the workload.  Storage demands tend to vary more widely than the network dema
 | Configuration | Storage Read IOPS | Storage Read MByte/sec | Storage Write IOPS | Storage Write MByte/sec |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    0.19           |       0.0005           |    0.10            | 0.002 |
-| small2    | 0.005 | 0.002 | 0.04 | 0.0002 |
 
 
 | Configuration | Network Receive Pkt/sec | Network Receive Mbps | Network transmit Pkt/sec | Network Transmit Mbps |
 |---------------|-------------------|------------------------|--------------------|-------------------------|
 | micro         |    10.3           |      0.06           |    8.0            | 0.1 |
-| small2    | 11.0 | 0.06 | 8.4 | 0.1 |
 
 As an example, consider a run using the micro configuration which runs up to 1000 WvUsers. 
 This run will generate approximately the following network demands: 

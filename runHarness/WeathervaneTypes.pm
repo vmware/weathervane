@@ -72,8 +72,13 @@ our %workloadProfiles = (
 
 # These are all of the appInstance sizes that are supported for each workload
 our %appInstanceSizes = (
-    "auction" => ["micro", "xsmall", "small2", "small2-applimit2", "medium"],
+    "auction" => ["micro", "xsmall", "small3", "medium"],
     );
+
+# These are all the appInstances sizes that are deprecated
+our %deprecatedInstanceSizes = (
+	"auction" => ["small2", "small2-applimit2"],
+);
 
 # These are the allowed values for appIngressMethod
 our %appIngressMethods = (

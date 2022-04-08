@@ -10,7 +10,7 @@ use Tie::IxHash;
 use Log::Log4perl qw(get_logger);
 use Instance;
 use WeathervaneTypes;
-use IPC::Shareable qw( );
+use IPC::Shareable qw(:all);
 
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
@@ -1598,9 +1598,9 @@ sub getStatsSummary {
 	);
 
 	# Mapping csvRef to shared memory
-       tie $csvRef, 'IPC::Shareable', {key => 1234, create => 1} or die "AppInstance tie failed\n";
-       my @pids;
-       my $pid;
+	tie %csvRef, 'IPC::Shareable', {key => 1234, create => 1} or die "AppInstance tie failed\n";
+	my @pids;
+	my $pid;
 
 
 	my $impl         = $self->getParamValue('workloadImpl');
@@ -1619,7 +1619,7 @@ sub getStatsSummary {
 				# Only include services for which there is an instance
 				next;
 			}
-
+			tie(%csvRef)->lock;
 			# Only call getStatsSummary on one service of each type.
 			my $service         = $servicesRef->[0];
 			my $destinationPath = $statsLogPath . "/" . $serviceType;
@@ -1627,6 +1627,7 @@ sub getStatsSummary {
 			foreach my $key ( keys %$tmpCsvRef ) {
 				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
 			}
+			tie(%csvRef)->unlock;
 			exit;
 		}else{ # parent
 			push @pids, $pid;

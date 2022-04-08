@@ -1598,7 +1598,7 @@ sub getStatsSummary {
 	);
 
 	# Mapping csvRef to shared memory
-	tie %csvRef, 'IPC::Shareable', {key => 1234, create => 1} or die "AppInstance tie failed\n";
+	tie $csvRef, 'IPC::Shareable', {key => 1234, create => 1} or die "AppInstance tie failed\n";
 	my @pids;
 	my $pid;
 
@@ -1619,7 +1619,7 @@ sub getStatsSummary {
 				# Only include services for which there is an instance
 				next;
 			}
-			tie(%csvRef)->lock;
+			tie($csvRef)->lock;
 			# Only call getStatsSummary on one service of each type.
 			my $service         = $servicesRef->[0];
 			my $destinationPath = $statsLogPath . "/" . $serviceType;
@@ -1627,7 +1627,7 @@ sub getStatsSummary {
 			foreach my $key ( keys %$tmpCsvRef ) {
 				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
 			}
-			tie(%csvRef)->unlock;
+			tie($csvRef)->unlock;
 			exit;
 		}else{ # parent
 			push @pids, $pid;

@@ -1619,7 +1619,7 @@ sub getStatsSummary {
 				# Only include services for which there is an instance
 				next;
 			}
-			tie($csvRef)->lock;
+			tied($csvRef)->lock;
 			# Only call getStatsSummary on one service of each type.
 			my $service         = $servicesRef->[0];
 			my $destinationPath = $statsLogPath . "/" . $serviceType;
@@ -1627,7 +1627,7 @@ sub getStatsSummary {
 			foreach my $key ( keys %$tmpCsvRef ) {
 				$csvRef->{ $prefix . $key } = $tmpCsvRef->{$key};
 			}
-			tie($csvRef)->unlock;
+			tied($csvRef)->unlock;
 			exit;
 		}else{ # parent
 			push @pids, $pid;

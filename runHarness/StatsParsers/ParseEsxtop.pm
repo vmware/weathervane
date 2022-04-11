@@ -493,7 +493,7 @@ sub parseEsxtopCmdline {
 	tie $startTime, 'IPC::Shareable', {key => 1000, create => 1} or die "Shared memory tie failed.\n";
 	tie $dataColumns, 'IPC::Shareable', {key => 1001, create => 1} or die "Shared memory tie failed.\n";
 	tie $warmup, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
-	tie $numRows, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
+	tie $numRows, 'IPC::Shareable', {key => 1003, create => 1} or die "Shared memory tie failed.\n";
 	my @pids;
 	while ( $inLine = <ESXTOP> ) {
 		chomp($inLine);
@@ -501,7 +501,7 @@ sub parseEsxtopCmdline {
 
 		my $pid = fork();
 		if(!defined $pid){
-			$logger->error("Couldn't fork a process: $!");
+			print("Couldn't fork a process.\n");
 			exit(-1);
 		}elsif ($pid == 0){ # Child
 			$inLine[0] =~ s/"(.+)"/$1/;

@@ -491,8 +491,8 @@ sub parseEsxtopCmdline {
 	my $startTime = -1;
 	# Mapping relevant variables to shared memory
 	tie $startTime, 'IPC::Shareable', {key => 1000, create => 1} or die "Shared memory tie failed.\n";
-	tie $dataColumns, 'IPC::Shareable', {key => 1001, create => 1} or die "Shared memory tie failed.\n";
-	tie $warmup, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
+	tie $ParseEsxtop::dataColumns, 'IPC::Shareable', {key => 1001, create => 1} or die "Shared memory tie failed.\n";
+	tie $ParseEsxtop::warmup, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
 	tie $numRows, 'IPC::Shareable', {key => 1003, create => 1} or die "Shared memory tie failed.\n";
 	my @pids;
 	while ( $inLine = <ESXTOP> ) {
@@ -530,7 +530,7 @@ sub parseEsxtopCmdline {
 		}
 	}
 
-	foreach $pid (@pids) {
+	foreach my $pid (@pids) {
 		waitpid $pid, 0;
 	}
 

@@ -25,7 +25,7 @@ package ParseEsxtop;
 use strict;
 use Statistics::Descriptive;
 use Tie::IxHash;
-use IPC::Shareable qw( );
+use IPC::Shareable qw(:all);
 
 BEGIN {
 	use Exporter;
@@ -489,34 +489,52 @@ sub parseEsxtopCmdline {
 	# we go along.  We also get rid of the quotes around the values.
 	$numRows = 0;
 	my $startTime = -1;
+	# Mapping relevant variables to shared memory
+	tie $startTime, 'IPC::Shareable', {key => 1000, create => 1} or die "Shared memory tie failed.\n";
+	tie $dataColumns, 'IPC::Shareable', {key => 1001, create => 1} or die "Shared memory tie failed.\n";
+	tie $warmup, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
+	tie $numRows, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
+	my @pids;
 	while ( $inLine = <ESXTOP> ) {
 		chomp($inLine);
 		my @inLine = split( /,/, $inLine );
 
-		$inLine[0] =~ s/"(.+)"/$1/;
+		my $pid = fork();
+		if(!defined $pid){
+			$logger->error("Couldn't fork a process: $!");
+			exit(-1);
+		}elsif ($pid == 0){ # Child
+			$inLine[0] =~ s/"(.+)"/$1/;
 
-		# Save the timestamp of the first row
-		if ( $startTime == -1 ) {
-			$startTime = $inLine[0];
-		}
-
-		# For the timestamp column, convert to seconds since start
-		my $curTime = convertDate( $inLine[0], $startTime );
-
-		if ( $curTime >= $warmup ) {
-
-			push @{ $dataColumns[0] }, $curTime;
-
-			for ( my $i = 1 ; $i <= $#inLine ; $i++ ) {
-				$inLine[$i] =~ s/\"(.+)\"/$1/;
-				push @{ $dataColumns[$i] }, $inLine[$i];
+			# Save the timestamp of the first row
+			if ( $startTime == -1 ) {
+				$startTime = $inLine[0];
 			}
-			$numRows++;
+
+			# For the timestamp column, convert to seconds since start
+			my $curTime = convertDate( $inLine[0], $startTime );
+
+			if ( $curTime >= $warmup ) {
+
+				push @{ $dataColumns[0] }, $curTime;
+
+				for ( my $i = 1 ; $i <= $#inLine ; $i++ ) {
+					$inLine[$i] =~ s/\"(.+)\"/$1/;
+					push @{ $dataColumns[$i] }, $inLine[$i];
+				}
+				$numRows++;
+			}
+			exit;
+		}else { # Parent
+			push @pids, $pid;
 		}
 	}
 
-	close(ESXTOP);
+	foreach $pid (@pids) {
+		waitpid $pid, 0;
+	}
 
+	close(ESXTOP);
 }
 
 sub writeCSVFiles {

@@ -490,10 +490,14 @@ sub parseEsxtopCmdline {
 	$numRows = 0;
 	my $startTime = -1;
 	# Mapping relevant variables to shared memory
-	tie $startTime, 'IPC::Shareable', {key => 1000, create => 1} or die "Shared memory tie failed.\n";
-	tie $ParseEsxtop::dataColumns, 'IPC::Shareable', {key => 1001, create => 1} or die "Shared memory tie failed.\n";
-	tie $ParseEsxtop::warmup, 'IPC::Shareable', {key => 1002, create => 1} or die "Shared memory tie failed.\n";
-	tie $numRows, 'IPC::Shareable', {key => 1003, create => 1} or die "Shared memory tie failed.\n";
+	my $ipc_time = tie $startTime, 'IPC::Shareable', 
+				{key => 1000, create => 1} or die "Shared memory tie failed.\n";
+	my $ipc_dataColumns = tie $ParseEsxtop::dataColumns, 'IPC::Shareable', 
+				{key => 1001, create => 1} or die "Shared memory tie failed.\n";
+	my $ipc_warmup = tie $ParseEsxtop::warmup, 'IPC::Shareable', 
+				{key => 1002, create => 1} or die "Shared memory tie failed.\n";
+	my $ipc_numRows = tie $numRows, 'IPC::Shareable', 
+				{key => 1003, create => 1} or die "Shared memory tie failed.\n";
 	my @pids;
 	while ( $inLine = <ESXTOP> ) {
 		chomp($inLine);
@@ -504,6 +508,12 @@ sub parseEsxtopCmdline {
 			print("Couldn't fork a process.\n");
 			exit(-1);
 		}elsif ($pid == 0){ # Child
+			# ensuring no concurrent access to shared memory
+			$ipc_time->shlock();
+			$ipc_dataColumns->shlock();
+			$ipc_warmup->shlock();
+			$ipc_numRows->shlock();
+
 			$inLine[0] =~ s/"(.+)"/$1/;
 
 			# Save the timestamp of the first row
@@ -524,6 +534,11 @@ sub parseEsxtopCmdline {
 				}
 				$numRows++;
 			}
+			# Unlocking shared memory; other processes can access now.
+			$ipc_time->shunlock();
+			$ipc_dataColumns->shunlock();
+			$ipc_warmup->shunlock();
+			$ipc_numRows->shunlock();
 			exit;
 		}else { # Parent
 			push @pids, $pid;

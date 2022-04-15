@@ -27,6 +27,13 @@
   "appInstanceCluster" : "appCluster",
   "appIngressMethod" : "nodeport",
 
+  # Each configuration size is in its own namespace.
+  # This ensures the db will not have to be reloaded when running different
+  # configuration sizes, significantly decreasing the time required for end 
+  # to end testing.
+  "namespaceSuffix" : "-micro",
+  "createNamespaces" : true,
+
   "cassandraDataStorageClass" : "fast",
   "postgresqlStorageClass" : "fast",
   "nginxCacheStorageClass" : "fast",

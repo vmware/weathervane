@@ -550,6 +550,10 @@ if (getParamValue($paramsHashRef, "numQosPeriods") <= 0) {
 	die("The value for the numQosPeriods parameter must be greater than 0.\n");
 }
 
+if (getParamValue( $paramsHashRef, "rampDown" ) <= 0) {
+        die "The value for rampDown must be greater than 0.\n";
+}
+
 if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
 	die("The value for the qosPeriodSec parameter must be greater than 0.\n");
 }

@@ -554,7 +554,7 @@ if (getParamValue($paramsHashRef, "qosPeriodSec") <= 0) {
 	die("The value for the qosPeriodSec parameter must be greater than 0.\n");
 }
 
-# Check for the rampDown<=0 to prevent wv run from hanging  
+# rampDown>0 check to prevent the run hanging   
 if (getParamValue( $paramsHashRef, "rampDown" ) <= 0) {
         die "The value for rampDown must be greater than 0.\n";
 }

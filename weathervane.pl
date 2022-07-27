@@ -558,6 +558,11 @@ if (getParamValue( $paramsHashRef, "findMaxStopPct" ) <= 0) {
 	die "The value for findMaxStopPct must be greater than 0.\n";
 }
 
+# rampDown>0 check to prevent the run hanging   
+if (getParamValue( $paramsHashRef, "rampDown" ) <= 0) {
+        die "The value for rampDown must be greater than 0.\n";
+}
+
 # hash to build up the as-run parameter output
 my $paramsAsRun = \%$paramsHashRef;
 

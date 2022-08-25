@@ -673,8 +673,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $deprecatedSizesRef = $WeathervaneTypes::deprecatedInstanceSizes{$workloadImpl};
 	if (!($configSize ~~  @$validSizesRef)) {
 		# Checking whether size is deprecated
-		if($configSize ~~  @$deprecatedSizesRef){
-			$console_logger->info("Warning: Workload $outputWorkloadNum is using deprecated configurationSize: $configSize.");
+		if($configSize ~~  @$deprecatedSizesRef && $numWorkloads==1){
+			$console_logger->info("Warning: Workload is using deprecated configurationSize: $configSize.");
 		}else {
 			$console_logger->error("Error: For workload " . $outputWorkloadNum . ", "
 				. $configSize . " is not a valid configurationSize.  Valid sizes are: @$validSizesRef");
@@ -733,7 +733,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	
 	my $numAppInstances = $#{$appInstanceParamHashRefs} + 1;
 	if ( $logger->is_debug() ) {
-		$logger->debug("For workload $outputWorkloadNum, have $numAppInstances appInstances");
+		if ($numWorkloads==1){
+			$logger->debug("Workload has $numAppInstances appInstances");
+		}
+		else{
+			$logger->debug("For workload $outputWorkloadNum, have $numAppInstances appInstances");
+		}
 		#$logger->debug("Their Param hash refs are:");
 		#foreach my $paramHashRef (@$appInstanceParamHashRefs) {
 		#	my $tmp = $json->encode($paramHashRef);
@@ -800,7 +805,12 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	my $numDrivers = $numSecondaries + 1;
-	$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
+	if ($numWorkloads==1){
+		$console_logger->info("Workload has $numDrivers workload-driver nodes");
+	}
+	else{
+		$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
+	}
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
@@ -841,8 +851,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			}
 		}
 	}
-	if ($allAiSameConfig && ($commonConfigSize ne "custom")) {
-		$console_logger->info("Workload $outputWorkloadNum has $numAppInstances $commonConfigSize application instances:");
+	if (($allAiSameConfig && ($commonConfigSize ne "custom"))&&($numWorkloads == 1)) {
+			$console_logger->info("Workload has $numAppInstances $commonConfigSize application instances:");
 		my $appInstanceParamHashRef = $appInstanceParamHashRefs->[0];
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
 		foreach my $serviceType (@$serviceTypesRef) {

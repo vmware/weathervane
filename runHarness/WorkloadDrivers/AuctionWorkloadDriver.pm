@@ -1351,7 +1351,12 @@ sub startRun {
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
-								$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								if ($workloadCount==1){
+									$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");	
+								}
+								else{
+									$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								}
 							}
 						}
 					}
@@ -1398,7 +1403,13 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-            	my $instancesString = "[$tempOutputWorkloadNum appInstance";
+				my $instancesString = "";
+				if ($workloadCount==1){
+					$instancesString = "[appInstance";
+				}
+            	else{
+					$instancesString = "[$tempOutputWorkloadNum appInstance";
+				}
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	if ($#{$instancesListRef} == 0) {
             		$instancesString .= ": " . $instancesListRef->[0];
@@ -1469,7 +1480,12 @@ sub startRun {
 	close $logHandle;
 
 	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $outputWorkloadNum finished");
+	if ($workloadCount==1){
+		$console_logger->info("Workload finished");	
+	}
+	else{
+		$console_logger->info("Workload $outputWorkloadNum finished");
+	}
 
 	return 1;
 }
@@ -2406,7 +2422,13 @@ sub parseStats {
 								. "\nIncrease maxUsers and try again.";				
 			}
 		}
-		$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
+
+		if ($workloadCount==1){
+			$console_logger->info("appInstance $appInstanceName: $resultString");	
+		}
+		else{
+			$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
+		}
 		
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 

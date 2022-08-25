@@ -800,7 +800,14 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 
 	my $numDrivers = $numSecondaries + 1;
-	$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
+
+	# Formating the output to avoid extra space when $numWorkloads == 1
+	if ($numWorkloads == 1){
+		$console_logger->info("Workload has $numDrivers workload-driver nodes");
+	}
+	else{
+		$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
+	}
 
 	# Create the secondary drivers and add them to the primary driver
 	foreach my $secondaryDriverParamHashRef (@$driversParamHashRefs) {
@@ -842,7 +849,13 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		}
 	}
 	if ($allAiSameConfig && ($commonConfigSize ne "custom")) {
-		$console_logger->info("Workload $outputWorkloadNum has $numAppInstances $commonConfigSize application instances:");
+		# Formating the output to avoid extra space when $numWorkloads == 1
+		if ($numWorkloads == 1){
+			$console_logger->info("Workload has $numAppInstances $commonConfigSize application instances:");
+		}
+		else{
+			$console_logger->info("Workload $outputWorkloadNum has $numAppInstances $commonConfigSize application instances:");
+		}
 		my $appInstanceParamHashRef = $appInstanceParamHashRefs->[0];
 		my $serviceTypesRef = $WeathervaneTypes::serviceTypes{$workloadImpl};
 		foreach my $serviceType (@$serviceTypesRef) {

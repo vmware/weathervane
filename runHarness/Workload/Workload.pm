@@ -875,7 +875,13 @@ sub writeUsersTxt {
 		if ($loadPathType eq 'fixed') {
 			my $users = $appInstance->users;
 			if ($users) {
-				my $outString      = "$outputWorkloadNum App Instance $instanceNum: $users Users";
+				my $outString = "";
+				if ($workloadCount==1){
+					$outString      = "App Instance $instanceNum: $users Users";
+				}
+				else{
+					$outString      = "$outputWorkloadNum App Instance $instanceNum: $users Users";
+				}
 				$console_logger->info($outString);
 				print $fileOut "$outString\n";
 			}

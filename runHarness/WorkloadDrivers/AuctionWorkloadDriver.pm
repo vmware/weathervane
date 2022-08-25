@@ -1405,6 +1405,7 @@ sub startRun {
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
 				my $instancesString = "";
+				# Compare the workloadCount to avoid extra space in the log
 				if ($workloadCount==1){
 					$instancesString = "[appInstance";
 				}

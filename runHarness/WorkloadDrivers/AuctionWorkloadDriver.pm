@@ -1351,6 +1351,7 @@ sub startRun {
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
+								# Compare the workloadCount to avoid extra space in the log
 								if ($workloadCount==1){
 									$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");	
 								}

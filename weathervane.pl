@@ -802,10 +802,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	my $numDrivers = $numSecondaries + 1;
 
 	# Formating the output to avoid extra space when $numWorkloads == 1
-	if ($numWorkloads == 1){
+	if ( $numWorkloads == 1 ) {
 		$console_logger->info("Workload has $numDrivers workload-driver nodes");
 	}
-	else{
+	else {
 		$console_logger->info("Workload $outputWorkloadNum has $numDrivers workload-driver nodes");
 	}
 
@@ -850,10 +850,10 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 	}
 	if ($allAiSameConfig && ($commonConfigSize ne "custom")) {
 		# Formating the output to avoid extra space when $numWorkloads == 1
-		if ($numWorkloads == 1){
+		if ( $numWorkloads == 1 ) {
 			$console_logger->info("Workload has $numAppInstances $commonConfigSize application instances:");
 		}
-		else{
+		else {
 			$console_logger->info("Workload $outputWorkloadNum has $numAppInstances $commonConfigSize application instances:");
 		}
 		my $appInstanceParamHashRef = $appInstanceParamHashRefs->[0];

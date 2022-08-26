@@ -189,8 +189,15 @@ sub prepareDataServices {
 	my $workloadCount = $self->workloadDriver->{workloadCount};
 	$workloadNum = $workloadCount > 1 ? $workloadNum : "";
 
-	$console_logger->info(
+	if($workloadCount==1) {
+		$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload.\n" );	
+	}
+	else {
+		$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+	}
+	
 
 	# Start the data services
 	if ($reloadDb) {

@@ -5,7 +5,6 @@ package AuctionWorkloadDriver;
 use Moose;
 use MooseX::Storage;
 use MooseX::ClassAttribute;
-
 use WorkloadDrivers::WorkloadDriver;
 use AppInstance::AppInstance;
 use Parameters qw(getParamValue setParamValue);
@@ -1245,15 +1244,15 @@ sub startRun {
 					my $impl             = $self->getParamValue('workloadImpl');
 
 					if ($usingFixedLoadPathType) {
-						if ($workloadCount==1){
+						if ( $workloadCount==1 ) {
 							$console_logger->info(
 							"Running Workload: $impl.  Run will finish in approximately $runLengthMinutes minutes."
-						);	
+							);	
 						}
-						else{
+						else {
 							$console_logger->info(
 							"Running Workload $outputWorkloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
-						);
+							);
 						}
 						
 						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
@@ -1360,10 +1359,10 @@ sub startRun {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
 
-								if ($workloadCount==1){
+								if ( $workloadCount==1 ) {
 									$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 								}
-								else{
+								else {
 									$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
 								}
 							}
@@ -1414,10 +1413,10 @@ sub startRun {
             foreach my $nameStr (keys %nameStringToInstances) {
 				# Formating the string to remove the extra spave when workloadCount ==1
 				my $instancesString ="";
-				if ($workloadCount==1){
+				if ( $workloadCount==1 ) {
 					$instancesString = "[appInstance";	
 				}
-				else{
+				else {
 					$instancesString = "[$tempOutputWorkloadNum appInstance";
 				}
             	my $instancesListRef = $nameStringToInstances{$nameStr};
@@ -1446,10 +1445,10 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	if ($workloadCount==1){
+	if ( $workloadCount==1 ) {
 		$console_logger->info("Workload Run is complete");	
 	}
-	else{
+	else {
 		$console_logger->info("Workload $outputWorkloadNum: Run is complete");
 	}
 	
@@ -1497,10 +1496,10 @@ sub startRun {
 
 	my $impl = $self->getParamValue('workloadImpl');
 
-	if ($workloadCount==1){
+	if ( $workloadCount==1 ) {
 		$console_logger->info("Workload finished");
 	}
-	else{
+	else {
 		$console_logger->info("Workload $outputWorkloadNum finished");
 	}
 
@@ -2440,10 +2439,10 @@ sub parseStats {
 			}
 		}
 
-		if ($workloadCount==1){
+		if ( $workloadCount==1 ) {
 			$console_logger->info("appInstance $appInstanceName: $resultString");
 		}
-		else{
+		else {
 			$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
 		}
 		

@@ -876,10 +876,10 @@ sub writeUsersTxt {
 			my $users = $appInstance->users;
 			if ($users) {
 				my $outString = "";
-				if ($workloadCount==1){
+				if ( $workloadCount==1 ) {
 					$outString      = "App Instance $instanceNum: $users Users";
 				}
-				else{
+				else {
 					$outString      = "$outputWorkloadNum App Instance $instanceNum: $users Users";
 				}
 				$console_logger->info($outString);

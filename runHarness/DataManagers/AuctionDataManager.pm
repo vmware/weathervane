@@ -121,8 +121,16 @@ sub prepareDataServices {
 		return 0;
 	};
 
-	$console_logger->info(
+	if( $workloadNum==1 ) {
+		$console_logger->info(
+		"Configuring and starting data services for appInstance $appInstanceNum of workload.\n" );
+	}
+	else {
+		$console_logger->info(
 		"Configuring and starting data services for appInstance $appInstanceNum of workload $workloadNum.\n" );
+	}
+
+	
 
 	# Start the data services
 	if ($reloadDb) {

@@ -36,9 +36,10 @@ sub usage {
     print "                      The proxy is currently only used for images that use curl in their Dockerfiles.\n";
     print "                      If required by your proxy, the url should include the port, username, and password.\n";
 	# Command line argument to drive deletion of the docker images created
-	print "		--deleteImages : This option drives deletion of the created docker images by this script";
-	print "						 This option when set to true will delete all the created images";
-	print "						 default value for this option is set to true";
+    print "     --deleteImages : This option drives deletion of the created docker images by this script";
+    print "                      This option when set to true will delete all the created images";
+    print "                      default value for this option is set to true";
+
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
 
@@ -50,7 +51,6 @@ my $password = "";
 my $private = '';
 my $http_proxy = '';
 my $https_proxy = '';
-# Command line argument to drive deletion of the docker images created
 my $deleteImages = "true";
 
 my $optionsSuccess = GetOptions('help' => \$help,
@@ -61,7 +61,6 @@ my $optionsSuccess = GetOptions('help' => \$help,
 			'private!' => \$private,
 			'http_proxy=s' => \$http_proxy,
 			'https_proxy=s' => \$https_proxy,
-			#option to drive the deletion of docker images 
 			'deleteImages=s' => \$deleteImages
 			);
 if (!$optionsSuccess) {
@@ -211,8 +210,7 @@ sub removeImages {
 		runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi");
 	}
 	else {
-		print "Skipping the deletion of the images created using the buildDockerImages script.\n";
-		print "The deleteImages option was set to false\n";
+		print "Skipping the deletion of the images created using the buildDockerImages script.The deleteImages option was set to false\n";
 	}
 }
 

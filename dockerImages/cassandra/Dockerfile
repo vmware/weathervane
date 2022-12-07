@@ -15,10 +15,10 @@ COPY cassandra.yaml /cassandra.yaml
 COPY jvm.options /jvm.options
 ARG http_proxy
 
-RUN yum install -y http://mirror.centos.org/centos/7/updates/x86_64/Packages/java-1.8.0-openjdk-1.8.0.322.b06-1.el7_9.x86_64.rpm && \
-	yum install -y http://mirror.centos.org/centos/7/updates/x86_64/Packages/java-1.8.0-openjdk-devel-1.8.0.322.b06-1.el7_9.x86_64.rpm && \
+RUN yum install -y java-1.8.0-openjdk && \
+	yum install -y java-1.8.0-openjdk-devel && \
 	yum install -y python && \
-	yum install -y https://archive.apache.org/dist/cassandra/redhat/311x/cassandra-3.11.10-1.noarch.rpm && \
+	yum install -y cassandra && \
 	yum -y clean all && \
 	mkdir -p /data && \
 	rm /etc/security/limits.d/cassandra.conf && \

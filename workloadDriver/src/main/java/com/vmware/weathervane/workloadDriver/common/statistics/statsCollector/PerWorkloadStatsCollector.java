@@ -92,6 +92,10 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 	public void submitOperationStats(OperationStats operationStats) {
 		logger.debug("submitOperationStats: " + operationStats);
 
+		/*
+		 * Add the operationStats to the list of current stats for this period.
+		 * The list is replaced when a statsInterval completes.
+		 */
 		if (operationStats != null) {
 			synchronized (curStatsListLock) {
 				curStatsList.add(operationStats);

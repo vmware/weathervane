@@ -472,7 +472,7 @@ sub kubernetesDeleteAllForCluster {
 	my $initialRemaining = 0;
 	foreach my $namespace (@namespaceNames) {
 		if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
-			$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+			$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --selector=app=auction --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 			($cmdFailed, $outString) = runCmd($cmd);
 			if ($cmdFailed) {
 				$logger->error("kubernetesDeleteAllForCluster initial get failed namespace $namespace: $cmdFailed");
@@ -506,7 +506,7 @@ sub kubernetesDeleteAllForCluster {
 		my $loopExit = 1;
 		foreach my $namespace (@namespaceNames) {
 			if ($self->useAvailableNamespaces || $namespace =~ /^$matchStr/) {
-				$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
+				$cmd = "kubectl get deployment,statefulset,service,configmap,pod -o=jsonpath='{.items[*].metadata.name}' --selector=app=auction --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString";
 				($cmdFailed, $outString) = runCmd($cmd);
 				if ($cmdFailed) {
 					$logger->error("kubernetesDeleteAllForCluster loop get failed namespace $namespace: $cmdFailed");
@@ -551,7 +551,7 @@ sub _kubernetesDeleteAllForClusterHelper {
 		return;
 	}
 
-	my $cmd = "kubectl get $type -o=jsonpath='{.items[*].metadata.name}' $appendCmdStr";
+	my $cmd = "kubectl get --selector=app=auction $type -o=jsonpath='{.items[*].metadata.name}' $appendCmdStr";
 	my ($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesDeleteAllForClusterHelper get $type failed: $cmdFailed");

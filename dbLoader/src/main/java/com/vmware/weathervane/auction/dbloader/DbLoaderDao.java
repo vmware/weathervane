@@ -365,25 +365,20 @@ public class DbLoaderDao {
 			long duration = Math.round(totalTimeRemaining * 1000);
 			if (duration < 1) duration = 1;
 
-			if (!Epochs.USER.equals(typeOfWork)) {
-				
+			if (!Epochs.USER.equals(typeOfWork)) {		
 				// Compare the work done till now and skip logging if it is smaller than previous step.
-				if (pctDone > prevPctDone) {
-					
+				if (pctDone > prevPctDone) {					
 					// Adjust the duration to complete the data load if it is greater than what was needed for previous step
 					String durationString = String.format(
-						"Loading is %.1f%% complete.",pctDone);
-
+						"Loading is %.1f%% complete. ",pctDone);
 					System.out.println(durationString + messageString);	
-
 					// Save the stats from current step to compare with future steps.
 					prevPctDone = pctDone;
 					prevDuration = duration;
 				}
 				else{
-
 					String durationString = String.format(
-						"Loading db continues for current step.");
+						"Loading db continues. ");
 					System.out.println(durationString + messageString);
 				}
 			}

@@ -66,6 +66,8 @@ public class DbLoaderDao {
 	private static Random random = new Random();
 	private static final int minItemsPerAuction = 10;
 	private static final int maxItemsPerAuction = 20;
+	private static double prevPctDone = 0;
+	private static long prevDuration =0;
 
 	@Inject
 	private AuctionDao auctionDao;
@@ -364,14 +366,26 @@ public class DbLoaderDao {
 			if (duration < 1) duration = 1;
 
 			if (!Epochs.USER.equals(typeOfWork)) {
-				String durationString = String.format(
-						"Loading is %.1f%% complete.  Current estimate of remaining load time is %d hours, %d min, %d sec. ",
-						pctDone, TimeUnit.MILLISECONDS.toHours(duration),
-						TimeUnit.MILLISECONDS.toMinutes(duration)
-								- TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
-						TimeUnit.MILLISECONDS.toSeconds(duration)
-								- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
-				System.out.println(durationString + messageString);
+				
+				// Compare the work done till now and skip logging if it is smaller than previous step.
+				if (pctDone > prevPctDone) {
+					
+					// Adjust the duration to complete the data load if it is greater than what was needed for previous step
+					String durationString = String.format(
+						"Loading is %.1f%% complete.",pctDone);
+
+					System.out.println(durationString + messageString);	
+
+					// Save the stats from current step to compare with future steps.
+					prevPctDone = pctDone;
+					prevDuration = duration;
+				}
+				else{
+
+					String durationString = String.format(
+						"Loading db continues for current step.");
+					System.out.println(durationString + messageString);
+				}
 			}
 
 			/*

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +39,8 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 	
 	private List<Operation> operations = null;
 	
-	ReentrantReadWriteLock curStatsRWLock = new ReentrantReadWriteLock(true);
 	private List<OperationStats> curStatsList = new ArrayList<>();
+	private Object curStatsListLock = new Object();
 	
 	private Map<String, StatsSummary> specNameToIntervalStatsMap = new HashMap<String, StatsSummary>();
 	
@@ -95,20 +94,14 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 
 		/*
 		 * Add the operationStats to the list of current stats for this period.
-		 * The read lock prevents the list from being replaced while this sample
-		 * is added.  The list is replaced when a statsInterval completes.
+		 * The list is replaced when a statsInterval completes.
 		 */
-		curStatsRWLock.readLock().lock();
-		logger.debug("submitOperationStats locked readLock: " + operationStats);
-		try {
-			if (operationStats != null) {
+		if (operationStats != null) {
+			synchronized (curStatsListLock) {
 				curStatsList.add(operationStats);
-			} else {
-				logger.warn("submitOperationStats for workload {}, received null operationStats", workloadName);
 			}
-		} finally {
-			curStatsRWLock.readLock().unlock();
-			logger.debug("submitOperationStats unlocked readLock: " + operationStats);
+		} else {
+			logger.warn("submitOperationStats for workload {}, received null operationStats", workloadName);
 		}
 	}
 
@@ -127,15 +120,10 @@ public class PerWorkloadStatsCollector implements StatsCollector {
 		 * counting results from the new interval
 		 */
 		List<OperationStats> curPeriodOpStats;
-		curStatsRWLock.writeLock().lock();
-		logger.info("statsIntervalComplete: Got writeLock" + completeMessage);
-		try {
+		synchronized (curStatsListLock) {
 			curPeriodOpStats = curStatsList;
 			curStatsList = new ArrayList<>();
-		} finally {
-			curStatsRWLock.writeLock().unlock();
 		}
-		logger.info("statsIntervalComplete: Released writeLock" + completeMessage);
 
 		/*
 		 * Compute a StatsSummary for the operationStats in this interval, ignoring

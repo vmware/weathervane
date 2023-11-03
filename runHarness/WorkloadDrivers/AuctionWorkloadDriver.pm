@@ -5,7 +5,6 @@ package AuctionWorkloadDriver;
 use Moose;
 use MooseX::Storage;
 use MooseX::ClassAttribute;
-
 use WorkloadDrivers::WorkloadDriver;
 use AppInstance::AppInstance;
 use Parameters qw(getParamValue setParamValue);
@@ -1245,9 +1244,17 @@ sub startRun {
 					my $impl             = $self->getParamValue('workloadImpl');
 
 					if ($usingFixedLoadPathType) {
-						$console_logger->info(
+						if ( $workloadCount==1 ) {
+							$console_logger->info(
+							"Running Workload: $impl.  Run will finish in approximately $runLengthMinutes minutes."
+							);	
+						}
+						else {
+							$console_logger->info(
 							"Running Workload $outputWorkloadNum: $impl.  Run will finish in approximately $runLengthMinutes minutes."
-						);
+							);
+						}
+						
 						$logger->debug("Workload will ramp up for $rampUp. suffix = $suffix");
 					}
 				}
@@ -1351,7 +1358,13 @@ sub startRun {
 								} else {
 									$metricsStr = ", $successStr, throughput:$tptStr, avgRT:$rtStr";									
 								}
-								$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+
+								if ( $workloadCount==1 ) {
+									$console_logger->info("   [appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								}
+								else {
+									$console_logger->info("   [$tempOutputWorkloadNum appInstance: $appInstanceNum] Ended: $nameStr${metricsStr}.");
+								}
 							}
 						}
 					}
@@ -1398,7 +1411,14 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-            	my $instancesString = "[$tempOutputWorkloadNum appInstance";
+				# Formating the string to remove the extra spave when workloadCount ==1
+				my $instancesString ="";
+				if ( $workloadCount==1 ) {
+					$instancesString = "[appInstance";	
+				}
+				else {
+					$instancesString = "[$tempOutputWorkloadNum appInstance";
+				}
             	my $instancesListRef = $nameStringToInstances{$nameStr};
             	if ($#{$instancesListRef} == 0) {
             		$instancesString .= ": " . $instancesListRef->[0];
@@ -1425,7 +1445,13 @@ sub startRun {
 		}
 		sleep 60;
 	}
-	$console_logger->info("workload $outputWorkloadNum: Run is complete");
+	if ( $workloadCount==1 ) {
+		$console_logger->info("Workload Run is complete");	
+	}
+	else {
+		$console_logger->info("Workload $outputWorkloadNum: Run is complete");
+	}
+	
 	kill(9, $pid);
 	
 	my $destinationPath = $logDir . "/statistics/workloadDriver";
@@ -1469,7 +1495,13 @@ sub startRun {
 	close $logHandle;
 
 	my $impl = $self->getParamValue('workloadImpl');
-	$console_logger->info("Workload $outputWorkloadNum finished");
+
+	if ( $workloadCount==1 ) {
+		$console_logger->info("Workload finished");
+	}
+	else {
+		$console_logger->info("Workload $outputWorkloadNum finished");
+	}
 
 	return 1;
 }
@@ -2406,7 +2438,13 @@ sub parseStats {
 								. "\nIncrease maxUsers and try again.";				
 			}
 		}
-		$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
+
+		if ( $workloadCount==1 ) {
+			$console_logger->info("appInstance $appInstanceName: $resultString");
+		}
+		else {
+			$console_logger->info("$outputWorkloadNum appInstance $appInstanceName: $resultString");
+		}
 		
 		my $maxPassIntervalName = $workloadStatus->{"maxPassIntervalName"};
 		$logger->debug("parseStats: Parsing workloadStatus for workload " . $appInstanceName 

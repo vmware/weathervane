@@ -312,7 +312,7 @@ project(':workloadDriver') {
 	dependencies { 
 
 		compile "io.netty:netty-all:$nettyVersion"
-		compile "io.netty:netty-tcnative:2.0.25.Final:linux-x86_64-fedora"
+		compile "io.netty:netty-tcnative-boringssl-static:2.0.61.Final:linux-x86_64"
 
 		compile "org.springframework.boot:spring-boot-starter-web"
 		compile "org.springframework.boot:spring-boot-starter-actuator"

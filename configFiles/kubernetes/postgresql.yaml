@@ -88,7 +88,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - 'cat /tmp/isReady && /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432'
+            - 'cat /tmp/isReady && /usr/bin/pg_isready -h 127.0.0.1 -p 5432'
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 60

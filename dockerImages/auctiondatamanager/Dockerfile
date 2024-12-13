@@ -1,7 +1,6 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-FROM namespace/weathervane-centos7:version
-MAINTAINER weathervane-dev@vmware.com
+FROM namespace/weathervane-baseos:version
 
 COPY entrypoint.sh /entrypoint.sh
 COPY dbLoader.jar /dbLoader.jar
@@ -14,10 +13,13 @@ COPY images /images
 COPY items.json /items.json
 ARG http_proxy
 	
-RUN yum install -y java-1.8.0-openjdk && \
-	yum install -y java-1.8.0-openjdk-devel && \
-    yum -y clean all && \
-    chmod +x /entrypoint.sh
+RUN \
+	apt-get update && \
+	apt-get install -y openjdk-8-jdk && \
+	chmod +x /entrypoint.sh && \
+	apt-get autoremove -y && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
 ENV JVMOPTS="-Xmx500m -Xms500m -XX:+AlwaysPreTouch" LOADDATA=1 PREPDATA=0 MAXUSERS=1000 USERS=1000 USERSPERAUCTIONSCALEFACTOR="15.0"
 ENV SPRINGPROFILESACTIVE="postgresql,ehcache,imagesInCassandra,singleRabbit"

@@ -46,7 +46,7 @@ public class DBLoader {
 	private static String creditLimitDefault = "1000000";
 	private static String maxUsersDefault = "120";
 	private static String imageDirDefault = "images";
-	private static List<Thread> threadList = new ArrayList<Thread>();
+	private static List<Thread> threadList;
 
 	private static DbLoaderDao dbLoaderDao;
 	private static AuctionMgmtDao auctionMgmtDao;
@@ -369,6 +369,7 @@ public class DBLoader {
 
 		long startTime = System.currentTimeMillis();
 
+		threadList = new ArrayList<Thread>();
 		/*
 		 * First create all of the users. We need the user info to populate the
 		 * the auctioneer, etc. fields of auctions and items
@@ -418,6 +419,7 @@ public class DBLoader {
 		for (Thread thread : threadList) {
 			thread.join();
 		}
+		threadList = new ArrayList<Thread>();
 
 		long usersDoneMillis = System.currentTimeMillis();
 		long duration = usersDoneMillis - startTime;
@@ -481,6 +483,8 @@ public class DBLoader {
 		for (Thread thread : threadList) {
 			thread.join();
 		}
+		threadList = new ArrayList<Thread>();
+
 		long currentDoneMillis = System.currentTimeMillis();
 		duration = currentDoneMillis - currentStartMillis;
 		durationString = String.format(
@@ -534,6 +538,7 @@ public class DBLoader {
 			for (Thread thread : threadList) {
 				thread.join();
 			}
+			threadList = new ArrayList<Thread>();
 
 			long historyDoneMillis = System.currentTimeMillis();
 			duration = historyDoneMillis - usersDoneMillis;
@@ -589,6 +594,7 @@ public class DBLoader {
 			for (Thread thread : threadList) {
 				thread.join();
 			}
+			threadList = new ArrayList<Thread>();
 
 			long futureDoneMillis = System.currentTimeMillis();
 			duration = futureDoneMillis - historyDoneMillis;
@@ -621,6 +627,7 @@ public class DBLoader {
 				thread.join();
 			}
 		}
+		imageStoreThreads = null;
 
 		currentDoneMillis = System.currentTimeMillis();
 		duration = currentDoneMillis - startTime;

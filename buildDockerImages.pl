@@ -38,7 +38,7 @@ sub usage {
 	# Command line argument to drive deletion of the docker images created
     print "     --deleteImages : This option drives deletion of the created docker images by this script";
     print "                      This option when set to true will delete all the created images";
-    print "                      default value for this option is set to true";
+    print "                      default value for this option is set to false";
 
     print "If the list of image names is empty, then all images are built and pushed.\n";
 }
@@ -51,7 +51,7 @@ my $password = "";
 my $private = '';
 my $http_proxy = '';
 my $https_proxy = '';
-my $deleteImages = "true";
+my $deleteImages = "false";
 
 my $optionsSuccess = GetOptions('help' => \$help,
 			'host=s' => \$host,
@@ -67,7 +67,7 @@ if (!$optionsSuccess) {
   die "Error for command line options.\n";
 }
 
-my @imageNames = qw(centos7 runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer cassandra nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
+my @imageNames = qw(baseos runharness auctiondatamanager auctionworkloaddriver auctionappserverwarmer cassandra nginx postgresql rabbitmq zookeeper tomcat auctionbidservice);
 if ($#ARGV >= 0) {
 	@imageNames = @ARGV;
 }
@@ -95,7 +95,7 @@ sub rewriteDockerfile {
 	open(my $fileout, ">$dirName/Dockerfile") or die "Can't open file $dirName/Dockerfile for writing: $!\n";
 	while (my $inline = <$filein>) {
 		if ($inline =~ /^FROM/) {
-			print $fileout "FROM $namespace/weathervane-centos7:$version\n";
+			print $fileout "FROM $namespace/weathervane-baseos:$version\n";
 		} else {
 			print $fileout $inline;
 		}
@@ -111,7 +111,7 @@ sub cleanupDockerfile {
 
 sub buildImage {
 	my ($imageName, $buildArgsListRef, $fileout, $namespace, $version, $logFile) = @_;
-	if ($imageName ne "centos7") {
+	if ($imageName ne "baseos") {
 		rewriteDockerfile("./dockerImages/$imageName", $namespace, $version);
 	}
 
@@ -125,7 +125,7 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker build failed with exitValue $exitValue, check $logFile.\n";
-		if ($imageName ne "centos7") {
+		if ($imageName ne "baseos") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
@@ -136,17 +136,21 @@ sub buildImage {
 	$exitValue=$? >> 8;
 	if ($exitValue) {
 		print "Error: docker push failed with exitValue $exitValue, check $logFile.\n";
-		if ($imageName ne "centos7") {
+		if ($imageName ne "baseos") {
 			cleanupDockerfile("./dockerImages/$imageName");
 		}
 		cleanupAfterBuild($fileout);
 		exit(-1);
 	}
 
-	if ($imageName ne "centos7") {
+	if ($imageName ne "baseos") {
 		cleanupDockerfile("./dockerImages/$imageName");
 	}
 
+	if ($deleteImages eq "true") {
+		print "Removing docker image for $namespace/weathervane-$imageName:$version (deleteImages true).\n";
+		runAndLog($fileout, "docker images | grep -E \"$namespace/weathervane-$imageName\\s+$version \" | awk '{print \$3}' | xargs -r docker rmi");
+	}
 }
 
 sub setupForBuild {
@@ -201,24 +205,8 @@ sub setupForBuild {
 	runAndLog($fileout, "cp -r ./workloadConfiguration ./dockerImages/runharness/workloadConfiguration");
 }
 
-sub removeImages {
-	my ($fileout) = @_;
-	
-	if ($deleteImages eq "true") {
-		print "Deleting the images created using the buildDockerImages script.\n";
-		#Catching any left-over images
-		runAndLog($fileout, "docker images -a | grep \"weathervane*\\|openjdk*\\|centos*\" | awk '{print \$3}' | xargs docker rmi");
-	}
-	else {
-		print "Skipping the deletion of the images created using the buildDockerImages script.The deleteImages option was set to false\n";
-	}
-}
-
 sub cleanupAfterBuild {
 	my ($fileout) = @_;
-	#cleaning extraneous files from previous runs
-	removeImages($fileout);
-	
 	runAndLog($fileout, "rm -rf ./dockerImages/nginx/html");
 	runAndLog($fileout, "rm -f ./dockerImages/auctionappserverwarmer/auctionAppServerWarmer.jar");
 	runAndLog($fileout, "rm -rf ./dockerImages/tomcat/apache-tomcat-auction1/webapps");

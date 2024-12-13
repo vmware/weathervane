@@ -33,6 +33,7 @@ metadata:
 spec:
   serviceName: nginx
   replicas: 1
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: auction

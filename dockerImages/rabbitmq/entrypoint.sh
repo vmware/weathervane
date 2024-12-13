@@ -25,7 +25,8 @@ newuid=$((4096 + RANDOM))
 olduid=$(id -u rabbitmq)
 echo "Assigning random uid $newuid to rabbitmq user with uid $olduid"
 usermod -u $newuid rabbitmq
-find / -user $olduid  -exec chown -h $newuid {} \;
+find /var -user $olduid  -exec chown -h $newuid {} \;
+find /etc -user $olduid  -exec chown -h $newuid {} \;
 
 echo "Set file permissions" 
 chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
@@ -46,10 +47,11 @@ if [ $# -gt 0 ]; then
 else
     echo "Start RabbitMQ: sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &"
 	setsid sudo -u rabbitmq RABBITMQ_NODE_PORT=${RABBITMQ_NODE_PORT} RABBITMQ_DIST_PORT=${RABBITMQ_DIST_PORT} rabbitmq-server &
+        sleep 10
 	until perl /isUp.pl
 	do
 		echo "Waiting for RabbitMQ to come up";
-		sleep 20;
+		sleep 10;
 	done
 	echo "RabbitMQ is up"
 	rabbitmqctl add_user auction auction

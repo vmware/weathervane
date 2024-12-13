@@ -30,7 +30,7 @@ if [ $# -gt 0 ]; then
 	eval "$* &"
 else
     cd /mnt/zookeeper ; setsid /opt/zookeeper/bin/zkServer.sh start
-    tail -F -n1 /mnt/zookeeper/zookeeper.out
+    tail -F -n1 /opt/zookeeper/logs/zookeeper--server-*.out
 fi
 
 pid="$!"

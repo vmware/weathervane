@@ -1,12 +1,9 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-FROM namespace/weathervane-centos7:version
-MAINTAINER weathervane-dev@vmware.com
+FROM namespace/weathervane-baseos:version
 
-ENV PG_MAJOR 9.3
-ENV PG_MAJOR_PKG 93
-ENV PGDATA /var/lib/pgsql/${PG_MAJOR}/data
 ARG http_proxy
+ARG DEBIAN_FRONTEND=noninteractive
 
 COPY dbScripts /dbScripts
 COPY pg-init.sh /pg-init.sh
@@ -17,18 +14,22 @@ COPY configure.pl /configure.pl
 COPY dumpStats.pl /dumpStats.pl
 COPY postgresql.conf /postgresql.conf
 COPY clearAfterStart.sh /clearAfterStart.sh
-COPY pgdg-93-centos.repo /etc/yum/repos.d/pgdg-93-centos.repo
-COPY RPM-GPG-KEY-PGDG-93 /etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
 
-RUN mkdir -p /mnt && \
-	echo \"exclude=postgresql*\" >> /etc/yum.repos.d/CentOS-Base.repo && \
-	yum install -y postgresql${PG_MAJOR_PKG} && \
-	yum install -y postgresql${PG_MAJOR_PKG}-server && \
+RUN \
+	apt-get update && \
+	mkdir -p /mnt && \
+	apt-get install -y lsb-release && \
+	curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg && \
+	echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list && \
+	apt-get update && \
+	apt-get install -y postgresql-9.6 && \
 	chmod 777 /pg-init.sh && \
 	chmod 777 /entrypoint.sh && \
 	chmod 777 /cleanup.sh && \
 	chmod 777 /clearAfterStart.sh && \
-  	yum -y clean all 
+	localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 && \
+	apt-get autoremove -y && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
-
-ENTRYPOINT ["/entrypoint.sh"]  
+ENTRYPOINT ["/entrypoint.sh"]

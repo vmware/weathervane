@@ -6,7 +6,7 @@ sigterm()
 {
    echo "signal TERM received. pid = $pid"
    rm -f /fifo
-   sudo -u postgres /usr/pgsql-9.3/bin/pg_ctl stop -D /mnt/dbData/postgresql 
+   sudo -u postgres /usr/lib/postgresql/9.6/bin/pg_ctl stop -D /mnt/dbData/postgresql
    exit 0
 }
 

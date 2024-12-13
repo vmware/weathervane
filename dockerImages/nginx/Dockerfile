@@ -1,13 +1,15 @@
 # Copyright 2017-2019 VMware, Inc.
 # SPDX-License-Identifier: BSD-2-Clause
-FROM namespace/weathervane-centos7:version
-MAINTAINER weathervane-dev@vmware.com
+FROM namespace/weathervane-baseos:version
 
-COPY nginx.repo /etc/yum.repos.d/nginx.repo
 ARG http_proxy
 
-RUN 	yum install -y nginx && \
-	yum -y clean all 
+RUN \
+	apt-get update && \
+	apt-get install -y nginx && \
+	apt-get autoremove -y && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
 COPY html /usr/share/nginx/html
 COPY nginx /etc/nginx
@@ -22,6 +24,9 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
     chmod +x /generateCert.sh && \
     chmod +x /entrypoint.sh && \
     mkdir -p /etc/pki/tls/certs && \
-    mkdir -p /etc/pki/tls/private 
+    mkdir -p /etc/pki/tls/private && \
+    groupadd nginx && \
+    useradd -g nginx nginx && \
+    mkdir -p /var/cache/nginx
 
-ENTRYPOINT ["/entrypoint.sh"]  
+ENTRYPOINT ["/entrypoint.sh"]

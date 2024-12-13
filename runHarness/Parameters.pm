@@ -2468,22 +2468,6 @@ $parameters{"postgresqlConfDir"} = {
 	"showUsage" => 0,
 };
 
-$parameters{"postgresqlHome"} = {
-	"type"      => "=s",
-	"default"   => "/usr/pgsql-9.3",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
-$parameters{"postgresqlServiceName"} = {
-	"type"      => "=s",
-	"default"   => "postgresql-9.3",
-	"parent"    => "appInstance",
-	"usageText" => "",
-	"showUsage" => 0,
-};
-
 $parameters{"cassandraUseNamedVolumes"} = {
 	"type"      => "!",
 	"default"   => JSON::false,

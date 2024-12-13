@@ -21,23 +21,23 @@ if [ "$MODE" == 'firstrun' ]; then
 
   # Setup postgres
   echo "Initialize postgres" >&2
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/initdb -D /mnt/dbData/postgresql
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/initdb -D /mnt/dbData/postgresql
 
   cp /pg_hba.conf /mnt/dbData/postgresql/.
 
   # Start postgresql
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -w start
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/pg_ctl -D /mnt/dbData/postgresql -w start
 
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role auction with superuser createdb login password 'auction;'"
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create role root with superuser createdb login password 'auction;'"
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database auction owner auction;"
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -U postgres -c "create database root owner root;"
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -U postgres -c "create role auction with superuser createdb login password 'auction;'"
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -U postgres -c "create role root with superuser createdb login password 'auction;'"
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -U postgres -c "create database auction owner auction;"
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -U postgres -c "create database root owner root;"
 
   # Create the database and tables
   . /clearAfterStart.sh
   
   # Stop postgresql
-  sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl -D /mnt/dbData/postgresql -m fast -w stop
+  sudo -u postgres /usr/lib/postgresql/9.6/bin/pg_ctl -D /mnt/dbData/postgresql -m fast -w stop
 
   # put data and logs in the places that Weathervane expects
   mv /mnt/dbData/postgresql/pg_xlog/* /mnt/dbLogs/postgresql/.
@@ -53,27 +53,27 @@ chmod 700 /mnt/dbData/postgresql
 rm -f /mnt/dbData/serverlog
 rm -f /mnt/dbData/pg_log/*
 rm -f /mnt/dbData/postgresql/postmaster.pid
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_resetxlog -f /mnt/dbData/postgresql
+sudo -u postgres /usr/lib/postgresql/9.6/bin/pg_resetxlog -f /mnt/dbData/postgresql
 
 echo "Configure postgresql.conf"
 perl /configure.pl	
 
 # Start postgresql
 echo "Starting PostgreSQL"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/pg_ctl start -D /mnt/dbData/postgresql 
+sudo -u postgres /usr/lib/postgresql/9.6/bin/pg_ctl start -D /mnt/dbData/postgresql
 
-while /usr/pgsql-9.3/bin/pg_isready -h 127.0.0.1 -p 5432 ; [ $? -ne 0 ]; do
+while /usr/lib/postgresql/9.6/bin/pg_isready -h 127.0.0.1 -p 5432 ; [ $? -ne 0 ]; do
     echo "Waiting for PostgreSQL to be ready"
 done
 
 # Recreate indices
 echo "Reindex"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "reindex database auction;"
+sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "reindex database auction;"
 
 # Force a vacuum and checkpoint
 echo "Force vacuum"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
+sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "vacuum analyze;"
 echo "Force checkpoint"
-sudo -u postgres /usr/pgsql-${PG_MAJOR}/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"
+sudo -u postgres /usr/lib/postgresql/9.6/bin/psql -p ${POSTGRESPORT} -U auction -d auction -c "checkpoint;"
 
 touch /tmp/isReady

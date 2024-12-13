@@ -43,7 +43,7 @@ my $dbLoaderJavaOptions = "";
 
 my $dbLoaderClasspath = "/dbLoader.jar:/dbLoaderLibs/*:/dbLoaderLibs";
 
-my $cmdString = "java $jvmopts $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
+my $cmdString = "java -XX:+PrintGCDetails -Xloggc:/gc-loadData.log $jvmopts $dbLoaderJavaOptions -Dwkld=W${workloadNum}I${appInstanceNum}" .
 				" -cp $dbLoaderClasspath -Dspring.profiles.active=\"$springProfilesActive\"" .
 				" -DDBHOSTNAME=$dbHostname -DDBPORT=$dbPort -DCASSANDRA_CONTACTPOINTS=$cassandraContactpoints" . 
 				" -DCASSANDRA_PORT=$cassandraPort com.vmware.weathervane.auction.dbloader.DBLoader $dbLoaderOptions";

@@ -22,7 +22,7 @@ chmod 400 /fifo
 if [ $# -gt 0 ]; then
 	eval "$* &"
 else
-	setsid java $JVMOPTS -DwkldNum=$WORKLOADNUM -cp /workloadDriver.jar:/workloadDriverLibs/*:/workloadDriverLibs/ org.springframework.boot.loader.JarLauncher --port=$PORT &
+	setsid java $JVMOPTS -DwkldNum=$WORKLOADNUM -Djava.library.path=/usr/lib/x86_64-linux-gnu/jni -cp /workloadDriver.jar:/workloadDriverLibs/*:/workloadDriverLibs/ org.springframework.boot.loader.JarLauncher --port=$PORT &
 fi
 
 pid="$!"

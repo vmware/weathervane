@@ -220,8 +220,8 @@ sub prepareData {
 	else {
 		$console_logger->info( "Data is already loaded for appInstance "
 			  . "$appInstanceNum of workload $workloadNum." );
+		$self->compactDataBeforePrepare( $users, $logHandle );
 	}
-
 	$console_logger->info( "Preparing auctions and warming data-services for for appInstance "
 				  . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
@@ -349,6 +349,16 @@ sub cleanData {
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServerRef (@$nosqlServersRef) {
 #		$nosqlServerRef->cleanData($users, $logHandle);
+	}
+}
+
+sub compactDataBeforePrepare {
+	my ( $self, $users, $logHandle ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
+
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	foreach my $nosqlServerRef (@$nosqlServersRef) {
+		$nosqlServerRef->compactDataBeforePrepare($users, $logHandle);
 	}
 }
 

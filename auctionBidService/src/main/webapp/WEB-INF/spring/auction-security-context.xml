@@ -11,13 +11,15 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 
 	<http pattern="/images/**" security="none"/>
 
-	<http create-session="stateless" entry-point-ref="entryPoint" use-expressions="true">
+	<http create-session="stateless" entry-point-ref="entryPoint" use-expressions="true" disable-url-rewriting="false">
+		<headers disabled="true"/>
+		<csrf disabled="true"/>
 		<intercept-url pattern="/javasimon/**" access="permitAll" />
 		<intercept-url pattern="/healthCheck" access="permitAll" />
 		<intercept-url pattern="/**" access="permitAll" method="OPTIONS" />
 		<intercept-url pattern="/bid/prepareForShutdown" access="permitAll" method="GET" />
 		<intercept-url pattern="/bid/release" access="permitAll" method="GET" />
-		<intercept-url pattern="/**" access="hasRole('watcher')" />
+		<intercept-url pattern="/**" access="hasAuthority('watcher')" />
 		<custom-filter ref="restPreauthFilter" position="PRE_AUTH_FILTER" />
 	</http>
 

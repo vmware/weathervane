@@ -4,7 +4,7 @@ evaluationDependsOn(':auctionApp')
 
 buildscript {
 	ext {
-		springBootVersion = '1.5.17.RELEASE'
+		springBootVersion = '2.7.14'
 	}
 	repositories {
 		mavenCentral()
@@ -17,68 +17,123 @@ buildscript {
 allprojects {
 	version = "1.0"
 	group = 'com.vmware.weathervane'
-	
+
 	apply plugin: "java"
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8
-		
+
 	repositories {
 		mavenCentral()
 	}
-
 }
 
 configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBidService' || it.name == 'dbLoader' })  {
 	apply plugin: "eclipse"
 	apply plugin: "eclipse-wtp"
 	apply plugin: 'maven'
-	
+
 	configurations {
 		all*.exclude group: 'commons-logging', module: 'commons-logging'
+		all*.exclude group: 'log4j', module: 'log4j'
+		all*.exclude group: 'io.netty', module: 'netty'
 	}
-	
+
 	ext {
-		orgSpringframeworkVersion = "4.3.24.RELEASE"
-		orgSpringframeworkSecurityVersion = "3.2.9.RELEASE"
+		orgSpringframeworkVersion = "5.2.25.RELEASE"
+		orgSpringframeworkSecurityVersion = "5.8.5"
 		orgHibernateVersion = "4.3.11.Final"
 		orgAspectjVersion = "1.8.8"
 		orgSlf4jVersion = "1.7.13"
-		logbackVersion = "1.1.3"
-		orgSpringframeworkAmqpVersion = "1.7.13.RELEASE"
-		jacksonVersion = "2.8.3"
-		commonsFileuploadVersion = "1.3.1"
-		junitVersion = "4.12"
+		logbackVersion = "1.2.12"
+		orgSpringframeworkAmqpVersion = "2.4.14"
+		jacksonVersion = "2.15.2"
+		commonsFileuploadVersion = "1.5"
+		junitVersion = "4.13.2"
 		mockitoVersion = "1.10.19"
-		postgreSQLJdbcVersion = "9.4.1212.jre7"
+		postgreSQLJdbcVersion = "42.6.1"
 		dbcpVersion = "1.4"
-		springDataCassandraVersion = "1.5.22.RELEASE"
+		springDataCassandraVersion = "1.5.23.RELEASE"
 		javasimonVersion = "3.5.2"
 		curatorVersion = "2.11.0"
-		ehcacheVersion = "2.10.0"
-		ignitecoreVersion = "1.7.0"
-		ignitespringVersion = "1.7.0"
+		ehcacheVersion = "2.10.9.2"
+		ignitecoreVersion = "2.15.0"
+		ignitespringVersion = "2.15.0"
 	}
-	
-	dependencies {	
-	
-		compile "org.springframework:spring-context:$orgSpringframeworkVersion" 
+
+	dependencies {
+		constraints {
+			implementation("net.sf.ehcache:ehcache") {
+				version {
+					strictly("2.10.9.2")
+				}
+			}
+		}
+
+		constraints {
+				implementation("io.netty:netty-common") {
+						version {
+								strictly("4.1.96.Final")
+						}
+				}
+		}
+		constraints {
+				implementation("io.netty:netty-buffer") {
+						version {
+								strictly("4.1.96.Final")
+						}
+				}
+		}
+		constraints {
+				implementation("io.netty:netty-transport") {
+						version {
+								strictly("4.1.96.Final")
+						}
+				}
+		}
+		constraints {
+				implementation("io.netty:netty-handler") {
+						version {
+								strictly("4.1.96.Final")
+						}
+				}
+		}
+		constraints {
+				implementation("io.netty:netty-codec") {
+						version {
+								strictly("4.1.96.Final")
+						}
+				}
+		}
+
+		modules {
+			module("dom4j:dom4j") {
+				replacedBy("org.dom4j:dom4j", "security update")
+			}
+		}
+
+		implementation group: 'org.dom4j', name: 'dom4j', version: '2.1.4'
+
 		compile "org.springframework:spring-context-support:$orgSpringframeworkVersion"
 		compile "org.springframework:spring-webmvc:$orgSpringframeworkVersion"
 		compile "org.springframework:spring-orm:$orgSpringframeworkVersion"
-		compile "org.springframework:spring-test:$orgSpringframeworkVersion"		
+		compile "org.springframework:spring-test:$orgSpringframeworkVersion"
 		
 		compile "org.springframework.security:spring-security-core:$orgSpringframeworkSecurityVersion"
 		compile	"org.springframework.security:spring-security-config:$orgSpringframeworkSecurityVersion"
 		compile "org.springframework.security:spring-security-web:$orgSpringframeworkSecurityVersion"
 		compile "org.springframework.security:spring-security-taglibs:$orgSpringframeworkSecurityVersion"
-		compile "org.springframework.amqp:spring-rabbit:$orgSpringframeworkAmqpVersion"
-		compile "org.springframework.data:spring-data-cassandra:$springDataCassandraVersion"
+		compile ("org.springframework.amqp:spring-rabbit:$orgSpringframeworkAmqpVersion") {
+			exclude group: 'org.springframework'
+		}
+		compile ("org.springframework.data:spring-data-cassandra:$springDataCassandraVersion") {
+			exclude group: 'io.netty'
+		}
 
 		compile "org.hibernate:hibernate-entitymanager:$orgHibernateVersion"
-    	compile ("org.hibernate:hibernate-ehcache:$orgHibernateVersion") {
-               exclude group: 'net.sf.ehcache'
-        }
-                
+		compile ("org.hibernate:hibernate-ehcache:$orgHibernateVersion") {
+			exclude group: 'net.sf.ehcache'
+		}
+
 		compile "org.aspectj:aspectjrt:$orgAspectjVersion"
 		compile "org.aspectj:aspectjweaver:$orgAspectjVersion"
 
@@ -86,19 +141,19 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 
 		compile "commons-fileupload:commons-fileupload:$commonsFileuploadVersion"
 		compile "commons-codec:commons-codec:1.10"
-		compile "org.apache.commons:commons-lang3:3.4"
-		
+		compile "org.apache.commons:commons-lang3:3.13.0"
+
 		compile "org.slf4j:slf4j-api:$orgSlf4jVersion"
 		compile "org.slf4j:jcl-over-slf4j:$orgSlf4jVersion"
 		compile "ch.qos.logback:logback-core:$logbackVersion"
 		compile "ch.qos.logback:logback-classic:$logbackVersion"
-		
+
 		compile "javax.inject:javax.inject:1"
 
 		testCompile "junit:junit:$junitVersion"
-	    testCompile "org.mockito:mockito-core:$mockitoVersion"
+		testCompile "org.mockito:mockito-core:$mockitoVersion"
 
-        compile "net.sf.ehcache:ehcache:$ehcacheVersion"
+		compile "net.sf.ehcache:ehcache:$ehcacheVersion"
 
 		compile "org.apache.ignite:ignite-core:$ignitecoreVersion"
 		compile "org.apache.ignite:ignite-spring:$ignitespringVersion"
@@ -107,7 +162,8 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 		compile "org.javasimon:javasimon-spring:$javasimonVersion"
 		compile "org.javasimon:javasimon-console-embed:$javasimonVersion"
 		
-		compile "commons-io:commons-io:2.4"
+		compile "commons-io:commons-io:2.13.0"
+                compile "io.netty:netty-all:4.1.96.Final"
 	}
 
 	eclipse.project {
@@ -124,10 +180,10 @@ configure(subprojects.findAll {it.name == 'auctionApp' || it.name == 'auctionBid
 task cleanDist(type: Delete)  {
 	description "Deletes $rootDir/dist directory"
 	delete 'dist'
- }
+}
 
 clean.dependsOn cleanDist
-  
+
 project(':auctionWeb') {
 	apply plugin: 'war'
 	description = 'Auction Rich-Web Application'
@@ -137,95 +193,113 @@ project(':auctionWeb') {
 	}
 	artifacts { archives zip }
 	task release(dependsOn: build) {
-	     doLast{
+		doLast{
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from zip.archivePath
 			into file("$rootDir/dist/")
-			rename ('auctionWeb-.*zip', 'auctionWeb.zip')			
+			rename ('auctionWeb-.*zip', 'auctionWeb.zip')
 		}
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from war.archivePath
 			into file("$rootDir/dist/")
-			rename ('auctionWeb-.*war', 'auctionWeb.war')			
+			rename ('auctionWeb-.*war', 'auctionWeb.war')
 		}
-	    }
+		}
 	}
 	
 }
 
 project(':auctionApp') {
 	apply plugin: 'war'
-	
+
 	description "Main project for Auction.  Creates war file."
-	
+
 	dependencies {
-				
+		constraints {
+			implementation("org.apache.zookeeper:zookeeper") {
+				version {
+					strictly("3.8.3")
+				}
+			}
+		}
+
 		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
+
 		providedCompile "org.apache.tomcat:tomcat-servlet-api:8.5.31"
 		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
+
 		testCompile "org.hamcrest:hamcrest-library:1.3"
 	}
-	
+
 	task release(dependsOn: build) {
-	     doLast {
+		doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from war.archivePath
 			into file("$rootDir/dist/")
 			rename ('auctionApp-.*war', 'auction.war')
 		}
-	    }
-	}			
+		}
+	}
 }
 
 project(':auctionBidService') {
 	apply plugin: 'war'
-	
+
 	description "Main project for Auction Bid Service.  Creates war file."
-	
+
 	dependencies {
-				
+		constraints {
+			implementation("org.apache.zookeeper:zookeeper") {
+				version {
+					strictly("3.8.3")
+				}
+			}
+		}
+
 		compile "org.apache.curator:curator-recipes:$curatorVersion"
-		
+
 		providedCompile "org.apache.tomcat:tomcat-servlet-api:7.0.42"
 		providedCompile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
-		
+
 		testCompile "org.hamcrest:hamcrest-library:1.3"
 	}
-	
+
 	task release(dependsOn: build) {
-	     doLast{
+		doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
 			from war.archivePath
 			into file("$rootDir/dist/")
 			rename ('auctionBidService-.*war', 'auctionBidService.war')
 		}
-	    }
-	}			
+		}
+	}
 }
 
 project(':auctionAppServerWarmer') {
 	description "AppServer Warmer Kubernetes Sidecar for Auction"	
-	apply plugin: 'org.springframework.boot' 
+	apply plugin: 'org.springframework.boot'
+	apply plugin: 'io.spring.dependency-management'
 	apply plugin: "eclipse"
 	apply plugin: 'maven'
-	
-	jar {
-		baseName = 'auctionAppServerWarmer'
-		version = '1.0'
+
+	configurations {
+		all*.exclude group: 'org.yaml', module: 'snakeyaml'
 	}
-	
+
+	tasks.named("jar") {
+		enabled = false
+	}
+
 	dependencies {
 		compile "org.springframework.boot:spring-boot-starter-web"
 		compile "org.springframework.boot:spring-boot-starter-actuator"
 		compile "org.springframework.boot:spring-boot-starter-hateoas"
 		testCompile "org.springframework.boot:spring-boot-starter-test" 
-   	 	testCompile "com.jayway.jsonpath:json-path"
+		testCompile "com.jayway.jsonpath:json-path"
 	}
 
 	eclipse {
@@ -234,81 +308,82 @@ project(':auctionAppServerWarmer') {
 			 containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7'
 		}
 	}
-	
+
 	task release(dependsOn: build) {
-	    doLast {
+		doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
-			from jar.archivePath
+			from bootJar.archivePath
 			into file("$rootDir/dist/")
-    		rename ('auctionAppServerWarmer-.*jar', 'auctionAppServerWarmer.jar')			 		
+			rename ('auctionAppServerWarmer-.*jar', 'auctionAppServerWarmer.jar')
 		}
-	    }
+		}
 	}
 	
 }
 
 project(':dbLoader') {
-	description "Database Loader for Auction"	
-		apply plugin: 'maven'
-	
+	description "Database Loader for Auction"
+	apply plugin: 'maven'
+
 	jar {
 		baseName = 'dbLoader'
 		version = '1.0'
 	}
-	
+
 	dependencies { 
 		compile "commons-cli:commons-cli:1.2"
-		compile "commons-io:commons-io:2.4"
-		compile "org.json:json:20090211"
+		compile "commons-io:commons-io:2.13.0"
+		compile "org.json:json:20230618"
 		compile "commons-dbcp:commons-dbcp:$dbcpVersion"
 		compile "org.postgresql:postgresql:$postgreSQLJdbcVersion"
 	}
-	
+
 	task release(dependsOn: build) {
-	   doLast {
+		doLast {
 		copy {
 			into file("$rootDir/dist/dbLoaderLibs")
-    		from configurations.runtime
+			from configurations.runtimeClasspath
 		}
 		copy {
 			into file("$rootDir/dist/")
-    		from jar.archivePath
-    		rename ('dbLoader-.*jar', 'dbLoader.jar')			 		
+			from jar.archivePath
+			rename ('dbLoader-.*jar', 'dbLoader.jar')
 		}
-	   }
+		}
 	}
-		
+
 }
 
 project(':workloadDriver') {
-	description "Workload Driver for Weathervane"	
+	description "Workload Driver for Weathervane"
 	apply plugin: 'maven'
-	apply plugin: 'org.springframework.boot' 
+	apply plugin: 'org.springframework.boot'
+	apply plugin: 'io.spring.dependency-management'
 
 	configurations {
 		all*.exclude group: 'commons-logging', module: 'commons-logging'
 		all*.exclude group: 'com.sun.jmx', module: 'jmxri'
 		all*.exclude group: 'com.sun.jdmk', module: 'jmxtools'
-		all*.exclude group: 'javax.jms', module: 'jms'	
-		all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'	
+		all*.exclude group: 'javax.jms', module: 'jms'
+		all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+		all*.exclude group: 'org.yaml', module: 'snakeyaml'
 	}
-	
-	jar {
-		baseName = 'workloadDriver'
-		version = '1.0'
+
+	tasks.named("jar") {
+		enabled = false
 	}
-	
+
 	ext {
-		nettyVersion = "4.1.36.Final"
+		nettyVersion = "4.1.96.Final"
 		apacheCommonsMathVersion = "3.5"
 		coltVersion = "1.2.0"
 		commonsPoolVersion = "1.5.6"
 		junitVersion = "4.12"
 		orgSlf4jVersion = "1.7.13"
-		logbackVersion = "1.1.3"	
+		logbackVersion = "1.2.12"
 	}
-	
+
 	dependencies { 
 
 		compile "io.netty:netty-all:$nettyVersion"
@@ -325,41 +400,39 @@ project(':workloadDriver') {
 		compile "org.slf4j:jcl-over-slf4j:$orgSlf4jVersion"
 		compile "ch.qos.logback:logback-core:$logbackVersion"
 		compile "ch.qos.logback:logback-classic:$logbackVersion"
-				
+
 		compile "commons-pool:commons-pool:$commonsPoolVersion"
-		compile "commons-io:commons-io:2.4"
+		compile "commons-io:commons-io:2.13.0"
 		compile "org.apache.commons:commons-math:2.2"
-		
-		compile "org.json:json:20090211"
-	
+
+		compile "org.json:json:20230618"
+
 		compile "commons-cli:commons-cli:1.2"
 
 		testCompile "junit:junit:$junitVersion"
 	}
-	
+
 	task release(dependsOn: build) {
-	     doLast {
+		doLast {
 		copy {
 			description "Copy artifacts to $rootDir/dist"
-			from jar.archivePath
+			from bootJar.archivePath
 			into file("$rootDir/dist/")
-    		rename ('workloadDriver-.*jar', 'workloadDriver.jar')			 		
+			rename ('workloadDriver-.*jar', 'workloadDriver.jar')
 		}
 		copy {
-	   		into "$rootDir/dist/workloadDriverLibs"
-    		from configurations.runtime
+			into "$rootDir/dist/workloadDriverLibs"
+			from configurations.runtimeClasspath
 		}
 		copy {
-	   		into "$rootDir/dist/workloadDriverLibs"
-    		from "$rootDir/workloadDriver/logback.xml"
+			into "$rootDir/dist/workloadDriverLibs"
+			from "$rootDir/workloadDriver/logback.xml"
 		}
 		copy {
-		   	into "$rootDir/dist/workloadDriverLibs"
-    		from "$rootDir/workloadDriver/log4j.properties"
+			into "$rootDir/dist/workloadDriverLibs"
+			from "$rootDir/workloadDriver/log4j.properties"
 		}
-	    }
+		}
 	}
-		
+
 }
-
-

@@ -950,7 +950,8 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 			foreach my $svcInstanceParamHashRef (@$svcInstanceParamHashRefs) {
 				$svcInstanceParamHashRef->{"serviceType"} = $serviceType;
 				# Create the ComputeResource for the service
-				$host = getComputeResourceForInstance( $svcInstanceParamHashRef, $svcNum, 
+				my $hostNum = $numScvInstances * ($appInstanceNum - 1) + $svcNum ;
+				$host = getComputeResourceForInstance( $svcInstanceParamHashRef, $hostNum,
 										$serviceType, \%nameToComputeResourceHash, $appInstanceHostOrCluster,
 											$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 				my $service =
@@ -984,7 +985,7 @@ foreach my $workloadParamHashRef (@$workloadsParamHashRefs) {
 		#}
 	
 		
-		$host = getComputeResourceForInstance( $dataManagerParamHashRef, 1, "dataManager", 
+		$host = getComputeResourceForInstance( $dataManagerParamHashRef, $appInstanceNum, "dataManager",
 								\%nameToComputeResourceHash, $appInstanceHostOrCluster, 
 									$paramsHashRef, $runProcedureParamHashRef, $runProcedure);
 		my $dataManager = DataManagerFactory->getDataManager( $dataManagerParamHashRef, $appInstance, $host );

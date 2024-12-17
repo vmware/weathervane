@@ -297,6 +297,7 @@ sub prepareData {
 		else {
 			$console_logger->info( "Data is already loaded for appInstance "
 				  . "$appInstanceNum of $outputWorkloadNum" );
+			$self->compactDataBeforePrepare( $users, $logHandle );
 		}
 	}
 
@@ -505,6 +506,14 @@ sub cleanData {
 
 	my $dbServersRef = $self->appInstance->getAllServicesByType('dbServer');
 	$dbServersRef->[0]->cleanData($users, $logHandle);
+}
+
+sub compactDataBeforePrepare {
+	my ( $self, $users, $logHandle ) = @_;
+	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
+
+	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
+	$nosqlServersRef->[0]->compactDataBeforePrepare($users, $logHandle);
 }
 
 sub waitForReady {

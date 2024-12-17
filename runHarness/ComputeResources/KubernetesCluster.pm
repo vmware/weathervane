@@ -1300,6 +1300,12 @@ sub kubernetesFollowLogsFirstPod {
 	($cmdFailed, $outString) = runCmd($cmd);
 	if ($cmdFailed) {
 		$logger->error("kubernetesFollowLogs logs failed: $cmdFailed");
+	} else {
+		#There is a hard coded 4 hour max duration on kubectl commands (that return with success). Attempt to reloop the follow to handle this case.
+		$cmd = "kubectl logs -c $containerName --follow --tail=0 --namespace=$namespace --kubeconfig=$kubeconfigFile $contextString $podName >> $outFile";
+		do {
+			($cmdFailed, $outString) = runCmd($cmd);
+		} while(!$cmdFailed);
 	}
 }
 

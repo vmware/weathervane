@@ -231,7 +231,21 @@ sub cleanData {
 		return 0;
 	} else {
 		return 1;
-	}	
+	}
+}
+
+sub compactDataBeforePrepare {
+	my ($self, $users, $logHandle)   = @_;
+	my $logger = get_logger("Weathervane::Services::CassandraKubernetesService");
+	$logger->debug("compactDataBeforePrepare");
+	my $cluster = $self->host;
+	my ($cmdFailed, $outString) = $cluster->kubernetesExecAll($self->getImpl(), "nodetool compact auction_event attendancerecord_by_userid", $self->namespace );
+	if ($cmdFailed) {
+		$logger->warn("Compacting Cassandra nodes failed: $cmdFailed");
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 sub waitForReady {

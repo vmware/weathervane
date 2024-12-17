@@ -21,7 +21,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
-import org.springframework.security.authentication.encoding.ShaPasswordEncoder;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
 
 @Entity
 @Table(name = "userdata")
@@ -183,8 +183,8 @@ public class User implements Serializable, DomainObject {
 	}
 
 	private String getHash(String password, String salt) {
-		ShaPasswordEncoder encoder = new ShaPasswordEncoder(256);
-		return encoder.encodePassword(password, salt);
+		StandardPasswordEncoder encoder = new StandardPasswordEncoder();
+		return encoder.encode(password);
 	}
 
 	@Override

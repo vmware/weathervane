@@ -11,7 +11,9 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 
 	<http pattern="/images/**" security="none"/>
 
-	<http create-session="stateless" entry-point-ref="entryPoint" use-expressions="true">
+	<http create-session="stateless" entry-point-ref="entryPoint" use-expressions="true" disable-url-rewriting="false">
+		<headers disabled="true"/>
+		<csrf disabled="true"/>
 		<intercept-url pattern="/login" access="permitAll" />
 		<intercept-url pattern="/javasimon/**" access="permitAll" />
 		<intercept-url pattern="/healthCheck" access="permitAll" />
@@ -23,7 +25,7 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 		<intercept-url pattern="/live/auction/release" access="permitAll" method="GET" />
 		<intercept-url pattern="/user" access="permitAll" method="POST" />
 		<intercept-url pattern="/image/**" access="permitAll" method="GET" />
-		<intercept-url pattern="/**" access="hasRole('watcher')" />
+		<intercept-url pattern="/**" access="hasAuthority('watcher')" />
 		<custom-filter ref="restPreauthFilter" position="PRE_AUTH_FILTER" />
 	</http>
 

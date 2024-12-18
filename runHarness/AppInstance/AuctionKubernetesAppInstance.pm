@@ -64,11 +64,6 @@ override 'startServices' => sub {
 	my $users  = $self->dataManager->getParamValue('maxUsers');
 	my $impl         = $self->getParamValue('workloadImpl');
 
-	my $appInstanceName = $self->name;
-	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
-	my $logFile;
-	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
-
 	$logger->debug(
 		"startServices for serviceTier $serviceTier, workload ",
 		$self->workload->instanceNum,
@@ -94,15 +89,7 @@ override 'startServices' => sub {
 				next;
 			}		
 		}
-		
-		# Don't return until all services are ready
-		my $allIsRunningAndUp = $self->isRunningAndUpServices($serviceTier, $logFile, $forked);
-		if ( !$allIsRunningAndUp ) {
-			close $logFile;
-			return 0;
-		}
 	}
-	close $logFile;
 	return 1;
 };
 

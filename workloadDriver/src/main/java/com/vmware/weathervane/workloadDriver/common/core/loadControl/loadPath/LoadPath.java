@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.text.SimpleDateFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +189,8 @@ public abstract class LoadPath implements Runnable, LoadPathIntervalResultWatche
 		long wait = nextInterval.getDuration();
 		logger.debug("run: interval duration is " + wait + " seconds");
 		if (!isFinished() && (wait > 0)) {
+			SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd HH" + ":mm:ss.SSS");
+			System.out.println("WVInterval " + formatter.format(System.currentTimeMillis()) + " " + nextInterval.getName()+ " Started");
 			logger.debug("run: sleeping for  " + wait + " seconds");
 			executorService.schedule(this, wait, TimeUnit.SECONDS);
 			// The interval really starts now

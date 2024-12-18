@@ -521,7 +521,7 @@ sub runCmd {
 	# cmdFailed ("" if success, $logOutput(cmd $output and not "") if failed)
 	# cmdOutput (cmd $output if success, cmd $output if failed)
 
-	my ($cmd, $printLogOutput) = @_;
+	my ($cmd, $printLogOutput, $ignoreFailure) = @_;
 	my $logger;
 	if (Log::Log4perl->initialized()) {
 		$logger = get_logger("Weathervane");
@@ -529,6 +529,9 @@ sub runCmd {
 
 	if (!(defined $printLogOutput)) {
 		$printLogOutput = 1;
+	}
+	if (!(defined $ignoreFailure)) {
+		$ignoreFailure = 0;
 	}
 
 	# Do some sanity/safety checks before running commands.
@@ -561,20 +564,41 @@ sub runCmd {
 	my $exitStatus = $?;
 	my $failed = $exitStatus >> 8;
 	my $logOutput = $output;
-	if ($failed) {
+	if ($failed && $ignoreFailure) {
+		if (!(length $output)) {
+			$logOutput = "(no output)";
+		}
+		if ($logger) {
+			if ($printLogOutput) {
+				$logger->debug("runCmd Success (ignoreFailure) ($cmd): $logOutput");
+			} else {
+				$logger->debug("runCmd Success (ignoreFailure) ($cmd)");
+			}
+		}
+		return ("", $output);
+	} elsif ($failed) {
 		if (!(length $output)) {
 			$logOutput = "(failure with no output)";
 		}
-		if ($logger) { $logger->debug("runCmd Failure ($cmd): $logOutput"); }
+		if ($logger) {
+			if ($printLogOutput) {
+				$logger->debug("runCmd Failure ($cmd): $logOutput");
+			} else {
+				$logger->debug("runCmd Failure ($cmd)");
+			}
+		}
 		return ($logOutput, $output);
 	} else {
 		if (!(length $output)) {
 			$logOutput = "(no output)";
 		}
-		if (!$printLogOutput) {
-			$logOutput = "";
+		if ($logger) {
+			if ($printLogOutput) {
+				$logger->debug("runCmd Success ($cmd): $logOutput");
+			} else {
+				$logger->debug("runCmd Success ($cmd)");
+			}
 		}
-		if ($logger) { $logger->debug("runCmd Success ($cmd): $logOutput"); }
 		return ("", $output);
 	}
 }

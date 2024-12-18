@@ -286,13 +286,13 @@ public class StatsSummary {
 		}
 		StringBuilder retVal = new StringBuilder();
 		if (includeWorkload) {
-			retVal.append(String.format(outputFormat, "Time", "Workload", "Active", "TP", "Avg RT", "Ops", "Ops",
+			retVal.append(String.format(outputFormat, "Interval", "Workload", "Active", "TP", "Avg RT", "Ops", "Ops",
 					"Ops", "Per Operation: Operation:Total/FailedRT(RT-Limit/AvgRT/AvgFailingRT)", "Timestamp\n"));
-			retVal.append(String.format(outputFormat, "(sec)", "", "Users", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
+			retVal.append(String.format(outputFormat, "(count)", "", "Users", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
 		} else {
-			retVal.append(String.format(outputFormat, "Time", "Active", "TP", "Avg RT", "Ops", "Ops", "Ops",
+			retVal.append(String.format(outputFormat, "Interval", "Active", "TP", "Avg RT", "Ops", "Ops", "Ops",
 					"Per Operation: Operation:Total/FailedRT(RT-Limit/AvgRT/AvgFailingRT)", "Timestamp\n"));
-			retVal.append(String.format(outputFormat, "(sec)", "Users", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
+			retVal.append(String.format(outputFormat, "(count)", "Users", "(ops/s)", "(sec)", "Total", "Failed", "Fail RT", "", ""));
 		}
 
 		return retVal.toString();

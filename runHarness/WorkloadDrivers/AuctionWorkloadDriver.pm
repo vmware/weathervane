@@ -1213,11 +1213,11 @@ sub startRun {
 		my $inline;
 		while ( $driverPipe->opened() &&  ($inline = <$driverPipe>) ) {
 			if ($self->getParamValue('showPeriodicOutput')
-			        && (( $inline =~ /^\|\s+\d+\|/ ) 
-					|| ( $inline =~ /^\|\s+Time\|/ ) 
-					|| ( $inline =~ /^\|\s+\(sec\)\|/ ))) {
-			    if ($inline =~ /^(.*|)GetNextBid\:.*/) {
-					$inline = $1 . "\n";
+			        && (( $inline =~ /^\|\s+\d+\|/ )
+					|| ( $inline =~ /^\|\s+Interval\|/ )
+					|| ( $inline =~ /^\|\s+\(count\)\|/ ))) {
+			    if ($inline =~ /^(.*|)GetNextBid\:.*\|(.*)/) {
+					$inline = $1 . $2 . "\n";
 			    }
 			    if ($inline =~ /^(.*|)Per\sOperation\:.*/) {
 					$inline = $1 . "\n";
@@ -1231,8 +1231,12 @@ sub startRun {
 				next;
 			}
 
+			if ($inline =~ /^WVInterval /) {
+				next;
+			}
+
 			if ($nextIsHeader) {
-				if (!(($inline =~ /^\|\s*Time/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/))) {
+				if (!(($inline =~ /^\|\s*Interval/ ) || ($inline =~ /^\d\d\:\d\d\:\d\d/))) {
 					$console_logger->warn(
 			"Workload driver did not start properly. Check run.log for errors. "
 					);
@@ -1411,7 +1415,7 @@ sub startRun {
             # Now print the messages for the start of the next interval
             my $numAppInstances = $#{$workloadStati} + 1;
             foreach my $nameStr (keys %nameStringToInstances) {
-				# Formating the string to remove the extra spave when workloadCount ==1
+				# Formating the string to remove the extra space when workloadCount ==1
 				my $instancesString ="";
 				if ( $workloadCount==1 ) {
 					$instancesString = "[appInstance";	

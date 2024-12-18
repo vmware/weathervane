@@ -30,7 +30,7 @@ override 'initialize' => sub {
 
 	my $workloadNum = $self->appInstance->workload->instanceNum;
 	my $appInstanceNum = $self->appInstance->instanceNum;
-	
+
 	$self->name("auctiondatamanagerW${workloadNum}A${appInstanceNum}");
 
 	super();
@@ -205,8 +205,9 @@ sub prepareDataServices {
 		# we are reloading the data
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
-	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
-	
+	$appInstance->startServices("data", $logPath, 0);
+	my $allIsStarted = $appInstance->isRunningAndUpServices("data", $logPath, 0);
+
 	if (!$allIsStarted) {
 		$appInstance->getDataServiceLogFiles($logPath . "/prepareDataServicesFailure");
 		if ($self->getParamValue("reloadOnFailure")) {
@@ -216,7 +217,8 @@ sub prepareDataServices {
 			$appInstance->stopServices("data", $logPath);
 			my $cluster = $self->host;
 			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
-			$allIsStarted = $appInstance->startServices("data", $logPath, 0);
+			$appInstance->startServices("data", $logPath, 0);
+			$allIsStarted = $appInstance->isRunningAndUpServices("data", $logPath, 0);
 		} else {
 			$console_logger->info(
 				"Couldn't start data services for appInstance $appInstanceNum of workload $workloadNum.\n" . 
@@ -288,6 +290,7 @@ sub prepareData {
 			$appInstance->stopServices("data", $logPath);
 			$appInstance->clearDataServicesBeforeStart($logPath);
 			$appInstance->startServices("data", $logPath, 0);
+			$appInstance->isRunningAndUpServices("data", $logPath, 0);
 			$appInstance->clearDataServicesAfterStart($logPath);
 
 			$retVal = $self->loadData( $users, $logPath );
@@ -328,6 +331,7 @@ sub prepareData {
 			$appInstance->stopServices("data", $logPath);
 			$cluster->kubernetesDeleteAllWithLabelAndResourceType("app=auction", "pvc", $self->appInstance->namespace );
 			$appInstance->startServices("data", $logPath, 0);
+			$appInstance->isRunningAndUpServices("data", $logPath, 0);
 			return $self->prepareData( $users, $logPath, 1);
 		} else {
 			$console_logger->error( 

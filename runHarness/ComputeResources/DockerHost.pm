@@ -235,6 +235,7 @@ sub dockerPort {
 	foreach my $line (@lines) {
 		if ($line =~ /(\d+)\/.*\:(\d+)\s*$/) {
 			$portMap{$1} = $2;
+			last;
 		}
 	}
 	
@@ -581,7 +582,7 @@ sub dockerCopyFrom {
 	my $cmdString = "$dockerHostString docker cp $name:$sourceFile $destFile";
 	my ($cmdFailed, $out) = runCmd($cmdString, 0);
 	if ($cmdFailed) {
-		$logger->error("dockerCopyFrom failed: $cmdFailed");
+		$logger->debug("dockerCopyFrom failed: $cmdFailed");
 	}
 	print $logFileHandle "$cmdString\n";
 	$logger->debug("docker cp output: $out");

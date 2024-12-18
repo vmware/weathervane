@@ -9,7 +9,7 @@ use WeathervaneTypes;
 use RunResults::RunResult;
 use JSON;
 use Log::Log4perl qw(get_logger);
-use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel2 callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1);
+use Utils qw(callMethodOnObjectsParamListParallel1 callMethodOnObjectsParallel callMethodsOnObjectParallel callMethodsOnObjectParallel1 callMethodOnObjectsParallel1 callMethodOnObjectsParallel2);
 
 use Parameters qw(getParamValue setParamValue);
 
@@ -86,7 +86,8 @@ sub run {
 	if ( !( -e $tmpDir ) ) {
 		`mkdir $tmpDir`;
 	}
-	
+	$self->tmpDir($tmpDir);
+
 	# directory for logs related to start/stop/etc
 	my $setupLogDir = $tmpDir . "/setupLogs";
 	if ( !( -e $setupLogDir ) ) {
@@ -104,14 +105,14 @@ sub run {
 	$appender->layout($layout);
 	$console_logger->add_appender($appender);
 	
-	$console_logger->info("Stopping running services and cleaning up old log and stats files.\n");
+	$console_logger->info("Stopping services from previous runs.\n");
 
 	# Make sure that no previous Benchmark processes are still running
 	$debug_logger->debug("killOldWorkloadDrivers");
 	$self->killOldWorkloadDrivers($setupLogDir);
 
 	$debug_logger->debug("stop services");
-	$self->stopDataManager($setupLogDir);		
+	$self->stopDataManager($setupLogDir);
 	$self->stopServicesInClusters();
 	my @tiers = qw(frontend);
 	callMethodOnObjectsParamListParallel1( "stopServices", [$self], \@tiers, $setupLogDir );
@@ -130,10 +131,13 @@ sub run {
 		$self->setParamValue( 'redeploy', 0 );
 	}
 
-	# Prepare the data for this run and start the data services
+	my $allUp;
 	# Start the data services for all AppInstances.  This happens serially so
 	# that we don't have to spawn processes and lose port number info.
-	$self->prepareDataServices($setupLogDir);	
+	$allUp = $self->prepareDataServices($setupLogDir);
+	if ( !$allUp ) {
+		$self->cleanupAfterFailure( "Could not properly start the data services for run $seqnum.  Exiting.", $seqnum, $tmpDir );
+	}
 	# Prepare the data for this run.  This happens in parallel on all appInstances
 	$console_logger->info("Preparing data for use in current run.\n");
 	my $dataPrepared = $self->prepareData($setupLogDir);

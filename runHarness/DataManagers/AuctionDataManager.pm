@@ -17,6 +17,7 @@ use Log::Log4perl qw(get_logger);
 with Storage( 'format' => 'JSON', 'io' => 'File' );
 
 use namespace::autoclean;
+use Utils qw(runCmd);
 
 extends 'DataManager';
 
@@ -69,7 +70,7 @@ sub startDataManagerContainer {
 	foreach my $nosqlServer (@$nosqlServicesRef) {
 		$cassandraContactpoints .= $self->getHostnameForUsedService($nosqlServer) . ",";
 	}
-	$cassandraContactpoints =~ s/,$//;		
+	$cassandraContactpoints =~ s/,$//;
 	$envVarMap{"CASSANDRA_CONTACTPOINTS"} = $cassandraContactpoints;
 	$envVarMap{"CASSANDRA_PORT"} = $cassandraPort;
 	
@@ -139,7 +140,8 @@ sub prepareDataServices {
 		$appInstance->clearDataServicesBeforeStart($logPath);
 	}
 	
-	my $allIsStarted = $appInstance->startServices("data", $logPath, 0);
+	$appInstance->startServices("data", $logPath, 0);
+	my $allIsStarted = $appInstance->isRunningAndUpServices("data", $logPath, 0);
 	if ( !$allIsStarted ) {
 		close $logHandle;
 		return $allIsStarted;
@@ -155,7 +157,8 @@ sub prepareDataServices {
 		# Need to stop and restart services so that we can clear out any old data
 		$appInstance->stopServices("data", $logPath);
 		$appInstance->clearDataServicesBeforeStart($logPath);
-		$allIsStarted = $appInstance->startServices("data", $logPath, 0);
+		$appInstance->startServices("data", $logPath, 0);
+		$allIsStarted = $appInstance->isRunningAndUpServices("data", $logPath, 0);
 		if ( !$allIsStarted ) {
 			close $logHandle;
 			return $allIsStarted;
@@ -213,6 +216,11 @@ sub prepareData {
 	$logger->debug( "All data services are up for appInstance $appInstanceNum of workload $workloadNum." );
 		
 	if ($reloadDb || !$self->isDataLoaded( $users, $logPath )) {
+		if (!$reloadDb) {
+			$console_logger->info(
+				    "Data is not loaded for $maxUsers maxUsers for appInstance "
+				  . "$appInstanceNum of workload $workloadNum. Loading data." );
+		}
 		$appInstance->clearDataServicesAfterStart($logPath);
 		$retVal = $self->loadData( $users, $logPath );
 		if ( !$retVal ) { return 0; }
@@ -226,12 +234,11 @@ sub prepareData {
 				  . "$appInstanceNum of workload $workloadNum." );
 	print $logHandle "Exec-ing perl /prepareData.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /prepareData.pl  in container $name");
-	my $dockerHostString  = $self->host->dockerHostString;	
-	my $cmdOut = `$dockerHostString docker exec $name perl /prepareData.pl`;
+
+	my ($cmdFailed, $cmdOut) = $self->host->dockerExec($logHandle, $name, "perl /prepareData.pl");
 	print $logHandle "Output: $cmdOut, \$? = $?\n";
-	$logger->debug("Output: $cmdOut, \$? = $?");
-	if ($?) {
-		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information." );
+	if ($cmdFailed) {
+		$console_logger->error( "Data preparation process failed.  Check PrepareData.log for more information. \$cmdOut = $cmdOut" );
 		$self->stopDataManagerContainer($logHandle);
 		return 0;
 	}
@@ -278,7 +285,6 @@ sub loadData {
 	$logger->debug("Exec-ing perl /loadData.pl in container $name");
 	print $applog "Exec-ing perl /loadData.pl in container $name\n";
 	my $dockerHostString  = $self->host->dockerHostString;
-	
 	open my $pipe, "$dockerHostString docker exec $name perl /loadData.pl  |"   or die "Couldn't execute program: $!";
  	while ( defined( my $line = <$pipe> )  ) {
 		chomp($line);
@@ -327,14 +333,17 @@ sub isDataLoaded {
 
 	print $applog "Exec-ing perl /isDataLoaded.pl  in container $name\n";
 	$logger->debug("Exec-ing perl /isDataLoaded.pl  in container $name");
-	my $dockerHostString  = $self->host->dockerHostString;	
-	my $cmdOut = `$dockerHostString docker exec $name perl /isDataLoaded.pl`;
+
+	my ($cmdFailed, $cmdOut) = $self->host->dockerExec($applog, $name, "perl /isDataLoaded.pl");
 	print $applog "Output: $cmdOut, \$? = $?\n";
-	$logger->debug("Output: $cmdOut, \$? = $?");
 	close $applog;
-	if ($?) {
-		$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
-		return 0;
+	if ($cmdFailed) {
+		if ( $cmdOut =~ /sh: line 1:    16 Killed/ ) {
+			die "AuctionDataManager container Killed -- the VM might not be big enough for the container.\n";
+		} else {
+			$logger->debug( "Data is not loaded for workload $workloadNum, appInstance $appInstanceNum." );
+			return 0;
+		}
 	}
 	else {
 		$logger->debug( "Data is loaded for workload $workloadNum, appInstance $appInstanceNum. \$cmdOut = $cmdOut" );
@@ -348,7 +357,11 @@ sub cleanData {
 	my $logger         = get_logger("Weathervane::DataManager::AuctionDataManager");
 	my $nosqlServersRef = $self->appInstance->getAllServicesByType('nosqlServer');
 	foreach my $nosqlServerRef (@$nosqlServersRef) {
-#		$nosqlServerRef->cleanData($users, $logHandle);
+		$nosqlServerRef->cleanData($users, $logHandle);
+	}
+	my $dbServersRef = $self->appInstance->getAllServicesByType('dbServer');
+	foreach my $dbServerRef (@$dbServersRef) {
+		$dbServerRef->cleanData($users, $logHandle);
 	}
 }
 

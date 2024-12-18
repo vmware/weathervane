@@ -320,20 +320,15 @@ sub startServices {
 	}
 	my $allIsStarted = 1;
 	if ($allK8s) {
-		$allIsStarted = callBooleanMethodOnObjectsParallel3BatchDelay( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir, 1, 10, 60 );
-		if (!$allIsStarted && $forked) {
-			exit;
-		}
+		callBooleanMethodOnObjectsParallel3BatchDelay( 'startServices', $appInstancesRef, $serviceTier, $setupLogDir, 1, 10, 60 );
 	} else {
 		foreach my $appInstance (@$appInstancesRef) {
-			$allIsStarted = $appInstance->startServices($serviceTier, $setupLogDir, 0);
-			if (!$allIsStarted) {
-				if ($forked) {
-					exit;
-				}
-				last;
-			}
+			$appInstance->startServices($serviceTier, $setupLogDir, 0);
 		}
+	}
+	$allIsStarted = callBooleanMethodOnObjectsParallel3BatchDelay( 'isRunningAndUpServices', $appInstancesRef, $serviceTier, $setupLogDir, 1, 10, 60 );
+	if (!$allIsStarted && $forked) {
+		exit;
 	}
 	return $allIsStarted;
 }

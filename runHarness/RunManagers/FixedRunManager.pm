@@ -62,6 +62,10 @@ override 'start' => sub {
 	elsif ( $runProcedureType eq 'stop' ) {
 		$console_logger->info("Run stopped");
 	}
+	elsif ( $runProcedureType eq 'loadOnly' ) {
+		$console_logger->info($runResult->toString());
+		$console_logger->info("Application loaded.");
+	}
 	else {
 		$self->printCsv( $runResult->resultsSummaryHashRef, 1 );
 		$console_logger->info($runResult->toString());

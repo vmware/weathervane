@@ -326,33 +326,65 @@ sub clearReloadDb {
 	}
 }
 
-sub cleanData {
-	my ( $self, $cleanupLogDir ) = @_;
-	return callBooleanMethodOnObjectsParallel1( 'cleanData', $self->workloadsRef, $cleanupLogDir );
-}
-
 sub prepareDataServices {
 	my ( $self, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
 	$logger->debug("prepareDataServices with logDir $setupLogDir");
 	
-	# If all of the dataManagers are running on Kubernetes clusters, then
-	# we can do the prepare in parallel
-	my $allK8s = 1;
-	foreach my $workloadRef (@{$self->workloadsRef}) {
-		my $appInstancesRef = $workloadRef->appInstancesRef;
+	# for kubernetes workloads, prepareDataServices in parallel.
+	my @parallel;
+	my @sync;
+	my $workload;
+	my $workloadsRef = $self->workloadsRef;
+	foreach $workload (@$workloadsRef) {
+		my $allK8s = 1;
+		my $appInstancesRef = $workload->appInstancesRef;
 		foreach my $appInstanceRef (@{$appInstancesRef}) {
 			my $dataManager = $appInstanceRef->dataManager;
 			if ((ref $dataManager->host) ne 'KubernetesCluster') {
 				$allK8s = 0;
 			}
 		}
+		if ($allK8s) {
+			push @parallel, $workload;
+		} else {
+			push @sync, $workload;
+		}
 	}
-	my $allIsStarted;
-	if ($allK8s) {
-		$allIsStarted = callBooleanMethodOnObjectsParallel2( 'prepareDataServices', $self->workloadsRef, $setupLogDir, 1 );
-	} else {
-		$allIsStarted = callBooleanMethodOnObjects2( 'prepareDataServices', $self->workloadsRef, $setupLogDir, 0 );
+
+	my $pid;
+	my @pids;
+	if ( $#parallel >= 0 ) {
+		foreach $workload (@parallel) {
+			$pid = fork();
+			if ( !defined $pid ) {
+				$logger->error("Couldn't fork a process: $!");
+				exit(-1);
+			}
+			elsif ( $pid == 0 ) {
+				exit( $workload->prepareDataServices($setupLogDir, 1) );
+			}
+			else {
+				push @pids, $pid;
+			}
+		}
+	}
+
+	my $allIsStarted = 1;
+	foreach $workload (@sync) {
+		$allIsStarted = $workload->prepareDataServices($setupLogDir, 0);
+		if (!$allIsStarted) {
+			last;
+		}
+	}
+
+	if ( $#parallel >= 0 ) {
+		foreach $pid (@pids) {
+			waitpid $pid, 0;
+			if ( !$? ) {
+				$allIsStarted = 0;
+			}
+		}
 	}
 	return $allIsStarted;
 }
@@ -423,30 +455,60 @@ sub setLoadPathType {
 sub startServices {
 	my ( $self, $serviceTier, $setupLogDir ) = @_;
 	my $logger = get_logger("Weathervane::RunProcedures::RunProcedure");
-	
 	$logger->debug("startServices for serviceTier $serviceTier with logDir $setupLogDir");
-	
-	# If all of the dataManagers are running on Kubernetes clusters, then
-	# we can do the start in parallel
-	my $allK8s = 1;
-	foreach my $workloadRef (@{$self->workloadsRef}) {
-		my $appInstancesRef = $workloadRef->appInstancesRef;
+
+	# for kubernetes workloads, startServices in parallel.
+	my @parallel;
+	my @sync;
+	my $workload;
+	my $workloadsRef = $self->workloadsRef;
+	foreach $workload (@$workloadsRef) {
+		my $allK8s = 1;
+		my $appInstancesRef = $workload->appInstancesRef;
 		foreach my $appInstanceRef (@{$appInstancesRef}) {
 			my $dataManager = $appInstanceRef->dataManager;
 			if ((ref $dataManager->host) ne 'KubernetesCluster') {
 				$allK8s = 0;
 			}
 		}
+		if ($allK8s) {
+			push @parallel, $workload;
+		} else {
+			push @sync, $workload;
+		}
 	}
+
+	my $pid;
+	my @pids;
+	if ( $#parallel >= 0 ) {
+		foreach $workload (@parallel) {
+			$pid = fork();
+			if ( !defined $pid ) {
+				$logger->error("Couldn't fork a process: $!");
+				exit(-1);
+			}
+			elsif ( $pid == 0 ) {
+				exit( $workload->startServices($serviceTier, $setupLogDir, 1) );
+			}
+			else {
+				push @pids, $pid;
+			}
+		}
+	}
+
 	my $allIsStarted = 1;
-	if ($allK8s) {
-		$allIsStarted = callBooleanMethodOnObjectsParallel3( 'startServices', $self->workloadsRef, $serviceTier, $setupLogDir, 1 );
-	} else {
-		my $workloadsRef = $self->workloadsRef;
-		foreach my $workload (@$workloadsRef) {
-			$allIsStarted = $workload->startServices($serviceTier, $setupLogDir, 0);
-			if (!$allIsStarted) {
-				last;
+	foreach $workload (@sync) {
+		$allIsStarted = $workload->startServices($serviceTier, $setupLogDir, 0);
+		if (!$allIsStarted) {
+			last;
+		}
+	}
+
+	if ( $#parallel >= 0 ) {
+		foreach $pid (@pids) {
+			waitpid $pid, 0;
+			if ( !$? ) {
+				$allIsStarted = 0;
 			}
 		}
 	}

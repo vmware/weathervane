@@ -270,14 +270,6 @@ sub getUsers {
 	return $self->users;
 }
 
-sub getMaxLoadedUsers {
-	my ($self)        = @_;
-	my $dbServicesRef = $self->getAllServicesByType("dbServer");
-	my $dbServer      = $dbServicesRef->[0];
-
-	return $dbServer->getMaxLoadedUsers();
-}
-
 sub getLoadPath {
 	my ($self) = @_;
 	return $self->getParamValue('userLoadPath');
@@ -600,11 +592,6 @@ sub startServices {
 	my ( $self, $serviceTier, $setupLogDir, $forked ) = @_;
 	my $logger = get_logger("Weathervane::AppInstance::AppInstance");
 	my $impl         = $self->getParamValue('workloadImpl');
-	
-	my $appInstanceName = $self->name;
-	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
-	my $logFile;
-	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
 
 	my $users    = $self->dataManager->getParamValue('maxUsers');
 	$logger->debug(
@@ -632,14 +619,7 @@ sub startServices {
 				next;
 			}
 		}
-		# Don't return until all services are ready
-		my $allIsRunningAndUp = $self->isRunningAndUpServices($serviceTier, $logFile, $forked);
-		if ( !$allIsRunningAndUp ) {
-			close $logFile;
-			return 0;
-		}
 	}
-	close $logFile;
 	return 1;
 }
 
@@ -695,7 +675,12 @@ sub stopDataManager {
 }
 
 sub isRunningAndUpServices {
-	my ( $self, $serviceTier, $logFile, $forked ) = @_;
+	my ( $self, $serviceTier, $setupLogDir, $forked ) = @_;
+	my $appInstanceName = $self->name;
+	my $logName         = "$setupLogDir/start-$serviceTier-$appInstanceName.log";
+	my $logFile;
+	open( $logFile, " > $logName " ) or die " Error opening $logName: $!";
+
 	my $logger         = get_logger("Weathervane::DataManager::AuctionKubernetesDataManager");
 	my $console_logger = get_logger("Console");
 	
@@ -717,6 +702,7 @@ sub isRunningAndUpServices {
 		if ($forked) {
 			exit;
 		} else {
+			close $logFile;
 			return 0;
 		}
 	}
@@ -729,10 +715,12 @@ sub isRunningAndUpServices {
 		if ($forked) {
 			exit;
 		} else {
+			close $logFile;
 			return 0;
 		}
 	}
 	$logger->debug( "All $serviceTier services are up for appInstance $appInstanceNum of workload $workloadNum." );
+	close $logFile;
 	return 1;
 }
 
@@ -912,8 +900,7 @@ sub isUp {
 			$isUp = $service->isUp($log);
 			if ( !$isUp ) {
 				$allUp = 0;
-				if ( ( $retriesRemaining == 0 ) && !$isUp ) {
-
+				if ( ( $retriesRemaining == 1 ) && !$isUp ) {
 					# no more retries so give an error
 					my $hostname = $service->host->name;
 					$console_logger->error( "Couldn't start $serviceType "

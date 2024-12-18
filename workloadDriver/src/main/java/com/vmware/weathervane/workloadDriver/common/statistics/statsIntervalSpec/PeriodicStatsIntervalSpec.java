@@ -32,7 +32,7 @@ public class PeriodicStatsIntervalSpec extends StatsIntervalSpec {
 	protected StatsInterval getNextInterval() {
 		StatsInterval nextInterval = new StatsInterval();
 		nextInterval.setDuration(period);
-		nextInterval.setName(Long.toString(intervalCount * period));
+		nextInterval.setName(Long.toString(intervalCount));
 		intervalCount++;
 		logger.debug("getNextInterval returning interval with duration = " + nextInterval.getDuration() + ", name = " + nextInterval.getName());
 		return nextInterval;
